@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>밀고 당기는 도시 · 태블릿 조작 시안</title>
+<link rel="stylesheet" href="./tablet-preview.css">
+<script src="./tablet-preview.js" defer></script>
+</head>
+<body>
+<div class="review-bar"><strong>조작 시안</strong><span>학습 기록과 연결되지 않아</span><nav aria-label="검토할 화면">
+<button data-view="distance" aria-pressed="true">거리·종이</button><button data-view="invention" aria-pressed="false">내 발명</button><button data-view="delivery" aria-pressed="false">마지막 복구</button><button data-view="compass" aria-pressed="false">나침반 · 선택</button>
+</nav></div>
+<main class="app">
+<header class="app-head"><div class="brand"><span class="brand-icon" aria-hidden="true">↔</span><div><span class="eyebrow" id="place">자석 실험실</span><strong>밀고 당기는 도시</strong></div></div><button id="records" class="quiet">▤ 내 실험 기록 <span id="recordCount">0</span></button></header>
+<section class="heading"><div><span id="step" class="step">01 · 거리 알아보기</span><h1 id="question">얼마나 가까이 가야 붙을까?</h1></div><button id="reset" class="quiet" aria-label="이 화면 다시 해보기">↻ 다시 해보기</button></section>
+<div id="scene" class="scene"></div>
+<footer class="actionbar"><div class="guidance"><span id="guideIcon" class="guide-icon" aria-hidden="true">☝</span><p id="guide" role="status" aria-live="polite"></p></div><div id="actions" class="actions"></div></footer>
+</main>
+<dialog id="recordDialog" aria-labelledby="recordTitle"><div class="dialog-head"><div><span class="eyebrow">관찰하고 발견한 것</span><h2 id="recordTitle">내 실험 기록</h2></div><button id="closeRecords" class="quiet">닫기 ×</button></div><div id="recordBody"></div></dialog>
+</body></html>

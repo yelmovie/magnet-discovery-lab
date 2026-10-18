@@ -1,0 +1,510 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "title_ko": "밀고 당기는 도시",
+    "title_en": "Push Pull City",
+    "repository": "push-pull-city",
+    "github_description": "An interactive Grade 4 science game where students investigate magnetic forces, infer magnetic poles, control objects without touching them, and design useful magnetic devices through 2D, 2.5D, and 3D simulations.",
+    "topic_id": "topic-09-magnet",
+    "grade": 4,
+    "subject": "과학",
+    "unit": "자석의 이용",
+    "stages": 5,
+    "pages": 10,
+    "platform": "tablet-first web/PWA",
+    "orientation": "landscape 16:9"
+  },
+  "curriculum": [
+    {
+      "code": "4과09-01",
+      "text": "자석과 여러 가지 물체를 가까이했을 때 나타나는 현상을 관찰하고, 자석과 자석에 붙는 물체 사이에 작용하는 힘의 특징을 말할 수 있다."
+    },
+    {
+      "code": "4과09-02",
+      "text": "자석과 자석을 가까이했을 때 나타나는 현상을 관찰하여 그 특징을 자석의 극과 관련지어 설명할 수 있다."
+    },
+    {
+      "code": "4과09-03",
+      "text": "자석을 이용하여 일상생활을 편리하게 하는 장치를 설계할 수 있다."
+    }
+  ],
+  "global_design_rules": {
+    "learning_loop": [
+      "예상/계획",
+      "직접 조작",
+      "현상 관찰",
+      "비교/추론",
+      "적용 또는 수정"
+    ],
+    "difficulty": "초등 4학년 수준. 문장은 짧게 쓰되 비교, 추론, 계획, 수정 과정을 생략하지 않는다.",
+    "tablet_value": "클릭 퀴즈가 아니라 드래그, 회전, 핀치, 경로 조작, 부품 스냅, TEST를 핵심 입력으로 한다.",
+    "three_d_pages": [
+      1,
+      6,
+      9,
+      10
+    ],
+    "three_d_policy": "앞뒤/안밖/마주 보는 면/입체 조립을 이해해야 하는 페이지에서만 Three.js를 사용한다.",
+    "physics_policy": "정밀 전자기학 시뮬레이터처럼 표현하지 않는다. 거리와 힘은 정성적 상태로 다룬다.",
+    "visual_style": "밝고 세련된 어린이용 과학 판타지와 도시 정비 분위기. 유아용 스티커북·이모지 남용·기본 템플릿 느낌을 피한다.",
+    "text_policy": "모든 한글 UI 텍스트는 HTML/CSS/SVG로 표시하고 배경 이미지나 GLB 텍스처에 굽지 않는다.",
+    "accessibility": "색만으로 N/S, 성공/실패를 구분하지 않는다. 문자, 모양, 색을 함께 사용한다.",
+    "anti_patterns": [
+      "OX만으로 페이지 완료",
+      "3지선다 반복",
+      "붙는 것/안 붙는 것 단순 두 상자 분류로 종료",
+      "N/S 단순 짝맞추기",
+      "그림 속 자석 위치 한 번 클릭하고 종료",
+      "최종 발명품을 그림만 그리고 종료",
+      "학습과 무관한 랜덤 폭탄·점수 중심 보상"
+    ]
+  },
+  "stage_map": [
+    {
+      "stage": 1,
+      "name": "생활 자석 조사국",
+      "pages": [
+        1,
+        2
+      ]
+    },
+    {
+      "stage": 2,
+      "name": "힘 실험 연구소",
+      "pages": [
+        3,
+        4
+      ]
+    },
+    {
+      "stage": 3,
+      "name": "극성 복원 센터",
+      "pages": [
+        5,
+        6
+      ]
+    },
+    {
+      "stage": 4,
+      "name": "원격 제어 구역",
+      "pages": [
+        7,
+        8
+      ]
+    },
+    {
+      "stage": 5,
+      "name": "시민 발명 공방",
+      "pages": [
+        9,
+        10
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "stage": 1,
+      "id": "screen-01-dissection",
+      "title": "도시 물건 해부실",
+      "runtime": "Three.js 3D + DOM",
+      "standards": [
+        "4과09-01",
+        "4과09-03"
+      ],
+      "purpose": "생활 속 장치의 안/밖과 마주 보는 면을 직접 회전해 자석 위치와 기능의 관계를 조사한다.",
+      "user_mission": "도시 생활 장치 2개 이상을 작동시키고, 내부를 조사해 자석이 있어야 할 위치를 추론하라.",
+      "interactions": [
+        "1손가락 회전",
+        "핀치 확대/축소",
+        "열기/닫기",
+        "내부 반투명 보기",
+        "자석 위치 마커 드래그",
+        "원래 보기"
+      ],
+      "flow": [
+        "물건 선택",
+        "사용 동작 실행",
+        "3D 회전·확대",
+        "내부 보기",
+        "자석 위치 예상 마커 배치",
+        "장치 재작동으로 위치 관계 확인",
+        "기능-위치 근거 카드 저장"
+      ],
+      "completion": "서로 다른 장치 2개 이상에서 사용 동작, 위치 추론, 근거 확인을 완료한다.",
+      "adaptive_feedback": "마커가 반복해서 엉뚱한 곳에 놓이면 '닫힐 때 서로 가까워지는 두 면을 먼저 살펴보자'처럼 관계를 관찰하게 한다.",
+      "visual_direction": "밝은 자석 기술 도시의 정비 작업대. 한 번에 물건 1개만 크게 보여 주고 주변은 정돈된 연구실. 자석은 N/S 문자와 색을 병행한다.",
+      "implementation_prompt": "Three.js 고정 작업대형 3D 페이지를 구현한다. 자석 책갈피, 스마트기기 덮개, 자석식 보관함, 자석 홀더 중 세션에서 3개를 제시하고 학생이 최소 2개를 조사하게 한다. 물건은 회전·확대할 수 있고 열기/닫기 같은 사용 애니메이션이 있어야 한다. 내부 보기는 외피 투명화 또는 모델 variant로 처리한다. 학생은 자석이 있다고 예상하는 마주 보는 두 면에 마커를 드래그한다. 단순 hotspot 정답 클릭으로 끝내지 말고 사용 동작과 면 관계를 먼저 관찰해야 제출 가능하게 한다. 모든 한글 라벨은 DOM overlay로 구현한다. pan은 끄고 카메라 범위를 제한한다."
+    },
+    {
+      "page": 2,
+      "stage": 1,
+      "id": "screen-02-onoff",
+      "title": "자석 ON/OFF 비교실",
+      "runtime": "Phaser 2.5D + DOM",
+      "standards": [
+        "4과09-01",
+        "4과09-03"
+      ],
+      "purpose": "같은 장치를 자석이 있을 때와 없을 때 각각 작동시켜 자석이 주는 편리함을 원인-결과로 연결한다.",
+      "user_mission": "Page 1에서 조사한 장치를 두 상태로 직접 작동시키고 무엇이 달라지는지 복구 리포트를 완성하라.",
+      "interactions": [
+        "ON/OFF 상태 전환",
+        "장치 작동 드래그",
+        "전후 비교",
+        "원인-결과 카드 연결"
+      ],
+      "flow": [
+        "ON 상태 작동",
+        "OFF 상태 작동",
+        "차이 관찰",
+        "효과 카드 선택",
+        "자석 역할과 편리한 점 연결"
+      ],
+      "completion": "두 상태를 모두 실행하고 기능 변화에 대한 근거를 연결한다.",
+      "adaptive_feedback": "한 상태만 보고 답하려 하면 제출을 잠그고 두 상태를 모두 시험하게 한다.",
+      "visual_direction": "같은 장치의 전후 변화를 크게 보여 주는 정비 패널. 장치 동작이 UI보다 중심이 되게 한다.",
+      "implementation_prompt": "Page 1의 조사 데이터를 읽어 동일 장치의 magnet_on/magnet_off 두 상태를 비교하게 한다. 두 상태에서 학생이 직접 열기·닫기·붙이기 같은 동작을 실행해야 한다. 두 상태를 모두 작동한 뒤에만 원인-결과 카드가 활성화되게 한다. 자석의 역할을 정답 문장으로 먼저 주지 않는다. Phaser는 장치 애니메이션, DOM은 카드와 리포트를 담당한다."
+    },
+    {
+      "page": 3,
+      "stage": 2,
+      "id": "screen-03-material",
+      "title": "재료 반응 실험대",
+      "runtime": "Phaser 2D",
+      "standards": [
+        "4과09-01"
+      ],
+      "purpose": "여러 물체에 자석을 직접 가까이하여 자석에 붙는 물체와 붙지 않는 물체의 특징을 관찰한다.",
+      "user_mission": "서로 다른 재료 6개 이상을 직접 시험하고 관찰 기록에서 공통점을 찾아라.",
+      "interactions": [
+        "물체 선택",
+        "예측",
+        "자석 자유 드래그",
+        "접근 거리 조절",
+        "관찰 노트 자동 기록"
+      ],
+      "flow": [
+        "물체 선택",
+        "붙을지 예상",
+        "자석 가까이하기",
+        "움직임 관찰",
+        "기록 누적",
+        "공통점 추론"
+      ],
+      "completion": "최소 6개 물체를 시험하며 철 물체 2개, 비자성 물체 2개, 알루미늄 등 금속처럼 보이지만 붙지 않는 예시 1개 이상을 포함한다.",
+      "adaptive_feedback": "금속처럼 보이는 물체를 모두 '붙는다'고 예상하면 알루미늄 예시를 다음 실험에 우선 배치한다.",
+      "visual_direction": "컨베이어보다 실제 실험대 느낌. 중앙 물체, 하단 자석, 우측 관찰 노트. 성공/실패 폭발 연출보다 작은 움직임 변화에 집중한다.",
+      "implementation_prompt": "Phaser 2D 실험대를 구현한다. 철 클립, 철못, 철제 뚜껑, 알루미늄 물체, 플라스틱, 나무, 고무, 유리 중 세션에 6~8개를 구성한다. 물체마다 materialId와 magnetic boolean을 가진다. 자석을 물체 가까이 직접 드래그해야 반응을 볼 수 있다. magnetic=true이면 흔들림 후 자석 쪽으로 이동하고 false이면 과장된 오답 효과 없이 움직이지 않는다. 예측은 점수 감점이 아니라 학습 기록으로만 저장한다."
+    },
+    {
+      "page": 4,
+      "stage": 2,
+      "id": "screen-04-distance",
+      "title": "거리와 힘 실험대",
+      "runtime": "Phaser 2D + DOM",
+      "standards": [
+        "4과09-01"
+      ],
+      "purpose": "자석과 철 물체가 조금 떨어져 있거나 사이에 얇은 비자성 판이 있어도 상호작용이 나타나는 상황을 비교한다.",
+      "user_mission": "같은 철 물체를 조건만 바꾸어 반복 시험하고 직접 닿지 않아도 힘이 작용할 수 있다는 증거를 찾아라.",
+      "interactions": [
+        "거리 레일 드래그",
+        "종이/얇은 판 삽입",
+        "예상",
+        "반복 실험",
+        "결과 비교"
+      ],
+      "flow": [
+        "기본 상태 시험",
+        "거리 조건 변경",
+        "얇은 판 삽입",
+        "재시험",
+        "예상-결과 비교",
+        "원격 이동 적용 미션"
+      ],
+      "completion": "서로 다른 거리 조건 2개 이상과 얇은 판 조건 1개 이상을 직접 시험한 뒤 적용 미션을 완료한다.",
+      "adaptive_feedback": "판을 넣으면 무조건 힘이 없어질 것으로 반복 예측하면 같은 거리를 유지한 채 판 유무만 바꾸어 비교하게 한다.",
+      "visual_direction": "가로 레일형 실험대. 수치 cm 대신 가까움/조금 떨어짐/멀리 구간. 판은 가운데 슬롯에 삽입한다.",
+      "implementation_prompt": "거리와 힘을 정밀 수치 법칙처럼 가르치지 않는 정성적 실험 페이지를 만든다. 거리 레일은 near/slightly_apart/far 3밴드로 구현하고 숫자 cm를 쓰지 않는다. 학생이 자석을 이동하고 paper/thin_plastic/thin_glass 중 하나를 슬롯에 넣어 같은 철 물체 반응을 비교한다. 얇은 판이 자석 힘을 단순 차단하는 스위치가 되지 않도록 MagnetRuleEngine을 사용한다. 마지막에는 얇은 칸막이 밖에서 철제 샘플을 옮기는 짧은 적용 미션을 넣는다."
+    },
+    {
+      "page": 5,
+      "stage": 3,
+      "id": "screen-05-poles",
+      "title": "극 추리 실험실",
+      "runtime": "Phaser 2.5D",
+      "standards": [
+        "4과09-02"
+      ],
+      "purpose": "끌어당김과 밀어냄 결과를 근거로 표시가 없는 자석의 N극/S극을 추론한다.",
+      "user_mission": "기준 자석을 이용해 미지 자석 4개의 극을 판별하라. 적은 실험으로 해결하면 보너스를 받는다.",
+      "interactions": [
+        "기준 자석 드래그",
+        "180도 회전",
+        "미지 자석 끝 선택",
+        "실험 기록",
+        "N/S 라벨 배치"
+      ],
+      "flow": [
+        "기준 극 선택",
+        "미지 자석 끝에 접근",
+        "끌림/밀림 관찰",
+        "기록 확인",
+        "극 추론",
+        "라벨 제출"
+      ],
+      "completion": "미지 자석 4개를 모두 판별한다. 실험 횟수는 실패 조건이 아니며 효율 보너스에만 사용한다.",
+      "adaptive_feedback": "색상만 보고 라벨을 배치하려 하면 미지 자석 외관을 중립색으로 유지하고 실제 실험 없이는 제출할 수 없게 한다.",
+      "visual_direction": "도시 극성 복원 콘솔. 왼쪽 기준 자석, 중앙 실험 구역, 오른쪽 실험 기록판.",
+      "implementation_prompt": "미지 자석 4개와 N/S가 명확한 기준 자석 1개를 제공한다. 미지 자석은 중립 외관으로 만들어 색상만으로 극을 알 수 없게 한다. 학생은 기준 자석을 180도 뒤집은 뒤 미지 자석의 한쪽 끝에 접근해 attract/repel을 관찰한다. 실험 결과는 자동 기록하지만 정답 극은 즉시 공개하지 않는다. 마지막에 N/S 라벨을 양끝에 배치해 제출한다. 기본 허용 실험은 8회, 6회 이하 완료는 보너스일 뿐 초과해도 계속 진행한다."
+    },
+    {
+      "page": 6,
+      "stage": 3,
+      "id": "screen-06-rings",
+      "title": "부유 고리 발전기",
+      "runtime": "Three.js 3D + DOM",
+      "standards": [
+        "4과09-02"
+      ],
+      "purpose": "고리자석의 위아래 극을 뒤집어 배열하며 같은 극/다른 극에서 나타나는 현상을 공간적으로 구성한다.",
+      "user_mission": "고리자석을 직접 뒤집어 발전기 봉에 끼우고 목표 부유 구조를 완성하라.",
+      "interactions": [
+        "3D 고리 집기",
+        "180도 뒤집기",
+        "봉 슬롯 삽입",
+        "제한 카메라 회전",
+        "배열 재구성"
+      ],
+      "flow": [
+        "고리 선택",
+        "극 방향 확인",
+        "뒤집기",
+        "봉에 삽입",
+        "붙음/부유 관찰",
+        "목표 조건까지 수정"
+      ],
+      "completion": "목표 구조 2개를 완성하고 최소 한 번 같은 극과 다른 극 결과를 모두 관찰한다.",
+      "adaptive_feedback": "연속해서 붙기만 하면 마주 보는 두 면의 극을 비교하도록 해당 면을 잠깐 확대한다.",
+      "visual_direction": "도시 발전소 중앙의 세로 봉과 4~5개 고리. 배경은 간결한 3D 발전실, 카메라는 3/4 고정에 가깝게.",
+      "implementation_prompt": "Three.js로 고리자석 발전기 페이지를 구현한다. 고리 4~5개를 들어 올리고 180도 flip한 뒤 세로 rod의 정해진 slot에 snap하게 한다. 인접한 고리의 마주 보는 극이 같으면 일정 간격으로 떠 있는 상태, 다르면 접촉 상태가 되도록 규칙 기반 애니메이션을 사용한다. 실제 rigid-body 자기력 시뮬레이션이나 정밀 부상 높이 계산은 하지 않는다. ring orientation과 slotIndex를 상태로 저장한다."
+    },
+    {
+      "page": 7,
+      "stage": 4,
+      "id": "screen-07-aqua",
+      "title": "아쿠아 청소 구조실",
+      "runtime": "Phaser 2.5D",
+      "standards": [
+        "4과09-01",
+        "4과09-02"
+      ],
+      "purpose": "벽을 사이에 둔 두 자석의 끌어당김을 이용해 안쪽 청소 패드를 직접 만지지 않고 움직인다.",
+      "user_mission": "수조 바깥 자석만 움직여 안쪽 얼룩의 90% 이상을 지워라.",
+      "interactions": [
+        "외부 자석 드래그",
+        "경로 문지르기",
+        "연결 유지",
+        "연결 끊김 후 재접근",
+        "결과 리포트"
+      ],
+      "flow": [
+        "자석 연결",
+        "청소 경로 계획",
+        "드래그 청소",
+        "필요 시 재연결",
+        "청소율 확인"
+      ],
+      "completion": "청소율 90% 이상. 분리 횟수는 감점이 아니라 관찰 데이터로 기록한다.",
+      "adaptive_feedback": "연결이 자주 끊기면 손가락 이동 속도와 외부/내부 자석 사이 위치 차이를 시각적으로 보여 준다.",
+      "visual_direction": "투명 수조 벽을 중심으로 앞쪽 조종 자석과 뒤쪽 청소 패드가 동시에 보이는 정면/측면 혼합 표현.",
+      "implementation_prompt": "Phaser에서 외부 자석과 내부 청소 패드의 두 레이어를 구현한다. 학생은 외부 자석만 직접 드래그할 수 있다. 내부 패드는 coupling 상태일 때 외부 자석을 따라온다. 청소는 stain mask를 offscreen canvas로 관리하고 패드가 지나간 영역만 실제로 지워진다. 너무 멀어지거나 지나치게 급하게 움직이면 couplingScore가 낮아져 연결이 끊길 수 있으나 이 값을 실제 자력 수치로 표시하지 않는다. 결과는 cleanCoverage, separationCount, pathLength를 저장한다."
+    },
+    {
+      "page": 8,
+      "stage": 4,
+      "id": "screen-08-cart",
+      "title": "무접촉 카트 제어실",
+      "runtime": "Phaser Isometric 2.5D",
+      "standards": [
+        "4과09-01",
+        "4과09-02"
+      ],
+      "purpose": "상황에 따라 자석의 밀어냄과 끌어당김을 선택해 카트와 장애물을 직접 만지지 않고 이동한다.",
+      "user_mission": "카트를 건드리지 않고 3개의 짧은 구간을 통과시켜 목표 패드까지 보내라.",
+      "interactions": [
+        "조종 자석 위치 드래그",
+        "극 뒤집기",
+        "앞/뒤/옆 배치",
+        "철제 장애물 이동",
+        "되돌리기"
+      ],
+      "flow": [
+        "경로 관찰",
+        "밀기/끌기 전략 선택",
+        "자석 배치",
+        "카트 이동",
+        "장애물 해결",
+        "다음 구간"
+      ],
+      "completion": "3구간 완료. 마지막 구간은 장애물 선행 제거와 카트 이동의 2단계 이상 계획을 요구한다.",
+      "adaptive_feedback": "같은 실패를 반복하면 정답 경로 전체가 아니라 카트 주변 자석 배치 가능 위치만 강조한다.",
+      "visual_direction": "밝은 아이소메트릭 자석 교통 시험장. 카트와 자석의 극 표시는 크고 명확하며 N/S 문자를 포함한다.",
+      "implementation_prompt": "완전 3D 대신 Phaser 아이소메트릭 grid 퍼즐로 구현한다. 카트는 직접 터치할 수 없고 주변 anchor에 조종 자석을 배치한다. 자석을 180도 flip해 같은 극이면 repel, 다른 극이면 attract 규칙으로 카트가 한 구간 이동한다. 철제 gate는 자석으로 먼저 옮길 수 있게 한다. 마지막 퍼즐은 장애물 제거→카트 위치 변경→다시 자석 이동처럼 최소 2~3단계 계획을 요구한다. 하나의 고정 클릭 순서만 허용하지 않는다."
+    },
+    {
+      "page": 9,
+      "stage": 5,
+      "id": "screen-09-design",
+      "title": "발명 설계실",
+      "runtime": "Three.js 3D + DOM",
+      "standards": [
+        "4과09-03"
+      ],
+      "purpose": "생활의 불편을 해결하기 위해 자석의 성질을 선택하고 제한된 부품으로 실제 작동 가능한 장치를 설계한다.",
+      "user_mission": "문제 카드 하나를 골라 부품과 자석을 배치하고 TEST 가능한 장치를 완성하라.",
+      "problem_cards": [
+        "자꾸 열리는 보관함을 안정적으로 닫기",
+        "철로 된 작은 도구를 쉽게 정리하기",
+        "손이 닿기 어려운 곳의 가벼운 철제 물체 옮기기",
+        "두 부분을 쉽게 붙였다 떼는 장치 만들기"
+      ],
+      "parts": [
+        "case",
+        "cover",
+        "handle",
+        "wheel",
+        "iron_plate",
+        "rod",
+        "sponge",
+        "string",
+        "magnet_module"
+      ],
+      "interactions": [
+        "문제 선택",
+        "3D 부품 드래그",
+        "스냅",
+        "90도 회전",
+        "자석 180도 뒤집기",
+        "undo/redo",
+        "근거 지정"
+      ],
+      "flow": [
+        "문제 선택",
+        "의도한 자석 작용 선택",
+        "부품 배치",
+        "자석 위치 결정",
+        "극 방향 결정",
+        "작동 근거 지정",
+        "TEST 준비"
+      ],
+      "completion": "기능 관계가 있는 자석을 최소 1개 포함하고 필요한 부품을 배치해 DesignValidation을 통과한다.",
+      "adaptive_feedback": "자석이 대상과 너무 멀거나 기능과 무관한 위치에 있으면 정답 위치를 알려주지 않고 '이 자석이 무엇을 움직여야 하지?'라고 되묻는다.",
+      "visual_direction": "도시 시민 발명 공방의 3D 작업대. 좌측 부품 트레이, 중앙 조립대, 우측 문제/근거 패널. 최대 8개 부품.",
+      "implementation_prompt": "Three.js 기반 제한형 3D 조립 작업대를 구현한다. 완전 자유 CAD가 아니라 anchor/snap 방식으로 한다. 문제 카드는 보관함 닫기, 철제 소품 정리, 손이 닿기 어려운 철 물체 옮기기, 쉽게 붙였다 떼는 장치 중 하나를 선택하게 한다. 부품은 case, cover, handle, wheel, iron_plate, rod, sponge, string, magnet_module에서 최대 8개. 자유 스케일은 금지하고 90도 회전, 자석 180도 flip만 제공한다. 배치 데이터는 position/rotation/anchorId로 저장하고 Page 10에서 동일하게 재구성할 수 있어야 한다."
+    },
+    {
+      "page": 10,
+      "stage": 5,
+      "id": "screen-10-test",
+      "title": "작동 시험실",
+      "runtime": "Three.js 3D + DOM",
+      "standards": [
+        "4과09-03",
+        "4과09-01",
+        "4과09-02"
+      ],
+      "purpose": "Page 9의 장치를 같은 3D 배치로 불러와 작동을 시험하고 결과 근거를 확인하거나 수정한다.",
+      "user_mission": "TEST를 실행해 장치가 문제를 해결하는지 확인하고, 성공 근거를 표시하거나 필요한 부분을 수정해 다시 시험하라.",
+      "interactions": [
+        "TEST 실행",
+        "작동 애니메이션 관찰",
+        "힘 관계 hotspot 표시",
+        "실패 지점 확인",
+        "설계실 복귀",
+        "재시험",
+        "최종 카드 생성"
+      ],
+      "flow": [
+        "설계 불러오기",
+        "TEST",
+        "결과 관찰",
+        "성공이면 근거 표시",
+        "실패면 수정 포인트 탐색",
+        "필요 시 Page 9 복귀",
+        "재시험",
+        "최종 설계 카드"
+      ],
+      "completion": "통과한 테스트 1회 이상과 성공 근거 1개 이상. 첫 시험 성공도 허용한다.",
+      "adaptive_feedback": "실패 시 정답 자석 위치를 공개하지 않고 작동하지 않은 관계만 보여 준다. 두 번 이상 같은 실패면 관련 부품만 강조한다.",
+      "visual_direction": "깨끗한 3D 시험 챔버. 학생이 만든 장치가 주인공이며 과도한 성공 이펙트를 피한다. 최종 성공 시 도시 코어 복구 연출.",
+      "implementation_prompt": "Page 9의 DeviceDesign JSON을 그대로 읽어 동일 transform으로 3D 장치를 재구성한다. 문제 카드별 ProductTestRule을 적용해 자석-철 대상 거리, 마주 보는 극 관계, 필요한 anchor 존재 여부를 검사한다. 정밀 물리 대신 규칙 기반 tween/animation으로 작동 결과를 보여준다. pass/fail 외에 check별 observationKo를 제공한다. 실패하면 어느 기능 관계가 만족되지 않았는지만 알려주고 정답 배치를 공개하지 않는다. Page 9로 돌아가 수정한 뒤 revisionIndex를 올려 재시험할 수 있다. 첫 시험 성공은 허용하며 이 경우 힘이 작용한 위치/관계를 학생이 표시해야 최종 제출된다."
+    }
+  ],
+  "technical_contracts": {
+    "stack": [
+      "Vite",
+      "TypeScript",
+      "Three.js",
+      "Phaser 3",
+      "HTML/CSS/SVG",
+      "IndexedDB",
+      "Web Audio API",
+      "PWA/Service Worker"
+    ],
+    "performance": {
+      "target_fps_low_end": 30,
+      "pixel_ratio_cap": {
+        "low": 1.0,
+        "medium": 1.25,
+        "high": 1.5
+      },
+      "triangle_budget_low": {
+        "page_01": 80000,
+        "page_06": 60000,
+        "page_09_10": 150000
+      },
+      "lazy_load": true,
+      "precache_all_3d_assets": false
+    },
+    "magnet_rule_engine": {
+      "interaction_types": [
+        "attract",
+        "repel",
+        "none"
+      ],
+      "distance_bands": [
+        "near",
+        "slightly_apart",
+        "far"
+      ],
+      "barriers": [
+        "none",
+        "paper",
+        "thin_plastic",
+        "thin_glass"
+      ],
+      "student_visible_force_numbers": false
+    },
+    "misconception_flags": [
+      "ALL_METAL_MAGNETIC",
+      "SAME_POLES_ATTRACT",
+      "DIFFERENT_POLES_REPEL",
+      "COLOR_ONLY_POLE_GUESS",
+      "MAGNET_TOO_FAR_FROM_TARGET",
+      "DESIGN_NO_FUNCTIONAL_RELATION"
+    ],
+    "mission_result_metrics": [
+      "investigatedDevices",
+      "materialExperiments",
+      "poleTests",
+      "poleEfficiencyBonus",
+      "aquaSeparationCount",
+      "cartPuzzleRetries",
+      "designTestCount",
+      "designRevisionCount",
+      "hintCount"
+    ]
+  }
+}
