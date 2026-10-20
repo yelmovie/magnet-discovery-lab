@@ -30,7 +30,9 @@ export async function load(): Promise<Save> {
       migrationNotice = '이전 탐험 기록을 보존했어. 진행 중 실험은 남은 관찰부터 이어가면 돼.';
       return migrated;
     }
-    return raw;
+    // Normalize optional v2 preferences in memory too; a v2 save may predate
+    // independent music/effect controls. Persistence still uses its revision.
+    return migrateSave(raw)!;
   } catch { persistenceError = '이 환경에서는 진행이 저장되지 않아. 현재 창에서 계속 플레이할 수 있어.'; return freshSave(); }
 }
 export function persist(s: Save): Promise<void> {

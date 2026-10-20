@@ -1,9 +1,7 @@
-# 다음 작업 인계
+# 자석도시 인계 · 2026-10-21
 
-- 목표: 「밀고 당기는 도시」 초4 자석 탐구 앱의 태블릿 개편 마무리.
-- 확정: 도시만 2.5D. 5구역·10활동, 질문 하나·큰 조작면·자동 그림 기록·서랍. 기본 학습과 선택 도전 분리.
-- 완료: 10월16일 설계를 실제 앱에 반영. v1 백업→v2 이전, 두 발명, 최종 한 구간/전체 선택 복구. 정상 경로 인증서 완주. 자동 검사37개·타입·빌드 통과. 3개 가로 크기×10활동, 세로·키보드·선택 배치 확인.
-- 다음: 실제 태블릿·전자칠판·학생·교실망·인쇄 검증. 자세한 상태는 docs/TABLET-IMPLEMENTATION-20261018.md.
-- 파일: main.ts 셸/흐름, tablet-activities.ts 활동, distance.ts·delivery.ts 조작, final-mission.ts 최종, trial-records.ts 기록, domain.ts·storage.ts 저장, tablet.css 화면.
-- 자료: docs/TABLET-EXPERIENCE-DESIGN-20261016.md 및 독립 시안. 원본 아트·제공 자료 보존, 작은 실행 캐릭터만 파생 생성.
-- 주의: localhost와127.0.0.1 저장 분리. 검증 주소는 복구100%. 관리자·재탐구는 원본 보존. Phaser 청크 경고 유지. npm run dev -- --port 5173.
+목표: 직접 조작·성취기준·캐릭터·보상·그림 중심으로 실제 앱 고도화 후 로컬 커밋.
+완료: v0.2.0. 새 길 지도/10활동/5도구/광장 설계도 장착·작동/설정·소리. 지도1·실내5·소품6 생성, 기존 로고 무손실 배포본. 이전 완료 증거 보존.
+검증: 55테스트·빌드 통과. 새 기록 완주→인증서, 다른 발명 재탐구, 새 철판 수리, 설정 확인. 4뷰포트 60컴포넌트 상태 검사. 첫 RAF 음수 경로 오류 수정·회귀 검사.
+파일: src/mission-play.ts, mission-model.ts, mission-content.ts, expedition.ts, restoration.ts, quest.css, game-settings.ts, game-audio.ts. 결과 docs/reviews/FINAL-CHECK-20261021.md, 그림 docs/ART-PROMPTS-20261021.md.
+주의: 원격 푸시·배포 안 함. localhost 기존 기록 초기화 금지. test-results는 격리 QA/캡처이며 Git 제외. 실제 학생·실기기·청취·30대 네트워크/오프라인 미측정. 이전 최종 선택 도전이 legacy 모듈을 사용하므로 임의 삭제 금지. 서버 종료 시 npm run dev -- --port 5173.

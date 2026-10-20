@@ -60,3 +60,13 @@ describe('atomic v1 migration', () => {
     expect(storage.persistenceError).toContain('원본은 보존'); await expect(storage.persist(next)).rejects.toThrow();
   });
 });
+
+describe('v2 preference compatibility', () => {
+  it('materializes independent sound defaults without rewriting the stored original on load', async () => {
+    const old=freshSave();delete old.settings.music;delete old.settings.effects;delete old.settings.musicVolume;
+    const data=databaseWith(old),storage=await import('../src/storage'),next=await storage.load();
+    expect(next.settings.music).toBe(true);expect(next.settings.effects).toBe(true);
+    next.settings.sound=next.settings.effects=false;
+    expect(next.settings.music).toBe(true);expect(data.get('main')).toEqual(old);
+  });
+});

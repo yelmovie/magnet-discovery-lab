@@ -13,3 +13,10 @@ for name in ('mili', 'dangi'):
         target = assets / f'{name}-poses-tablet.webp'
         image.save(target, format='WEBP', lossless=True, method=6)
         print(target.name, target.stat().st_size)
+
+# Keep the supplied Korean lettering exactly; encode a lossless runtime copy.
+logo = assets.parent / 'logo.png'
+target_logo = assets.parent / 'quest' / 'logo.webp'
+with Image.open(logo) as original:
+    original.save(target_logo, format='WEBP', lossless=True, method=6)
+    print(target_logo.name, target_logo.stat().st_size)

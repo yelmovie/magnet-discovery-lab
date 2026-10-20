@@ -1,0 +1,155 @@
+[
+  {
+    "file": "city-expedition.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 552462,
+    "alpha": false,
+    "sha256": "ad152b30a6758f6ed8cecdc2ef28cd9a17447e7f33b6a51b9b5b7347163d59e9"
+  },
+  {
+    "file": "prop-aquarium.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 56278,
+    "alpha": true,
+    "sha256": "1fa7c77e7161518ba898475ba5872d8f4b34ab516890152ac19a8c14a0a82ee8",
+    "alphaZeroFraction": 0.5783,
+    "nontrivialAlphaBBox": [
+      58,
+      86,
+      465,
+      390
+    ]
+  },
+  {
+    "file": "prop-book.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 28362,
+    "alpha": true,
+    "sha256": "d79831a473847bbac8ea4207f2e3a73d5f99647d0ead0b798c045792e3bb08a2",
+    "alphaZeroFraction": 0.7042,
+    "nontrivialAlphaBBox": [
+      64,
+      137,
+      479,
+      402
+    ]
+  },
+  {
+    "file": "prop-cart.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 42736,
+    "alpha": true,
+    "sha256": "4e71d7281396f9c316576005f9e10e30141bb76c333a0aa45407ba2c2733c1f2",
+    "alphaZeroFraction": 0.6731,
+    "nontrivialAlphaBBox": [
+      53,
+      43,
+      489,
+      394
+    ]
+  },
+  {
+    "file": "prop-parcel.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 41208,
+    "alpha": true,
+    "sha256": "37c040c883eff3e15e6becece1c933265f5541610ddaaa2dd170ee1e093818a2",
+    "alphaZeroFraction": 0.6207,
+    "nontrivialAlphaBBox": [
+      67,
+      82,
+      458,
+      393
+    ]
+  },
+  {
+    "file": "prop-postal-box.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 33444,
+    "alpha": true,
+    "sha256": "7f6c3d8984eed64ba41cf54d1a6cd3b79e00c861045cc53d4de92456f2999f24",
+    "alphaZeroFraction": 0.6784,
+    "nontrivialAlphaBBox": [
+      52,
+      135,
+      465,
+      408
+    ]
+  },
+  {
+    "file": "prop-postal-lid.webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 28694,
+    "alpha": true,
+    "sha256": "d2c5eb57dc346be78e13c59143899e01d7a14dc54625da337c7918d4a70f61d0",
+    "alphaZeroFraction": 0.7434,
+    "nontrivialAlphaBBox": [
+      48,
+      173,
+      478,
+      399
+    ]
+  },
+  {
+    "file": "props-sheet.webp",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 228236,
+    "alpha": true,
+    "sha256": "30c2127d69587199384b1f83616592fdcfe3ae21819d10cc6856c3201b87355f",
+    "alphaZeroFraction": 0.6664,
+    "nontrivialAlphaBBox": [
+      52,
+      135,
+      1503,
+      906
+    ]
+  },
+  {
+    "file": "stage-life.webp",
+    "width": 1672,
+    "height": 940,
+    "bytes": 230196,
+    "alpha": false,
+    "sha256": "1d8ed4533bd9ebe02401e3c251b3e1dff029925994e8812631ba4351fd4f7bd8"
+  },
+  {
+    "file": "stage-material.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 262006,
+    "alpha": false,
+    "sha256": "46bf1ba5fa82f7298944c6dea3ce0ffa189a84a100f341a2d34b4e69ec5c01b6"
+  },
+  {
+    "file": "stage-poles.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 266316,
+    "alpha": false,
+    "sha256": "65d62bbce6991b1233c9ab039193c64051963d647aae870ca6d0ce449d0cd2cf"
+  },
+  {
+    "file": "stage-remote.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 246978,
+    "alpha": false,
+    "sha256": "3965dbe1e20b8bcfcf8fd0c62580db90f26f67b0b310c40bca148ce2dcec4d69"
+  },
+  {
+    "file": "stage-workshop.webp",
+    "width": 1672,
+    "height": 941,
+    "bytes": 271730,
+    "alpha": false,
+    "sha256": "14675347e6f540a5440ccd8aeef9bf42413984eb0373bbf5acfd4c5ac5cab417"
+  }
+]

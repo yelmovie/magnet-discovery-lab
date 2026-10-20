@@ -1,0 +1,633 @@
+/* Magnet Quest: illustrated worlds, exact learning graphics and a small DOM HUD. */
+@font-face {
+  font-family: 'Magnet Quest Display'; font-style: normal; font-weight: 400;
+  font-display: swap; src: url('/fonts/quest-display-ko.woff2') format('woff2');
+  unicode-range: U+AC00-D7A3, U+1100-11FF, U+3130-318F, U+A960-A97F, U+D7B0-D7FF, U+3000-303F, U+FF00-FFEF;
+}
+@font-face {
+  font-family: 'Magnet Quest Display'; font-style: normal; font-weight: 400;
+  font-display: swap; src: url('/fonts/quest-display-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-21FF, U+2300-25FF, U+2600-26FF, U+2700-27BF;
+}
+@font-face {
+  font-family: 'Magnet Quest Sans'; font-style: normal; font-weight: 400;
+  font-display: swap; src: url('/fonts/quest-body-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Magnet Quest Sans'; font-style: normal; font-weight: 700 900;
+  font-display: swap; src: url('/fonts/quest-body-bold.woff2') format('woff2');
+}
+
+:root {
+  /* Primitive values: sampled from the city, the two magnets and their tools. */
+  --quest-cream: #fff8e7;
+  --quest-paper: #fffdf5;
+  --quest-deep-teal: #173f47;
+  --quest-teal: #246c70;
+  --quest-teal-soft: #d9eeea;
+  --quest-gold: #f4c35c;
+  --quest-gold-light: #ffe7a2;
+  --quest-gold-edge: #a9712f;
+  --quest-magnet-red: #d94c43;
+  --quest-magnet-blue: #2875b7;
+  --quest-green: #296545;
+  --quest-green-soft: #e6f2ce;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --radius-12: 12px;
+  --radius-20: 20px;
+  --radius-28: 28px;
+  /* Semantic values. */
+  --color-bg: var(--quest-deep-teal);
+  --color-surface: var(--quest-paper);
+  --color-surface-glass: #fff8e7ed;
+  --color-panel: var(--quest-cream);
+  --color-primary: var(--quest-teal);
+  --color-primary-soft: var(--quest-teal-soft);
+  --color-secondary: var(--quest-magnet-blue);
+  --color-accent: var(--quest-gold);
+  --color-text-main: var(--quest-deep-teal);
+  --color-text-sub: #43636a;
+  --color-border-soft: #a7b9ab;
+  --color-correct: var(--quest-green);
+  --color-wrong: #a64037;
+  --font-display: 'Magnet Quest Display', 'Magnet Quest Sans', sans-serif;
+  --font-body: 'Magnet Quest Sans', 'Malgun Gothic', sans-serif;
+  --font-size-caption: clamp(16px, 1.3vw, 20px);
+  --font-size-body: clamp(20px, 1.65vw, 25px);
+  --font-size-button: clamp(20px, 1.8vw, 28px);
+  --font-size-question: clamp(27px, 2.6vw, 42px);
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --space-xs: var(--space-4);
+  --space-sm: var(--space-8);
+  --space-md: var(--space-16);
+  --space-lg: var(--space-24);
+  --space-xl: var(--space-32);
+  --space-2xl: var(--space-48);
+  --radius-sm: var(--radius-12);
+  --radius-md: var(--radius-20);
+  --radius-lg: var(--radius-28);
+  --shadow-soft: 0 4px 10px #173f4726;
+  --shadow-card: 0 5px 0 #173f4733;
+  --shadow-button: 0 5px 0 var(--quest-gold-edge), 0 8px 12px #173f4726;
+  --shadow-popover: 0 10px 0 #173f4733, 0 20px 48px #082f3b40;
+  /* Component values. HUD and question never subtract height from the world. */
+  --button-height-md: 48px;
+  --button-height-lg: 60px;
+  --button-gap: var(--space-md);
+  --hud-icon-size: 54px;
+  --hud-inset: var(--space-md);
+  --hud-top: 84px;
+  --question-max-width: 900px;
+  --companion-size: 116px;
+  --content-max-width: 1280px;
+  --modal-max-width: 820px;
+  --layer-world: 1;
+  --layer-props: 3;
+  --layer-labels: 5;
+  --layer-question: 10;
+  --layer-controls: 15;
+  --layer-hud: 20;
+  --layer-speech: 25;
+  --layer-modal: 40;
+}
+
+body.quest-mode {
+  margin: 0; overflow: hidden; background: var(--color-bg);
+  color: var(--color-text-main); font-family: var(--font-body);
+  font-size: var(--font-size-body); font-synthesis: none;
+}
+body.quest-mode *, body.quest-mode *::before, body.quest-mode *::after { box-sizing: border-box; }
+body.quest-mode button, body.quest-mode input, body.quest-mode select { font: inherit; }
+body.quest-mode :is(h1, h2, h3, h4, p, li, button, summary, label) { word-break: keep-all; overflow-wrap: break-word; }
+body.quest-mode button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body.quest-mode :is(button, input, select, summary):focus-visible {
+  outline: 4px solid var(--quest-magnet-blue); outline-offset: 4px;
+}
+body.quest-mode [hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip-path: inset(50%); white-space: nowrap; border: 0 !important; }
+body.quest-mode #app {
+  position: relative; width: 100%; height: 100dvh; min-height: 0;
+  overflow: hidden; isolation: isolate; color: var(--color-text-main);
+}
+body.quest-mode #app > .site-header, body.quest-mode #app > .site-footer { display: none; }
+body.quest-mode #app > main.page {
+  position: relative; width: 100%; max-width: none; height: 100dvh;
+  min-height: 0; margin: 0; padding: 0; overflow: hidden;
+}
+body.quest-mode #app .page-title { padding: 0; }
+body.quest-mode #app .sprite-mascot {
+  display: inline-block; width: var(--size); height: calc(var(--size) * 1.33333);
+  flex-shrink: 0; background-size: 400% 100%;
+  background-position: calc(var(--pose) * 100% / 3) 50%;
+  background-repeat: no-repeat; vertical-align: middle;
+  filter: drop-shadow(0 5px 2px #173f4729);
+}
+
+/* No background strip: only the four individual controls receive pointer input. */
+#app .quest-hud {
+  position: absolute; inset: var(--hud-inset) var(--hud-inset) auto;
+  z-index: var(--layer-hud); display: flex; justify-content: space-between;
+  align-items: flex-start; pointer-events: none; height: var(--hud-icon-size);
+  background: none; border: 0; box-shadow: none; padding: 0;
+}
+#app .quest-hud-left, #app .quest-hud-right { display: flex; gap: var(--space-sm); pointer-events: none; }
+#app .quest-icon {
+  display: inline-grid; place-items: center; width: var(--hud-icon-size);
+  height: var(--hud-icon-size); min-width: var(--button-height-md); min-height: var(--button-height-md);
+  padding: var(--space-sm); border: 2px solid #6c7960; border-radius: 17px;
+  background: linear-gradient(var(--quest-paper), var(--quest-cream));
+  color: var(--color-text-main); box-shadow: 0 4px 0 #6c7960, inset 0 2px 0 #fff;
+  pointer-events: auto; cursor: pointer; transition: translate .12s, filter .12s, box-shadow .12s;
+}
+#app .quest-icon:hover { filter: brightness(1.04); translate: 0 -1px; }
+#app .quest-icon:active { translate: 0 3px; box-shadow: 0 1px 0 #6c7960; }
+#app .quest-icon:disabled { opacity: .55; filter: saturate(.35); cursor: default; }
+#app .quest-icon svg { width: 27px; height: 27px; stroke-width: 2; }
+
+#app .quest-cta, #app .mission-cta, #app .expedition-next {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-md);
+  min-height: var(--button-height-lg); padding: var(--space-md) var(--space-xl);
+  border: 2px solid var(--quest-gold-edge); border-radius: var(--radius-md);
+  background: linear-gradient(var(--quest-gold-light), var(--quest-gold));
+  color: #493a22; font: 400 var(--font-size-button)/var(--line-height-tight) var(--font-display);
+  text-align: center; white-space: nowrap; box-shadow: var(--shadow-button);
+  cursor: pointer; transition: translate .12s, filter .12s, box-shadow .12s;
+}
+#app :is(.quest-cta, .mission-cta, .expedition-next):hover { translate: 0 -2px; filter: brightness(1.035); }
+#app :is(.quest-cta, .mission-cta, .expedition-next):active { translate: 0 4px; box-shadow: 0 1px 0 var(--quest-gold-edge); }
+#app :is(.quest-cta, .mission-cta, .expedition-next):disabled,
+#app :is(.quest-cta, .mission-cta, .expedition-next)[aria-disabled='true'] {
+  background: #e7dfc7; border-color: #a99b7b; color: #6f684d;
+  box-shadow: 0 4px 0 #a99b7b; filter: saturate(.4); opacity: .8; cursor: default;
+}
+#app .quest-text-button {
+  min-height: var(--button-height-md); padding: var(--space-sm) var(--space-md);
+  border: 0; background: #fff8e7e8; color: var(--color-text-main);
+  border-radius: var(--radius-sm); font-size: var(--font-size-caption);
+}
+
+/* The character is the help affordance. Its balloon opens only when requested. */
+#app .quest-companion { position: relative; z-index: var(--layer-controls); width: max-content; }
+#app .quest-character {
+  position: relative; display: block; padding: 0; background: none;
+  border: 0; border-radius: var(--radius-md); cursor: pointer; line-height: 0;
+  min-width: var(--button-height-md); min-height: var(--button-height-md);
+  transform-origin: 50% 95%; transition: scale .15s;
+}
+#app .quest-character:hover { scale: 1.035; }
+#app .quest-character:active { scale: .97; }
+#app .quest-character .sprite-mascot { width: var(--companion-size); height: calc(var(--companion-size) * 1.33333); }
+#app .quest-talk-mark {
+  position: absolute; top: -12px; right: 2px; z-index: 1;
+  display: grid; place-items: center; width: 38px; height: 34px;
+  border: 2px solid #67775b; border-radius: 13px;
+  background: var(--quest-paper); color: var(--color-text-main);
+  font: 400 28px/1 var(--font-display); box-shadow: 0 3px 0 #67775b;
+}
+#app .quest-talk-mark::after {
+  content: ''; position: absolute; width: 10px; height: 10px;
+  right: 11px; bottom: -6px; background: var(--quest-paper);
+  border-bottom: 2px solid #67775b; border-right: 2px solid #67775b; rotate: 45deg;
+}
+#app .has-news .quest-talk-mark { background: var(--quest-gold-light); }
+#app .has-news .quest-talk-mark::after { background: var(--quest-gold-light); }
+#app .quest-speech {
+  position: absolute; left: calc(100% - 4px); bottom: 60%;
+  z-index: var(--layer-speech); width: min(350px, 56vw); margin: 0;
+  padding: var(--space-md) var(--space-lg); border: 2px solid #75836b;
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 4px;
+  background: var(--quest-paper); color: var(--color-text-main);
+  box-shadow: var(--shadow-card); font-size: var(--font-size-body); line-height: var(--line-height-normal);
+}
+#app .quest-speech strong { display: block; margin-bottom: var(--space-xs); color: var(--quest-teal); font-family: var(--font-display); font-weight: 400; }
+#app .quest-speech span { display: block; }
+#app .mission-companion { position: absolute; left: var(--space-md); bottom: var(--space-md); z-index: var(--layer-controls); }
+#app .mission-companion > .quest-companion { --companion-size: 104px; }
+
+/* Start: the illustrated city reaches every edge, including behind its controls. */
+#app .quest-title {
+  position: relative; width: 100%; height: 100%; min-height: 100dvh;
+  overflow: hidden; isolation: isolate;
+  background: url('/assets/quest/city-expedition.webp') center 52% / cover;
+}
+#app .quest-title::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(#173f4740, #fff4cf08 35%, #173f4700 60%, #0b35465c);
+}
+#app .quest-title-glow {
+  position: absolute; z-index: -1; inset: 4% 17% 20%;
+  background: radial-gradient(ellipse, #fffce4b8, #fffce454 40%, #fffce400 72%);
+  pointer-events: none;
+}
+#app .quest-title-brand {
+  position: absolute; left: 50%; top: 11%; translate: -50% 0;
+  width: min(65vw, 1050px); text-align: center;
+}
+#app .quest-title-logo {
+  display: block; width: 100%; height: auto; max-height: 56dvh; object-fit: contain;
+  filter: drop-shadow(0 8px 0 #163d4833) drop-shadow(0 6px 25px #fff9db9c);
+  animation: quest-title-arrive .45s ease-out both;
+}
+#app .quest-title-subtitle {
+  display: inline-block; max-width: 100%; margin: var(--space-md) 0 0;
+  padding: var(--space-sm) var(--space-lg); border: 2px solid #b8af87;
+  border-radius: 999px; background: #fff8e7f0; color: var(--quest-deep-teal);
+  font: 400 clamp(21px, 2.1vw, 32px)/1.35 var(--font-display); box-shadow: var(--shadow-card);
+}
+#app .quest-title-friend { position: absolute; bottom: 11%; z-index: var(--layer-labels); --companion-size: clamp(140px, 15vw, 240px); }
+#app .quest-title-friend-left { left: 7%; }
+#app .quest-title-friend-right { right: 7%; }
+#app .quest-title-friend .quest-character { animation: quest-character-idle 2.6s ease-in-out infinite; }
+#app .quest-title-friend-right .quest-character { animation-delay: -.8s; }
+#app .quest-title-friend-right .quest-speech { left: auto; right: calc(100% - 4px); border-radius: var(--radius-md) var(--radius-md) 4px var(--radius-md); }
+#app .quest-title-actions {
+  position: absolute; bottom: 11%; left: 50%; translate: -50% 0;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-md);
+  z-index: var(--layer-controls);
+}
+#app .quest-start { min-width: 260px; min-height: 72px; font-size: clamp(26px, 2.6vw, 38px); }
+
+/* Walking map: a large fixed world is moved by the camera, never squeezed to fit. */
+#app .expedition-viewport {
+  position: relative; width: 100%; height: 100%; min-height: 100dvh;
+  overflow: hidden; isolation: isolate; background: #325f63; touch-action: none;
+}
+#app .expedition-world {
+  position: absolute; left: 0; top: 0; width: 1600px; height: 900px;
+  background: url('/assets/quest/city-expedition.webp') center / 100% 100%;
+  transform-origin: 0 0; will-change: transform; isolation: isolate;
+}
+#app .expedition-world::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; box-shadow: inset 0 0 130px #123b452b; }
+#app .expedition-route { position: absolute; inset: 0; width: 100%; height: 100%; z-index: var(--layer-world); pointer-events: none; overflow: visible; }
+#app .expedition-route path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+#app .expedition-route .route-complete { stroke: #f4d37b; stroke-width: 7px; }
+#app .expedition-route .route-next { stroke: #fff2b8; stroke-width: 5px; stroke-dasharray: 4 18; }
+#app .expedition-building {
+  position: absolute; z-index: var(--layer-labels); translate: -50% -100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-xs); min-width: 120px; min-height: 54px; max-width: 240px;
+  padding: var(--space-sm) var(--space-md); border: 2px solid #6b7a60;
+  border-radius: 16px; background: var(--quest-cream); color: var(--quest-deep-teal);
+  box-shadow: 0 5px 0 #495e50, inset 0 2px 0 #fff; text-align: center;
+  font: 400 20px/1.2 var(--font-display); cursor: pointer;
+  transition: filter .15s, margin-top .15s, box-shadow .15s;
+}
+#app .expedition-building b { font: inherit; }
+#app .expedition-building small { font: 400 16px/1.2 var(--font-body); }
+#app .expedition-building:hover { filter: brightness(1.055); margin-top: -2px; }
+#app .expedition-building:active { margin-top: 4px; box-shadow: 0 1px 0 #495e50; }
+#app .expedition-building:is(.current, .is-current) {
+  border-color: #93672e; background: var(--quest-gold-light); color: #4d3d24;
+  box-shadow: 0 5px 0 #93672e, 0 0 0 5px #ffe8a14d;
+}
+#app .expedition-building:is(.locked, .is-locked) { background: #e8eddf; color: #536254; border-color: #87927d; }
+#app .expedition-building:is(.restored, .is-restored, .done) { background: var(--quest-green-soft); color: var(--quest-green); border-color: #638151; }
+#app .expedition-building:is(.restored, .is-restored, .done)::before { content: '✓'; position: absolute; top: -10px; right: -9px; display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: var(--quest-paper); background: var(--quest-green); border: 2px solid var(--quest-paper); font: 700 18px/1 var(--font-body); }
+#app .expedition-player, #app .expedition-npc {
+  position: absolute; z-index: 6; translate: -50% -100%; transform-origin: 50% 100%;
+  border: 0; padding: 0; background: transparent; line-height: 0;
+  filter: drop-shadow(0 5px 2px #173f4733); pointer-events: none;
+}
+#app .expedition-player .sprite-mascot, #app .expedition-npc .sprite-mascot { filter: none; }
+#app .expedition-npc { pointer-events: auto; cursor: pointer; }
+#app .expedition-npc .quest-talk-mark { top: -25px; right: 0; }
+#app .expedition-player.is-walking { animation: quest-map-walk .22s ease-in-out infinite alternate; }
+#app .expedition-next { position: absolute; z-index: var(--layer-controls); right: var(--space-lg); bottom: var(--space-lg); max-width: calc(100% - 220px); }
+#app .expedition-dpad {
+  position: absolute; z-index: var(--layer-controls); bottom: var(--space-md); left: var(--space-md);
+  display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(2, 52px); gap: var(--space-xs);
+}
+#app .expedition-dpad button {
+  display: grid; place-items: center; width: 52px; height: 52px; min-width: 48px; min-height: 48px;
+  border: 2px solid #6b7a60; border-radius: 15px; background: var(--quest-cream);
+  color: var(--quest-deep-teal); box-shadow: 0 4px 0 #495e50;
+  font: 400 30px/1 var(--font-display); touch-action: none; cursor: pointer;
+}
+#app .expedition-dpad button:first-child { grid-column: 2; }
+#app .expedition-dpad button:nth-child(2) { grid-column: 1; grid-row: 2; }
+#app .expedition-dpad button:nth-child(3) { grid-column: 2; grid-row: 2; }
+#app .expedition-dpad button:nth-child(4) { grid-column: 3; grid-row: 2; }
+#app .expedition-dpad button:active, #app .expedition-dpad button.is-pressed { translate: 0 3px; box-shadow: 0 1px 0 #495e50; background: var(--quest-gold-light); }
+
+/* Each activity is one large physical scene. The canvas and its hit areas agree. */
+#app .mission-world {
+  position: relative; width: 100%; height: 100%; min-height: 100dvh;
+  overflow: hidden; isolation: isolate; background-color: #d2e6df;
+  background-image: var(--mission-background, url('/assets/adventure/room.webp'));
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+}
+#app .mission-world::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(#fff8e724, transparent 30%, transparent 70%, #183f4733); }
+#app .mission-board {
+  position: absolute; inset: 0; z-index: var(--layer-world); width: 100%; height: 100%;
+  min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent;
+  overflow: hidden; isolation: isolate; touch-action: none;
+}
+#app .mission-board > canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+#app .mission-question {
+  position: absolute; z-index: var(--layer-question); top: var(--space-md); left: 50%; translate: -50% 0;
+  width: max-content; max-width: min(var(--question-max-width), calc(100% - 300px));
+  min-height: 48px; margin: 0; padding: var(--space-sm) var(--space-lg);
+  border: 0; border-radius: var(--radius-md); background: #fff8e7f2;
+  box-shadow: 0 4px 0 #6b7a603d; color: var(--color-text-main);
+  text-align: center; font: 400 var(--font-size-question)/var(--line-height-tight) var(--font-display);
+}
+#app .mission-progress {
+  position: absolute; z-index: var(--layer-question); left: 50%; top: calc(var(--hud-top) + var(--space-xs)); translate: -50% 0;
+  display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+  width: max-content; max-width: 65%; padding: 0; border: 0; background: transparent; pointer-events: none;
+}
+#app .mission-progress :is(.mission-checkpoint, .checkpoint, .mission-goal) {
+  position: relative; display: grid; place-items: center; width: 42px; height: 42px;
+  border: 2px solid #9ca78a; border-radius: 14px; background: #fff8e7ed; box-shadow: 0 3px 0 #687a5b40;
+  color: #68795e; font: 400 20px/1 var(--font-display);
+}
+#app .mission-progress :is(.done, .checked, .is-complete) { background: var(--quest-green-soft); border-color: #638151; color: var(--quest-green); }
+#app .mission-progress :is(.done, .checked, .is-complete)::after { content: '✓'; position: absolute; right: -6px; bottom: -4px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--quest-green); font: 700 13px/1 var(--font-body); }
+#app .mission-progress img { width: 34px; height: 34px; object-fit: contain; }
+#app .canvas-hit {
+  position: absolute; z-index: var(--layer-props); transform: translate(-50%, -50%);
+  min-width: 48px; min-height: 48px; margin: 0; padding: 0; border: 0; border-radius: 16px;
+  background: transparent; color: transparent; box-shadow: none; opacity: 1;
+  touch-action: none; cursor: grab; user-select: none;
+}
+#app .canvas-hit:hover { background: #fff8e714; }
+#app .canvas-hit:active, #app .canvas-hit.dragging { cursor: grabbing; }
+#app .canvas-hit:focus-visible, #app .canvas-hit.piece-selected { outline: 4px dashed #f4c35c; outline-offset: 3px; }
+#app .canvas-hit[disabled] { opacity: 1; }
+#app .mission-prop { position: absolute; z-index: var(--layer-props); transform: translate(-50%, -50%); touch-action: none; }
+#app .mission-prop img { display: block; width: 100%; height: auto; object-fit: contain; pointer-events: none; }
+#app .mission-target { position: absolute; z-index: 2; transform: translate(-50%, -50%); border: 3px dashed #b58d43; border-radius: var(--radius-md); background: #fff8e75c; }
+#app .mission-target.is-ready { border-color: var(--quest-gold); background: #ffe6a24f; }
+#app .mission-target.is-complete { border-style: solid; border-color: #658c4d; background: #dff1cb66; }
+#app .mission-world > .mission-cta, #app .mission-world .mission-cta-float {
+  position: absolute; z-index: var(--layer-controls); right: var(--space-lg); bottom: var(--space-lg);
+}
+#app .mission-cta:empty { display: none; }
+#app .mission-cta:disabled, #app .mission-cta [data-action='complete']:disabled { display: none; }
+#app .mission-cta :is(.btn, button) { background: none; box-shadow: none; border: 0; color: inherit; font: inherit; padding: 0; min-height: 32px; }
+#app .mission-action {
+  position: absolute; z-index: var(--layer-controls); left: 50%; bottom: 8%;
+  transform: translateX(-50%); display: inline-flex; justify-content: center;
+  align-items: center; gap: var(--space-sm); min-width: 112px; min-height: 54px;
+  padding: var(--space-sm) var(--space-lg); border: 2px solid #667f69;
+  border-radius: 16px; background: var(--quest-cream); color: var(--quest-deep-teal);
+  box-shadow: 0 4px 0 #667f69; font: 400 var(--font-size-button)/1.2 var(--font-display);
+  cursor: pointer;
+}
+#app .mission-action:hover { filter: brightness(1.04); }
+#app .mission-action:active { margin-bottom: -3px; box-shadow: 0 1px 0 #667f69; }
+#app .mission-action:disabled { opacity: .6; cursor: default; }
+#app .mission-actions {
+  position: absolute; z-index: var(--layer-controls); left: 50%; bottom: 8%;
+  transform: translateX(-50%); display: flex; align-items: center; justify-content: center;
+  gap: var(--space-md); max-width: 65%; padding-bottom: var(--space-xs);
+}
+#app .mission-actions .mission-action { position: relative; left: auto; bottom: auto; transform: none; }
+#app .mission-access {
+  position: absolute; left: 150px; bottom: var(--space-md); z-index: var(--layer-controls);
+  max-width: min(370px, 45vw); color: var(--color-text-main);
+  font-size: var(--font-size-caption); line-height: var(--line-height-normal);
+}
+#app .mission-access > summary {
+  display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+  width: max-content; min-width: 48px; min-height: 48px;
+  padding: var(--space-sm) var(--space-md); border: 2px solid #7e8d73;
+  border-radius: var(--radius-sm); background: var(--quest-cream);
+  box-shadow: 0 4px 0 #7e8d73; list-style: none; cursor: pointer;
+}
+#app .mission-access > summary::-webkit-details-marker { display: none; }
+#app .mission-access[open] {
+  padding: var(--space-md); border: 2px solid #7e8d73; border-radius: var(--radius-md);
+  background: var(--quest-paper); box-shadow: var(--shadow-card);
+}
+#app .mission-access[open] > summary { margin-bottom: var(--space-md); }
+#app .mission-access :is(p, label) { font-size: var(--font-size-caption); }
+#app .mission-access button { min-width: 48px; min-height: 48px; }
+#app .ring-flip {
+  position: absolute; z-index: var(--layer-controls); transform: translate(-50%, -50%);
+  display: grid; place-items: center; min-width: 48px; min-height: 48px;
+  padding: var(--space-sm); border: 2px solid #8d743b; border-radius: 50%;
+  background: var(--quest-gold-light); color: var(--quest-deep-teal);
+  box-shadow: 0 4px 0 #8d743b; cursor: pointer;
+  font: 400 24px/1 var(--font-display);
+}
+#app .ring-flip:active { margin-top: 3px; box-shadow: 0 1px 0 #8d743b; }
+#app .mission-feedback {
+  position: absolute; z-index: var(--layer-question); bottom: var(--space-lg); left: 50%;
+  transform: translateX(-50%); max-width: 55%; margin: 0; padding: var(--space-sm) var(--space-md);
+  border: 1px solid #7f926c; border-radius: 14px; background: #fff8e7f5;
+  color: var(--quest-deep-teal); text-align: center; font-size: var(--font-size-body);
+  line-height: var(--line-height-normal); pointer-events: none;
+}
+#app .mission-feedback:empty { display: none; }
+#app .mission-pocket {
+  position: absolute; right: 3%; top: 22%; z-index: var(--layer-controls);
+  display: grid; place-items: center; min-width: 64px; min-height: 64px;
+  padding: var(--space-sm); border: 2px solid #a48b4a; border-radius: 18px;
+  background: #fff5d4ed; color: var(--quest-deep-teal); box-shadow: 0 4px 0 #a48b4a;
+}
+#app .mission-pocket svg { width: 34px; height: 34px; }
+#app .mission-pocket img { width: 54px; height: 54px; object-fit: contain; }
+#app .mission-pocket:active { translate: 0 3px; box-shadow: 0 1px 0 #a48b4a; }
+
+/* Integrated world geometry. Keep the transparent canvas and DOM targets on one surface. */
+#app .quest-activity, #app .quest-city { position: relative; width: 100%; height: 100dvh; }
+#app .quest-activity > #experiment-root { position: absolute; inset: 0; }
+body.quest-mode #app .mission-board.play-board { position: absolute; inset: 0; width: 100%; height: 100%; }
+#app .quest-activity > .quest-companion { position: absolute; left: 18px; bottom: 12px; }
+#app > .quest-companion { position: absolute; left: 194px; bottom: 16px; }
+#app .quest-activity > .mission-cta { position: absolute; right: 20px; bottom: 20px; z-index: var(--layer-controls); }
+#app .mission-helper { position: absolute; right: 6%; top: 55%; pointer-events: none; }
+#app .expedition-map { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+#app .expedition-tool-display { position: absolute; left: 50%; bottom: 18px; translate: -50% 0; display: flex; gap: 10px; pointer-events: none; }
+#app .expedition-tool-display > span { display: grid; place-items: center; width: 48px; height: 48px; background: #fff8e7ed; border: 2px solid #788366; border-radius: 14px; }
+#app .expedition-tool-display small { display: none; }
+#app .expedition-festival { position: absolute; left: 45%; top: 46%; font-size: 70px; color: #ffd36c; animation: quest-character-idle 1.8s ease-in-out infinite; }
+#app .quest-title-brand { top: 5%; width: min(58vw, 900px); }
+#app .quest-title-logo { max-height: 48dvh; }
+#app .quest-title-subtitle { margin-top: 2px; font-size: clamp(20px, 1.8vw, 28px); }
+#app .quest-title-actions { bottom: 8%; }
+#app .mission-feedback { bottom: 18%; max-width: 60%; font-size: clamp(18px,1.7vw,24px); }
+#app .mission-feedback.success { background: #e7f3cf; }
+#app .mission-requests { display: flex; gap: 28px; }
+#app .screen-6 .ring-flip { top: 80% !important; }
+#app .screen-6 .mission-actions { bottom: 4%; }
+#app .screen-9 .mission-actions, #app .screen-10 .mission-actions { bottom: 14%; }
+#app .story-panorama { margin: -18px -18px 12px; }
+#app .story-panorama img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; }
+body.quest-mode #app > main:is(.page-report,.page-core,.page-certificate,.page-ending) { overflow-y: auto; padding: 95px 5vw 30px; background: #f7edd6; }
+
+/* Existing final experiment objects inherit the same legible control language. */
+body.quest-mode #app .play-board { position: relative; border: 0; background: transparent; box-shadow: none; border-radius: 0; }
+body.quest-mode #app .play-board::before { display: none; }
+body.quest-mode #app .drag-piece { min-width: 64px; min-height: 56px; cursor: grab; }
+body.quest-mode #app .drag-piece.dragging { cursor: grabbing; }
+body.quest-mode #app .bar-magnet {
+  display: flex; width: 156px; height: 56px; overflow: hidden;
+  border: 3px solid #244954; border-radius: 11px; background: var(--quest-magnet-red);
+  box-shadow: 0 5px 0 #244954; color: #fff; font: 700 25px/1 var(--font-body);
+}
+body.quest-mode #app .bar-magnet > span { display: grid; place-items: center; flex: 1; background: var(--quest-magnet-red); color: #fff; box-shadow: inset 0 5px 0 #ffffff26, inset 0 -5px 0 #173f4729; }
+body.quest-mode #app .bar-magnet > span + span { background: var(--quest-magnet-blue); }
+body.quest-mode #app .bar-magnet.flipped { flex-direction: row-reverse; }
+body.quest-mode #app :is(.btn, .choice) {
+  min-height: var(--button-height-md); padding: var(--space-sm) var(--space-lg);
+  border: 2px solid #7e8d73; border-radius: var(--radius-sm);
+  background: var(--quest-cream); color: var(--color-text-main);
+  font: 400 var(--font-size-button)/var(--line-height-tight) var(--font-display);
+  box-shadow: 0 4px 0 #7e8d73;
+}
+body.quest-mode #app .btn.primary { background: linear-gradient(var(--quest-gold-light), var(--quest-gold)); border-color: var(--quest-gold-edge); color: #493a22; box-shadow: var(--shadow-button); }
+body.quest-mode #app .choice.selected { background: var(--quest-gold-light); border-color: var(--quest-gold-edge); box-shadow: 0 4px 0 var(--quest-gold-edge); }
+body.quest-mode #app :is(.btn, .choice):active { translate: 0 3px; box-shadow: 0 1px 0 #7e8d73; }
+
+/* Shared outcome surfaces remain compact so the world stays visible. */
+body.quest-mode :is(.modal-backdrop, dialog)::backdrop { background: #103943b8; }
+body.quest-mode .modal-backdrop { z-index: var(--layer-modal); background: #103943b8; }
+body.quest-mode :is(.modal, dialog) {
+  border: 2px solid #788366; border-radius: var(--radius-lg); background: var(--quest-paper);
+  color: var(--color-text-main); box-shadow: var(--shadow-popover); font-family: var(--font-body);
+}
+body.quest-mode :is(.modal, dialog) :is(h1, h2, h3) { font-family: var(--font-display); font-weight: 400; }
+body.quest-mode :is(.modal, dialog) h2 { font-size: clamp(28px, 2.6vw, 40px); }
+body.quest-mode :is(.modal, dialog) :is(p, li, summary, label) { font-size: max(18px, var(--font-size-caption)); }
+body.quest-mode :is(.modal, dialog) button { min-height: 48px; }
+body.quest-mode .toast {
+  position: fixed; z-index: 45; top: 50%; bottom: auto; left: 50%; transform: translate(-50%, -50%);
+  max-width: min(600px, calc(100vw - 48px)); padding: var(--space-lg) var(--space-xl);
+  border: 2px solid #788366; border-radius: var(--radius-md); background: var(--quest-paper);
+  color: var(--color-text-main); font-size: var(--font-size-body); line-height: 1.4;
+  box-shadow: var(--shadow-popover); animation: quest-toast-in .18s ease-out both;
+}
+body.quest-mode .question-zone { padding: var(--space-lg); border: 2px solid var(--quest-gold-edge); border-radius: var(--radius-md); background: #fff0bf; text-align: center; }
+body.quest-mode .question-zone.is-complete { background: var(--quest-green-soft); border-color: #638151; }
+
+@keyframes quest-title-arrive { from { opacity: 0; scale: .96; } to { opacity: 1; scale: 1; } }
+@keyframes quest-character-idle { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes quest-map-walk { from { margin-top: 0; rotate: -1deg; } to { margin-top: -3px; rotate: 1deg; } }
+@keyframes quest-toast-in { from { opacity: 0; margin-top: 8px; } to { opacity: 1; margin-top: 0; } }
+
+@media (min-width: 1500px) and (min-height: 850px) {
+  :root { --hud-icon-size: 64px; --hud-inset: var(--space-lg); --button-height-lg: 72px; --hud-top: 108px; --companion-size: 140px; }
+  #app .quest-icon svg { width: 32px; height: 32px; }
+  #app .mission-question { top: var(--space-lg); max-width: min(1100px, calc(100% - 370px)); }
+  #app .mission-progress :is(.mission-checkpoint, .checkpoint, .mission-goal) { width: 48px; height: 48px; }
+  #app .expedition-dpad { grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 64px); }
+  #app .expedition-dpad button { width: 64px; height: 64px; }
+  #app .mission-companion > .quest-companion { --companion-size: 140px; }
+  #app .mission-access { left: 185px; }
+}
+@media (max-height: 650px) and (min-width: 760px) {
+  :root { --hud-icon-size: 48px; --hud-inset: var(--space-sm); --hud-top: 72px; --button-height-lg: 54px; --companion-size: 88px; }
+  #app .quest-icon { border-radius: 14px; }
+  #app .mission-question { top: var(--space-sm); max-width: calc(100% - 260px); padding: var(--space-sm) var(--space-md); font-size: 27px; }
+  #app .mission-progress { top: 69px; gap: var(--space-xs); }
+  #app .mission-progress :is(.mission-checkpoint, .checkpoint, .mission-goal) { width: 34px; height: 34px; border-radius: 10px; }
+  #app .mission-progress img { width: 27px; height: 27px; }
+  #app .mission-companion { bottom: var(--space-sm); left: var(--space-sm); }
+  #app .mission-companion > .quest-companion { --companion-size: 80px; }
+  #app .mission-access { left: 110px; }
+  #app .mission-world > .mission-cta, #app .mission-world .mission-cta-float { bottom: var(--space-md); right: var(--space-md); }
+  #app .quest-title-brand { top: 6%; width: min(64vw, 800px); }
+  #app .quest-title-logo { max-height: 57dvh; }
+  #app .quest-title-subtitle { margin-top: var(--space-sm); font-size: 22px; }
+  #app .quest-title-friend { --companion-size: 128px; bottom: 10%; }
+  #app .quest-title-actions { bottom: 9%; }
+  #app .quest-start { min-height: 60px; min-width: 230px; font-size: 28px; }
+  #app .expedition-dpad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(2, 48px); }
+  #app .expedition-dpad button { width: 48px; height: 48px; }
+  #app .expedition-next { right: var(--space-md); bottom: var(--space-md); font-size: 22px; }
+}
+/* Portrait is a usable scrolling fallback; it never blocks the child with a rotate screen. */
+@media (max-width: 759px) {
+  body.quest-mode { overflow-y: auto; }
+  body.quest-mode #app { overflow: visible; height: auto; min-height: 100dvh; }
+  body.quest-mode #app > main.page { height: auto; min-height: 100dvh; overflow: visible; }
+  :root { --hud-icon-size: 48px; --hud-inset: var(--space-sm); --companion-size: 88px; }
+  #app .quest-hud { position: absolute; }
+  #app .quest-title { min-height: max(720px, 100dvh); }
+  #app .quest-title-brand { width: 94%; top: 18%; }
+  #app .quest-title-logo { max-height: 36dvh; }
+  #app .quest-title-subtitle { font-size: 21px; padding: var(--space-sm) var(--space-md); max-width: 92%; }
+  #app .quest-title-friend { --companion-size: 116px; bottom: 20%; }
+  #app .quest-title-friend-left { left: 4%; }
+  #app .quest-title-friend-right { right: 4%; }
+  #app .quest-title-actions { bottom: 6%; }
+  #app .quest-start { min-width: 230px; }
+  #app .quest-title-friend .quest-speech { bottom: 102%; left: 0; width: min(290px, 70vw); }
+  #app .quest-title-friend-right .quest-speech { right: 0; left: auto; }
+  #app .expedition-viewport { height: 100dvh; min-height: 650px; }
+  #app .expedition-next { bottom: var(--space-md); right: var(--space-md); max-width: calc(100% - 190px); min-height: 60px; padding: var(--space-sm) var(--space-md); white-space: normal; font-size: 20px; }
+  #app .expedition-dpad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(2, 48px); }
+  #app .expedition-dpad button { width: 48px; height: 48px; }
+  #app .mission-world { min-height: max(820px, 100dvh); }
+  #app .mission-question { top: 82px; max-width: calc(100% - 32px); width: max-content; font-size: 27px; }
+  #app .mission-progress { top: 155px; max-width: 90%; }
+  #app .mission-board { inset: 180px 0 90px; height: auto; min-height: 540px; }
+  #app .mission-board > canvas { object-fit: fill; }
+  #app .mission-companion { left: var(--space-sm); bottom: var(--space-sm); }
+  #app .mission-companion > .quest-companion { --companion-size: 78px; }
+  #app .mission-actions { max-width: 90%; bottom: 7%; gap: var(--space-sm); }
+  #app .mission-actions .mission-action { min-width: 80px; padding: var(--space-sm); font-size: 20px; }
+  #app .mission-access { bottom: 100px; left: var(--space-md); max-width: calc(100% - 32px); }
+  #app .mission-world > .mission-cta, #app .mission-world .mission-cta-float { bottom: var(--space-md); right: var(--space-md); max-width: calc(100% - 125px); padding: var(--space-md); white-space: normal; font-size: 21px; }
+  #app .quest-speech { bottom: 105%; left: 0; width: min(340px, calc(100vw - 32px)); }
+}
+body.quest-mode.reduce-motion #app *, body.quest-mode.reduce-motion #app *::before, body.quest-mode.reduce-motion #app *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) {
+  body.quest-mode #app *, body.quest-mode #app *::before, body.quest-mode #app *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  body.quest-mode { overflow: visible; background: #fff; }
+  body.quest-mode #app, body.quest-mode #app > main.page { height: auto; overflow: visible; }
+  #app :is(.quest-hud, .quest-companion, .quest-cta, .expedition-dpad, .expedition-next) { display: none !important; }
+}
+@media (min-aspect-ratio: 1/1) {
+  #app .quest-title-brand { top: 4%; width: min(56vw, 900px); }
+  #app .quest-title-logo { max-height: 47dvh; }
+  #app .quest-title-subtitle { margin-top: 0; font-size: clamp(20px,1.8vw,28px); }
+  #app .quest-title-actions { bottom: 7%; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-height: 720px) { #app .mission-access { left: 146px; } }
+
+#app .expedition-courier { position:absolute; width:86px; height:76px; object-fit:contain; translate:-50% -85%; pointer-events:none; z-index:5; }
+body.quest-mode #app > main.page-core { padding:0; overflow:hidden; }
+#app .quest-core, #app .restoration-operation, #app .restoration-plaza { position:relative; width:100%; height:100dvh; }
+#app .restoration-plaza { background:linear-gradient(#fff6d534,#173f4744),url('/assets/quest/city-expedition.webp') center/cover; }
+#app .restoration-plaza > .quest-companion, #app .restoration-operation > .quest-companion { position:absolute; left:18px; bottom:12px; }
+body.quest-mode #app .restoration-install.play-board { position:absolute; inset:0; height:100%; width:100%; }
+#app .restoration-mount { position:absolute; left:53%; top:56%; translate:-50% -50%; width:28%; min-width:220px; display:grid; justify-items:center; }
+#app .restoration-mount img { width:100%; max-height:270px; object-fit:contain; }
+#app .restoration-mount span { padding:12px; border:3px dashed #aa7e37; border-radius:14px; background:#fff5d8ed; font-family:var(--font-display); }
+#app [data-drag='blueprint'] { display:grid; justify-items:center; background:none; box-shadow:none; border:0; width:170px; }
+#app [data-drag='blueprint'] img { width:140px; height:130px; object-fit:contain; }
+#app [data-drag='blueprint'] strong { background:#fff5d8ed; padding:10px; border-radius:12px; white-space:nowrap; font-size:20px; }
+#app .restoration-lab { position:absolute; inset:0; }
+#app .restoration-operation [data-mission='next'] { display:none; }
+#app .restoration-operation .mission-actions { bottom:14%; }
+#app .restoration-access { position:absolute; left:160px; bottom:16px; z-index:var(--layer-controls); max-width:55%; background:#fff8e7ed; border-radius:14px; padding:10px 16px; font-size:18px; }
+#app .restoration-access summary { min-height:48px; display:grid; place-items:center; cursor:pointer; }
+#app .restoration-team { position:absolute; left:50%; top:50%; translate:-50% -50%; display:flex; align-items:center; gap:20px; }
+#app .restoration-team > img { width:300px; height:230px; object-fit:contain; }
+#app .restoration-ability { position:absolute; top:71%; left:50%; translate:-50% 0; background:#fff8e7ed; padding:14px 28px; border-radius:20px; text-align:center; font-family:var(--font-display); font-size:clamp(22px,2vw,32px); }
+#app .restoration-finish { position:absolute; right:20px; bottom:20px; }
+#app .restoration-optional-lab { height:100dvh; overflow:auto; padding:95px 5vw 28px; background:#f7edd6; }
+@media (max-height:640px) { #app .restoration-team .mascot { --size:125px !important; } #app .restoration-team > img { width:220px; height:170px; } #app .restoration-ability { top:66%; } }
+
+.quest-save-warning { position:fixed; top:90px; right:16px; z-index:35; min-height:48px; max-width:360px; padding:12px; border:2px solid #98543a; border-radius:12px; background:#fff1cc; color:#593a28; font-size:18px; }
+
+body.quest-mode .ending-painted { background-size:cover; background-position:center; border:2px solid #a68b56; height:340px; }
+body.quest-mode .ending-painted > img { width:280px; height:235px; object-fit:contain; margin:24px 0 0; animation:quest-character-idle 2s ease-in-out infinite; }
+body.quest-mode .ending-painted .tag { font-size:20px; background:#fff8e7ed; color:#173f47; padding:9px 14px; border-radius:12px; }
+body.quest-mode .ending-painted .restored-ribbon { font-size:18px; transform:none; }
+@media (max-aspect-ratio:1/1) { #app .quest-activity::after { content:'기기를 가로로 돌리면 실험대가 더 넓어져요.'; position:fixed; z-index:30; top:150px; left:16px; right:16px; padding:12px; border-radius:12px; background:#fff2c6; color:#173f47; font-size:17px; text-align:center; pointer-events:none; } }
+
+body.quest-mode :is(.eyebrow,.tag,.small-note,.certificate-overline,.certificate-bottom span,.certificate-preview,.evidence-stamp,.final-route span) { font-size:18px; }
+#app .mission-access > summary { font-size:18px; }

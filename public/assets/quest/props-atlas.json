@@ -1,0 +1,53 @@
+{
+  "image": "props-sheet.webp",
+  "width": 1536,
+  "height": 1024,
+  "cellWidth": 512,
+  "cellHeight": 512,
+  "columns": 3,
+  "rows": 2,
+  "frames": {
+    "postal-box": {
+      "x": 0,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "file": "prop-postal-box.webp"
+    },
+    "postal-lid": {
+      "x": 512,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "file": "prop-postal-lid.webp"
+    },
+    "book": {
+      "x": 1024,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "file": "prop-book.webp"
+    },
+    "cart": {
+      "x": 0,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "file": "prop-cart.webp"
+    },
+    "aquarium": {
+      "x": 512,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "file": "prop-aquarium.webp"
+    },
+    "parcel": {
+      "x": 1024,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "file": "prop-parcel.webp"
+    }
+  }
+}
