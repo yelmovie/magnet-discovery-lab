@@ -23,7 +23,7 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-배포용 출력은 `dist/`에 생성된다. 외부 서비스 배포는 하지 않았다.
+배포용 출력은 `dist/`에 생성된다. 운영 배포 절차는 아래 「Cloudflare 배포」를 따른다.
 
 ## 최신 개편 · 2026-10-24
 
@@ -93,6 +93,10 @@ npm ci
 npm test
 npm run build
 wrangler pages deploy dist --project-name magnet-city --branch main
+node scripts/verify-release.mjs https://magnet-city.pages.dev
+node scripts/release-smoke.cjs https://magnet-city.pages.dev test-results/release-smoke
 ```
+
+`verify-release.mjs`는 `dist/`의 모든 파일을 운영에서 다시 받아 SHA-256을 비교하고, `release-smoke.cjs`는 운영 주소에서 시작 화면과 3D 카드 3종을 두 해상도로 확인한다. 최근 배포 기록: [MAGNET-RELEASE-20261025-2](docs/reviews/MAGNET-RELEASE-20261025-2.md).
 
 검증한 빌드 파일을 직접 올리는 방식이다. GitHub에 커밋만 푸시하면 자동으로 배포되는 구성은 아니다.
