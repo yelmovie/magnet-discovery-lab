@@ -13,7 +13,14 @@ describe('실험 증거와 기존 기록 호환',()=>{
   it('철이 아닌 재료는 운반 성공을 요구하지 않는다',()=>{const s=freshSave(),a=emptyActivity();a.values.playVersion=4;for(const id of ['clip','nail','aluminum','wood','plastic','rubber'])a.values[`tested-${id}`]=true;expect(ready(3,a,s)).toBe(false);a.values['delivered-clip']=a.values['delivered-nail']=true;expect(ready(3,a,s)).toBe(true);});
   it('이전 완료 기록의 사본과 증거는 다시 탐구해도 바뀌지 않는다',()=>{const s=freshSave();for(let n=1;n<=2;n++){const a=s.activities[n]=emptyActivity();a.values={playVersion:3,open0:true,open1:true,found0:true,found1:true,with0:true,with1:true,without0:true,without1:true};expect(completeActivity(s,n)).toBe(true);}const original=JSON.stringify(s.evidence);const migrated=migrateSave(s)!;migrated.activities[1]=emptyActivity();expect(JSON.stringify(migrated.evidence)).toBe(original);expect(migrated.completed).toEqual([1,2]);});
   it('이미 고친 뒤 설계가 바뀌면 예전 성공으로 종료하지 않고 다시 장착할 수 있다',()=>{const s=freshSave(),r=initializeFinal(s);r.installed=r.operated=true;s.design.revision++;const view=restorationView(s);expect(r.operated).toBe(false);expect(r.installed).toBe(false);expect(view.html).toContain('data-drag="blueprint"');});
-  it('이전 효과음 설정을 보존하고 배경음은 비활성화한다',()=>{const old=freshSave();delete old.settings.music;delete old.settings.effects;delete old.settings.musicVolume;old.settings.sound=false;const next=migrateSave(old)!;expect(next.settings.music).toBe(false);expect(next.settings.effects).toBe(false);next.settings.effects=true;expect(next.settings.music).toBe(false);expect(old.settings.music).toBeUndefined();const fresh=freshSave();fresh.settings.sound=fresh.settings.effects=false;expect(fresh.settings.music).toBe(false);});
+  it('새 음원을 한 번 활성화하고 전체 음소거와 이후 배경음 선택은 보존한다',()=>{
+    const old=freshSave();delete old.settings.musicVersion;old.settings.music=false;
+    expect(migrateSave(old)!.settings.music).toBe(true);expect(old.settings.music).toBe(false);
+    old.settings.sound=false;expect(migrateSave(old)!.settings.music).toBe(false);
+    const current=freshSave();current.settings.music=false;expect(migrateSave(current)!.settings.music).toBe(false);
+    delete current.settings.music;delete current.settings.effects;
+    expect(migrateSave(current)!.settings).toMatchObject({music:true,effects:true,musicVersion:1});
+  });
 });
 describe('자석 모형과 실제 지도 길',()=>{
   it('접근은 철에만 적용되며 멀리 떨어진 철은 붙지 않는다',()=>{expect(magneticReach({x:40,y:50},{x:50,y:50})).toBe(true);expect(magneticReach({x:40,y:50},{x:70,y:50})).toBe(false);expect(magneticReach({x:40,y:50},{x:50,y:50},false)).toBe(false);});

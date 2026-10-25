@@ -1,7 +1,6 @@
-/** Local CC0 effects with procedural fallback. This release has no background music. */
+/** User-supplied music and local CC0 effects with procedural fallback. */
 export interface AudioSettings {
   sound?: boolean;
-  /** Legacy preference, ignored while no background track is installed. */
   music?: boolean;
   effects?: boolean;
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
@@ -11,6 +10,11 @@ export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 're
 
 const EFFECT_GAIN = 0.16;
 const DEFAULT_VOLUME = 0.35;
+export type MusicTheme = 'main' | 'final';
+const musicFiles: Record<MusicTheme, string> = { main: '/audio/music/main-theme.mp3', final: '/audio/music/finale-theme.mp3' };
+let theme: MusicTheme = 'main';
+let music: HTMLAudioElement | undefined;
+let musicPlayPending = false, musicRevision = 0;
 type Voice = { oscillator: OscillatorNode; gain: GainNode };
 let current: AudioSettings = {};
 let context: AudioContext | undefined;
@@ -39,7 +43,7 @@ function loadSamples() {
 
 export function normalizedAudioSettings(settings: AudioSettings) {
   return {
-    music: false,
+    music: settings.music ?? settings.sound ?? true,
     effects: settings.effects ?? settings.sound ?? true,
     musicVolume: Number.isFinite(settings.musicVolume) ? Math.max(0, Math.min(1, settings.musicVolume!)) : DEFAULT_VOLUME,
   };
@@ -65,6 +69,34 @@ function makeContext() {
   } catch { context = undefined; /* Audio availability must never block the activity. */ }
 }
 
+function pauseMusic() { musicRevision++; musicPlayPending = false; music?.pause(); }
+
+function applyMusic() {
+  const settings = normalizedAudioSettings(current);
+  if (!activated || paused() || !settings.music || settings.musicVolume === 0) { pauseMusic(); return; }
+  if (!music && typeof document !== 'undefined') {
+    music = document.createElement('audio');
+    music.hidden = true; music.preload = 'metadata'; music.dataset.gameMusic = theme;
+    music.src = musicFiles[theme]; music.loop = theme === 'main'; document.body.append(music);
+  }
+  if (!music) return;
+  music.volume = settings.musicVolume;
+  if (!music.paused || music.ended || musicPlayPending) return;
+  musicPlayPending = true;
+  const revision = musicRevision;
+  // Autoplay denial is retried on the next pointer/key gesture.
+  void music.play().catch(() => {}).finally(() => { if (revision === musicRevision) musicPlayPending = false; });
+}
+
+/** One persistent player keeps the main theme continuous across pages. */
+export function setMusicTheme(next: MusicTheme, restart = false) {
+  if (next !== theme || restart) {
+    theme = next; pauseMusic();
+    if (music) { music.src = musicFiles[theme]; music.loop = theme === 'main'; music.dataset.gameMusic = theme; music.load(); }
+  }
+  applyMusic();
+}
+
 function note(frequency: number, when: number, duration: number, bus: GainNode, voices: Voice[], strength: number, type: OscillatorType = 'sine') {
   if (!context) return;
   const oscillator = context.createOscillator(), gain = context.createGain();
@@ -82,6 +114,7 @@ function note(frequency: number, when: number, duration: number, bus: GainNode, 
 }
 
 function apply() {
+  applyMusic();
   if (!context || !effectBus) return;
   const settings = normalizedAudioSettings(current);
   if (!settings.effects || paused()) { silence(effectVoices); stopSamples(); }
@@ -96,6 +129,7 @@ function activate() {
 
 function visibilityChanged() {
   if (isHidden()) {
+    pauseMusic();
     silence(effectVoices); stopSamples();
     if (context?.state === 'running') void context.suspend().catch(() => {});
   } else if (activated && !explicitlyPaused) activate();
@@ -141,11 +175,12 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
 /** Quiet audio during story/video playback and explicit game suspension. */
 export function setAudioPaused(value: boolean) {
   explicitlyPaused = value;
-  if (value) { silence(effectVoices); stopSamples(); }
+  if (value) { pauseMusic(); silence(effectVoices); stopSamples(); }
   else if (activated) activate();
 }
 
 export function disposeAudio() {
+  music?.pause(); music?.remove(); music = undefined; theme = 'main'; musicRevision++; musicPlayPending = false;
   silence(effectVoices); stopSamples(); sampleBuffers.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {
     document.removeEventListener('pointerdown', activate);

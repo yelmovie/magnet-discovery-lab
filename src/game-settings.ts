@@ -26,7 +26,7 @@ const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12
 
 function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
-  const switchRow = (key: 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
+  const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
   const teacher = paragraphs(copy.teacherGuide)
     + fold(copy.standards, `<p>${copy.standardsNotice}</p><dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.tools, `<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
@@ -35,7 +35,8 @@ function markup(options: GameSettingsOptions) {
     + paragraphs([copy.copyrightOwner, copy.ownRights, copy.externalRights, copy.educationSources]);
   return `<header class="settings-dialog-heading"><h2 id="settings-dialog-title">${copy.title}</h2><button type="button" class="settings-close-icon" data-settings-action="close" aria-label="${copy.close}">${closeIcon}</button></header>
     <div class="settings-dialog-body">
-      <section class="settings-sound" aria-label="${copy.effects}">
+      <section class="settings-sound" aria-label="소리 설정">
+        ${switchRow('music', copy.music, settings.music)}
         ${switchRow('effects', copy.effects, settings.effects)}
       </section>
       <div class="settings-replays">
@@ -103,11 +104,11 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
   dialog.addEventListener('click', event => {
     const target = (event.target as Element).closest<HTMLElement>('button');
     if (!target || (target as HTMLButtonElement).disabled) return;
-    const soundKey = target.dataset.sound as 'effects' | undefined;
+    const soundKey = target.dataset.sound as 'music' | 'effects' | undefined;
     if (soundKey) {
       const audio = options.save.settings as Save['settings'] & AudioSettings;
       const next = !normalizedAudioSettings(audio)[soundKey]; audio[soundKey] = next;
-      if (soundKey === 'effects') audio.sound = next;
+      const enabled = normalizedAudioSettings(audio); audio.sound = enabled.music || enabled.effects;
       target.setAttribute('aria-pressed', String(next));
       target.querySelector('span')!.textContent = next ? copy.on : copy.off;
       changed();

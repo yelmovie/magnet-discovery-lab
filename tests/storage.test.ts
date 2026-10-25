@@ -65,8 +65,8 @@ describe('v2 preference compatibility', () => {
   it('materializes independent sound defaults without rewriting the stored original on load', async () => {
     const old=freshSave();delete old.settings.music;delete old.settings.effects;delete old.settings.musicVolume;
     const data=databaseWith(old),storage=await import('../src/storage'),next=await storage.load();
-    expect(next.settings.music).toBe(false);expect(next.settings.effects).toBe(true);
+    expect(next.settings.music).toBe(true);expect(next.settings.effects).toBe(true);
     next.settings.sound=next.settings.effects=false;
-    expect(next.settings.music).toBe(false);expect(data.get('main')).toEqual(old);
+    expect(next.settings.music).toBe(true);expect(data.get('main')).toEqual(old);
   });
 });

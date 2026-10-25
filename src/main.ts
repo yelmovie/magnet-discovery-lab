@@ -16,7 +16,7 @@ import { missionReady } from './mission-model';
 import { missionQuestions, missionGuides, questRewards } from './mission-content';
 import { expeditionMarkup, mountExpedition, type ExpeditionHandle } from './expedition';
 import { openGameSettings } from './game-settings';
-import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, normalizedAudioSettings } from './game-audio';
+import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture } from './trial-records';
@@ -37,7 +37,7 @@ type Route = { page: Page; screen: number };
 let currentRoute: Route = { page: 'title', screen: 1 };
 const backStack: Route[] = [];
 const adminOn = () => adminBackup !== null;
-const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects; };
+const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects || settings.music; };
 const canEnter = (n: number) => accessible(s, n, adminOn());
 const canActivate = () => coreReady(s, adminOn());
 const esc = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -60,6 +60,7 @@ function restorePractice() { if (!practiceBackup) return; s.activities = practic
 function go(next: typeof page, remember = true) {
   if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) backStack.push({ ...currentRoute });
   cleanPage(); if (next !== 'activity') restorePractice(); page = next;
+  if (next === 'ending') setMusicTheme('final', true);
   currentRoute = { page, screen }; render(); window.scrollTo({ top: 0, behavior: 'instant' });
 }
 function goBack() {
@@ -74,6 +75,7 @@ function startActivity(n: number, practice = false, remember = true) {
 }
 function button(action: string, label: string, style = 'soft', disabled = false) { return `<button class="btn ${style}" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`; }
 function render() {
+  setMusicTheme(page === 'ending' || page === 'certificate' ? 'final' : 'main');
   document.body.classList.add('quest-mode');
   document.body.classList.toggle('reduce-motion', !s.settings.motion);
   document.body.classList.toggle('activity-mode', page === 'activity');
@@ -244,7 +246,7 @@ function bindCommon() {
       case 'start': if (!s.started) { s.started = true; touch(); go('city'); openStory(); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else go('city'); break;
       case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:''}; s.started = true; go('city'); touch(); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
       case 'city': void flush(); go('city'); break;
-      case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=false; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
+      case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;
       case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);break;}
       case 'notebook': if (page === 'activity') openRecords(); else notebook(); break;

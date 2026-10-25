@@ -42,7 +42,7 @@ npm run preview -- --port 4173
 ## 플레이
 
 - 왼쪽 위 집·뒤로, 오른쪽 위 소리·설정 아이콘을 사용한다. 시작 화면은 소리·설정만 표시한다. 캐릭터를 눌러 도움말을 연다.
-- 배경음은 제거하고 효과음만 제공한다. 설정에 효과음 켜기·끄기, 이야기, 연구 가방, 학생·교사용 가이드와 성취기준 원문이 있다. 엔딩·인증서는 실제 완료 후 열린다.
+- Suno 메인 테마는 시작·게임 화면에서 반복하고 파이널 테마는 엔딩·인증서에서 이어서 재생한다. 설정에 배경음·효과음 켜기·끄기, 이야기, 연구 가방, 학생·교사용 가이드와 성취기준 원문이 있다. 엔딩·인증서는 실제 완료 후 열린다.
 - 교사용 **모든 단계 한 번에 열기**는 시설 잠금을 풀어 시연하게 한다. 학습 완료·보상을 자동으로 채우지 않으며, 끄거나 새로고침하면 원래 기록으로 돌아간다.
 - 메인 → 도시 탐험 → 건물 입장 → 활동 2개 → 연구 기록 획득 → 다음 구역 순서로 진행한다.
 - 도시에서는 길·건물 클릭, 방향키 또는 화면 방향 버튼으로 이동한다. 건물 입구에 도착하면 입장할 수 있다.
@@ -64,7 +64,7 @@ npm run preview -- --port 4173
 - `src/inquiry.ts`, `src/inquiry-content.ts`, `src/inquiry-model.ts`: 예상·실험·근거 설명·새 상황 적용과 완료 조건
 - `src/production.css`, `src/inquiry.css`: 생성 이미지 기반 화면과 탐구 단계 UI
 - `src/quest-ui.ts`, `src/quest.css`: 전체 화면·그림·폰트·UI 토큰
-- `src/game-settings.ts`, `src/settings-content.ts`, `src/game-audio.ts`: 설정·가이드·절차 합성 소리
+- `src/game-settings.ts`, `src/settings-content.ts`, `src/game-audio.ts`: 설정·가이드·로컬 음악·효과음과 합성 대체음
 - `src/trial-records.ts`, `src/final-mission.ts`: 그림 기록과 최종 기본·선택 복구
 - `src/domain.ts`, `src/storage.ts`: 과학 규칙·진행·증거·저장
 - `src/art.ts`, `src/styles.css`, `src/adventure.css`, `src/tablet.css`, `src/ending.css`: 2D 그래픽과 UI
@@ -82,7 +82,7 @@ npm run preview -- --port 4173
 - Cloudflare Pages: <https://magnet-city.pages.dev/>
 - GitHub: <https://github.com/yelmovie/magnet-discovery-lab>
 - 초등 과학 4학년 「자석의 이용」을 바탕으로, 자석을 직접 옮기고 뒤집으며 멈춘 도시를 복구하는 탐험 게임이다. 5개 구역에서 관찰·비교·원격 조작·발명 활동을 수행하고 연구 기록과 인증서를 완성한다.
-- 현재 배포본은 **효과음 8종만 제공**하며 배경음 재생 코드와 배경음 설정은 제거했다.
+- 현재 배포본은 사용자가 제공한 **Suno 연주곡 2종과 효과음 8종**을 제공한다. 메인 테마는 반복하고, 파이널 테마는 엔딩부터 인증서까지 한 번 이어서 재생한다. 첫 터치·키 입력으로 소리를 시작하며 영상 재생·백그라운드 전환 시 일시 중지한다. 음원 원본은 `assets/source/audio/suno/`, 실행 파일은 `public/audio/music/`에 보관한다.
 
 ## Cloudflare 배포
 

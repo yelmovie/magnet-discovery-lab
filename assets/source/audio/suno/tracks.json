@@ -1,0 +1,22 @@
+{
+  "source": "User-supplied Suno instrumental music",
+  "received": "2026-10-25",
+  "tracks": [
+    {
+      "provided_name": "Main_Curious Discovery.mp3",
+      "original": "assets/source/audio/suno/main-theme-original.mp3",
+      "runtime": "public/audio/music/main-theme.mp3",
+      "bytes": 1792853,
+      "duration_seconds": 77.88,
+      "sha256": "93fea6407de4cb41bb26be7c603570041624be1f120ebcf2137ed8c3ad2d8073"
+    },
+    {
+      "provided_name": "Final_Victory in the Town Square.mp3",
+      "original": "assets/source/audio/suno/finale-theme-original.mp3",
+      "runtime": "public/audio/music/finale-theme.mp3",
+      "bytes": 1743648,
+      "duration_seconds": 74.35,
+      "sha256": "ab1f3d1d0181ba3eb8e60c9f02e9c03c01381b9e341633da98cbc5ebb86f1804"
+    }
+  ]
+}

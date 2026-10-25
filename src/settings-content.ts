@@ -4,6 +4,7 @@ import { version } from '../package.json';
 export const settingsContent = {
   title: '탐험 설정',
   close: '닫기',
+  music: '배경음',
   effects: '효과음',
   on: '켜짐',
   off: '꺼짐',
@@ -61,7 +62,7 @@ export const settingsContent = {
   sourceGroups: [
     ['자석 탐구의 교육 내용', '교육부 고시 제2022-33호 별책 9 과학과 교육과정 · 교육부, 충청북도교육청 공개 교육과정 PDF · 성취기준 원문 확인 자료'],
     ['캐릭터·도시·실험 장면', '프로젝트용 AI 생성 이미지 · 생성·수정 이력은 assets/CREDITS.md에 기록해요.'],
-    ['배경 음악·효과음', '효과음: Kenney · Interface Sounds 1.0 · CC0 1.0 (kenney.nl/assets/interface-sounds). 배경 음악과 영상의 짧은 음: 프로젝트 자체 절차 합성.'],
+    ['배경 음악·효과음', '효과음: Kenney · Interface Sounds 1.0 · CC0 1.0 (kenney.nl/assets/interface-sounds). 배경 음악: 사용자가 Suno로 제작해 제공한 메인·파이널 연주곡. 영상의 짧은 음: 프로젝트 자체 절차 합성.'],
     ['개념 영상·수리 도우미', '12초 모션 그래픽 5편: Pillow·FFmpeg로 직접 제작. 수리 로봇 자꾸: 프로젝트 자체 SVG.'],
     ['게임·화면 개발 도구', 'Phaser · MIT / Vite · MIT / TypeScript · Apache-2.0 / Vitest · MIT'],
   ] as const,

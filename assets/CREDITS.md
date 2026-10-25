@@ -8,14 +8,19 @@
 | Vite 7.3.6 | 개발 서버·정적 빌드 | MIT · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
 | TypeScript 5.9.3 | 타입 검사 | Apache-2.0 · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
 | Vitest 3.2.7 | 자동 검사 | MIT · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
-| Web Audio API | 효과음 재생·합성 대체음 | 브라우저 기본 API · CC0 효과음 출처는 아래 표에 기록 | PASS · 배경음 없음 |
+| Web Audio API | 효과음 재생·합성 대체음 | 브라우저 기본 API · CC0 효과음 출처는 아래 표에 기록 | PASS · 사용자 제공 배경음·CC0 효과음 |
 
 본 앱과 하위 작업 폴더의 package.json(의존성 폴더 제외)을 확인했으며, 현재 프로젝트에는 Remotion·유료 UI 키트·음악 생성 서비스 의존성을 추가하지 않았다. 이미지·폰트의 개별 출처와 이용 조건은 아래 해당 항목에서 관리한다.
 
-## 효과음 전용 재생
+## 배경음과 효과음 재생
 
 - 구현 파일: `src/game-audio.ts`.
-- 2026-10-25 사용자 요청으로 기존 절차 합성 배경음과 관련 설정을 제거했다. 이 배포본에는 배경음이 없다.
+- 2026-10-25 사용자가 Suno로 제작해 제공한 연주곡 2종을 연결했다. 메인 테마는 시작·게임 중 반복하고, 파이널 테마는 엔딩·인증서에서 한 번 이어서 재생한다.
+- 메인 원본: `assets/source/audio/suno/main-theme-original.mp3` (제공 파일명: `Main_Curious Discovery.mp3`).
+- 파이널 원본: `assets/source/audio/suno/finale-theme-original.mp3` (제공 파일명: `Final_Victory in the Town Square.mp3`).
+- 배포 음원: `public/audio/music/main-theme.mp3`, `finale-theme.mp3`. 바이트 변경 없이 보관했으며 `tracks.json`에 SHA-256·크기·길이를 기록했다.
+- 음악의 출처는 사용자 제공 Suno 생성물이며, 개별 생성 당시 계정·요금제 조건은 별도로 검증하지 않았다. CC0 효과음 라이선스와 구분한다.
+- 배경음·효과음은 각각 켜고 끌 수 있다. 영상 재생과 백그라운드 전환 시 멈추고, 복귀 시 같은 위치에서 이어진다.
 - 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음 8종만 로컬 MP3로 재생한다. 출처와 CC0 라이선스는 아래 기록을 따른다.
 - 효과음 파일을 불러오지 못하면 Web Audio API로 짧은 대체 효과음을 합성한다. 특정 곡을 복제하지 않았다.
 - 효과음은 한 번에 하나만 재생하며 켜기·끄기를 제공한다. 문서가 숨겨지거나 영상 등에서 일시 중지를 요청하면 멈춘다.
