@@ -36,26 +36,29 @@ function environment() {
 
 afterEach(() => { disposeAudio(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
-describe('procedural game audio', () => {
-  it('migrates legacy effect preference and clamps background volume independently', () => {
+describe('effects-only game audio', () => {
+  it('preserves legacy effect preferences but ignores saved music enablement', () => {
     expect(normalizedAudioSettings({ sound: false })).toEqual({ effects: false, music: false, musicVolume: 0.35 });
-    expect(normalizedAudioSettings({ sound: false, effects: true, music: true, musicVolume: 3 })).toEqual({ effects: true, music: true, musicVolume: 1 });
+    expect(normalizedAudioSettings({ sound: false, effects: true, music: true, musicVolume: 3 })).toEqual({ effects: true, music: false, musicVolume: 1 });
     expect(normalizedAudioSettings({ musicVolume: Number.NaN }).musicVolume).toBe(0.35);
     expect(normalizedAudioSettings({ musicVolume: -1 }).musicVolume).toBe(0);
   });
 
-  it('waits for a gesture and keeps one music scheduler across repeated screen updates', () => {
+  it('never starts background notes or a music scheduler after gestures and screen updates', () => {
     const doc = environment();
     ensureAudio({ music: true });
     expect(AudioDouble.instances).toHaveLength(0);
     doc.dispatchEvent(new Event('pointerdown'));
     const context = AudioDouble.instances[0], initial = context.oscillators.length;
-    expect(initial).toBeGreaterThan(0);
+    expect(initial).toBe(0);
     for (let i = 0; i < 6; i++) syncAudioSettings({ music: true, musicVolume: 0.5 });
     expect(AudioDouble.instances).toHaveLength(1);
     expect(context.oscillators).toHaveLength(initial);
-    expect(vi.getTimerCount()).toBe(1);
-    expect(context.gains[0].gain.value).toBeLessThan(context.gains[1].gain.value);
+    vi.advanceTimersByTime(30000);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(context.oscillators).toHaveLength(0);
+    playEffect('pick');
+    expect(context.oscillators.length).toBeGreaterThan(0);
   });
 
   it('replaces the previous effect and respects the independent effect switch', () => {
@@ -70,7 +73,7 @@ describe('procedural game audio', () => {
     expect(context.oscillators).toHaveLength(before);
   });
 
-  it('stops background and effects while hidden or explicitly paused and resumes one music track', async () => {
+  it('stops effects while hidden or paused and resumes silently until the next effect', async () => {
     const doc = environment(); ensureAudio({ music: true, effects: true }); doc.dispatchEvent(new Event('pointerdown'));
     const context = AudioDouble.instances[0];
     playEffect('pick');
@@ -79,10 +82,10 @@ describe('procedural game audio', () => {
     expect(context.suspend).toHaveBeenCalledOnce();
     context.oscillators.forEach(voice => expect(voice.disconnect).toHaveBeenCalled());
     doc.hidden = false; doc.dispatchEvent(new Event('visibilitychange')); await Promise.resolve();
-    expect(context.resume).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(1);
+    expect(context.resume).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0);
     setAudioPaused(true); expect(vi.getTimerCount()).toBe(0);
     const count = context.oscillators.length; playEffect('reward'); expect(context.oscillators).toHaveLength(count);
-    setAudioPaused(false); expect(vi.getTimerCount()).toBe(1);
+    setAudioPaused(false); expect(vi.getTimerCount()).toBe(0); expect(context.oscillators).toHaveLength(count);
     syncAudioSettings({ music: false, effects: true }); expect(vi.getTimerCount()).toBe(0);
     playEffect('click'); expect(context.oscillators.length).toBeGreaterThan(count);
   });
@@ -92,5 +95,27 @@ describe('procedural game audio', () => {
     expect(() => { ensureAudio({}); doc.dispatchEvent(new Event('pointerdown')); playEffect('success'); }).not.toThrow();
     disposeAudio(); vi.stubGlobal('window', { AudioContext: AudioDouble }); doc.dispatchEvent(new Event('pointerdown'));
     expect(AudioDouble.instances).toHaveLength(0);
+  });
+
+  it('caches local CC0 samples and stops decoded playback when muted or a concept video opens', async () => {
+    environment();
+    const sources: { stop: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn> }[]=[];
+    class SampleAudio extends AudioDouble {
+      decodeAudioData = vi.fn(async () => ({} as AudioBuffer));
+      createBufferSource() {
+        const source={buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;
+      }
+    }
+    const request=vi.fn(async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)}));
+    vi.stubGlobal('window',{AudioContext:SampleAudio});vi.stubGlobal('fetch',request);
+    playEffect('pick',{music:false,effects:true});
+    for(let i=0;i<10;i++)await Promise.resolve();
+    expect(request).toHaveBeenCalledTimes(8);
+    playEffect('drop');expect(sources).toHaveLength(1);expect(sources[0].start).toHaveBeenCalledOnce();
+    syncAudioSettings({music:false,effects:false});expect(sources[0].stop).toHaveBeenCalledOnce();
+    playEffect('reward');expect(sources).toHaveLength(1);
+    playEffect('reward',{music:false,effects:true});expect(sources).toHaveLength(2);
+    setAudioPaused(true);expect(sources[1].stop).toHaveBeenCalledOnce();
+    playEffect('success');expect(sources).toHaveLength(2);expect(request).toHaveBeenCalledTimes(8);
   });
 });

@@ -8,3 +8,5 @@ playwright-report/
 .env.*
 !.env.example
 __pycache__/
+.tools/
+.wrangler/

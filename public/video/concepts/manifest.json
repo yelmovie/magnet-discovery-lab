@@ -1,0 +1,52 @@
+[
+  {
+    "stage": 1,
+    "title": "생활 속 자석",
+    "duration": 12,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "bytes": 188226,
+    "sha256": "6e8cd3b6efa8d092c009b56d75822f4f64f19fbf8c2a652883b3230d31de8b46"
+  },
+  {
+    "stage": 2,
+    "title": "닿지 않아도 작용하는 힘",
+    "duration": 12,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "bytes": 215458,
+    "sha256": "c9a6cd2d2fd1b98e7ed4c142fa07af7af15b9e992bd383f6172afd3fb371763a"
+  },
+  {
+    "stage": 3,
+    "title": "자석의 극과 움직임",
+    "duration": 12,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "bytes": 162946,
+    "sha256": "e5c9ecc7d4d902b8591524bc95453a04db52b99bc4e272847bfcd699efa5b51c"
+  },
+  {
+    "stage": 4,
+    "title": "손대지 않는 원격 조종",
+    "duration": 12,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "bytes": 176224,
+    "sha256": "de48264eff68eabfcc7d5abf9c930ad43c3da24c9f443082145014d4a2a38fed"
+  },
+  {
+    "stage": 5,
+    "title": "설계하고 시험하고 고치기",
+    "duration": 12,
+    "width": 1280,
+    "height": 720,
+    "fps": 24,
+    "bytes": 146021,
+    "sha256": "201057275f80ed10671f3372fa6f4725838d0783f9b71723a9d544ad10f9516b"
+  }
+]

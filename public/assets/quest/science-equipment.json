@@ -1,0 +1,185 @@
+{
+  "frames": {
+    "ringN": {
+      "frame": {
+        "x": 32,
+        "y": 87,
+        "w": 453,
+        "h": 324
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 453,
+        "h": 324
+      },
+      "sourceSize": {
+        "w": 453,
+        "h": 324
+      }
+    },
+    "ringS": {
+      "frame": {
+        "x": 545,
+        "y": 86,
+        "w": 452,
+        "h": 325
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 452,
+        "h": 325
+      },
+      "sourceSize": {
+        "w": 452,
+        "h": 325
+      }
+    },
+    "plate": {
+      "frame": {
+        "x": 1064,
+        "y": 83,
+        "w": 439,
+        "h": 328
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 439,
+        "h": 328
+      },
+      "sourceSize": {
+        "w": 439,
+        "h": 328
+      }
+    },
+    "pad": {
+      "frame": {
+        "x": 33,
+        "y": 561,
+        "w": 466,
+        "h": 366
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 466,
+        "h": 366
+      },
+      "sourceSize": {
+        "w": 466,
+        "h": 366
+      }
+    },
+    "key": {
+      "frame": {
+        "x": 544,
+        "y": 512,
+        "w": 465,
+        "h": 430
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 465,
+        "h": 430
+      },
+      "sourceSize": {
+        "w": 465,
+        "h": 430
+      }
+    },
+    "stand": {
+      "frame": {
+        "x": 1146,
+        "y": 467,
+        "w": 300,
+        "h": 505
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 300,
+        "h": 505
+      },
+      "sourceSize": {
+        "w": 300,
+        "h": 505
+      }
+    }
+  },
+  "meta": {
+    "app": "5magnet production art",
+    "version": "2026-10-24",
+    "image": "science-equipment.webp",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1536,
+      "h": 1024
+    },
+    "scale": "1"
+  },
+  "diagnostics": {
+    "ringN": {
+      "solid_bbox": [
+        40,
+        95,
+        477,
+        403
+      ]
+    },
+    "ringS": {
+      "solid_bbox": [
+        553,
+        94,
+        989,
+        403
+      ]
+    },
+    "plate": {
+      "solid_bbox": [
+        1072,
+        91,
+        1495,
+        403
+      ]
+    },
+    "pad": {
+      "solid_bbox": [
+        41,
+        569,
+        491,
+        919
+      ]
+    },
+    "key": {
+      "solid_bbox": [
+        552,
+        520,
+        1001,
+        934
+      ]
+    },
+    "stand": {
+      "solid_bbox": [
+        1154,
+        475,
+        1438,
+        964
+      ]
+    }
+  }
+}

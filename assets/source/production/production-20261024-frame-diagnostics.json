@@ -1,0 +1,270 @@
+[
+  {
+    "name": "magnetic-gate",
+    "file": "public\\assets\\quest\\magnetic-gate.webp",
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "bytes": 1016278,
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "transparent_pixels": 879904,
+    "solid_bbox": [
+      35,
+      141,
+      1502,
+      890
+    ],
+    "sha256": "d5414388d167aeaec031f0e19b662836f3a1f60d86264f8e7e85b18acf44699b"
+  },
+  {
+    "name": "mission-vignettes",
+    "file": "public\\assets\\quest\\mission-vignettes.webp",
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "bytes": 1498074,
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "transparent_pixels": 699472,
+    "solid_bbox": [
+      23,
+      7,
+      1532,
+      1023
+    ],
+    "sha256": "412ce34de736a98fb8dbdcc05b778b1fd3950a91f129d2bddd3249bd700fb837",
+    "cells": [
+      {
+        "index": 0,
+        "cell": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "solid_bbox_local": [
+          25,
+          7,
+          499,
+          506
+        ]
+      },
+      {
+        "index": 1,
+        "cell": [
+          512,
+          0,
+          1024,
+          512
+        ],
+        "solid_bbox_local": [
+          22,
+          44,
+          512,
+          509
+        ]
+      },
+      {
+        "index": 2,
+        "cell": [
+          1024,
+          0,
+          1536,
+          512
+        ],
+        "solid_bbox_local": [
+          0,
+          7,
+          387,
+          498
+        ]
+      },
+      {
+        "index": 3,
+        "cell": [
+          0,
+          512,
+          512,
+          1024
+        ],
+        "solid_bbox_local": [
+          23,
+          25,
+          512,
+          511
+        ]
+      },
+      {
+        "index": 4,
+        "cell": [
+          512,
+          512,
+          1024,
+          1024
+        ],
+        "solid_bbox_local": [
+          0,
+          20,
+          503,
+          471
+        ]
+      },
+      {
+        "index": 5,
+        "cell": [
+          1024,
+          512,
+          1536,
+          1024
+        ],
+        "solid_bbox_local": [
+          6,
+          4,
+          508,
+          486
+        ]
+      }
+    ]
+  },
+  {
+    "name": "coach-companion",
+    "file": "public\\assets\\quest\\coach-companion.webp",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 1010874,
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "transparent_pixels": 917001,
+    "solid_bbox": [
+      128,
+      21,
+      1198,
+      1233
+    ],
+    "sha256": "6f293f6d7990cb1f1a3c5dbfcff72840102a01974418804c5ae0dce30492f3e0"
+  },
+  {
+    "name": "science-equipment",
+    "file": "public\\assets\\quest\\science-equipment.webp",
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "bytes": 932808,
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1017489,
+    "solid_bbox": [
+      40,
+      91,
+      1495,
+      964
+    ],
+    "sha256": "e79d1cdf3e5dfc5073f7c31616602fea872ee69fc34f1ed7caa70b28016f7044",
+    "cells": [
+      {
+        "index": 0,
+        "cell": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "solid_bbox_local": [
+          40,
+          95,
+          477,
+          403
+        ]
+      },
+      {
+        "index": 1,
+        "cell": [
+          512,
+          0,
+          1024,
+          512
+        ],
+        "solid_bbox_local": [
+          41,
+          94,
+          477,
+          403
+        ]
+      },
+      {
+        "index": 2,
+        "cell": [
+          1024,
+          0,
+          1536,
+          512
+        ],
+        "solid_bbox_local": [
+          48,
+          91,
+          471,
+          512
+        ]
+      },
+      {
+        "index": 3,
+        "cell": [
+          0,
+          512,
+          512,
+          1024
+        ],
+        "solid_bbox_local": [
+          41,
+          57,
+          491,
+          407
+        ]
+      },
+      {
+        "index": 4,
+        "cell": [
+          512,
+          512,
+          1024,
+          1024
+        ],
+        "solid_bbox_local": [
+          40,
+          8,
+          489,
+          422
+        ]
+      },
+      {
+        "index": 5,
+        "cell": [
+          1024,
+          512,
+          1536,
+          1024
+        ],
+        "solid_bbox_local": [
+          130,
+          0,
+          414,
+          452
+        ]
+      }
+    ]
+  }
+]

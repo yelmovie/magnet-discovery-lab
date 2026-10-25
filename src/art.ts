@@ -17,13 +17,41 @@ export function mascot(type: 'mili' | 'dangi' = 'mili', size = 110, pose = 0): s
 }
 export function magnet(pole = 'N', cls = ''): string { return `<div class="bar-magnet ${pole === 'S' ? 'flipped' : ''} ${cls}"><span>N</span><span>S</span></div>`; }
 export function objectArt(id: string): string {
-  const content: Record<string, string> = {
-    clip: '<path d="M63 33 39 71c-15 22-36 4-23-14l29-41c10-15 31-2 20 13L39 67c-5 7-13 1-8-6l23-32" fill="none" stroke="#77929f" stroke-width="7" stroke-linecap="round"/>',
-    nail: '<path d="m53 17-6 5-18 60 8-5 22-54" fill="#a1b2ba" stroke="#657f91" stroke-width="2"/><path d="m42 15 26 8" stroke="#627c8c" stroke-width="8" stroke-linecap="round"/>',
-    aluminum: '<path d="m16 28 49-12 15 48-49 13z" fill="#cedbe3" stroke="#94aabb" stroke-width="2"/><path d="m22 34 42-10M28 56l39-14" stroke="#edf4f8" stroke-width="5"/>',
-    wood: '<rect x="16" y="23" width="64" height="52" rx="5" fill="#cda170"/><path d="M21 37q20-8 52 0M23 50q32-9 49 0M22 64q20-8 50-1" fill="none" stroke="#a77b52" stroke-width="3"/>',
-    plastic: '<rect x="20" y="23" width="60" height="53" rx="8" fill="#f3b64b"/><path d="M20 35h60M31 23v12m15-12v12m15-12v12" stroke="#d48a34" stroke-width="3"/><path d="M30 47h40v18H30z" fill="#ffd780"/>',
-    rubber: '<path d="m20 32 48-12 12 38-49 16z" fill="#e88583"/><path d="m50 25 18-5 12 38-18 6z" fill="#8bc2d5"/><path d="m25 37 38-9" stroke="#f6b4ac" stroke-width="4"/>',
+  const materials: Record<string, { index: number; label: string }> = {
+    clip: { index: 0, label: '철 클립' }, nail: { index: 1, label: '철못' },
+    aluminum: { index: 2, label: '알루미늄 조각' }, wood: { index: 3, label: '나무 조각' },
+    plastic: { index: 4, label: '플라스틱' }, rubber: { index: 5, label: '고무 지우개' },
   };
-  return `<svg viewBox="0 0 96 96" role="img" aria-label="${id}">${content[id] || content.clip}</svg>`;
+  const material = materials[id] || materials.clip;
+  return `<span class="material-art" role="img" aria-label="${material.label}" style="--material-column:${material.index % 3};--material-row:${Math.floor(material.index / 3)}"></span>`;
+}
+
+export type EquipmentKind = 'ringN' | 'ringS' | 'plate' | 'pad' | 'key' | 'stand';
+const equipmentFrames: Record<EquipmentKind, { frame: [number, number, number, number]; label: string }> = {
+  ringN: { frame: [32, 87, 453, 324], label: '윗면이 N극인 고리자석' },
+  ringS: { frame: [545, 86, 452, 325], label: '윗면이 S극인 고리자석' },
+  plate: { frame: [1064, 83, 439, 328], label: '자석과 마주 놓는 철 걸쇠' },
+  pad: { frame: [33, 561, 466, 366], label: '수조 안쪽 청소 패드' },
+  key: { frame: [544, 512, 465, 430], label: '철 열쇠' },
+  stand: { frame: [1146, 467, 300, 505], label: '고리자석 실험 받침대' },
+};
+
+/** Exact atlas crops preserve each real object's proportions at any display size. */
+export function equipmentArt(kind: EquipmentKind, extraClass = ''): string {
+  const { frame: [x, y, width, height], label } = equipmentFrames[kind];
+  return `<span class="equipment-art equipment-${kind} ${extraClass}" role="img" aria-label="${label}" style="--equipment-ratio:${width}/${height};background-size:${153600 / width}% ${102400 / height}%;background-position:${x / (1536 - width) * 100}% ${y / (1024 - height) * 100}%"></span>`;
+}
+
+/** District scenes are shared by invitations, records, rewards, and the journey. */
+export function sceneArt(index: number, extraClass = ''): string {
+  const safeIndex = Math.min(5, Math.max(0, Math.floor(index)));
+  const labels = ['자석과 철 걸쇠가 보이는 우편함', '여러 재료의 자석 반응을 살피는 실험', '같은 극이 마주 보아 떨어져 있는 고리자석', '수조 청소와 자석 택배 장치', '자석과 철 부품을 배치한 발명 장치', '복구된 자석 도시와 시민들의 도구'];
+  // The generated vignette's ring colors are not a valid axial magnet model.
+  // Assemble this scene from the separately verified N-top/S-top equipment.
+  const rings = safeIndex === 2 ? `<span class="scene-ring-equipment" aria-hidden="true">${equipmentArt('stand', 'scene-stand')}${equipmentArt('ringN', 'scene-ring-lower')}${equipmentArt('ringS', 'scene-ring-upper')}</span>` : '';
+  // The lower-left rail extends beyond a nominal 512px cell. Keep the whole
+  // rail in its own scene and exclude that fragment from the invention scene.
+  const [x,y,width,height] = safeIndex===3?[0,512,550,512]:safeIndex===4?[550,512,474,512]:[safeIndex%3*512,Math.floor(safeIndex/3)*512,512,512];
+  const crop = safeIndex===2?'':`background-size:${153600/width}% ${102400/height}%;background-position:${x/(1536-width)*100}% ${y/(1024-height)*100}%;aspect-ratio:${width}/${height};`;
+  return `<span class="mission-scene-art ${safeIndex === 2 ? 'scene-poles' : ''} ${extraClass}" role="img" aria-label="${labels[safeIndex]}" style="${crop}">${rings}</span>`;
 }

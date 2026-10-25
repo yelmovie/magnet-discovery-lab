@@ -12,6 +12,13 @@ export function assemblyAligned(magnet:Point,target:Point,remote:boolean):boolea
 export function missionReady(screen: number, a: Activity, s: Save): boolean {
   const f = (k: string) => a.values[k] === true;
   const proof = (key: string) => !!a.trials?.some(t => t.key === key && validTrial(t) && t.outcome === 'success');
+  if(a.values.mechanicsVersion===1){
+    if(screen===1&&![0,1].every(i=>f(`latch${i}`)))return false;
+    if(screen===2&&!f('diagnosis2'))return false;
+    if(screen===3&&!['clip','nail','aluminum','wood','plastic','rubber'].every(id=>f(`sorted-${id}`)))return false;
+    if(screen===8&&![0,1,2].every(i=>f(`checkpoint${i}`)))return false;
+    if(screen===9&&!a.trials?.some(t=>t.key==='prototype'&&validTrial(t)&&t.designRevision===s.design.revision&&t.template===s.design.template))return false;
+  }
   switch (screen) {
     case 1: return [0, 1].every(i => f(`found${i}`) && proof(`inspect${i}`));
     case 2: return [0, 1].every(i => f(`with${i}`) && f(`without${i}`) && proof(`repair${i}`)) && f('with2') && proof('repair2');

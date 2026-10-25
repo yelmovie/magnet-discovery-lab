@@ -1,6 +1,7 @@
-/** Self-contained procedural audio. No external music, samples, requests, or downloads. */
+/** Local CC0 effects with procedural fallback. This release has no background music. */
 export interface AudioSettings {
   sound?: boolean;
+  /** Legacy preference, ignored while no background track is installed. */
   music?: boolean;
   effects?: boolean;
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
@@ -9,24 +10,36 @@ export interface AudioSettings {
 export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step';
 
 const EFFECT_GAIN = 0.16;
-const MUSIC_GAIN = EFFECT_GAIN * 0.7;
 const DEFAULT_VOLUME = 0.35;
 type Voice = { oscillator: OscillatorNode; gain: GainNode };
 let current: AudioSettings = {};
 let context: AudioContext | undefined;
-let musicBus: GainNode | undefined;
 let effectBus: GainNode | undefined;
-let musicVoices: Voice[] = [];
 let effectVoices: Voice[] = [];
-let musicTimer: ReturnType<typeof setInterval> | undefined;
-let bar = 0;
 let explicitlyPaused = false;
 let installed = false;
 let activated = false;
+const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step' };
+const sampleBuffers = new Map<string, AudioBuffer>();
+const sampleVoices = new Set<AudioBufferSourceNode>();
+let samplesRequested = false, lastEffect = 0;
+
+function stopSamples() {
+  for(const voice of sampleVoices){try{voice.stop();}catch{}voice.disconnect();}
+  sampleVoices.clear();
+}
+function loadSamples() {
+  if(samplesRequested || !context?.decodeAudioData || typeof fetch==='undefined')return;
+  samplesRequested=true;
+  const owner=context;
+  for(const name of new Set(Object.values(sampleFiles))) {
+    void fetch(`/audio/${name}.mp3`).then(r=>{if(!r.ok)throw new Error('audio unavailable');return r.arrayBuffer();}).then(data=>owner.decodeAudioData(data)).then(buffer=>{if(context===owner)sampleBuffers.set(name,buffer);}).catch(()=>{});
+  }
+}
 
 export function normalizedAudioSettings(settings: AudioSettings) {
   return {
-    music: settings.music ?? settings.sound ?? true,
+    music: false,
     effects: settings.effects ?? settings.sound ?? true,
     musicVolume: Number.isFinite(settings.musicVolume) ? Math.max(0, Math.min(1, settings.musicVolume!)) : DEFAULT_VOLUME,
   };
@@ -42,19 +55,12 @@ function silence(voices: Voice[]) {
   }
 }
 
-function stopMusic() {
-  if (musicTimer !== undefined) clearInterval(musicTimer);
-  musicTimer = undefined;
-  silence(musicVoices);
-}
-
 function makeContext() {
   if (context || typeof window === 'undefined') return;
   const Constructor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Constructor) return;
   try {
     context = new Constructor();
-    musicBus = context.createGain(); musicBus.connect(context.destination);
     effectBus = context.createGain(); effectBus.gain.value = EFFECT_GAIN; effectBus.connect(context.destination);
   } catch { context = undefined; /* Audio availability must never block the activity. */ }
 }
@@ -75,37 +81,22 @@ function note(frequency: number, when: number, duration: number, bus: GainNode, 
   oscillator.start(when); oscillator.stop(when + duration + 0.025);
 }
 
-function scheduleBar() {
-  if (!context || !musicBus || paused() || !normalizedAudioSettings(current).music) return;
-  // A gentle, sparse original four-bar pentatonic phrase; one scheduler for the whole app.
-  const phrases = [[261.63, 392, 329.63, 440], [293.66, 440, 392, 329.63], [329.63, 523.25, 440, 392], [293.66, 392, 329.63, 261.63]];
-  const phrase = phrases[bar % phrases.length], start = context.currentTime + 0.04;
-  phrase.forEach((frequency, i) => note(frequency, start + i * 0.6, 0.52, musicBus!, musicVoices, 0.21));
-  note(phrase[0] / 2, start, 1.95, musicBus, musicVoices, 0.12, 'triangle');
-  bar++;
-}
-
 function apply() {
-  if (!context || !musicBus || !effectBus) return;
+  if (!context || !effectBus) return;
   const settings = normalizedAudioSettings(current);
-  musicBus.gain.value = MUSIC_GAIN * settings.musicVolume;
-  if (!settings.effects || paused()) silence(effectVoices);
-  if (!settings.music || paused()) stopMusic();
-  else if (activated && musicTimer === undefined) {
-    scheduleBar(); musicTimer = setInterval(scheduleBar, 2400);
-  }
+  if (!settings.effects || paused()) { silence(effectVoices); stopSamples(); }
 }
 
 function activate() {
   if (paused()) return;
-  activated = true; makeContext();
+  activated = true; makeContext(); loadSamples();
   if (context?.state === 'suspended') void context.resume().then(apply).catch(() => { /* Retry on the next gesture. */ });
   else apply();
 }
 
 function visibilityChanged() {
   if (isHidden()) {
-    stopMusic(); silence(effectVoices);
+    silence(effectVoices); stopSamples();
     if (context?.state === 'running') void context.suspend().catch(() => {});
   } else if (activated && !explicitlyPaused) activate();
 }
@@ -129,8 +120,15 @@ export function syncAudioSettings(settings: AudioSettings) { ensureAudio(setting
 export function playEffect(kind: EffectKind, settings: AudioSettings = current) {
   ensureAudio(settings);
   if (!normalizedAudioSettings(current).effects || paused()) return;
-  activate(); silence(effectVoices);
+  activate(); silence(effectVoices); stopSamples();
   if (!context || !effectBus) return;
+  // Repeated feedback from animation frames must never create a wall of sound.
+  const nowMs=Date.now();if((kind==='step'||kind==='bump')&&nowMs-lastEffect<160)return;lastEffect=nowMs;
+  const buffer=sampleBuffers.get(sampleFiles[kind]||'');
+  if(buffer&&context.createBufferSource){
+    const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=kind==='step'?.25:.72;source.connect(gain);gain.connect(effectBus);sampleVoices.add(source);
+    source.onended=()=>{sampleVoices.delete(source);source.disconnect();gain.disconnect();};source.start();return;
+  }
   const notes: Record<EffectKind, number[]> = {
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
@@ -143,18 +141,18 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
 /** Quiet audio during story/video playback and explicit game suspension. */
 export function setAudioPaused(value: boolean) {
   explicitlyPaused = value;
-  if (value) { stopMusic(); silence(effectVoices); }
+  if (value) { silence(effectVoices); stopSamples(); }
   else if (activated) activate();
 }
 
 export function disposeAudio() {
-  stopMusic(); silence(effectVoices);
+  silence(effectVoices); stopSamples(); sampleBuffers.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {
     document.removeEventListener('pointerdown', activate);
     document.removeEventListener('keydown', activate);
     document.removeEventListener('visibilitychange', visibilityChanged);
   }
-  installed = false; activated = false; explicitlyPaused = false; bar = 0;
-  const oldContext = context; context = undefined; musicBus = undefined; effectBus = undefined;
+  installed = false; activated = false; explicitlyPaused = false;
+  const oldContext = context; context = undefined; effectBus = undefined;
   if (oldContext && oldContext.state !== 'closed') void oldContext.close().catch(() => {});
 }

@@ -1,0 +1,16 @@
+{
+  "creator": "Kenney",
+  "pack": "Interface Sounds 1.0",
+  "license": "CC0-1.0",
+  "url": "https://kenney.nl/assets/interface-sounds",
+  "files": {
+    "click": "click_003",
+    "pick": "pluck_001",
+    "drop": "drop_002",
+    "compare": "question_002",
+    "success": "confirmation_002",
+    "reward": "confirmation_004",
+    "bump": "error_003",
+    "step": "tick_001"
+  }
+}

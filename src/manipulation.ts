@@ -16,9 +16,14 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
   c.a.points[`initial:${id}`] ||= { ...start };
   let p = { ...start }, active = false, travelled = false, pointer = -1, anchor = { x: 0, y: 0 }, offset = { x: 0, y: 0 };
   const draw = () => { el.style.left = `${p.x}%`; el.style.top = `${p.y}%`; };
+  // A science model may snap, return, or animate a piece after a drop. Read its
+  // visible position before the next input, including uncommitted arrow moves.
+  const syncPosition = () => { const x=Number.parseFloat(el.style.left),y=Number.parseFloat(el.style.top);if(Number.isFinite(x)&&Number.isFinite(y)&&el.style.left.endsWith('%')&&el.style.top.endsWith('%'))p={x,y}; };
+  const unavailable = () => (el as HTMLButtonElement).disabled || c.root.inert;
   const location = (e: PointerEvent) => { const r = board.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 }; };
   el.addEventListener('pointerdown', e => {
-    if (!(e instanceof PointerEvent) || e.button !== 0 || !e.isPrimary || active || document.querySelector('.modal-backdrop')) return;
+    if (!(e instanceof PointerEvent) || e.button !== 0 || !e.isPrimary || active || unavailable() || document.querySelector('.modal-backdrop')) return;
+    syncPosition();
     e.preventDefault(); active = true; travelled = false; pointer = e.pointerId; anchor = { ...p }; const q = location(e); offset = { x: p.x - q.x, y: p.y - q.y };
     el.setPointerCapture(pointer); el.classList.add('dragging'); el.focus({ preventScroll: true });
   });
@@ -29,12 +34,14 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
   el.addEventListener('pointerup', e => {
     if (!active || !(e instanceof PointerEvent) || e.pointerId !== pointer) return;
     active = false; el.classList.remove('dragging'); if (el.hasPointerCapture(pointer)) el.releasePointerCapture(pointer);
+    syncPosition();
     if (travelled) { c.a.points[id] = { ...p }; end({ ...p }); }
   });
-  const cancel = () => { if (!active) return; active = false; el.classList.remove('dragging'); c.a.points[id] = { ...p }; c.touch(); };
+  const cancel = () => { if (!active) return; active = false; el.classList.remove('dragging'); syncPosition();c.a.points[id] = { ...p }; c.touch(); };
   el.addEventListener('pointercancel', cancel); el.addEventListener('lostpointercapture', cancel);
   el.addEventListener('keydown', e => {
-    if (document.querySelector('.modal-backdrop')) return;
+    if (unavailable() || document.querySelector('.modal-backdrop')) return;
+    syncPosition();
     const step = e.shiftKey ? 1 : 4;
     const dir: Record<string, Point> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: -step }, ArrowDown: { x: 0, y: step } };
     if (dir[e.key]) { e.preventDefault(); p = { x: clamp(p.x + dir[e.key].x), y: clamp(p.y + dir[e.key].y, 12, 89) }; draw(); move?.(p); }
@@ -42,7 +49,7 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
     if (e.key === 'Escape') { e.preventDefault(); active = false; c.touch(); c.refresh(); }
   });
   el.addEventListener('piece-place', e => {
-    if (document.querySelector('.modal-backdrop')) return;
+    if (unavailable() || document.querySelector('.modal-backdrop')) return;
     p = (e as CustomEvent<Point>).detail; draw(); move?.(p); c.a.points[id] = { ...p }; end({ ...p });
   });
   window.addEventListener('blur', cancel); window.addEventListener('resize', cancel); document.addEventListener('visibilitychange', cancel);

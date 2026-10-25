@@ -1,5 +1,6 @@
 import { currentInventionTrial, paperComparison, validTrial, type Trial } from './trial-records';
 import { missionReady } from './mission-model';
+import { inquiryReady } from './inquiry-model';
 export type Pole = 'N' | 'S';
 export type Relation = 'attract' | 'repel' | 'none';
 export type Point = { x: number; y: number };
@@ -37,7 +38,7 @@ export const materials = [
 export const emptyActivity = (): Activity => ({ values: {}, points: {}, records: [], mask: [] });
 export const defaultDesign = (template: Design['template'] = 'box'): Design => ({ template, pair: 'iron', pole: 'N', gap: 65, aligned: false, revision: 0 });
 export function freshSave(): Save {
-  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: true, effects: true, musicVolume: .35, motion: true, nickname: '' }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
+  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: false, effects: true, musicVolume: .35, motion: true, nickname: '' }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
 }
 export function opposite(p: Pole): Pole { return p === 'N' ? 'S' : 'N'; }
 export function relation(a: Pole, b: Pole): Relation { return a === b ? 'repel' : 'attract'; }
@@ -61,7 +62,7 @@ export function value(a: Activity, key: string, fallback: number): number { retu
 export function flag(a: Activity, key: string): boolean { return a.values[key] === true; }
 export function record(a: Activity, o: Observation): void { const i = a.records.findIndex(r => r.key === o.key); if (i >= 0) a.records[i] = o; else a.records.push(o); }
 export function ready(screen: number, a: Activity, s: Save): boolean {
-  if (a.values.playVersion === 4) return missionReady(screen, a, s);
+  if (a.values.playVersion === 4) return missionReady(screen, a, s) && inquiryReady(screen,a);
   const f = (k: string) => flag(a, k);
   if (a.values.playVersion === 3) {
     switch (screen) {
@@ -167,7 +168,7 @@ export function migrateSave(input: unknown): Save | null {
   const next = structuredClone(input);
   next.version = 2;
   next.designs ||= {};
-  next.settings.music = typeof next.settings.music === 'boolean' ? next.settings.music : next.settings.sound;
+  next.settings.music = false;
   next.settings.effects = typeof next.settings.effects === 'boolean' ? next.settings.effects : next.settings.sound;
   next.settings.musicVolume = Number.isFinite(next.settings.musicVolume) ? Math.max(0, Math.min(1, next.settings.musicVolume!)) : .35;
   for (const a of Object.values(next.activities)) a.trials ||= [];

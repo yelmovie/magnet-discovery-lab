@@ -36,7 +36,30 @@ export function currentInventionTrial(a: Activity, template: string, revision: n
   return !!a.trials?.some(t => validTrial(t) && t.key === 'use' && t.template === template && t.designRevision === revision && t.outcome === 'success' && t.conditions.aligned === true && typeof t.conditions.gap === 'number' && t.conditions.gap <= 36);
 }
 const escape = (s: unknown) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+function trialGlyph(o: TrialObject, t: Trial, x: number, y: number): string {
+  const crop = (file: string, box: string, width = 46, height = 36, neutral = false) => `<svg x="${x-width/2}" y="${y-height/2}" width="${width}" height="${height}" viewBox="${box}" preserveAspectRatio="xMidYMid meet"><image href="/assets/quest/${file}.webp" width="1536" height="1024"${neutral?' style="filter:grayscale(1)"':''}/></svg>`;
+  const material = /^material-([0-5])$/.exec(o.id);
+  if (material) { const i=Number(material[1]); return crop('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`); }
+  if (o.id==='clip') return t.key==='rescue'?crop('science-equipment','544 512 465 430'):crop('material-kit','0 0 512 512');
+  if (o.id==='cart-magnet') return `<image href="/assets/quest/prop-cart.webp" x="${x-25}" y="${y-20}" width="50" height="40"/>`;
+  if (/magnet|probe|controller|cleaner/.test(o.id)) return crop('magnet-bar','60 370 1420 285',52,20,true);
+  if (o.id.includes('ring')) return crop('science-equipment','32 87 453 324',46,32,true);
+  if (o.id.includes('pad')) return crop('science-equipment','33 561 466 366');
+  if (o.id.includes('plate')||o.id.includes('target')&&t.conditions.pair==='iron') return crop('science-equipment','1064 83 439 328');
+  if (o.id.includes('target')&&t.conditions.pair==='magnet') return crop('magnet-bar','60 370 1420 285',52,20,true);
+  if (o.id==='base') return `<image href="/assets/quest/prop-${t.template==='remote'?'cart':'postal-box'}.webp" x="${x-25}" y="${y-22}" width="50" height="44"/>`;
+  if (o.id.startsWith('sticker')) return `<text x="${x}" y="${y+8}" text-anchor="middle" font-size="24" font-weight="700" fill="#28565e">${o.id==='stickerN'?'N':'S'}</text>`;
+  return `<rect x="${x-17}" y="${y-10}" width="34" height="20" rx="5" fill="#fff9e9" stroke="#547b78" stroke-width="2"/>`;
+}
 export function trialPicture(t: Trial): string {
-  const objects = (list: TrialObject[], before: boolean) => list.map(o => `<g class="${before ? 'trial-before' : 'trial-object'}" style="--dx:${((t.initialObjects.find(p => p.id === o.id)?.x ?? o.x) - o.x) * 4}px;--dy:${((t.initialObjects.find(p => p.id === o.id)?.y ?? o.y) - o.y) * 1.6}px" opacity="${before ? '.3' : '1'}"><rect x="${o.x * 4 - 18}" y="${o.y * 1.6 - 10}" width="36" height="22" rx="5" fill="${o.id.includes('magnet') ? '#d45b51' : o.id === 'paper' ? '#eadca9' : '#7d9ca6'}"/><text x="${o.x * 4}" y="${o.y * 1.6 + 6}" text-anchor="middle" font-size="13" fill="#123d4c">${escape(o.pole || (o.id.includes('magnet') ? 'N S' : o.id.includes('clip') ? '철' : o.id === 'paper' ? '종이' : '●'))}</text></g>`).join('');
-  return `<figure class="trial-picture"><svg viewBox="0 0 400 170" role="img" aria-label="${escape(t.conditions.label || t.key)} · 실험 전후 위치">${objects(t.initialObjects, true)}${objects(t.objects, false)}</svg><figcaption>${escape(t.conditions.label || t.key)} · ${escape(({ attract: '클립이 움직였어', none: '움직이지 않았어', success: '작동했어', failure: '다시 살펴보자' } as Record<string, string>)[t.outcome] || t.outcome)}</figcaption></figure>`;
+  const list=t.objects.filter(o=>!o.id.startsWith('initial:')), all=[...list,...t.initialObjects];
+  if(!all.length)return `<figure class="trial-picture"><figcaption>${escape(t.conditions.label||t.key)}</figcaption></figure>`;
+  const xs=all.map(o=>o.x*4),ys=all.map(o=>o.y*2.25),mx=(Math.min(...xs)+Math.max(...xs))/2,my=(Math.min(...ys)+Math.max(...ys))/2;
+  const scale=Math.min(320/Math.max(100,Math.max(...xs)-Math.min(...xs)),100/Math.max(45,Math.max(...ys)-Math.min(...ys)));
+  const pos=(o:TrialObject)=>({x:200+(o.x*4-mx)*scale,y:85+(o.y*2.25-my)*scale});
+  const label=(id:string)=>id.includes('magnet')||['probe','controller','cleaner'].includes(id)?'자석':id.includes('lid')||id==='use-handle'?'손잡이':id.includes('ring')?'고리':id.includes('paper')?'종이':id.includes('plate')||id.includes('target')?'대상 부품':id.includes('pad')?'패드':id.includes('clip')?'철 클립':id.includes('material')?'재료':'부품';
+  const marks=list.map((o,i)=>{const end=pos(o),before=pos(t.initialObjects.find(p=>p.id===o.id)||o);
+    return `<g><title>${escape(label(o.id))}</title><path d="M${before.x} ${before.y}L${end.x} ${end.y}" stroke="#71968b" stroke-width="2" stroke-dasharray="4 5"/><rect x="${before.x-21}" y="${before.y-14}" width="42" height="28" rx="7" fill="none" stroke="#9ab1a6" stroke-width="2" stroke-dasharray="3 3"/>${trialGlyph(o,t,end.x,end.y)}<circle cx="${end.x+21}" cy="${end.y-18}" r="10" fill="#315d65"/><text x="${end.x+21}" y="${end.y-14}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff9e9">${i+1}</text></g>`;}).join('');
+  const outcome=({attract:'움직였어',none:'움직이지 않았어',success:'작동했어',failure:'다시 살펴보자'} as Record<string,string>)[t.outcome]||t.outcome;
+  return `<figure class="trial-picture"><svg viewBox="0 0 400 170" role="img" aria-label="${escape(t.conditions.label||t.key)} · 처음과 결과 위치. 극 방향은 생략"><rect x="1" y="1" width="398" height="168" rx="12" fill="#f1ecd9"/>${marks}</svg><figcaption><span class="trial-key">${list.map((o,i)=>`${i+1} ${escape(label(o.id))}`).join(' · ')}</span>${escape(t.conditions.label||t.key)} · ${escape(outcome)}<small>점선은 처음 자리, 그림은 결과 자리야. 극 방향은 생략했어.</small></figcaption></figure>`;
 }

@@ -8,18 +8,17 @@
 | Vite 7.3.6 | 개발 서버·정적 빌드 | MIT · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
 | TypeScript 5.9.3 | 타입 검사 | Apache-2.0 · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
 | Vitest 3.2.7 | 자동 검사 | MIT · 설치 패키지 package.json/LICENSE | PASS · 개발 도구 |
-| Web Audio API | 배경 음악·효과음 | 브라우저 기본 API · 외부 음원·샘플·음악 생성 서비스 없음 | PASS · 프로젝트 소스에서 절차 합성 |
+| Web Audio API | 효과음 재생·합성 대체음 | 브라우저 기본 API · CC0 효과음 출처는 아래 표에 기록 | PASS · 배경음 없음 |
 
 본 앱과 하위 작업 폴더의 package.json(의존성 폴더 제외)을 확인했으며, 현재 프로젝트에는 Remotion·유료 UI 키트·음악 생성 서비스 의존성을 추가하지 않았다. 이미지·폰트의 개별 출처와 이용 조건은 아래 해당 항목에서 관리한다.
 
-## 자체 제작 소리
+## 효과음 전용 재생
 
 - 구현 파일: `src/game-audio.ts`.
-- 배경 음악은 네 마디의 짧고 차분한 음형을 Web Audio API의 발진기와 볼륨 포락선으로 실행 중 직접 합성한다. 외부 음악 파일·샘플·AI 생성 음원은 사용하지 않는다.
-- 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음도 같은 방식으로 합성한다. 원저작자 표기가 필요한 외부 효과음은 없다.
-- 음표·음형은 이 프로젝트를 위해 작성했으며, 특정 곡을 복제하지 않았다.
-- 배경 음악과 효과음은 따로 끄고 켤 수 있다. 음악 음량만 조절하며, 효과음은 한 번에 하나만 재생한다. 문서가 숨겨지거나 영상 등에서 일시 중지를 요청하면 소리를 멈춘다.
-- 최초 적용: 2026-10-21. 외부 사운드 네트워크 요청·다운로드·대용량 사운드 캐시가 없다.
+- 2026-10-25 사용자 요청으로 기존 절차 합성 배경음과 관련 설정을 제거했다. 이 배포본에는 배경음이 없다.
+- 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음 8종만 로컬 MP3로 재생한다. 출처와 CC0 라이선스는 아래 기록을 따른다.
+- 효과음 파일을 불러오지 못하면 Web Audio API로 짧은 대체 효과음을 합성한다. 특정 곡을 복제하지 않았다.
+- 효과음은 한 번에 하나만 재생하며 켜기·끄기를 제공한다. 문서가 숨겨지거나 영상 등에서 일시 중지를 요청하면 멈춘다.
 
 ## 교육 내용 확인 자료
 
@@ -40,9 +39,37 @@
 - 자석도시 지도 1장·활동실 5종·조작 소품 6종: 사용자 요청에 따라 OpenAI imagegen으로 생성. `public/assets/quest/`에 실제 적용. 원본·프롬프트·해시와 알파 검증은 `assets/source/quest/`와 `docs/ART-PROMPTS-20261021.md`에 보관.
 - 기존 밀이·당이 캐릭터와 로고는 이전 프로젝트 에셋을 재사용. 신규 배경에 캐릭터를 구워 넣지 않고 실제 조작 장면에서 별도로 표시.
 
+## 개념 영상·보조 캐릭터·효과음 (2026-10-22)
+
+- **개념 영상 5편**: 프로젝트에서 직접 설계·렌더링한 모션 그래픽. `scripts/render-concepts.py`의 Pillow 프레임을 FFmpeg / libx264로 인코딩. 각 12초, 1280×720, 24fps, H.264/AAC, faststart. `public/video/concepts/`에 MP4·WebP 포스터·한국어 VTT·해시 manifest를 제공한다. 영상의 짧은 음은 스크립트에서 직접 합성한다. Windows 맑은 고딕으로 텍스트를 래스터화했으며 폰트 파일은 배포하지 않는다.
+- **수리 도우미 자꾸**: `src/coach.ts`에 직접 제작한 SVG 자석 수리 로봇. 기존 밀이·당이와 별개로 실험별 행동·단서를 안내한다. 외부 그림·동물 캐릭터·추종 동작은 사용하지 않는다.
+- **효과음**: Kenney, *Interface Sounds 1.0*, CC0 1.0 Universal. 공식 출처: https://kenney.nl/assets/interface-sounds. 원본 ZIP·라이선스: `assets/source/audio/`. 배포본과 라이선스: `public/audio/`. MP3 모노 44.1kHz/96kbps로 변환하고 최대 0.8초·끝 페이드를 적용했다. CC0 음원에는 프로젝트 자체 제작물의 이용 제한을 적용하지 않는다.
+
+| 배포 파일 | Kenney 원본 | 사용 |
+|---|---|---|
+| click.mp3 | click_003.ogg | 선택·버튼 |
+| pick.mp3 | pluck_001.ogg | 물체 잡기 |
+| drop.mp3 | drop_002.ogg | 물체 놓기 |
+| compare.mp3 | question_002.ogg | 비교 |
+| success.mp3 | confirmation_002.ogg | 실험 성공 |
+| reward.mp3 | confirmation_004.ogg | 도구 획득 |
+| bump.mp3 | error_003.ogg | 다시 관찰할 단서 |
+| step.mp3 | tick_001.ogg | 짧은 이동음 |
+
 ## 폰트
 
 - Jua (Woowahan Brothers)와 Pretendard (Kil Hyung-jin)의 OFL 1.1 원문을 `public/fonts/`에 동봉. 기존 사용 가능 원본에서 필요한 글리프만 번들.
 - 수정한 폰트의 내부 이름은 RFN 준수를 위해 Magnet Quest Display / Magnet Quest Sans로 변경. CSS 별칭은 Magnet Quest Display / Magnet Quest Sans. 자세한 수정·검증은 `docs/reviews/DESIGN-SYSTEM-20261021.md` 참조.
 
 - 시작 화면 로고는 제공된 `public/assets/logo.png`에서 만든 무손실 WebP 배포본이다. 글자·그림은 수정하지 않았고, 알파 및 크림 배경 합성 픽셀 동일성을 확인했다. 재생성: `scripts/prepare-runtime-art.py`.
+
+## 2026-10-24 고도화 생성 이미지
+- 재료 6종 아틀라스와 막대자석: 프로젝트 요청에 따라 image_gen으로 신규 생성. 원본은 assets/source/production/, 배포용 무손실 WebP는 public/assets/quest/.
+- 생성 프롬프트, 프레임 규격, 실제 투명도 검사와 권리 범위: docs/ART-PRODUCTION-20261024.md. 제3자 캐릭터·상표·기성 이미지 복제는 요청하지 않았다.
+- 기존 자석 성취기준 세 문구는 위 충청북도교육청 공개 PDF 99쪽과 2026-10-24 재대조했다.
+
+### 같은 날 추가 제작한 소품·장면·도우미
+
+- `science-equipment.webp` (원형 자석 2종·철판·청소 패드·철 열쇠·나무 받침), `magnetic-gate.webp` (자석 문 장치), `mission-vignettes.webp` (활동 장면 6종), `coach-companion.webp` (수리 도우미 자꾸의 새 생성 일러스트): 사용자 요청에 따라 내장 OpenAI `image_gen`으로 신규 생성했다. 위 2026-10-22 항목의 SVG 도우미 설명은 당시 구현 기록이며, 2026-10-24 고도화 화면에는 이 새 이미지가 적용된다.
+- 원본은 `assets/source/production/`, 게임용 RGBA 무손실 WebP와 장비 프레임 JSON은 `public/assets/quest/`. 생성 프롬프트·실제 크기·알파 검사·과학 표현 검수는 `docs/ART-PRODUCTION-20261024.md`, 파일 해시와 프레임 실측은 `assets/source/production/production-20261024-frame-diagnostics.json`에 보관한다.
+- 별도 스톡·오픈소스 라이선스를 부여받은 자료로 표시하지 않는다. 사용 권리는 생성 당시 서비스 약관에 따르며, 별도의 법률 검토나 상표·유사성 권리 조사를 수행했다는 뜻은 아니다. `mission-vignettes`의 위쪽 세 번째 원형 자석 장면은 과학 표현 검수에서 제외하여, 올바른 장비 아틀라스를 조합한 장면으로 대체하도록 했다.
