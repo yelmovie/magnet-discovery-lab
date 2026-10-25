@@ -7,6 +7,8 @@
 | 메인 | Main_Curious Discovery.mp3 | public/audio/music/main-theme.mp3 | 약 78초 |
 | 파이널 | Final_Victory in the Town Square.mp3 | public/audio/music/finale-theme.mp3 | 약 74초 |
 
+두 곡 모두 사용자가 Suno 유료 요금제(사용자 표현: premium) 구독 중에 생성했다고 2026-10-25에 확인했다.
+
 원본은 `assets/source/audio/suno/*-original.mp3`, 파일 크기·SHA-256·제공 파일명은 같은 폴더의 `tracks.json`에 보관했다. 프로젝트 최상위에 있던 MP3는 이 원본 폴더로 이동했다. 그 밖의 기존 자료는 이동하지 않았다.
 
 ## 재생

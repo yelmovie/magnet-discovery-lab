@@ -19,7 +19,7 @@
 - 메인 원본: `assets/source/audio/suno/main-theme-original.mp3` (제공 파일명: `Main_Curious Discovery.mp3`).
 - 파이널 원본: `assets/source/audio/suno/finale-theme-original.mp3` (제공 파일명: `Final_Victory in the Town Square.mp3`).
 - 배포 음원: `public/audio/music/main-theme.mp3`, `finale-theme.mp3`. 바이트 변경 없이 보관했으며 `tracks.json`에 SHA-256·크기·길이를 기록했다.
-- 음악의 출처는 사용자 제공 Suno 생성물이며, 개별 생성 당시 계정·요금제 조건은 별도로 검증하지 않았다. CC0 효과음 라이선스와 구분한다.
+- 음악의 출처는 사용자 제공 Suno 생성물이다. 2026-10-25 사용자가 두 곡 모두 Suno **유료 요금제(사용자 표현: premium)** 구독 중에 생성했다고 확인했다. 유료 구독 중 생성한 곡은 상업적 이용 대상으로 본다. 요금제 결제 내역은 저장소에 보관하지 않으며, 필요하면 사용자 Suno 계정에서 확인한다. CC0 효과음 라이선스와 구분한다.
 - 배경음·효과음은 각각 켜고 끌 수 있다. 영상 재생과 백그라운드 전환 시 멈추고, 복귀 시 같은 위치에서 이어진다.
 - 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음 8종만 로컬 MP3로 재생한다. 출처와 CC0 라이선스는 아래 기록을 따른다.
 - 효과음 파일을 불러오지 못하면 Web Audio API로 짧은 대체 효과음을 합성한다. 특정 곡을 복제하지 않았다.
