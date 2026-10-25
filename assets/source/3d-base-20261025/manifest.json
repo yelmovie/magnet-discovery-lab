@@ -8,7 +8,8 @@
    2048
   ],
   "bytes": 3766974,
-  "sha256": "f55cc677284f46cfa4910d827172eee1900a132a2a1f477e54b28341a0c19178"
+  "sha256": "f55cc677284f46cfa4910d827172eee1900a132a2a1f477e54b28341a0c19178",
+  "meshy_input": true
  },
  "ring-stand.png": {
   "higgsfield_job": "8d0f69dc-ea21-41f8-b5df-bfa3700eaa27",
@@ -19,7 +20,8 @@
    2048
   ],
   "bytes": 2713608,
-  "sha256": "d0f700e259996c8c7f4eaff83c5b469d9d2d591dd8e2c62c371a8c221e1d6de4"
+  "sha256": "d0f700e259996c8c7f4eaff83c5b469d9d2d591dd8e2c62c371a8c221e1d6de4",
+  "meshy_input": true
  },
  "invention-mailbox.png": {
   "higgsfield_job": "3daa526f-3f85-4b1e-8719-a3f36d09207d",
@@ -30,7 +32,9 @@
    2048
   ],
   "bytes": 4018488,
-  "sha256": "1147d2ac07f010cca65c90d822f4898604b2d7b1bf4c3f241c1898a611e18eca"
+  "sha256": "1147d2ac07f010cca65c90d822f4898604b2d7b1bf4c3f241c1898a611e18eca",
+  "meshy_input": false,
+  "role": "assembly reference only"
  },
  "invention-remote-front.png": {
   "higgsfield_job": "a3d04884-005c-41c4-8cf9-f27c04de69cd",
@@ -41,7 +45,9 @@
    2048
   ],
   "bytes": 4609952,
-  "sha256": "01489e865e4e2104729b9e169586217d99b84ee5d7f472f67d103a0ff8fe0d83"
+  "sha256": "01489e865e4e2104729b9e169586217d99b84ee5d7f472f67d103a0ff8fe0d83",
+  "meshy_input": false,
+  "role": "assembly reference only"
  },
  "invention-remote-back.png": {
   "higgsfield_job": "abcb59fd-08e3-4b47-ba5b-21e4ce0f7e39",
@@ -52,6 +58,68 @@
    2048
   ],
   "bytes": 4071125,
-  "sha256": "d762b8b7cf4a586cb2cc38c01b030af9ddbc5eb0bde709e6b85ac1b7c041c292"
+  "sha256": "d762b8b7cf4a586cb2cc38c01b030af9ddbc5eb0bde709e6b85ac1b7c041c292",
+  "meshy_input": false,
+  "role": "assembly reference only"
+ },
+ "parts/box-body.png": {
+  "higgsfield_job": "c36b134d-a7c0-4c7a-babe-111e8d60d18d",
+  "model": "gpt_image_2_5 high 2k 1:1",
+  "reference": "invention-mailbox.png",
+  "meshy_input": true,
+  "size": [
+   2048,
+   2048
+  ],
+  "bytes": 3669436,
+  "sha256": "f6aa621683608324777128bb17af693fbb069de721fbd5edd4fa97ccb74d9416"
+ },
+ "parts/box-lid.png": {
+  "higgsfield_job": "f6feaef6-8fad-4396-9133-c707d60244a0",
+  "model": "gpt_image_2_5 high 2k 1:1",
+  "reference": "invention-mailbox.png",
+  "meshy_input": true,
+  "size": [
+   2048,
+   2048
+  ],
+  "bytes": 3211669,
+  "sha256": "f27643674c5494117828606d0b184453a998969607169823482cfb55f0afdda9"
+ },
+ "parts/remote-frame.png": {
+  "higgsfield_job": "cfbdb472-3dbe-408a-afcc-4b77685c4595",
+  "model": "gpt_image_2_5 high 2k 1:1",
+  "reference": "invention-remote-front.png",
+  "meshy_input": true,
+  "size": [
+   2048,
+   2048
+  ],
+  "bytes": 3951599,
+  "sha256": "a086ac1bbefc62a2a69d90dd80466cbad033268bbfd911f68d2565c53e98f5da"
+ },
+ "parts/remote-handle.png": {
+  "higgsfield_job": "369160aa-06f9-4be2-9493-3f31960bc895",
+  "model": "gpt_image_2_5 high 2k 1:1",
+  "reference": "invention-remote-front.png",
+  "meshy_input": true,
+  "size": [
+   2048,
+   2048
+  ],
+  "bytes": 2983315,
+  "sha256": "5805d22db6d46f44977f690838e8b75aab83002585580c5b4fbc4c2be8842f69"
+ },
+ "parts/remote-tray.png": {
+  "higgsfield_job": "ac93c174-42fb-4e36-8c18-db3e633a4b54",
+  "model": "gpt_image_2_5 high 2k 1:1",
+  "reference": "invention-remote-back.png",
+  "meshy_input": true,
+  "size": [
+   2048,
+   2048
+  ],
+  "bytes": 3163452,
+  "sha256": "9566489d38caf29b3924d1dcaf931221547f6e6e02fe6697df557a601d3bef0e"
  }
 }
