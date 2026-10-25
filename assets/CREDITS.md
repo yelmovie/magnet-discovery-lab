@@ -96,3 +96,10 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 | `gauge-frame.webp` | 평면 진행 막대 | 거리 게이지 |
 | `certificate-frame.webp` | CSS 이중 테두리 | 연구원 인증서 |
 | `notebook-page.webp` | 단색 배경 | 실험 기록 그림 배경 |
+
+## 3D 모델 7종 (2026-10-25)
+
+- 생성: Meshy Image to 3D (사용자 계정에서 직접 생성). 입력 그림은 Higgsfield `gpt_image_2_5`로 만든 `assets/source/3d-base-20261025/` 기준 이미지.
+- 원본: `assets/source/3d-base-20261025/meshy/` (저장소 제외, 해시는 `originals.json`). 배포본: `public/assets/3d/`, 원본↔배포 대조표는 같은 폴더 `README.md`.
+- 가공: `scripts/pack-glb.mjs` (gltf-transform MIT · meshoptimizer MIT · sharp Apache-2.0). three.js MIT로 화면에 표시.
+- 쓰는 곳: 극성 복원 센터 고리 3D 보기, 광장 복구 발명품 작동 시연(자석 잠금 상자·유리 너머 운반기).

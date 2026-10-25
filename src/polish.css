@@ -166,6 +166,31 @@ body.quest-mode #app .ending-painted > .ending-scene { width: min(300px, 40%); m
 body.quest-mode.reduce-motion #app .ending-painted > .ending-scene { animation: none; }
 @media (prefers-reduced-motion: reduce) { body.quest-mode #app .ending-painted > .ending-scene { animation: none; } }
 
+/* ── 3D look-and-try card ── */
+body.quest-mode .modal.view3d-dialog { width: min(980px, 100%); padding: 22px clamp(18px, 2.4vw, 32px) 18px; }
+body.quest-mode .view3d h2 { margin: 4px 42px 6px; }
+body.quest-mode .view3d .view3d-guide { margin: 0 0 12px; }
+body.quest-mode .view3d-stage {
+  position: relative; width: 100%; height: min(56dvh, 520px); min-height: 260px; overflow: hidden; touch-action: none;
+  border: 1px solid var(--polish-line); border-radius: 16px; cursor: grab;
+  background: radial-gradient(ellipse at 50% 38%, #fffdf4, #efe2c3 72%, #e2cfa6);
+}
+body.quest-mode .view3d-stage:active { cursor: grabbing; }
+body.quest-mode .view3d-stage canvas { display: block; width: 100%; height: 100%; }
+body.quest-mode .view3d .view3d-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--polish-muted); }
+body.quest-mode .view3d-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 18px; margin-top: 14px; }
+body.quest-mode .view3d-controls:empty { display: none; }
+body.quest-mode .view3d-slider { display: flex; align-items: center; gap: 14px; margin: 0; width: min(520px, 100%); font-weight: 700; }
+body.quest-mode .view3d-toggle { min-height: 48px; font-size: 18px; }
+body.quest-mode .view3d-toggle[aria-pressed='true'] { background: #fff0bd; border-color: #a57a31; }
+body.quest-mode .view3d-slider span { flex: none; }
+body.quest-mode .view3d-slider input { flex: 1; min-height: 44px; accent-color: var(--polish-brass); }
+body.quest-mode .view3d .view3d-note { min-height: 1.45em; margin: 10px 0 0; font-weight: 700; color: #2f5a3a; }
+@media (max-height: 640px) { body.quest-mode .view3d-stage { height: 46dvh; } body.quest-mode .view3d .view3d-guide { margin-bottom: 8px; } }
+#app .restoration-success .restoration-3d { position: absolute; z-index: var(--layer-controls); left: 50%; bottom: 20px; translate: -50% 0; margin: 0; min-height: 52px; white-space: nowrap; }
+/* Sits under the tool pocket, clear of the ring tower and its slot labels. */
+#app .mission-board > .mission-3d { left: auto; right: 2%; top: 38%; bottom: auto; transform: none; min-width: 0; padding-inline: 14px; font-size: clamp(17px, 1.4vw, 21px); }
+
 /* ── Map overview: the letterbox shows a soft copy of the city, not a flat slab ── */
 #app .expedition-viewport { background: #325f63; }
 #app .expedition-viewport::before {

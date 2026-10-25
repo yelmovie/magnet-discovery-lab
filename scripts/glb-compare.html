@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>GLB 전후 비교</title>
+<style>
+  body { margin: 0; background: #2b2b2b; color: #eee; font: 14px sans-serif; }
+  .row { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 4px; padding: 4px; }
+  figure { margin: 0; background: #d8d6cf; position: relative; }
+  figcaption { position: absolute; left: 6px; top: 4px; color: #222; font-weight: 700; }
+  canvas { display: block; width: 100%; aspect-ratio: 1; }
+</style>
+</head>
+<body>
+<!-- Dev-only check: same camera, light and size for each version of one model.
+     /scripts/glb-compare.html?m=box-lid&v=orig,packed,try&yaw=35&pitch=25&zoom=1 -->
+<div class="row" id="row"></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+const q = new URLSearchParams(location.search), m = q.get('m') || 'ring-magnet';
+const originals = await (await fetch('/assets/source/3d-base-20261025/meshy/originals.json')).json();
+const paths = { orig: `/assets/source/3d-base-20261025/meshy/${originals[m].original}`, packed: `/assets/3d/${m}.glb`, try: `/test-results/glb-try/${m}.glb` };
+const versions = (q.get('v') || 'orig,packed,try').split(',');
+const zoom = Number(q.get('zoom') ?? 1);
+// &views=0:0,90:0 gives each panel its own yaw:pitch; otherwise every panel uses yaw/pitch.
+const views = (q.get('views') || '').split(',').filter(Boolean).map(s => s.split(':').map(Number));
+const row = document.querySelector('#row'); row.style.setProperty('--cols', versions.length);
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+for (const [i, v] of versions.entries()) {
+  const [yawDeg, pitchDeg] = views[i] || [Number(q.get('yaw') ?? 35), Number(q.get('pitch') ?? 25)];
+  const yaw = THREE.MathUtils.degToRad(yawDeg), pitch = THREE.MathUtils.degToRad(pitchDeg);
+  const fig = document.createElement('figure'); fig.innerHTML = `<figcaption>${v}</figcaption>`; const canvas = document.createElement('canvas'); fig.append(canvas); row.append(fig);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }); renderer.setPixelRatio(1); renderer.setSize(700, 700, false);
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#d8d6cf');
+  scene.add(new THREE.HemisphereLight('#ffffff', '#8a7a66', 1.6)); const sun = new THREE.DirectionalLight('#ffffff', 2.2); sun.position.set(2, 3, 2.5); scene.add(sun);
+  const gltf = await loader.loadAsync(paths[v]); const obj = gltf.scene; scene.add(obj);
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+  const radius = size.length() / 2, camera = new THREE.PerspectiveCamera(30, 1, radius / 50, radius * 50);
+  const dist = radius / Math.sin(THREE.MathUtils.degToRad(15)) / zoom;
+  camera.position.set(center.x + dist * Math.cos(pitch) * Math.sin(yaw), center.y + dist * Math.sin(pitch), center.z + dist * Math.cos(pitch) * Math.cos(yaw)); camera.lookAt(center);
+  let tris = 0; obj.traverse(o => { if (o.isMesh) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+  fig.querySelector('figcaption').textContent = `${v} ${yawDeg}:${pitchDeg} ·${Math.round(tris).toLocaleString()} tri · ${(size.x * 100).toFixed(1)}×${(size.y * 100).toFixed(1)}×${(size.z * 100).toFixed(1)}cm`;
+  renderer.render(scene, camera);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

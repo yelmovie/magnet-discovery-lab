@@ -194,7 +194,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
     actions+=action('adjust',a.values.adjusting?'조작 손잡이로':'배치 고치기');
   }
   const stage=Math.floor((n-1)/2), tool=stage?questRewards[stage-1]:null;
-  return {html:`<div class="mission-world stage-${stage+1}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestions[n-1])}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${[3,4,7,8].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}</div><details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
+  return {html:`<div class="mission-world stage-${stage+1}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestions[n-1])}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${[3,4,7,8].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div><details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuides[n-1]);});
     const binders=[inspect,repair,salvage,distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();return()=>surface.cleanup();
   }};
@@ -343,6 +343,8 @@ function rings(v: Surface){
     });
   });
   v.button('next',()=>{v.a.values.round=r+1;v.a.values.ringReleased=false;v.a.points={};v.refresh();});
+  // The 3D card mirrors this bench; it never changes the experiment.
+  v.button('view3d',()=>v.c.root.dispatchEvent(new CustomEvent('open-3d',{bubbles:true,detail:{kind:'rings',released:v.has('ringReleased'),rings:Array.from({length:count},(_,i)=>{const q=v.p(`ring${i}`,pt(23+i*16,73));return {top:pole(i),onPole:v.has('ringReleased')||Math.abs(q.x-68)<7&&Math.abs(q.y-slot(i).y)<7};})}})));
 }
 
 function aquarium(v: Surface){

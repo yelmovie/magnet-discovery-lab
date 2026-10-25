@@ -1,0 +1,37 @@
+{
+ "box-lid": {
+  "original": "Meshy_AI_Box_Lid_1025123121_image-to-3d-texture.glb",
+  "bytes": 31487448,
+  "sha256": "26b1e757267df8ee4c074df4b77d598fb5e31729ef47493998903d95fdcdfcc7"
+ },
+ "remote-handle": {
+  "original": "Meshy_AI_Brass_Slider_Magnet_1025123508_image-to-3d-texture.glb",
+  "bytes": 21354256,
+  "sha256": "3c267ed912ddf58554e0f35e9ec2cabed5e7f3108f1ac09c5907454cfa103852"
+ },
+ "ring-magnet": {
+  "original": "Meshy_AI_Ring_Magnet_1025122842_image-to-3d-texture.glb",
+  "bytes": 18141028,
+  "sha256": "c1ab0d476549cc456a79d108d91dd3390a61b15e1f77b8dd7eabb0c5d37fa640"
+ },
+ "box-body": {
+  "original": "Meshy_AI_Wooden_Box_1025122935_image-to-3d-texture.glb",
+  "bytes": 32115904,
+  "sha256": "387c96578fcf92745bea135fda683644a159f40c9faa87698ffd7d403e42e995"
+ },
+ "remote-frame": {
+  "original": "Meshy_AI_Wooden_Frame_Stand_1025123339_image-to-3d-texture.glb",
+  "bytes": 30153736,
+  "sha256": "cc5194cb07304182baba3d3a106feccfc28bdc104d1cfbf45de16b88931a4192"
+ },
+ "ring-stand": {
+  "original": "Meshy_AI_Wooden_Stand_1025122856_image-to-3d-texture.glb",
+  "bytes": 22757416,
+  "sha256": "37c8577761760f0f880de36f8a0aa1a02534350eef89aabcd4b92204297463da"
+ },
+ "remote-tray": {
+  "original": "Meshy_AI_Steel_Carrier_Tray_1025123941_image-to-3d-texture.glb",
+  "bytes": 26976024,
+  "sha256": "30a808bce9b3f12bc2fc6b9ba707dd9b89a167414fa5b4bb3541c4de7ff5b8f6"
+ }
+}
