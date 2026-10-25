@@ -19,7 +19,7 @@
 - 메인 원본: `assets/source/audio/suno/main-theme-original.mp3` (제공 파일명: `Main_Curious Discovery.mp3`).
 - 파이널 원본: `assets/source/audio/suno/finale-theme-original.mp3` (제공 파일명: `Final_Victory in the Town Square.mp3`).
 - 배포 음원: `public/audio/music/main-theme.mp3`, `finale-theme.mp3`. 바이트 변경 없이 보관했으며 `tracks.json`에 SHA-256·크기·길이를 기록했다.
-- 음악의 출처는 사용자 제공 Suno 생성물이며, 개별 생성 당시 계정·요금제 조건은 별도로 검증하지 않았다. CC0 효과음 라이선스와 구분한다.
+- 음악의 출처는 사용자 제공 Suno 생성물이다. 2026-10-25 사용자가 두 곡 모두 Suno **유료 요금제(사용자 표현: premium)** 구독 중에 생성했다고 확인했다. 유료 구독 중 생성한 곡은 상업적 이용 대상으로 본다. 요금제 결제 내역은 저장소에 보관하지 않으며, 필요하면 사용자 Suno 계정에서 확인한다. CC0 효과음 라이선스와 구분한다.
 - 배경음·효과음은 각각 켜고 끌 수 있다. 영상 재생과 백그라운드 전환 시 멈추고, 복귀 시 같은 위치에서 이어진다.
 - 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음 8종만 로컬 MP3로 재생한다. 출처와 CC0 라이선스는 아래 기록을 따른다.
 - 효과음 파일을 불러오지 못하면 Web Audio API로 짧은 대체 효과음을 합성한다. 특정 곡을 복제하지 않았다.
@@ -78,3 +78,28 @@
 - `science-equipment.webp` (원형 자석 2종·철판·청소 패드·철 열쇠·나무 받침), `magnetic-gate.webp` (자석 문 장치), `mission-vignettes.webp` (활동 장면 6종), `coach-companion.webp` (수리 도우미 자꾸의 새 생성 일러스트): 사용자 요청에 따라 내장 OpenAI `image_gen`으로 신규 생성했다. 위 2026-10-22 항목의 SVG 도우미 설명은 당시 구현 기록이며, 2026-10-24 고도화 화면에는 이 새 이미지가 적용된다.
 - 원본은 `assets/source/production/`, 게임용 RGBA 무손실 WebP와 장비 프레임 JSON은 `public/assets/quest/`. 생성 프롬프트·실제 크기·알파 검사·과학 표현 검수는 `docs/ART-PRODUCTION-20261024.md`, 파일 해시와 프레임 실측은 `assets/source/production/production-20261024-frame-diagnostics.json`에 보관한다.
 - 별도 스톡·오픈소스 라이선스를 부여받은 자료로 표시하지 않는다. 사용 권리는 생성 당시 서비스 약관에 따르며, 별도의 법률 검토나 상표·유사성 권리 조사를 수행했다는 뜻은 아니다. `mission-vignettes`의 위쪽 세 번째 원형 자석 장면은 과학 표현 검수에서 제외하여, 올바른 장비 아틀라스를 조합한 장면으로 대체하도록 했다.
+
+## 납품 마감 그림 7종 (2026-10-25)
+
+CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 황동·나무 화풍의 생성 그림으로 바꿨다.
+
+- 생성: Higgsfield 커넥터 `gpt_image_2_5`(quality high, 투명 소품 1k·틀 2k), 사용자 Higgsfield 크레딧 사용. 글자 없는 그림만 요청했다.
+- 원본: `assets/source/polish-20261025/*.png` (생성 원본), `*-clean.png` (알파 40 미만 후광 제거·여백 자르기 결과). 배포본 크기·SHA-256은 같은 폴더 `manifest.json`.
+- 배포본: `public/assets/quest/` 아래 WebP.
+
+| 배포 파일 | 대체한 것 | 쓰는 곳 |
+|---|---|---|
+| `prop-paper.webp` | 크림색 사각형 종이 | 거리 실험 종이판, 현장 의뢰 종이, 기록 그림 |
+| `prop-rail.webp` | 두 줄 선 레일·이중선 바닥 | 택배 배달 실험, 현장 의뢰 경로 |
+| `prop-glass.webp` | 하늘색 직사각형 유리판 | 발명 공방 원격 설계·사용 시험 |
+| `prop-letter.webp` | 선으로 그린 봉투 | 발명품 사용 시험(편지) |
+| `gauge-frame.webp` | 평면 진행 막대 | 거리 게이지 |
+| `certificate-frame.webp` | CSS 이중 테두리 | 연구원 인증서 |
+| `notebook-page.webp` | 단색 배경 | 실험 기록 그림 배경 |
+
+## 3D 모델 7종 (2026-10-25)
+
+- 생성: Meshy Image to 3D (사용자 계정에서 직접 생성). 입력 그림은 Higgsfield `gpt_image_2_5`로 만든 `assets/source/3d-base-20261025/` 기준 이미지.
+- 원본: `assets/source/3d-base-20261025/meshy/` (저장소 제외, 해시는 `originals.json`). 배포본: `public/assets/3d/`, 원본↔배포 대조표는 같은 폴더 `README.md`.
+- 가공: `scripts/pack-glb.mjs` (gltf-transform MIT · meshoptimizer MIT · sharp Apache-2.0). three.js MIT로 화면에 표시.
+- 쓰는 곳: 극성 복원 센터 고리 3D 보기, 광장 복구 발명품 작동 시연(자석 잠금 상자·유리 너머 운반기).

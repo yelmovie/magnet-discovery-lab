@@ -21,6 +21,7 @@ class ElementStub extends EventTarget {
     return null;
   }
   closest(selector: string) { return selector === '.play-board' ? this.board : null; }
+  querySelectorAll(selector: string) { return selector.split(',').map(s=>this.elements.get(s.trim())).filter(Boolean) as ElementStub[]; }
   setAttribute() {}
   append(el: ElementStub) { if (el.dataset.object) this.elements.set(`[data-object="${el.dataset.object}"]`, el); }
   focus() {}
@@ -79,6 +80,7 @@ function mount(n: number, values: Record<string, string | number | boolean> = {}
   const view = missionView(n, a, s);
   for (const match of view.html.matchAll(/data-(drag|mission)="([^"]+)"/g)) {
     const el = new ElementStub(); el.board = board;
+    el.getBoundingClientRect = () => ({left:0,top:0,width:48,height:48});
     root.elements.set(`[data-${match[1]}="${match[2]}"]`, el);
   }
   const originalAppend = board.append.bind(board);
@@ -97,6 +99,44 @@ function mount(n: number, values: Record<string, string | number | boolean> = {}
 }
 
 describe('학생 조작으로 완성하는 탐구', () => {
+  it.each([0,1])('두 대상에서 극을 번갈아 시험하면 안내·캔버스·기록을 즉시 갱신한다 (대상 %i)',round=>{
+    const m=mount(5,{round});
+    for(let i=0;i<4;i++){
+      if(i)m.click('flip');
+      const before={...(m.a.points['unknown-magnet']||{x:64,y:53})};
+      if(i%3===0)m.drag('probe',i?{x:29,y:54}:{x:29,y:54},{x:48,y:53});
+      else if(i%3===1)m.place('probe',{x:48,y:53});
+      else{for(let j=0;j<4;j++)m.key('probe','ArrowRight');m.key('probe','Enter');}
+      const facing=i%2?'N':'S',hidden=round===0?'S':'N',repel=facing===hidden;
+      expect(m.a.values.reaction).toBe(repel?'밀려났어':'당겨졌어');
+      expect(m.drawCalls.get('fillText')!.mock.calls.at(-1)?.[0]).toBe(m.a.values.reaction);
+      const trial=m.a.trials!.find(t=>t.key===`pole${round}${facing}`)!;
+      expect(trial.objects.find(o=>o.id==='unknown-magnet')).toMatchObject({x:repel?72:59,y:53,pole:hidden});
+      expect(trial.initialObjects.find(o=>o.id==='unknown-magnet')).toMatchObject({...before,pole:hidden});
+      expect(m.a.records.at(-1)?.result).not.toMatch(/repel|attract/);
+    }
+  });
+  it('붙은 두 고리를 뒤집으면 시험 자리로 돌아오고 양쪽 면과 실제 이동을 기록한다',()=>{
+    const m=mount(6);m.place('ring0',{x:68,y:71});m.place('ring1',{x:68,y:56});m.click('check');tick(1);
+    expect(m.a.points.ring1.y).toBe(65);
+    m.c.root.querySelector('[data-drag="ring1"]')!.dispatchEvent(new Event('dblclick'));
+    expect(m.a.points.ring1.y).toBe(56);m.click('check');tick(1);
+    expect(m.a.trials!.find(t=>t.key==='float2')?.objects[1]).toMatchObject({y:56,topPole:'S',bottomPole:'N'});
+    expect(m.a.trials!.find(t=>t.key==='rings-failed0')?.objects[1].y).toBe(65);
+  });
+  it('수조 연결이 복구되면 이전 거리 실패 안내를 지운다',()=>{
+    const m=mount(7);m.place('cleaner',{x:77,y:74});tick(.1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('너무 멀어');
+    m.place('cleaner',{x:30,y:48});tick(.1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('다시 연결');
+  });
+  it('조종 자석의 세 입력을 안전 영역에 제한하고 복구 버튼은 실험 증거를 보존한다',()=>{
+    const m=mount(8,{car:50});m.place('controller',{x:57,y:59});m.place('controller',{x:20,y:35});m.click('checkpoint');
+    const trials=structuredClone(m.a.trials);m.place('controller',{x:-100,y:-100});expect(m.a.points.controller.y).toBeGreaterThan(36);
+    m.drag('controller',m.a.points.controller,{x:99,y:99});expect(m.a.points.controller.y).toBeLessThan(77);
+    for(let i=0;i<30;i++)m.key('controller','ArrowUp');m.key('controller','Enter');expect(m.a.points.controller.y).toBeGreaterThan(36);
+    m.click('detach');m.click('safe');expect(m.a.values.checkpoint0).toBe(true);expect(m.a.trials).toEqual(trials);expect(m.a.values.car??50).toBe(50);
+  });
   it('꺼낸 자석의 관찰과 철판 반응 관찰을 구분한다', () => {
     const m = mount(1);
     m.place('lid', { x: 50, y: 37 }); m.place('hidden-magnet', { x: 78, y: 52 });

@@ -54,7 +54,7 @@ export const settingsContent = {
   copyright: '이미지·소리·저작권 고지',
   copyrightGuide: [
     '캐릭터·배경·장식에는 프로젝트용 AI 생성 그림을 사용했어요. 장치의 모습은 실제 사진이 아닌 학습용 재현 이미지예요.',
-    '효과음은 Kenney Interface Sounds의 CC0 공개 음원을 편집해 사용해요. 배경 음악과 영상의 짧은 음은 프로젝트에서 직접 합성했어요.',
+    '효과음은 Kenney Interface Sounds의 CC0 공개 음원을 편집해 사용해요. 배경 음악 2곡은 Suno로 만든 AI 생성 음원이고, 영상의 짧은 음은 프로젝트에서 직접 합성했어요.',
     '출처와 라이선스 상세 내용은 프로젝트의 assets/CREDITS.md에서 확인할 수 있어요.',
   ],
   sources: '자료 출처 모아 보기',

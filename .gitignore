@@ -10,3 +10,7 @@ playwright-report/
 __pycache__/
 .tools/
 .wrangler/
+
+# Meshy originals stay local (large); the packed copies live in public/assets/3d/
+assets/source/**/meshy/*.glb
+graphify-out/

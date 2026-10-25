@@ -9,12 +9,12 @@ export function draggable(id: string, label: string, p: Point, art: string, cls 
 export function spot(p: Point, label: string, cls = ''): string {
   return `<div class="drop-spot ${cls}" style="left:${p.x}%;top:${p.y}%">${label}</div>`;
 }
-export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) => void, move?: (p: Point) => void): () => void {
+export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) => void, move?: (p: Point) => void, constrain: (p: Point) => Point = p => p): () => void {
   const el = c.root.querySelector<HTMLElement>(`[data-drag="${id}"]`);
   if (!el) return () => {};
   const board = el.closest<HTMLElement>('.play-board')!;
   c.a.points[`initial:${id}`] ||= { ...start };
-  let p = { ...start }, active = false, travelled = false, pointer = -1, anchor = { x: 0, y: 0 }, offset = { x: 0, y: 0 };
+  let p = constrain({ ...start }), active = false, travelled = false, pointer = -1, anchor = { x: 0, y: 0 }, offset = { x: 0, y: 0 };
   const draw = () => { el.style.left = `${p.x}%`; el.style.top = `${p.y}%`; };
   // A science model may snap, return, or animate a piece after a drop. Read its
   // visible position before the next input, including uncommitted arrow moves.
@@ -29,13 +29,14 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
   });
   el.addEventListener('pointermove', e => {
     if (!active || !(e instanceof PointerEvent) || e.pointerId !== pointer) return;
-    const q = location(e); p = { x: clamp(q.x + offset.x), y: clamp(q.y + offset.y, 12, 89) }; travelled ||= Math.hypot(p.x - anchor.x, p.y - anchor.y) > .5; draw(); move?.(p);
+    const q = location(e); p = constrain({ x: clamp(q.x + offset.x), y: clamp(q.y + offset.y, 12, 89) }); travelled ||= Math.hypot(p.x - anchor.x, p.y - anchor.y) > .5; draw(); move?.(p);
   });
   el.addEventListener('pointerup', e => {
     if (!active || !(e instanceof PointerEvent) || e.pointerId !== pointer) return;
     active = false; el.classList.remove('dragging'); if (el.hasPointerCapture(pointer)) el.releasePointerCapture(pointer);
     syncPosition();
     if (travelled) { c.a.points[id] = { ...p }; end({ ...p }); }
+    else el.dispatchEvent(new CustomEvent('piece-select', {bubbles:true}));
   });
   const cancel = () => { if (!active) return; active = false; el.classList.remove('dragging'); syncPosition();c.a.points[id] = { ...p }; c.touch(); };
   el.addEventListener('pointercancel', cancel); el.addEventListener('lostpointercapture', cancel);
@@ -44,13 +45,13 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
     syncPosition();
     const step = e.shiftKey ? 1 : 4;
     const dir: Record<string, Point> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: -step }, ArrowDown: { x: 0, y: step } };
-    if (dir[e.key]) { e.preventDefault(); p = { x: clamp(p.x + dir[e.key].x), y: clamp(p.y + dir[e.key].y, 12, 89) }; draw(); move?.(p); }
+    if (dir[e.key]) { e.preventDefault(); p = constrain({ x: clamp(p.x + dir[e.key].x), y: clamp(p.y + dir[e.key].y, 12, 89) }); draw(); move?.(p); }
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.a.points[id] = { ...p }; end({ ...p }); }
     if (e.key === 'Escape') { e.preventDefault(); active = false; c.touch(); c.refresh(); }
   });
   el.addEventListener('piece-place', e => {
     if (unavailable() || document.querySelector('.modal-backdrop')) return;
-    p = (e as CustomEvent<Point>).detail; draw(); move?.(p); c.a.points[id] = { ...p }; end({ ...p });
+    p = constrain((e as CustomEvent<Point>).detail); draw(); move?.(p); c.a.points[id] = { ...p }; end({ ...p });
   });
   window.addEventListener('blur', cancel); window.addEventListener('resize', cancel); document.addEventListener('visibilitychange', cancel);
   return () => { cancel(); window.removeEventListener('blur', cancel); window.removeEventListener('resize', cancel); document.removeEventListener('visibilitychange', cancel); };
@@ -59,14 +60,27 @@ export const placementControls = `<div class="placement-controls" aria-label="ì„
 export function bindPlacement(root: HTMLElement): () => void {
   let selected: HTMLElement | null = null;
   const controller = new AbortController();
+  const select = (piece:HTMLElement) => {
+    selected?.classList.remove('piece-selected');selected?.setAttribute('aria-pressed','false');selected=piece;piece.classList.add('piece-selected');piece.setAttribute('aria-pressed','true');
+    const label=root.querySelector('[data-selected-label]');if(label)label.textContent=piece.getAttribute('aria-label')!.split('.')[0];
+  };
+  const place = (event:MouseEvent) => {
+    const board=(event.target as HTMLElement).closest('.play-board');if(!selected||!board)return;
+    const rect=board.getBoundingClientRect();selected.dispatchEvent(new CustomEvent('piece-place',{detail:{x:clamp((event.clientX-rect.left)/rect.width*100),y:clamp((event.clientY-rect.top)/rect.height*100,12,89)}}));
+  };
+  let press: {id:number;x:number;y:number}|null=null;
+  root.addEventListener('piece-select',event=>{const piece=(event.target as HTMLElement).closest<HTMLElement>('[data-drag]');if(piece)select(piece);},{signal:controller.signal});
+  root.addEventListener('pointerdown',event=>{const target=event.target as HTMLElement;press=selected&&event.button===0&&target.closest('.play-board')&&!target.closest('button')?{id:event.pointerId,x:event.clientX,y:event.clientY}:null;},{signal:controller.signal});
+  root.addEventListener('pointerup',event=>{const start=press;press=null;if(start&&start.id===event.pointerId&&Math.hypot(event.clientX-start.x,event.clientY-start.y)<10)place(event);},{signal:controller.signal});
+  root.addEventListener('pointercancel',()=>{press=null;},{signal:controller.signal});
   root.addEventListener('click', e => {
     const target = e.target as HTMLElement, piece = target.closest<HTMLElement>('[data-drag]');
     if (piece) {
-      selected?.classList.remove('piece-selected'); selected = piece; piece.classList.add('piece-selected');
-      const label = root.querySelector('[data-selected-label]'); if (label) label.textContent = piece.getAttribute('aria-label')!.split('.')[0];
+      select(piece);
     } else if (selected && target.closest('.play-board') && !target.closest('button')) {
-      const rect = target.closest('.play-board')!.getBoundingClientRect(), pointer = e as MouseEvent;
-      selected.dispatchEvent(new CustomEvent('piece-place', { detail: { x: clamp((pointer.clientX - rect.left) / rect.width * 100), y: clamp((pointer.clientY - rect.top) / rect.height * 100, 12, 89) } }));
+      // Physical taps/clicks already committed on pointerup. Keep programmatic
+      // click activation available without running a physical placement twice.
+      if(e.detail===0)place(e);
     } else if (selected && target.closest('[data-drag-dir], [data-drag-drop]')) {
       const b = target.closest<HTMLElement>('[data-drag-dir], [data-drag-drop]')!;
       selected.dispatchEvent(new KeyboardEvent('keydown', { key: b.dataset.dragDir || 'Enter', bubbles: true }));

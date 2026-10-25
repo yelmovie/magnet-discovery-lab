@@ -3,3 +3,19 @@
 /* Visible outcomes are independent from whether the plan solves the request. */
 #app .field-pair.react-attract .field-material{animation:field-attract .85s ease-out forwards}#app .field-pair.react-repel .field-material{animation:field-repel .85s ease-out forwards}#app .gate-pair.react-attract>span:last-child{animation:field-attract .85s ease-out forwards}#app .gate-pair.react-repel>span:last-child{animation:field-repel .85s ease-out forwards}@keyframes field-attract{from{transform:translateX(0)}to{transform:translateX(-24px)}}@keyframes field-repel{from{transform:translateX(0)}to{transform:translateX(24px)}}#app .prediction-reflection{font-size:16px;margin-bottom:12px;padding-left:12px;border-left:3px solid #b39a5e}body.reduce-motion #app .react-attract .field-material,body.reduce-motion #app .react-repel .field-material,body.reduce-motion #app .gate-pair>span:last-child{animation-duration:.001ms}
 .trial-picture figcaption small { display: block; margin-top: 6px; color: #566e68; font-size: .75em; line-height: 1.45; }
+/* A separate footer reserves space for the test button while choices scroll. */
+#app .field-card { display: grid; grid-template-rows: minmax(0, 1fr) auto; height: calc(100% - var(--inquiry-card-top) - 24px); padding: 0; overflow: hidden; }
+#app .field-content { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 20px 24px; }
+#app .field-footer { display: flex; justify-content: flex-end; padding: 10px 24px 14px; border-top: 1px solid #b3b99d; background: #fffdf0; }
+#app .field-footer:empty { display: none; }
+#app .field-footer .inquiry-button { margin: 0; min-height: 48px; }
+#app .inquiry-steps > strong { padding-left: 10px; font-size: 16px; white-space: nowrap; }
+#app [data-drag='force-arrow'] { width: 9%; min-width: 0; height: 48px; transform: translate(0, -50%); border-radius: 8px; }
+#app .force-drop-zone { position: absolute; width: 9.375%; height: 9.722%; translate: -50% -50%; pointer-events: none; border-radius: 12px; }
+#app .mission-board:has([data-drag='force-arrow'].piece-selected) .force-drop-zone { outline: 4px dashed #f0b83d; background: #ffdd6b44; }
+#app .mission-world:has([data-drag='controller']) .mission-actions { max-width: calc(100% - 40px); width: max-content; flex-wrap: wrap; gap: 8px; bottom: 12%; }
+#app .mission-world:has([data-drag='controller']) .mission-actions .mission-action { font-size: 17px; padding: 8px 12px; }
+#app .delivery-state { position: absolute; top: 42%; left: 50%; translate: -50% -50%; z-index: 10; pointer-events: none; padding: 6px 12px; border-radius: 10px; background: #fffdf0e8; color: #234f4b; font-size: 17px; }
+#app .expedition-overview { position: absolute; left: 20px; top: 100px; z-index: 20; min-height: 48px; }
+#app .expedition-destination { position: absolute; right: 20px; top: 100px; z-index: 20; margin: 0; padding: 10px 14px; border-radius: 12px; background: #fffdf0ed; color: #234f4b; }
+#app .map-overview .expedition-building { scale: calc(1 / var(--map-scale)); }

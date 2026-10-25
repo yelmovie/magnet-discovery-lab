@@ -19,7 +19,7 @@ export interface Save {
   version: 1 | 2; revision: number; started: boolean; updated: string;
   completed: number[]; evidence: Evidence[]; activities: Record<number, Activity>;
   design: Design; designs: Partial<Record<'box' | 'remote', Design>>;
-  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number };
+  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number };
   final: { report: boolean; latch: Pole; ring: Pole; plate: number; complete: boolean; date: string; route?: { mode: 'basic' | 'challenge'; repair: 'delivery' | 'rings' | 'invention'; installed: boolean; operated: boolean; segments: string[]; revision: number; template: string; attempt?: Activity; optionalBackup?: string; replayEvidenceIds?: number[] } };
 }
 export const stageNames = ['생활 자석 조사국', '힘 실험 연구소', '극성 복원 센터', '원격 제어 구역', '시민 발명 공방'];

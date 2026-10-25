@@ -80,7 +80,7 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
     confirmation = document.createElement('dialog'); confirmation.className = 'game-settings-reset';
     confirmation.setAttribute('aria-labelledby', 'settings-reset-title');
     confirmation.setAttribute('aria-describedby', 'settings-reset-description');
-    confirmation.innerHTML = `<h2 id="settings-reset-title">${copy.resetTitle}</h2><p id="settings-reset-description">${copy.resetDescription}</p><div class="settings-reset-actions"><button type="button" class="settings-button" data-confirm="cancel" autofocus>${copy.resetCancel}</button><button type="button" class="settings-button settings-danger" data-confirm="reset">${copy.resetConfirm}</button></div>`;
+    confirmation.innerHTML = `<h2 id="settings-reset-title">${options.admin?'시연 사본을 초기화할까?':copy.resetTitle}</h2><p id="settings-reset-description">${options.admin?'지금 시연 중인 사본만 비워져. 학생의 원래 진행과 기록은 그대로 보관돼.':copy.resetDescription}</p><div class="settings-reset-actions"><button type="button" class="settings-button" data-confirm="cancel" autofocus>${copy.resetCancel}</button><button type="button" class="settings-button settings-danger" data-confirm="reset">${options.admin?'시연 사본만 초기화':copy.resetConfirm}</button></div>`;
     document.body.append(confirmation);
     const dismiss = () => { confirmation?.remove(); confirmation = undefined; dialog.querySelector<HTMLButtonElement>('[data-settings-action="reset"]')?.focus(); };
     confirmation.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
