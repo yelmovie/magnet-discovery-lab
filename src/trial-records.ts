@@ -65,17 +65,21 @@ export function trialSummary(t:Trial):string {
   return `${poles}${trialOutcome(t.outcome)}. ${movement}${t.activity===5&&!t.objects.some(o=>o.id==='unknown-magnet')?' · 대상 자석의 위치 기록 없음':''}`;
 }
 function trialGlyph(o: TrialObject, t: Trial, x: number, y: number): string {
-  const crop = (file: string, box: string, width = 46, height = 36, neutral = false) => `<svg x="${x-width/2}" y="${y-height/2}" width="${width}" height="${height}" viewBox="${box}" preserveAspectRatio="xMidYMid meet"><image href="/assets/quest/${file}.webp" width="1536" height="1024"${neutral?' style="filter:grayscale(1)"':''}/></svg>`;
+  const crop = (file: string, box: string, width = 56, height = 44, neutral = false) => `<svg x="${x-width/2}" y="${y-height/2}" width="${width}" height="${height}" viewBox="${box}" preserveAspectRatio="xMidYMid meet"><image href="/assets/quest/${file}.webp" width="1536" height="1024"${neutral?' style="filter:grayscale(1)"':''}/></svg>`;
+  const prop = (file: string, width: number, height: number) => `<image href="/assets/quest/${file}.webp" x="${x-width/2}" y="${y-height/2}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>`;
   const material = /^material-([0-5])$/.exec(o.id);
   if (material) { const i=Number(material[1]); return crop('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`); }
   if (o.id==='clip') return t.key==='rescue'?crop('science-equipment','544 512 465 430'):crop('material-kit','0 0 512 512');
-  if (o.id==='cart-magnet') return `<image href="/assets/quest/prop-cart.webp" x="${x-25}" y="${y-20}" width="50" height="40"/>`;
-  if (/magnet|probe|controller|cleaner/.test(o.id)) return crop('magnet-bar','60 370 1420 285',52,20,true)+`<text x="${x}" y="${y+5}" text-anchor="middle" font-size="12" fill="white">${o.pole?(o.pole==='N'?'N　S':'S　N'):'?'}</text>`;
-  if (o.id.includes('ring')) return crop('science-equipment','32 87 453 324',46,32,true)+`<text x="${x}" y="${y+26}" text-anchor="middle" font-size="12">${o.topPole&&o.bottomPole?`위 ${o.topPole} / 아래 ${o.bottomPole}`:'극 정보 없음'}</text>`;
+  if (o.id==='cart-magnet') return prop('prop-cart',60,48);
+  if (o.id==='paper') return prop('prop-paper',16,64);
+  if (o.id==='lid'||o.id==='use-handle'&&t.template!=='remote') return prop('prop-postal-lid',62,34);
+  if (o.id==='force-arrow') return `<path d="M${x-22} ${y}H${x+14}" stroke="#c4552f" stroke-width="6" stroke-linecap="round"/><path d="M${x+24} ${y}l-13 -9v18z" fill="#c4552f"/>`;
+  if (/magnet|probe|controller|cleaner|use-handle/.test(o.id)) return crop('magnet-bar','60 370 1420 285',64,24,true)+`<text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="white">${o.pole?(o.pole==='N'?'N　S':'S　N'):'?'}</text>`;
+  if (o.id.includes('ring')) return crop('science-equipment','32 87 453 324',56,38,true)+`<text x="${x}" y="${y+30}" text-anchor="middle" font-size="13">${o.topPole&&o.bottomPole?`위 ${o.topPole} / 아래 ${o.bottomPole}`:'극 정보 없음'}</text>`;
   if (o.id.includes('pad')) return crop('science-equipment','33 561 466 366');
   if (o.id.includes('plate')||o.id.includes('target')&&t.conditions.pair==='iron') return crop('science-equipment','1064 83 439 328');
-  if (o.id.includes('target')&&t.conditions.pair==='magnet') return crop('magnet-bar','60 370 1420 285',52,20,true);
-  if (o.id==='base') return `<image href="/assets/quest/prop-${t.template==='remote'?'cart':'postal-box'}.webp" x="${x-25}" y="${y-22}" width="50" height="44"/>`;
+  if (o.id.includes('target')&&t.conditions.pair==='magnet') return crop('magnet-bar','60 370 1420 285',64,24,true);
+  if (o.id==='base') return prop(`prop-${t.template==='remote'?'cart':'postal-box'}`,62,52);
   if (o.id.startsWith('sticker')) return `<text x="${x}" y="${y+8}" text-anchor="middle" font-size="24" font-weight="700" fill="#28565e">${o.id==='stickerN'?'N':'S'}</text>`;
   return `<rect x="${x-17}" y="${y-10}" width="34" height="20" rx="5" fill="#fff9e9" stroke="#547b78" stroke-width="2"/>`;
 }
@@ -88,5 +92,5 @@ export function trialPicture(t: Trial): string {
   const label=trialObjectName;
   const marks=list.map((o,i)=>{const end=pos(o),before=pos(t.initialObjects.find(p=>p.id===o.id)||o);
     return `<g><title>${escape(label(o.id))}</title><path d="M${before.x} ${before.y}L${end.x} ${end.y}" stroke="#71968b" stroke-width="2" stroke-dasharray="4 5"/><rect x="${before.x-21}" y="${before.y-14}" width="42" height="28" rx="7" fill="none" stroke="#9ab1a6" stroke-width="2" stroke-dasharray="3 3"/>${trialGlyph(o,t,end.x,end.y)}<circle cx="${end.x+21}" cy="${end.y-18}" r="10" fill="#315d65"/><text x="${end.x+21}" y="${end.y-14}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff9e9">${i+1}</text></g>`;}).join('');
-  return `<figure class="trial-picture"><svg viewBox="0 0 400 170" role="img" aria-label="${escape(trialTitle(t))} · ${escape(trialSummary(t))}"><rect x="1" y="1" width="398" height="168" rx="12" fill="#f1ecd9"/>${marks}</svg><figcaption><span class="trial-key">${list.map((o,i)=>`${i+1} ${escape(label(o.id))}`).join(' · ')}</span>${escape(trialTitle(t))}<small>${escape(trialSummary(t))}</small><small>점선은 처음 자리, 그림은 결과 자리야.</small></figcaption></figure>`;
+  return `<figure class="trial-picture"><svg viewBox="0 0 400 170" role="img" aria-label="${escape(trialTitle(t))} · ${escape(trialSummary(t))}"><rect x="1" y="1" width="398" height="168" rx="12" fill="#f1ecd9"/><image href="/assets/quest/notebook-page.webp" x="1" y="1" width="398" height="168" preserveAspectRatio="xMidYMid slice"/>${marks}</svg><figcaption><span class="trial-key">${list.map((o,i)=>`${i+1} ${escape(label(o.id))}`).join(' · ')}</span>${escape(trialTitle(t))}<small>${escape(trialSummary(t))}</small><small>점선은 처음 자리, 그림은 결과 자리야.</small></figcaption></figure>`;
 }

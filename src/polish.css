@@ -1,0 +1,210 @@
+/* Delivery polish: the last style layer. One mission head per experiment,
+   image-backed props instead of flat boxes, and finish pages that keep the
+   city's brass-and-paper art direction. Layout of the canvas board is untouched. */
+body.quest-mode {
+  --polish-paper: #fffcf2;
+  --polish-ink: #173f47;
+  --polish-muted: #4f6a62;
+  --polish-brass: #ab7b35;
+  --polish-brass-light: #ffe7a2;
+  --polish-line: #c9c09c;
+  --polish-shadow: 0 4px 0 #173f4718, 0 14px 32px #173f4726;
+  --font-size-chip: clamp(16px, 1.3vw, 19px);
+}
+
+/* ── Mission head: kicker, question, steps and the one current action in one plaque ── */
+#app .mission-head {
+  position: absolute; z-index: var(--layer-question); top: 14px; left: 50%; translate: -50% 0;
+  width: min(840px, calc(100% - 320px));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: '. stage count' 'q q q' 'steps steps steps' 'next next next';
+  align-items: center; justify-items: center; gap: 6px 8px;
+  padding: 9px 18px 12px; border: 1px solid var(--polish-line); border-top: 5px solid var(--polish-brass);
+  border-radius: 18px; background: #fffcf2f5; box-shadow: var(--polish-shadow);
+  color: var(--polish-ink); text-align: center; pointer-events: none;
+}
+#app .mission-head .stage-label {
+  margin: 0; padding: 0; border: 0; border-radius: 0; background: none;
+  color: var(--polish-muted); font: 700 var(--font-size-chip)/1.3 var(--font-body); letter-spacing: .02em;
+}
+#app .mission-head .mission-question {
+  position: static; translate: none; width: auto; max-width: 100%; min-height: 0;
+  margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font-size: clamp(26px, 2.4vw, 38px); line-height: 1.2; text-wrap: balance;
+}
+#app .mission-head-row { display: contents; }
+#app .mission-head .stage-label { grid-area: stage; }
+#app .mission-head .mission-question { grid-area: q; }
+#app .mission-head .inquiry-steps {
+  grid-area: steps;
+  position: static; translate: none; width: auto; max-width: 100%;
+  gap: 4px; padding: 4px; border: 1px solid #d4d3ba; border-radius: 13px; background: #f3f1e1; box-shadow: none;
+}
+#app .mission-head .inquiry-steps > span { min-height: 38px; padding: 6px 12px; font-size: var(--font-size-chip); }
+#app .mission-head .discovery-count {
+  grid-area: count; justify-self: end; display: inline-flex; align-items: center; min-height: 28px; margin: 0; padding: 2px 10px;
+  border: 1px solid #a8bc95; border-radius: 10px; background: #e6efd7; color: #2f5a3a;
+  font-size: 16px; font-weight: 700; white-space: nowrap;
+}
+#app .mission-head .discovery-count:empty { display: none; }
+#app .mission-head .mission-next-action {
+  grid-area: next; width: 100%; max-width: none; margin: 1px 0 0; padding: 8px 16px;
+  border: 0; border-radius: 12px; background: linear-gradient(#fff4cf, #ffe8a6);
+  box-shadow: inset 0 0 0 1px #d8b765; color: #4b3913;
+  font-size: clamp(19px, 1.6vw, 24px); line-height: 1.35; text-wrap: balance;
+}
+#app .mission-head .mission-next-action:empty { display: none; }
+
+/* Cards and live feedback start under the head, whatever its wrapped height. */
+#app .quest-activity .inquiry-shell[data-phase] { --inquiry-card-top: calc(var(--head-bottom, 200px) + 14px); }
+#app .quest-activity .inquiry-workbench .mission-feedback {
+  top: calc(50% - 50dvh + var(--head-bottom, 200px) + 10px);
+  padding: 9px 18px; border: 1px solid #b8bea0; border-left: 5px solid var(--quest-teal);
+  border-radius: 12px; background: #fffdf3f2; box-shadow: 0 6px 16px #173f4724;
+}
+#app .quest-activity .inquiry-workbench .mission-feedback.success { border-left-color: #3f8a55; background: #eef7dcf2; }
+
+/* ── Bench tools share one secondary look: cream body, teal edge, display type ── */
+#app :is(.mission-access > summary, .mission-study-tools button, .coach-toggle > span) {
+  min-height: 48px; border: 2px solid #6f8a76; border-radius: 14px; background: #fffbef;
+  box-shadow: 0 4px 0 #6f8a76; color: var(--polish-ink); font-family: var(--font-display);
+}
+#app .coach-toggle > span { min-height: 34px; display: grid; place-items: center; }
+#app .mission-pocket {
+  border: 2px solid #a68548; border-radius: 14px; background: linear-gradient(#fff6d8, #f7dc96);
+  box-shadow: 0 4px 0 #a68548, 0 8px 14px #173f4722; color: #4b3913; font-family: var(--font-display);
+}
+
+/* Distance gauge: a brass meter replaces the flat progress bar. */
+#app .force-sensor { padding: 8px 10px 10px; border: 1px solid #c9b47a; background: #fffbefee; box-shadow: 0 6px 16px #173f4722; }
+#app .force-sensor span { font-weight: 700; }
+#app .force-sensor i {
+  height: auto; aspect-ratio: 640 / 144; margin-top: 6px; border-radius: 0; overflow: visible;
+  background: url('/assets/quest/gauge-frame.webp') center / 100% 100% no-repeat;
+}
+#app .force-sensor i::after {
+  inset: 27% auto 27% 15%; max-width: 72%; width: calc(var(--sensor-level, 0%) * .72);
+  border-radius: 999px; background: linear-gradient(#ffe7a2, #f0b83d); box-shadow: 0 0 10px #ffd76b;
+}
+
+/* ── Field requests: bench switches instead of form dropdowns ── */
+#app .field-setting { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; flex: 1 1 180px; min-width: 0; }
+#app .comparison-bench .field-setting { align-items: center; margin-top: 10px; }
+#app .field-setting-label { font-weight: 800; font-size: 18px; color: var(--polish-ink); }
+#app .field-choices { justify-content: flex-start; margin: 0; }
+#app .comparison-bench .field-choices { justify-content: center; }
+#app .field-choices .inquiry-option { gap: 8px; min-height: 52px; font-size: 18px; }
+#app .field-chip-art { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; }
+#app .field-chip-art :is(.material-art, .equipment-art) { width: 40px; height: 40px; filter: none; }
+#app .field-chip-art .equipment-art { height: auto; }
+body.quest-mode #app .field-chip-art .bar-magnet { width: 40px; height: 16px; font-size: 9px; }
+#app .field-paper { width: 22px; border: 0; background: url('/assets/quest/prop-paper.webp') center / contain no-repeat; color: transparent; }
+#app .route-track { border-bottom: 0; padding-bottom: 26px; background: url('/assets/quest/prop-rail.webp') center bottom / 100% 26px no-repeat; }
+
+/* ── Report: the city stays behind the research notebook ── */
+body.quest-mode #app > main:is(.page-report, .page-ending) {
+  background: linear-gradient(#f7edd6e6, #f7edd6f2), url('/assets/quest/city-expedition.webp') center / cover fixed;
+}
+#app .report-heading { text-align: center; }
+#app .report-list { padding-bottom: 24px; }
+#app .report-actions { box-shadow: 0 -6px 20px #173f471f; border: 1px solid var(--polish-line); }
+#app .trial-picture svg { border-radius: 12px; }
+
+/* ── Certificate: framed sheet beside the learner's own choices ── */
+body.quest-mode #app > main.page-certificate {
+  display: grid; place-items: center; padding: 86px clamp(16px, 3vw, 48px) 20px;
+  background: radial-gradient(ellipse at 40% 45%, #fff7dfcc, #f2e2bdee 70%), url('/assets/quest/city-expedition.webp') center / cover;
+}
+#app .certificate-stage {
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 430px); align-items: center;
+  gap: clamp(18px, 2.4vw, 36px); width: min(1500px, 100%);
+}
+#app .certificate {
+  max-width: none; width: 100%; aspect-ratio: 1600 / 1062; max-height: calc(100dvh - 120px); margin: 0 auto; padding: 0;
+  border: 0; border-radius: 6px; background: url('/assets/quest/certificate-frame.webp') center / 100% 100% no-repeat;
+  box-shadow: 0 18px 40px #3d2c0f40; container-type: inline-size;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+#app .certificate-border {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+  padding: 9cqw 13cqw 8cqw; border: 0; background: none; text-align: center;
+}
+#app .certificate-medal { display: none; }
+#app .certificate-overline { font-size: clamp(14px, 1.6cqw, 20px); letter-spacing: .14em; color: #6a5a32; }
+#app .certificate h2 { margin: .4em 0 .2em; font-size: clamp(24px, 4.2cqw, 54px); color: #173f47; }
+#app .certificate .certificate-name { margin: .1em 0; font: 400 clamp(26px, 4.6cqw, 60px)/1.2 var(--font-display); color: #8a4b1d; border-bottom: 2px solid #c9a35a; padding: 0 .6em .1em; }
+#app .certificate p { margin: .5em 0; font-size: clamp(16px, 2cqw, 24px); line-height: 1.45; color: #3e5a55; }
+#app .certificate .certificate-ability { max-width: 92%; padding: .45em .9em; border-radius: 12px; background: #fff3cfcc; color: #4b3913; font-size: clamp(16px, 2.1cqw, 25px); }
+#app .certificate .certificate-ability strong { color: #173f47; }
+#app .certificate-achievements { margin: .4em auto; font-size: clamp(14px, 1.6cqw, 19px); }
+#app .certificate-bottom { margin-top: .4em; }
+#app .certificate-bottom .mascot { --size: clamp(44px, 6cqw, 78px) !important; }
+#app .certificate-bottom strong { font-size: clamp(16px, 1.9cqw, 22px); }
+#app .certificate-panel {
+  display: flex; flex-direction: column; gap: 10px; max-height: calc(100dvh - 110px); overflow: auto;
+  padding: 16px 20px; border: 1px solid var(--polish-line); border-top: 5px solid var(--polish-brass);
+  border-radius: 18px; background: #fffcf2f5; box-shadow: var(--polish-shadow);
+}
+#app .certificate-panel h1 { margin: 0; font: 400 clamp(26px, 2.2vw, 34px)/1.2 var(--font-display); color: var(--polish-ink); }
+#app .certificate-panel .certificate-name-input { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 0; }
+#app .certificate-panel .certificate-name-input input { width: 100%; }
+#app .ability-picker { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; }
+#app .ability-picker legend { padding: 0; font: 400 21px/1.3 var(--font-display); color: var(--polish-ink); }
+#app .ability-picker p { margin: 0 0 2px; font-size: 16px; color: var(--polish-muted); }
+#app .ability-option {
+  min-height: 48px; padding: 6px 12px; border: 2px solid #b1bea8; border-radius: 12px; background: #f8f8ec;
+  box-shadow: 0 3px 0 #c2cbb5; color: #244e47; font: 400 16px/1.35 var(--font-body); text-align: left;
+}
+#app .ability-option[aria-pressed='true'] { border-color: #a57a31; background: #fff0bd; color: #574623; box-shadow: 0 3px 0 #b78b3d; }
+#app .certificate-actions { position: sticky; bottom: -16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 -20px -16px; padding: 10px 20px 14px; border-top: 1px solid #e3dcc0; background: #fffcf2; }
+#app .certificate-actions .btn { width: 100%; min-height: 50px; margin: 0; padding-inline: 6px; gap: 6px; justify-content: center; white-space: nowrap; font-size: 17px; }
+#app .certificate-actions [data-action='print'] { grid-column: 1 / -1; font-size: 20px; }
+
+/* Finished scenes reuse the painted district vignettes instead of an empty box. */
+body.quest-mode #app .ending-painted > .ending-scene { width: min(300px, 40%); margin-top: 16px; filter: drop-shadow(0 10px 6px #173f4740); animation: quest-character-idle 2.4s ease-in-out infinite; }
+#app .restoration-team .restoration-scene { width: clamp(220px, 27vw, 380px); filter: drop-shadow(0 14px 10px #173f4740); }
+body.quest-mode.reduce-motion #app .ending-painted > .ending-scene { animation: none; }
+@media (prefers-reduced-motion: reduce) { body.quest-mode #app .ending-painted > .ending-scene { animation: none; } }
+
+/* ── Map overview: the letterbox shows a soft copy of the city, not a flat slab ── */
+#app .expedition-viewport { background: #325f63; }
+#app .expedition-viewport::before {
+  content: ''; position: absolute; inset: -40px; z-index: -1; pointer-events: none;
+  background: linear-gradient(#173f47a6, #173f47c7), url('/assets/quest/city-expedition.webp') center / cover;
+  filter: blur(14px);
+}
+
+@media (max-width: 1100px) {
+  #app .mission-head { width: min(760px, calc(100% - 280px)); }
+}
+@media (max-height: 720px) and (min-width: 760px) {
+  #app .mission-head { top: 10px; gap: 5px; padding: 6px 14px 9px; }
+  #app .mission-head .mission-question { font-size: 26px; }
+  #app .mission-head .inquiry-steps > span { min-height: 34px; padding-block: 4px; font-size: 16px; }
+  #app .mission-head .mission-next-action { padding: 6px 12px; font-size: 19px; }
+}
+@media (max-height: 640px) and (min-width: 760px) {
+  #app .mission-head { gap: 4px 8px; padding: 5px 12px 7px; }
+  #app .mission-head .mission-question { font-size: 24px; }
+  #app .mission-head .mission-next-action { padding: 5px 12px; font-size: 18px; }
+}
+@media (max-width: 1100px) {
+  #app .certificate-stage { grid-template-columns: 1fr; justify-items: center; }
+  #app .certificate { max-height: none; width: min(100%, 900px); }
+  #app .certificate-panel { width: min(100%, 900px); max-height: none; overflow: visible; }
+  body.quest-mode #app > main.page-certificate { display: block; overflow-y: auto; }
+  #app .ability-picker { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  #app .ability-picker :is(legend, p) { grid-column: 1 / -1; }
+}
+@media (max-width: 759px) {
+  #app .mission-head { top: 76px; width: calc(100% - 24px); padding: 8px 12px 10px; }
+  #app .mission-head .mission-question { font-size: 25px; }
+  #app .certificate-border { padding: 10cqw 12cqw 9cqw; }
+  #app .certificate-achievements, #app .certificate-bottom .mascot { display: none; }
+}
+@media print {
+  #app :is(.certificate-panel, .mission-head) { display: none !important; }
+  body.quest-mode #app > main.page-certificate { display: block; padding: 0; background: #fff; }
+  #app .certificate-stage { display: block; }
+  #app .certificate { width: 100%; max-height: none; box-shadow: none; }
+}

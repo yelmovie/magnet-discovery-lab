@@ -1,0 +1,65 @@
+{
+ "prop-paper.webp": {
+  "source": "paper-clean.png",
+  "size": [
+   149,
+   600
+  ],
+  "bytes": 13974,
+  "sha256": "772df31931f7ce43fb8b918094bf00e65f252d936d86d50165094f29afaa2978"
+ },
+ "prop-glass.webp": {
+  "source": "glass-clean.png",
+  "size": [
+   57,
+   640
+  ],
+  "bytes": 8906,
+  "sha256": "80adf6671aaa0e8d03ea40739f1756d4e9380a4848f0d0f8308548ed6b9ab2fe"
+ },
+ "prop-rail.webp": {
+  "source": "rail-clean.png",
+  "size": [
+   1200,
+   172
+  ],
+  "bytes": 57670,
+  "sha256": "b1f43711b38810d092fafc81eec6a685c66c05fca9aa2ec7747355f8430086a9"
+ },
+ "prop-letter.webp": {
+  "source": "letter-clean.png",
+  "size": [
+   520,
+   371
+  ],
+  "bytes": 30588,
+  "sha256": "9e827f585029c5586843c109a9cec8671426a2aacae43a64260f3741b8682f15"
+ },
+ "gauge-frame.webp": {
+  "source": "gauge-clean.png",
+  "size": [
+   640,
+   144
+  ],
+  "bytes": 19310,
+  "sha256": "5325f4e4c6a8aa48133f84f12044110710f3744b1d4340c99d6bf88457cead5c"
+ },
+ "certificate-frame.webp": {
+  "source": "certificate-frame.png",
+  "size": [
+   1600,
+   1062
+  ],
+  "bytes": 144446,
+  "sha256": "5d12802778250e77ab7eb76a7c7bf0591e8931c441088112fc33ee08c4c74001"
+ },
+ "notebook-page.webp": {
+  "source": "notebook.png",
+  "size": [
+   1400,
+   600
+  ],
+  "bytes": 20138,
+  "sha256": "ff6234ccc1ce7212f483b365a0da25e21063d3a4b90d2980393349244177efd2"
+ }
+}

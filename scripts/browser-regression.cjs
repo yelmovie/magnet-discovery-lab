@@ -3,7 +3,7 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const out='test-results/fixes-20261025';fs.mkdirSync(out,{recursive:true});
+const out=process.env.TEST_OUT||'test-results/fixes-20261025';fs.mkdirSync(out,{recursive:true});
 const results=process.env.RESUME&&fs.existsSync(out+'/browser-results.json')?JSON.parse(fs.readFileSync(out+'/browser-results.json')).filter(r=>r.status==='pass'):[];
 const base=process.env.TEST_URL||'http://127.0.0.1:5175/';
 let browser,page;
@@ -14,7 +14,7 @@ const action=id=>page.locator(`[data-action="${id}"]`).click();
 const mission=id=>page.locator(`[data-mission="${id}"]`).click();
 const put=(id,x,y)=>page.locator(`[data-drag="${id}"]`).evaluate((el,p)=>el.dispatchEvent(new CustomEvent('piece-place',{detail:p})),{x,y});
 const choose=(group,value)=>page.locator(`[data-inquiry-group="${group}"][data-value="${value}"]`).click();
-const field=(key,value)=>page.locator(`[data-field="${key}"]`).selectOption(String(value));
+const field=(key,value)=>choose(key,String(value));
 async function reload(){await page.evaluate(()=>window.__lab.flush());await page.reload();await page.waitForFunction(()=>!!window.__lab);await action('start');}
 async function fresh(viewport){
  const context=await browser.newContext({viewport,hasTouch:true});page=await context.newPage();
@@ -43,8 +43,8 @@ async function fields(stage){
   if(stage!==3)await page.locator('[data-inquiry="field-test"]').click();
   if(stage===0||stage===4){
    const scroll=page.locator('.field-content');await scroll.evaluate(el=>el.scrollTop=el.scrollHeight);
-   await page.locator('[data-field="material"]').focus();const top=await scroll.evaluate(el=>el.scrollTop);
-   for(const material of ['wood','aluminum','iron']){await field('material',material);assert.equal(await page.locator('[data-field="material"]').evaluate(el=>el===document.activeElement),true);assert.ok(Math.abs(await scroll.evaluate(el=>el.scrollTop)-top)<2);}
+   await page.locator('[data-inquiry-group="material"]').first().focus();const top=await scroll.evaluate(el=>el.scrollTop);
+   for(const material of ['wood','aluminum','iron']){await field('material',material);assert.equal(await page.locator(`[data-inquiry-group="material"][data-value="${material}"]`).evaluate(el=>el===document.activeElement),true);assert.ok(Math.abs(await scroll.evaluate(el=>el.scrollTop)-top)<2);}
    await field('gap',12);await field('aligned',true);
    if(stage===4&&round===1){await field('material','magnet');await choose('pole','N');}
   }else if(stage===1){await field('gapA',round?12:34);await field('gapB',12);await field('paperA',false);await field('paperB',!!round);}

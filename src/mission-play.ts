@@ -269,7 +269,7 @@ function distanceLab(v: Surface){
   v.draw=()=>{v.base();const objectPoint=result&&r>0?pt(v.p('distance-magnet',m).x+8,v.p('distance-magnet',m).y):target;
     if(r===3){if(v.equipment('key',objectPoint,88,88))v.label('철 열쇠',pt(objectPoint.x,objectPoint.y+9),true);else v.iron(objectPoint,'철 열쇠',60);}else v.material(0,objectPoint,88);
     v.target(r===0?pt(25,55):r===3?pt(57,42):r===2?comparisonPoint:pt(49,55),r===0?'먼 자리':r===2?'같은 자리':'가까운 자리',110,70);
-    if(r===2){const p=v.p('paper',pt(23,76));v.target(paperSlot,paperIn()?'':'종이 자리',45,130);v.ctx.fillStyle='#fff9dc';v.ctx.strokeStyle='#b49b60';v.ctx.lineWidth=3;v.ctx.fillRect(p.x*W/100-12,p.y*H/100-65,24,130);v.ctx.strokeRect(p.x*W/100-12,p.y*H/100-65,24,130);v.label('얇은 종이',pt(p.x,p.y+12),true);}
+    if(r===2){const p=v.p('paper',pt(23,76));v.target(paperSlot,paperIn()?'':'종이 자리',45,130);if(!v.sprite('paper',p.x*W/100-21,p.y*H/100-85,42,170)){v.ctx.fillStyle='#fff9dc';v.ctx.strokeStyle='#b49b60';v.ctx.lineWidth=3;v.ctx.fillRect(p.x*W/100-12,p.y*H/100-65,24,130);v.ctx.strokeRect(p.x*W/100-12,p.y*H/100-65,24,130);}v.label('얇은 종이',pt(p.x,p.y+12),true);}
     v.magnet(v.p('distance-magnet',m),'N',.8);v.label(['먼 곳에 두고 관찰','가까이 옮겨 관찰','처음 배치는 그대로, 종이만 추가','다른 위치의 열쇠 구조'][r],pt(50,29),true);if(result)v.arrow(target,pt(v.p('distance-magnet',m).x+7,v.p('distance-magnet',m).y));};
   v.drag('distance-magnet',m,()=>v.draw());if(r===2)v.drag('paper',pt(23,76),()=>v.draw());
   v.button('release',()=>{let q=v.p('distance-magnet',m),d=distance(q,target);if(r===0&&d<27)return v.tell('먼 자리에서 먼저 관찰해 봐. 다음에 거리를 바꿀 거야.');
@@ -295,7 +295,7 @@ function poles(v: Surface){
     trial.objects=[{id:'probe',...p,pole:probe},{id:'unknown-magnet',...v.a.points['unknown-magnet'],pole:hidden}];
     v.tell(`${facing}극을 가까이 대니 ${reaction}. 다른 쪽 극도 대 보자.`);v.draw();};
   v.draw=()=>{v.base();v.target(pt(48,53),'기준 자석 대는 자리',145,76);const q=v.a.points['unknown-magnet']||(reaction==='밀려났어'?pt(72,53):reaction==='당겨졌어'?pt(59,53):target);
-    v.magnet(q,hidden,.85);if(!v.has(`solved${r}`)){v.ctx.fillStyle='#eadca4';v.ctx.fillRect(q.x*W/100-59,q.y*H/100-25,118,50);v.label('?',q);}
+    v.magnet(q,hidden,.85);if(!v.has(`solved${r}`)){const g=v.ctx,x=q.x*W/100-59,y=q.y*H/100-25,paper=v.asset('notebook','/assets/quest/notebook-page.webp');g.save();g.beginPath();g.roundRect(x,y,118,50,8);g.clip();if(paper.complete&&paper.naturalWidth)g.drawImage(paper,240,220,472,200,x,y,118,50);else{g.fillStyle='#eadca4';g.fillRect(x,y,118,50);}g.restore();g.strokeStyle='#b49b60';g.lineWidth=2;g.beginPath();g.roundRect(x,y,118,50,8);g.stroke();v.label('?',q);}
     v.target(pt(59,40),'왼쪽 극',78,62);v.target(pt(70,40),'오른쪽 극',78,62);v.magnet(v.p('probe',pt(29,54)),probe,.9);v.label('N',v.p('stickerN',pt(33,77)));v.label('S',v.p('stickerS',pt(47,77)));v.label(`${v.has(`test${r}N`)?'✓':'○'} N극 반응    ${v.has(`test${r}S`)?'✓':'○'} S극 반응 → 양쪽 표시 복원`,pt(50,29),true);
     if(reaction){const before=v.a.points['initial:unknown-magnet']||target;v.label(reaction,pt(76,65),true);v.arrow(pt(before.x,70),pt(q.x,70));if(v.has('lens')){v.target(before,'처음 위치',145,74);v.arrow(pt(before.x,before.y-9),pt(q.x,q.y-9),'#e0a337');}}
   };
@@ -387,7 +387,7 @@ function delivery(v: Surface){
     return pt(clamp(p.x,halfX/board.width*100,100-halfX/board.width*100),clamp(p.y,(top+halfY)/board.height*100,(bottom-halfY)/board.height*100));
   };
   const carInfo=document.createElement('span');carInfo.className='sr-only';carInfo.dataset.object='cart-magnet';carInfo.style.left=`${car}%`;carInfo.style.top='59%';carInfo.textContent='왼쪽 N극, 오른쪽 S극을 가진 택배 카트';v.c.root.querySelector('.mission-board')!.append(carInfo);
-  v.draw=()=>{v.base();const status=`${v.has(`checkpoint${r}`)?'정차 점검 완료 · 다음은 배달 장소':'정차 목표 · 가운데 점검소'} / ${forceOn()?'연결됨 · 힘이 닿아':'연결 끊김 · 카트 멈춤'}`;if(state.textContent!==status)state.textContent=status;const g=v.ctx;g.strokeStyle='#8b7653';g.lineWidth=9;g.beginPath();g.moveTo(280,445);g.lineTo(1030,445);g.stroke();g.strokeStyle='#eadba7';g.lineWidth=3;g.beginPath();g.moveTo(280,432);g.lineTo(1030,432);g.stroke();v.target(pt(goal,59),'배달 장소',125,105);v.target(pt(50,59),v.has(`checkpoint${r}`)?'점검 완료 ✓':'점검소 · 잠깐 정차',125,110);
+  v.draw=()=>{v.base();const status=`${v.has(`checkpoint${r}`)?'정차 점검 완료 · 다음은 배달 장소':'정차 목표 · 가운데 점검소'} / ${forceOn()?'연결됨 · 힘이 닿아':'연결 끊김 · 카트 멈춤'}`;if(state.textContent!==status)state.textContent=status;const g=v.ctx;if(!v.sprite('rail',272,392,766,62)){g.strokeStyle='#8b7653';g.lineWidth=9;g.beginPath();g.moveTo(280,445);g.lineTo(1030,445);g.stroke();g.strokeStyle='#eadba7';g.lineWidth=3;g.beginPath();g.moveTo(280,432);g.lineTo(1030,432);g.stroke();}v.target(pt(goal,59),'배달 장소',125,105);v.target(pt(50,59),v.has(`checkpoint${r}`)?'점검 완료 ✓':'점검소 · 잠깐 정차',125,110);
     if(!v.sprite('cart',car*W/100-115,300,230,170)){g.fillStyle='#d79d53';g.fillRect(car*W/100-60,375,120,60);}v.sprite('parcel',car*W/100-45,327,90,80);v.magnet(carPoint(),'N',.48);v.magnet(v.p('controller',pt(20,40)),pole,.7);v.arrow(pt(start,74),pt(goal,74));v.label(`${['앞에서 당기기','뒤에서 밀기','반대 방향 배달'][r]} → ${v.has(`checkpoint${r}`)?'받는 곳까지 운반':'가운데 정차 후 자석 떼기'}`,pt(50,29),true);
   };
   v.drag('controller',pt(20,40),()=>{},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
@@ -418,7 +418,7 @@ function design(v: Surface){
   const changed=()=>{v.s.design.revision++;v.c.touch();v.c.meta();};
   v.draw=()=>{v.base();if(!chosen){v.sprite('postal-box',245,290,365,255);v.sprite('postal-lid',245,190,365,175);v.sprite('cart',760,305,300,235);v.label('밀이의 우편함',pt(33,77));v.label('당이의 원격 운반 도구',pt(72,77));return;}
     v.target(pt(50,61),remote?'운반 장치 몸체':'우편함 몸체',400,150);if(v.has('base'))v.sprite(remote?'cart':'postal-box',400,285,480,270);
-    v.target(pt(44,53),'자석 자리',135,75);v.target(pt(57,53),'마주 보는 부품',135,75);if(remote){v.ctx.fillStyle='#8dc9cf99';v.ctx.fillRect(636,305,12,190);v.label('유리판',pt(50,40),true);}
+    v.target(pt(44,53),'자석 자리',135,75);v.target(pt(57,53),'마주 보는 부품',135,75);if(remote){if(!v.sprite('glass',630,288,24,224)){v.ctx.fillStyle='#8dc9cf99';v.ctx.fillRect(636,305,12,190);}v.label('유리판',pt(50,40),true);}
     if(!v.has('base')){const body=v.p('base',pt(18,69));if(v.sprite(remote?'cart':'postal-box',body.x*W/100-98,body.y*H/100-70,196,140))v.label('몸체',pt(body.x,body.y+12),true);else v.iron(body,'몸체',100);}v.magnet(v.p('design-magnet',pt(22,44)),opposite(v.s.design.pole),.75);
     if(v.s.design.pair==='iron')v.iron(v.p('design-target',pt(77,45)),'철판',65);else v.magnet(v.p('design-target',pt(77,45)),'N',.75);const tested=v.a.trials?.some(t=>t.key==='prototype'&&t.designRevision===v.s.design.revision);v.label(tested?'시험 결과를 확인했어 · 다음 사용 시험에서 개선하기':'몸체 → 두 부품 배치 → 시제품 반응 시험',pt(50,29),true);
     if(tested){const m=v.p('design-magnet',pt(22,44)),t=v.p('design-target',pt(77,45));if(v.s.design.aligned&&v.s.design.gap<=36)v.arrow(t,pt(t.x+(v.s.design.pair==='magnet'&&v.s.design.pole==='N'?7:-7),t.y));}
@@ -441,7 +441,7 @@ function useDesign(v: Surface){
   sync();
   const destination=pt(t.x,r===0?42:66),forceSpot=remote?pt((m.x+t.x)/2,v.p('operating-target',t).y):pt(50,54);
   if(!operated)operated=remote?!!v.a.points['use-handle']&&distance(v.a.points['use-handle'],m)>.5&&distance(v.p('operating-target',t),destination)<6:(v.a.points['use-handle']?.y||37)>59;
-  v.draw=()=>{v.base();if(!remote){v.fixture(0,operated,false,false);if(!operated){if(r===1)v.sprite('book',510,370,200,160);else{v.ctx.fillStyle='#fff3ce';v.ctx.strokeStyle='#98784e';v.ctx.lineWidth=3;v.ctx.fillRect(540,420,150,60);v.ctx.strokeRect(540,420,150,60);v.ctx.beginPath();v.ctx.moveTo(540,420);v.ctx.lineTo(615,458);v.ctx.lineTo(690,420);v.ctx.stroke();}}}else{v.ctx.fillStyle='#83c7cf77';v.ctx.fillRect(630,240,20,330);v.label('유리판',pt(50,32),true);}
+  v.draw=()=>{v.base();if(!remote){v.fixture(0,operated,false,false);if(!operated){if(r===1)v.sprite('book',510,370,200,160);else if(!v.sprite('letter',530,392,170,121)){v.ctx.fillStyle='#fff3ce';v.ctx.strokeStyle='#98784e';v.ctx.lineWidth=3;v.ctx.fillRect(540,420,150,60);v.ctx.strokeRect(540,420,150,60);v.ctx.beginPath();v.ctx.moveTo(540,420);v.ctx.lineTo(615,458);v.ctx.lineTo(690,420);v.ctx.stroke();}}}else{if(!v.sprite('glass',625,232,30,346)){v.ctx.fillStyle='#83c7cf77';v.ctx.fillRect(630,240,20,330);}v.label('유리판',pt(50,32),true);}
     const actualM=remote?v.p('operating-magnet',m):v.p('design-magnet',m),actualT=remote?v.p('operating-target',t):v.p('design-target',t);
     v.magnet(actualM,opposite(v.s.design.pole),.75);if(v.s.design.pair==='iron')v.iron(actualT,'철판',65);else v.magnet(actualT,'N',.75);
     v.label(remote?(r===0?'손잡이를 움직여 위 선반까지':'이번엔 아래 선반으로 옮겨 줘'):(r===0?'편지 한 장을 넣고 닫기':'책 한 권을 넣고 닫기'),pt(50,29),true);

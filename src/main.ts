@@ -6,14 +6,15 @@ import './quest.css';
 import './learning-ux.css';
 import './production.css';
 import './inquiry.css';
+import './polish.css';
 import { coachMarkup, bindCoach } from './coach';
 import { concepts, conceptMarkup, bindConcept } from './concept-video';
 import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
 import { questHud, questCompanion, questTitle } from './quest-ui';
-import { inquiryView, inquiryNext, advanceInquiry } from './inquiry';
+import { inquiryView, inquiryNext, advanceInquiry, inquirySteps } from './inquiry';
 import { inquiryPhase } from './inquiry-model';
 import { missionReady } from './mission-model';
-import { missionQuestions, missionGuides, questRewards } from './mission-content';
+import { missionQuestions, missionGuides, questRewards, abilityStatements } from './mission-content';
 import { expeditionMarkup, mountExpedition, type ExpeditionHandle } from './expedition';
 import { openGameSettings } from './game-settings';
 import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
@@ -23,7 +24,7 @@ import { trialPicture, readableRecord } from './trial-records';
 import { rewardBelt } from './adventure';
 import { accessible, completeActivity, coreReady, emptyActivity, evidenceNames, freshSave, missionNames, opposite, progress, ready, record, stageNames, titles, designResult, type Evidence, type Save } from './domain';
 import { clearSave, load, persist, persistenceError, migrationNotice } from './storage';
-import { icon, magnet, mascot, objectArt } from './art';
+import { icon, magnet, mascot, objectArt, sceneArt } from './art';
 import type { View } from './activity-types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -96,7 +97,8 @@ function render() {
   if (page === 'core') bindCore();
   if (page === 'report') { bindConceptLinks(app); bindEvidenceTabs(app); }
   if (page === 'ending') bindEnding();
-  if (page === 'certificate') { const input = document.querySelector<HTMLInputElement>('#nickname')!; input.addEventListener('input', () => { s.settings.nickname = input.value.slice(0, 20); document.querySelector('#certificate-name')!.textContent = s.settings.nickname || '우리 도시의 과학 탐험가'; touch(); }); }
+  if (page === 'certificate') { const input = document.querySelector<HTMLInputElement>('#nickname')!; input.addEventListener('input', () => { s.settings.nickname = input.value.slice(0, 20); document.querySelector('#certificate-name')!.textContent = s.settings.nickname || '우리 도시의 과학 탐험가'; touch(); });
+    document.querySelectorAll<HTMLButtonElement>('[data-ability]').forEach(b => b.addEventListener('click', () => { const i = Number(b.dataset.ability), out = document.querySelector<HTMLElement>('#certificate-ability')!; s.settings.ability = i; document.querySelectorAll('[data-ability]').forEach(o => o.setAttribute('aria-pressed', String(o === b))); out.querySelector('strong')!.textContent = abilityStatements[i]; out.hidden = false; playEffect('success', s.settings); touch(); })); }
   saveView();
 }
 function titlePage() { return questTitle(s); }
@@ -117,7 +119,7 @@ function activityPage() {
   const a=s.activities[screen] ||= emptyActivity();
   currentView=inquiryView(screen,a,s);
   const next=inquiryNext(screen,a,s);
-  return `<section class="quest-activity"><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-wayfinding"><span class="stage-label">${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><span class="discovery-count"></span><p class="mission-next-action" aria-live="polite"></p></div><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup()}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기</button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button></section>`;
+  return `<section class="quest-activity"><header class="mission-head"><span class="stage-label">${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-head-row">${inquirySteps(screen,a)}<span class="discovery-count"></span></div><p class="mission-next-action" aria-live="polite"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup()}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기</button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button></section>`;
 }
 function openRecords() {
   const a = s.activities[screen];
@@ -152,7 +154,11 @@ function bindActivity() {
   const viewCleanup = currentView.bind({ screen, a: s.activities[screen], s, root, refresh, touch, meta, notify });
   const placementCleanup = bindPlacement(root);
   const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, s.activities[screen], s);
-  cleanup = () => { viewCleanup?.(); placementCleanup(); coachCleanup(); };
+  // Cards and feedback start below the mission head, whatever its wrapped height.
+  const shell = document.querySelector<HTMLElement>('.quest-activity')!, head = shell.querySelector<HTMLElement>('.mission-head')!;
+  const placeHead = () => shell.style.setProperty('--head-bottom', `${Math.ceil(head.getBoundingClientRect().bottom - shell.getBoundingClientRect().top)}px`);
+  const headObserver = new ResizeObserver(placeHead); headObserver.observe(head); placeHead();
+  cleanup = () => { viewCleanup?.(); placementCleanup(); coachCleanup(); headObserver.disconnect(); };
   root.addEventListener('revise', () => startActivity(9));
 }
 async function finishActivity() {
@@ -191,7 +197,7 @@ function notebook() {
   bindConceptLinks(document.querySelector('.modal')!);
   bindEvidenceTabs(document.querySelector('.modal')!);
 }
-function reportPage() { return `<div class="report-heading"><span class="eyebrow">FINAL REPORT</span><h1>다섯 번의 발견,<br>하나의 커다란 변화.</h1><p>구역을 눌러 내 발견을 살펴보고, 마지막 복구에 사용하자.</p></div><div class="report-list">${evidenceCollection(s.evidence,'report')}</div><div class="report-actions">${button('city', '도시로 돌아가기')}${button('reviewed', `마지막 복구 시작 ${icon('arrow')}`, 'primary', !adminOn() && s.evidence.length !== 5)}</div>`; }
+function reportPage() { return `<div class="report-heading"><span class="eyebrow">최종 연구 보고서</span><h1>다섯 번의 발견,<br>하나의 커다란 변화.</h1><p>구역을 눌러 내 발견을 살펴보고, 마지막 복구에 사용하자.</p></div><div class="report-list">${evidenceCollection(s.evidence,'report')}</div><div class="report-actions">${button('city', '도시로 돌아가기')}${button('reviewed', `마지막 복구 시작 ${icon('arrow')}`, 'primary', !adminOn() && s.evidence.length !== 5)}</div>`; }
 let finalScene: View;
 function corePage() {
   finalScene = restorationView(s);
@@ -205,17 +211,22 @@ function bindCore() {
   cleanup = () => { dispose?.(); placement(); };
 }
 async function activate() { if (!canActivate()) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
-function endingPage() { return `<section class="ending"><span class="eyebrow">THE CITY IS ALIVE AGAIN</span><div class="ending-art"><img src="/assets/logo.png" alt="다시 살아난 밀고 당기는 도시"/><div class="celebration-sparks">✦ <span>✧</span> ✦</div></div><h1 id="ending-title">네 발견이 도시를 깨웠어!</h1><p id="ending-text">작은 자석의 힘이 커다란 변화를 만들었어.</p><div class="ending-progress"><i id="ending-progress"></i></div><div class="ending-mascots">${mascot('mili', 100)}${mascot('dangi', 100)}</div>${button('certificate', '인증서로 건너뛰기 →', 'text-button')}</section>`; }
+function endingPage() { return `<section class="ending"><span class="eyebrow">도시가 다시 움직여요</span><div class="ending-art"><img src="/assets/quest/logo.webp" alt="다시 살아난 밀고 당기는 도시"/><div class="celebration-sparks">✦ <span>✧</span> ✦</div></div><h1 id="ending-title">네 발견이 도시를 깨웠어!</h1><p id="ending-text">작은 자석의 힘이 커다란 변화를 만들었어.</p><div class="ending-progress"><i id="ending-progress"></i></div><div class="ending-mascots">${mascot('mili', 100)}${mascot('dangi', 100)}</div>${button('certificate', '인증서로 건너뛰기 →', 'text-button')}</section>`; }
 function endingVignette(index:number):string {
-  const rooms=['life','material','poles','remote','workshop'],props=['postal-box','parcel','book','cart',s.design.template==='box'?'postal-box':'cart'];
-  return `<div class="ending-vignette ending-painted" style="background-image:url('/assets/quest/stage-${rooms[index]}.webp')"><span class="tag">${stageNames[index]}</span><img src="/assets/quest/prop-${props[index]}.webp" alt="${questRewards[index].change}"><div class="restored-ribbon">${icon('check',22)} ${questRewards[index].name}으로 이어진 발견</div></div>`;
+  const rooms=['life','material','poles','remote','workshop'];
+  return `<div class="ending-vignette ending-painted" style="background-image:url('/assets/quest/stage-${rooms[index]}.webp')"><span class="tag">${stageNames[index]}</span>${sceneArt(index,'ending-scene')}<span class="sr-only">${questRewards[index].change}</span><div class="restored-ribbon">${icon('check',22)} ${questRewards[index].name}으로 이어진 발견</div></div>`;
 }
 function bindEnding() {
   let lastTick = performance.now(), elapsed = 0; const messages = ['잠금장치가 다시 작동해!', '재료 분류가 다시 시작됐어!', '고리 장치가 제자리를 찾았어!', '수조도, 카트도 다시 움직여!', '네 발명이 시민의 일상을 바꾸었어!'];
   let lastPart = -1;
   endingTimer = window.setInterval(() => { const now=performance.now(),delta=Math.max(0,now-lastTick);lastTick=now;if(document.hidden||document.querySelector('dialog[open],.modal-backdrop'))return;elapsed+=delta;const part = Math.min(4, Math.max(0, Math.floor((elapsed - 3000) / 3400))); const bar = document.querySelector<HTMLElement>('#ending-progress'); if (bar) bar.style.width = `${Math.min(100, elapsed / 240)}%`; const text = document.querySelector('#ending-text'); if (text && elapsed > 3000) text.textContent = messages[part]; if (elapsed > 3000 && part !== lastPart) { const art = document.querySelector('.ending-art'); if (art) art.innerHTML = endingVignette(part); lastPart = part; } if (elapsed >= (s.settings.motion ? 24000 : 6000)) go('certificate'); }, 200);
 }
-function certificatePage() { return `<div class="certificate-tools"><div><span class="eyebrow">MISSION COMPLETE</span><h1>우리 도시의 과학 탐험가</h1></div><div>${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('print', `${icon('print', 18)} 인증서 인쇄`, 'primary')}</div></div><div class="certificate"><div class="certificate-border">${adminOn() ? '<p class="certificate-preview">관리자 미리보기 · 실제 수료 기록이 아니야</p>' : ''}<span class="certificate-overline">SCIENCE WORLD · MAGNET CITY</span><div class="certificate-medal">${icon('spark', 38)}</div><h2>자기 도시 복구 연구원 인증서</h2><p class="certificate-name" id="certificate-name">${esc(s.settings.nickname || '우리 도시의 과학 탐험가')}</p><p>자석의 성질을 직접 관찰하고 실험하여<br><strong>밀고 당기는 도시를 다시 움직이게 했습니다.</strong></p><div class="certificate-achievements">${evidenceNames.map((n, i) => `<span>${icon('check', 17)} ${n.replace(' 기록', '').replace(' 검증서', '')}</span>`).join('')}</div><div class="certificate-bottom">${mascot('mili', 78)}<div><strong>도시 복구 100% · 5개의 연구 기록</strong><span>${s.final.date ? new Date(s.final.date).toLocaleDateString('ko-KR') : ''}</span></div>${mascot('dangi', 78)}</div></div></div><div class="certificate-name-input"><label for="nickname">인증서에 넣을 이름 <small>(선택)</small></label><input id="nickname" maxlength="20" placeholder="우리 도시의 과학 탐험가" value="${esc(s.settings.nickname)}"/>${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div>`; }
+function certificatePage() {
+  const ability = abilityStatements[s.settings.ability ?? -1];
+  const sheet = `<div class="certificate"><div class="certificate-border">${adminOn() ? '<p class="certificate-preview">관리자 미리보기 · 실제 수료 기록이 아니야</p>' : ''}<span class="certificate-overline">밀고 당기는 도시 · 자석 탐험대</span><div class="certificate-medal">${icon('spark', 38)}</div><h2>자석 도시 복구 연구원 인증서</h2><p class="certificate-name" id="certificate-name">${esc(s.settings.nickname || '우리 도시의 과학 탐험가')}</p><p>자석의 성질을 직접 관찰하고 실험하여<br><strong>밀고 당기는 도시를 다시 움직이게 했습니다.</strong></p><p class="certificate-ability" id="certificate-ability" ${ability ? '' : 'hidden'}>나는 이제 <strong>${esc(ability || '')}</strong></p><div class="certificate-achievements">${evidenceNames.map(n => `<span>${icon('check', 17)} ${n.replace(' 기록', '').replace(' 검증서', '')}</span>`).join('')}</div><div class="certificate-bottom">${mascot('mili', 78)}<div><strong>도시 복구 100% · 5개의 연구 기록</strong><span>${s.final.date ? new Date(s.final.date).toLocaleDateString('ko-KR') : ''}</span></div>${mascot('dangi', 78)}</div></div></div>`;
+  const panel = `<aside class="certificate-panel"><span class="eyebrow">미션 완료</span><h1>우리 도시의 과학 탐험가</h1><div class="certificate-name-input"><label for="nickname">인증서에 넣을 이름 <small>(선택)</small></label><input id="nickname" maxlength="20" placeholder="우리 도시의 과학 탐험가" value="${esc(s.settings.nickname)}"/></div><fieldset class="ability-picker"><legend>나는 이제 무엇을 할 수 있게 됐을까?</legend><p>가장 자신 있는 한 가지를 골라 인증서에 새겨 봐.</p>${abilityStatements.map((t, i) => `<button type="button" class="ability-option" data-ability="${i}" aria-pressed="${s.settings.ability === i}">${esc(t)}</button>`).join('')}</fieldset><div class="certificate-actions">${button('print', `${icon('print', 18)} 인증서 인쇄`, 'primary')}${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div></aside>`;
+  return `<div class="certificate-stage">${sheet}${panel}</div>`;
+}
 function showModal(content: string, label: string, onClose?: () => void) {
   modalCleanup?.(); document.querySelector('.modal-backdrop')?.remove(); city?.pause(true);
   const previous = document.activeElement as HTMLElement | null, backdrop = document.createElement('div'); backdrop.className = 'modal-backdrop';
@@ -244,7 +255,7 @@ function openSettings() {
     onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
     onAdminToggle:enabled=>{void (async()=>{if(enabled&&saveTimer)await flush();cleanPage();restorePractice();if(enabled){adminBackup=structuredClone(s);s=structuredClone(s);}else{s=adminBackup!;adminBackup=null;}syncAudioSettings(s.settings);backStack.length=0;go(page==='title'?'title':'city',false);})();},
     onStory:openStory,onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
-    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:''};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
+    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:'',ability:undefined};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
   });
 }
 function openStory() {
@@ -257,7 +268,7 @@ function bindCommon() {
       case 'home': void flush(); go('title'); break;
       case 'back': void flush(); goBack(); break;
       case 'start': if (!s.started) { s.started = true; touch(); go('city'); openStory(); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else go('city'); break;
-      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:''}; s.started = true; go('city'); touch(); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
+      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:'',ability:undefined}; s.started = true; go('city'); touch(); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
       case 'city': void flush(); go('city'); break;
       case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;

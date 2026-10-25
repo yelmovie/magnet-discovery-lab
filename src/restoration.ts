@@ -3,7 +3,7 @@ import { initializeFinal, finalView as legacyFinalView } from './final-mission';
 import { missionView } from './mission-play';
 import { currentInventionTrial } from './trial-records';
 import { bindDrag, draggable, placementControls } from './manipulation';
-import { icon, mascot } from './art';
+import { icon, mascot, sceneArt } from './art';
 import { questCompanion } from './quest-ui';
 import type { View } from './activity-types';
 
@@ -19,7 +19,7 @@ export function restorationView(s:Save):View {
     bind(c){return bindDrag(c,'blueprint',{x:25,y:56},p=>{if(Math.hypot(p.x-53,(p.y-56)*.56)<17){r.installed=true;r.revision=s.design.revision;r.template=s.design.template;r.attempt=emptyActivity();c.touch();c.refresh();}else c.notify('설계도를 가운데 광장 장치까지 옮겨 줘.');});}
   };
   if(r.operated)return{
-    html:`<div class="restoration-plaza restoration-success"><h1 class="mission-question">네 설계로 광장의 장치를 고쳤어!</h1><div class="restoration-team">${mascot('mili',190,3)}<img src="/assets/quest/prop-postal-box.webp" alt="내 설계로 복구한 장치">${mascot('dangi',180,3)}</div><p class="restoration-ability">자석의 위치와 거리를 조절해서<br>생활에 필요한 장치를 만들 수 있어!</p>${questCompanion({message:'네가 확인한 다섯 발견이 모두 쓰였어. 다른 장치로도 도전하고 싶으면 축제 뒤에 다시 찾아와 줘.'})}<button class="quest-cta restoration-finish" data-restoration="finish">도시 축제 열기 ${icon('spark',26)}</button><details class="restoration-access"><summary>다른 복구도 해 보기</summary><button class="btn" data-restoration="challenge">배송·고리·발명 이어 고치기</button></details></div>`,
+    html:`<div class="restoration-plaza restoration-success"><h1 class="mission-question">네 설계로 광장의 장치를 고쳤어!</h1><div class="restoration-team">${mascot('mili',190,3)}${sceneArt(5,'restoration-scene')}${mascot('dangi',180,3)}</div><p class="restoration-ability">자석의 위치와 거리를 조절해서<br>생활에 필요한 장치를 만들 수 있어!</p>${questCompanion({message:'네가 확인한 다섯 발견이 모두 쓰였어. 다른 장치로도 도전하고 싶으면 축제 뒤에 다시 찾아와 줘.'})}<button class="quest-cta restoration-finish" data-restoration="finish">도시 축제 열기 ${icon('spark',26)}</button><details class="restoration-access"><summary>다른 복구도 해 보기</summary><button class="btn" data-restoration="challenge">배송·고리·발명 이어 고치기</button></details></div>`,
     bind(c){c.root.querySelector('[data-restoration="finish"]')?.addEventListener('click',()=>c.root.dispatchEvent(new CustomEvent('activate-final',{bubbles:true})));c.root.querySelector('[data-restoration="challenge"]')?.addEventListener('click',()=>{r.optionalBackup=JSON.stringify(r);r.mode='challenge';r.segments=[];r.operated=false;r.installed=false;r.attempt=emptyActivity();c.touch();c.refresh();});}
   };
   let a=r.attempt ||= emptyActivity();
