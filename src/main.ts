@@ -19,7 +19,7 @@ import { openGameSettings } from './game-settings';
 import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
-import { trialPicture } from './trial-records';
+import { trialPicture, readableRecord } from './trial-records';
 import { rewardBelt } from './adventure';
 import { accessible, completeActivity, coreReady, emptyActivity, evidenceNames, freshSave, missionNames, opposite, progress, ready, record, stageNames, titles, designResult, type Evidence, type Save } from './domain';
 import { clearSave, load, persist, persistenceError, migrationNotice } from './storage';
@@ -53,7 +53,7 @@ function saveSnapshot(): Save {
   if (!practiceBackup) return s;
   return { ...s, activities: practiceBackup.activities, design: practiceBackup.design, designs: practiceBackup.designs, resume: 0 };
 }
-async function flush() { if (adminOn()) return; clearTimeout(saveTimer); saving = true; saveView(); try { const snap = saveSnapshot(); await persist(snap); s.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
+async function flush() { if (adminOn()) return; clearTimeout(saveTimer); saveTimer=0; saving = true; saveView(); try { const snap = saveSnapshot(); await persist(snap); s.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
 function touch() { if (adminOn()) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
 function cleanPage() { cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; clearInterval(endingTimer); modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
 function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; practiceBackup = null; }
@@ -103,7 +103,7 @@ function titlePage() { return questTitle(s); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 let pendingPlace: number | null = null;
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{s.city=p;touch();},onArrive:showPlace});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onArrive:showPlace});
   if(pendingPlace!==null){city.goTo(pendingPlace);pendingPlace=null;}
 }
 function showPlace(index:number) {
@@ -123,7 +123,7 @@ function openRecords() {
   const a = s.activities[screen];
   const trials = (a.trials || []).filter(t=>t.objects.length);
   let dispose = () => {};
-  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${trialReplayMarkup(trials)}${a.records.length ? `<details><summary>관찰 기록 ${a.records.length}개</summary><ul class="observation-list">${a.records.map(r => `<li><strong>${esc(r.label)}</strong><span>${esc(r.result)}</span></li>`).join('')}</ul></details>` : '<p>물체를 움직이면 나만의 실험이 여기에 남아.</p>'}</div>`, '내 실험 다시 보기',()=>dispose());
+  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${trialReplayMarkup(trials)}${a.records.length ? `<details><summary>관찰 기록 ${a.records.length}개</summary><ul class="observation-list">${a.records.map(r => `<li><strong>${esc(r.label)}</strong><span>${esc(readableRecord(r.result))}</span></li>`).join('')}</ul></details>` : '<p>물체를 움직이면 나만의 실험이 여기에 남아.</p>'}</div>`, '내 실험 다시 보기',()=>dispose());
   dispose = bindTrialReplay(modal.dialog, trials);
 }
 function meta() {
@@ -135,7 +135,20 @@ function meta() {
 }
 function bindActivity() {
   const root = document.querySelector<HTMLElement>('#experiment-root')!;
-  const refresh = () => { const drag = (document.activeElement as HTMLElement | null)?.dataset.drag; const scroll = window.scrollY; cleanup?.(); cleanup = undefined; render(); if (drag) document.querySelector<HTMLElement>(`[data-drag="${drag}"]`)?.focus({ preventScroll: true }); window.scrollTo({ top: scroll, behavior: 'instant' }); };
+  const refresh = () => {
+    const active = document.activeElement as HTMLElement | null, scroll = window.scrollY;
+    const card = root.querySelector<HTMLElement>('.field-content') || root.querySelector<HTMLElement>('.inquiry-card'), cardTop = card?.scrollTop;
+    const phase = root.querySelector<HTMLElement>('[data-phase]')?.dataset.phase;
+    const focus = active?.dataset.drag ? `[data-drag="${active.dataset.drag}"]` : active?.dataset.field ? `[data-field="${active.dataset.field}"]` : active?.dataset.inquiryGroup ? `[data-inquiry-group="${active.dataset.inquiryGroup}"][data-value="${active.dataset.value}"]` : active?.dataset.inquiry ? `[data-inquiry="${active.dataset.inquiry}"]` : '';
+    cleanup?.(); cleanup = undefined; render();
+    const nextRoot = document.querySelector<HTMLElement>('#experiment-root')!;
+    if (phase === nextRoot.querySelector<HTMLElement>('[data-phase]')?.dataset.phase) {
+      if (focus) (nextRoot.querySelector<HTMLElement>(focus) || (active?.dataset.inquiry==='field-test' ? nextRoot.querySelector<HTMLElement>('[data-inquiry="field-next"]') : null))?.focus({ preventScroll: true });
+      const nextCard = nextRoot.querySelector<HTMLElement>('.field-content') || nextRoot.querySelector<HTMLElement>('.inquiry-card');
+      if (nextCard && cardTop !== undefined) nextCard.scrollTop = cardTop;
+    }
+    window.scrollTo({ top: scroll, behavior: 'instant' });
+  };
   const viewCleanup = currentView.bind({ screen, a: s.activities[screen], s, root, refresh, touch, meta, notify });
   const placementCleanup = bindPlacement(root);
   const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, s.activities[screen], s);
@@ -160,7 +173,7 @@ function showReward(stage: number) {
   playEffect('reward',s.settings);
   showModal(`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('modal-close', '복구된 도시 보기 →', 'primary')}</div>`, '연구 기록 완성');
 }
-function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
+function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
 function evidenceCollection(items: Evidence[], prefix: string) {
   const names=['생활','재료','극','원격','발명'];
   return `<div class="evidence-browser"><div class="evidence-tabs" role="tablist" aria-label="구역별 내 발견">${items.map((e,i)=>`<button type="button" role="tab" id="${prefix}-tab-${i}" aria-controls="${prefix}-panel-${i}" aria-selected="${i===items.length-1}" tabindex="${i===items.length-1?0:-1}" data-evidence="${i}">${e.stage+1} · ${names[e.stage]}</button>`).join('')}</div>${items.map((e,i)=>`<div class="evidence-panel" role="tabpanel" id="${prefix}-panel-${i}" aria-labelledby="${prefix}-tab-${i}" ${i===items.length-1?'':'hidden'}>${evidenceCard(e)}</div>`).join('')}</div>`;
@@ -229,9 +242,9 @@ function openSettings() {
   modalCleanup?.();
   modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{touch();syncAudioSettings(s.settings);const b=document.querySelector<HTMLButtonElement>('[data-action="sound"]');if(b){const on=audioEnabled();b.innerHTML=icon(on?'sound':'mute');b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'소리 끄기':'소리 켜기');}},
     onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
-    onAdminToggle:enabled=>{void (async()=>{await flush();cleanPage();restorePractice();if(enabled){adminBackup=structuredClone(s);s=structuredClone(s);}else{const settings={...s.settings};s=adminBackup!;adminBackup=null;s.settings=settings;touch();}backStack.length=0;go(page==='title'?'title':'city',false);})();},
+    onAdminToggle:enabled=>{void (async()=>{if(enabled&&saveTimer)await flush();cleanPage();restorePractice();if(enabled){adminBackup=structuredClone(s);s=structuredClone(s);}else{s=adminBackup!;adminBackup=null;}syncAudioSettings(s.settings);backStack.length=0;go(page==='title'?'title':'city',false);})();},
     onStory:openStory,onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
-    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();await clearSave();s=freshSave();s.settings={...settings,nickname:''};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
+    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:''};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
   });
 }
 function openStory() {
@@ -273,6 +286,6 @@ function bindCommon() {
   }));
 }
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
-window.addEventListener('pagehide', () => { void flush(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
+window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });
 void boot();

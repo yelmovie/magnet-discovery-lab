@@ -9,6 +9,14 @@ export function assemblyAligned(magnet:Point,target:Point,remote:boolean):boolea
   return Math.abs(magnet.y-target.y)<9 && magnet.x>=32 && magnet.x<=49 && target.x>=51 && target.x<=70 &&
     magnet.y>=38 && magnet.y<=72 && target.y>=38 && target.y<=72 && (!remote || magnet.x<50 && target.x>50);
 }
+/** Explain the first physical obstruction using the same placement rules as the test. */
+export function assemblyIssue(magnet:Point,target:Point,remote:boolean):string {
+  if(Math.abs(magnet.y-target.y)>=9)return '두 부품의 높이가 달라. 서로 마주 보게 높이를 맞춰 봐.';
+  if(target.x-magnet.x<11)return '두 부품이 겹치거나 순서가 바뀌었어. 자석은 왼쪽, 대상은 오른쪽에 간격을 두고 놓아 줘.';
+  if(!assemblyAligned(magnet,target,remote))return remote?'유리판을 사이에 두고 왼쪽에 자석, 오른쪽에 대상 부품을 놓아 줘.':'장치의 점선 자리 안으로 두 부품을 옮겨 줘.';
+  if(distance(magnet,target)*2>36)return '두 부품의 간격이 너무 멀어. 가까이 옮겨서 다시 시험해 봐.';
+  return '';
+}
 export function missionReady(screen: number, a: Activity, s: Save): boolean {
   const f = (k: string) => a.values[k] === true;
   const proof = (key: string) => !!a.trials?.some(t => t.key === key && validTrial(t) && t.outcome === 'success');

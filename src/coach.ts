@@ -81,7 +81,7 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
     const state = coaching(n, a, s), key = `${a.values.round}:${state.action}`;
     if (key !== stateKey) { level = 0; stateKey = key; }
     const action = root.querySelector<HTMLElement>('.mission-next-action'); if (action) action.textContent = state.action;
-    const progress = root.querySelector<HTMLElement>('.discovery-count'); if (progress) progress.textContent = `발견 ${state.done} / ${state.total}`;
+    const progress = root.querySelector<HTMLElement>('.discovery-count'); if (progress) progress.textContent = `모은 실험 증거 ${a.trials?.length || 0}개`;
     helper.querySelector('.coach-clue')!.textContent = level === 0 ? state.action : state.clues[Math.min(level - 1, state.clues.length - 1)];
     root.querySelectorAll('.coach-focus').forEach(el => el.classList.remove('coach-focus'));
     if (!bubble.hidden && state.focus) root.querySelector(`[data-drag="${state.focus}"]`)?.classList.add('coach-focus');
