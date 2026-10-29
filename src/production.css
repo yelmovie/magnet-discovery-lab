@@ -429,6 +429,23 @@ body.quest-mode .scene-ring-equipment .scene-ring-upper { bottom: 58%; }
    movable ring visible, and separate its test button from the page action. */
 #app .screen-6 .inquiry-workbench .mission-feedback { left: 31%; max-width: 48%; }
 #app .screen-6 .inquiry-workbench .mission-actions { bottom: 16%; }
+/* The entire pictured prop can be grabbed. Informational overlays never trap a touch. */
+#app .canvas-magnet-hit { z-index: calc(var(--layer-props) + 1); }
+#app .canvas-hit[disabled], #app .force-sensor { pointer-events: none; }
+#app .canvas-handle-grip, #app .canvas-paper-grip {
+  display: inline-grid; place-items: center; min-width: 78px; min-height: 44px;
+  padding: 4px 10px; border: 2px solid #80613a; border-radius: 12px;
+  background: linear-gradient(#ffe5a7, #eabd72); color: #493d29;
+  box-shadow: 0 3px 0 #80613a66; font: 700 16px/1.2 var(--font-body); white-space: nowrap;
+  pointer-events: none;
+}
+#app .canvas-paper-grip { min-width: 56px; background: #fff8dc; border-color: #b49b60; padding-inline: 5px; }
+#app .canvas-pole-sticker {
+  display: inline-grid; place-items: center; width: 48px; height: 48px; border: 3px solid #fff7dc;
+  border-radius: 50%; color: #fff; background: #bf443c; box-shadow: 0 2px 0 #593f32, 0 0 0 1px #bda675;
+  font: 800 27px/1 var(--font-body); pointer-events: none;
+}
+#app .canvas-pole-sticker.pole-S { background: #346f9e; }
 @media (max-height: 640px) and (min-width: 760px) {
   #app .screen-6 .inquiry-shell[data-phase='experiment'] { --inquiry-nav-top: 154px; }
 }

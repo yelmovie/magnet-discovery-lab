@@ -19,3 +19,24 @@
 #app .expedition-overview { position: absolute; left: 20px; top: 100px; z-index: 20; min-height: 48px; }
 #app .expedition-destination { position: absolute; right: 20px; top: 100px; z-index: 20; margin: 0; padding: 10px 14px; border-radius: 12px; background: #fffdf0ed; color: #234f4b; }
 #app .map-overview .expedition-building { scale: calc(1 / var(--map-scale)); }
+
+/* Short, optional thinking prompt; opening it never blocks the experiment. */
+#app .mission-head .play-steps { flex-wrap: wrap; pointer-events: auto; }
+#app .play-question { color: #315d47; font-size: 16px; text-align: left; }
+#app .play-question summary { display: flex; align-items: center; min-height: 44px; padding: 6px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+#app .play-question[open] { flex-basis: 100%; padding: 0 12px 10px; }
+#app .play-question[open] summary { padding-left: 0; }
+#app .play-question p { margin: 0 0 4px; font-size: 18px; line-height: 1.4; }
+#app .play-question small { display: block; font-size: 14px; }
+#app .quest-activity .play-discovery .play-discovery-options { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 16px 0; }
+#app .quest-activity .play-discovery .inquiry-option { min-height: 96px; padding: 14px; word-break: keep-all; overflow-wrap: anywhere; }
+#app .quest-activity .play-discovery .inquiry-option:disabled { opacity: .65; cursor: default; }
+#app .quest-activity .play-discovery .inquiry-option.selected:disabled { opacity: 1; border-color: #38816a; background: #e5f2da; color: #244e47; }
+#app .quest-activity .play-discovery .inquiry-option svg { flex: none; }
+#app .quest-activity .play-discovery .inquiry-feedback { margin: 12px 0; padding: 12px 16px; border-radius: 12px; background: #f3eedc; }
+#app .quest-activity .play-discovery .inquiry-feedback.success { background: #e5f2da; color: #244e47; }
+#app .quest-activity .play-discovery .inquiry-evidence { margin-top: 8px; }
+@media(max-width:700px) {
+  #app .quest-activity .play-discovery .play-discovery-options { grid-template-columns: 1fr; }
+  #app .quest-activity .play-discovery .inquiry-option { min-height: 56px; }
+}

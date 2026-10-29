@@ -14,3 +14,5 @@ __pycache__/
 # Meshy originals stay local (large); the packed copies live in public/assets/3d/
 assets/source/**/meshy/*.glb
 graphify-out/
+.tmp/
+.npm-cache/

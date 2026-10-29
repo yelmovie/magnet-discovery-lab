@@ -156,29 +156,50 @@ function bindActivity() {
   const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, s.activities[screen], s);
   // Cards and feedback start below the mission head, whatever its wrapped height.
   const shell = document.querySelector<HTMLElement>('.quest-activity')!, head = shell.querySelector<HTMLElement>('.mission-head')!;
+  // Keep optional help useful without stacking several panels over the experiment.
+  const helpEvents=new AbortController();
+  const closeOtherHelp=(keep:HTMLElement)=>{
+    shell.querySelectorAll<HTMLDetailsElement>('.mission-access[open], .play-question[open]').forEach(panel=>{if(panel!==keep)panel.open=false;});
+    const coach=shell.querySelector<HTMLButtonElement>('.coach-toggle');
+    if(keep!==coach&&coach?.getAttribute('aria-expanded')==='true')coach.click();
+  };
+  shell.addEventListener('toggle',event=>{const panel=event.target;if(panel instanceof HTMLDetailsElement&&panel.open&&panel.matches('.mission-access, .play-question'))closeOtherHelp(panel);},{capture:true,signal:helpEvents.signal});
+  shell.addEventListener('click',event=>{const coach=(event.target as HTMLElement).closest<HTMLElement>('.coach-toggle');if(coach?.getAttribute('aria-expanded')==='true')closeOtherHelp(coach);},{signal:helpEvents.signal});
   const placeHead = () => shell.style.setProperty('--head-bottom', `${Math.ceil(head.getBoundingClientRect().bottom - shell.getBoundingClientRect().top)}px`);
   const headObserver = new ResizeObserver(placeHead); headObserver.observe(head); placeHead();
-  cleanup = () => { viewCleanup?.(); placementCleanup(); coachCleanup(); headObserver.disconnect(); };
+  cleanup = () => { viewCleanup?.(); placementCleanup(); coachCleanup(); headObserver.disconnect(); helpEvents.abort(); };
   root.addEventListener('revise', () => startActivity(9));
   root.addEventListener('open-3d', event => open3d((event as CustomEvent<Open3d>).detail));
 }
+let finishingActivity = false;
 async function finishActivity() {
+  if (finishingActivity) return;
+  finishingActivity = true;
+  try { await finishActivityOnce(); } finally { finishingActivity = false; }
+}
+async function finishActivityOnce() {
   const activity=s.activities[screen];
   if(inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
   if (!ready(screen, s.activities[screen], s)) return;
   sound(true);
-  if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); const stage=Math.floor((screen-1)/2);restorePractice(); s.resume = 0; await flush(); go('city'); openConcept(stage,true); return; }
+  if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); restorePractice(); s.resume = 0; await flush(); go('city'); notify('다시 탐구했어! 처음 발견과 복구 기록은 그대로 보관돼.'); return; }
   const stage = Math.floor((screen - 1) / 2);
   if (screen === 9) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
   if (!completeActivity(s, screen)) return;
   await flush();
   if (screen % 2) return startActivity(screen + 1);
   go('city');
-  openConcept(stage, false, () => showReward(stage));
+  showReward(stage);
 }
 function showReward(stage: number) {
   playEffect('reward',s.settings);
-  showModal(`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('modal-close', '복구된 도시 보기 →', 'primary')}</div>`, '연구 기록 완성');
+  const modal = showModal(`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '내 발명으로 도시 고치기 →', 'primary')}${button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`, '연구 기록 완성');
+  modal.dialog.querySelector('[data-action="next-zone"]')?.addEventListener('click', () => {
+    modal.close();
+    if (stage < 4) startActivity(stage * 2 + 3);
+    else { s.final.report = true; touch(); go('core'); }
+  });
+  bindConceptLinks(modal.dialog);
 }
 function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
 function evidenceCollection(items: Evidence[], prefix: string) {

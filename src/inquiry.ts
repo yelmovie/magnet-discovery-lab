@@ -2,7 +2,7 @@ import { record, type Activity, type Save } from './domain';
 import type { Context, View } from './activity-types';
 import { missionView } from './mission-play';
 import { missionReady } from './mission-model';
-import { inquiries, fieldMissions } from './inquiry-content';
+import { discoveries, inquiries, fieldMissions, playQuestions } from './inquiry-content';
 import { defaultFieldSetup, explanationCorrect, fieldResult, inquiryPhase, inquiryReady, routeDirection, type FieldSetup } from './inquiry-model';
 import { icon, magnet, objectArt, equipmentArt, sceneArt } from './art';
 import { trialPicture, readableRecord } from './trial-records';
@@ -12,11 +12,19 @@ const choice=(group:string,value:string|number,label:string,selected:boolean)=>`
 const button=(id:string,label:string,disabled=false)=>`<button type="button" class="btn primary inquiry-button" data-inquiry="${id}" ${disabled?'disabled':''}>${label}${icon('arrow',20)}</button>`;
 export function inquiryNext(n:number,a:Activity,s:Save):{label:string;enabled:boolean} {
   const phase=inquiryPhase(a);
+  if(a.values.inquiryVersion===2){
+    if(phase==='experiment')return {label:n%2?'다음 탐구로':'발견 정리',enabled:missionReady(n,a,s)};
+    return {label:phase==='complete'?'구역 복구하기':'발견을 하나 골라 줘',enabled:missionReady(n,a,s)&&inquiryReady(n,a)};
+  }
   if(phase==='experiment')return {label:'실험 증거로 설명하기',enabled:missionReady(n,a,s)};
   return {label:phase==='complete'?(n%2?'다음 탐구로':'구역 복구하기'):'지금 탐구를 먼저 마쳐 줘',enabled:phase==='complete'&&missionReady(n,a,s)&&inquiryReady(n,a)};
 }
 export function advanceInquiry(a:Activity):boolean {
   if(inquiryPhase(a)!=='experiment')return false;
+  if(a.values.inquiryVersion===2&&Number(a.values.inquiryActivity)%2===1)return false;
+  if(a.values.inquiryVersion===2){
+    a.values.reflected=false;delete a.values.reflection;delete a.values.reflectionFeedback;
+  }
   a.values.inquiryPhase='explain';return true;
 }
 function setupOf(a:Activity):FieldSetup {
@@ -51,12 +59,17 @@ function fieldMarkup(stage:number,round:number,a:Activity):string {
 }
 /** Step tabs live in the mission head, so call this after inquiryView has settled the phase. */
 export function inquirySteps(n:number,a:Activity):string {
+  if(a.values.inquiryVersion===2){
+    const phase=inquiryPhase(a),playing=phase==='experiment';
+    return `<nav class="inquiry-steps play-steps" aria-label="탐구 단계"><span class="${playing?'active':'done'}" ${playing?'aria-current="step"':''}>${playing?'1':'✓'} 직접 해 보기</span>${n%2?'':`<span class="${playing?'':phase==='complete'?'done':'active'}" ${phase==='explain'?'aria-current="step"':''}>${phase==='complete'?'✓':'2'} 발견 정리</span>`}${playing?`<details class="play-question"><summary>먼저 생각해 볼까?</summary><div class="play-question-copy"><p>${playQuestions[n-1]}</p><small>마음속으로 예상하고 바로 실험해 봐. 틀려도 괜찮아.</small></div></details>`:''}</nav>`;
+  }
   const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?2:3}[phase];
   const labels=n%2?['예상하기','직접 실험','증거로 설명']:['예상하기','직접 실험','증거로 설명','현장 의뢰'];
   return `<nav class="inquiry-steps" aria-label="탐구 단계"><strong class="sr-only">탐구 단계</strong>${labels.map((t,i)=>`<span class="${i===index?'active':i<index?'done':''}" ${i===index?'aria-current="step"':''}><b>${i<index?'✓':i+1}</b>${t}</span>`).join('')}</nav>`;
 }
 export function inquiryView(n:number,a:Activity,s:Save):View {
   const base=missionView(n,a,s); // Initialize hands-on state before adding inquiry state.
+  if(a.values.paceVersion===1||a.values.inquiryVersion===2)return playInquiryView(n,a,s,base);
   a.values.inquiryVersion=1;
   if(['explain','apply','complete'].includes(inquiryPhase(a))&&!missionReady(n,a,s)){
     a.values.inquiryPhase='experiment';a.values.reasoned=false;
@@ -110,6 +123,39 @@ export function inquiryView(n:number,a:Activity,s:Save):View {
       else if(pos===(round?1:5)&&a.values.routeCargo===true){finishField(a,round,'중간 창고에서 짐을 싣고 목적지에서 멈춰 배달했어!');}
       else a.values.fieldFeedback=pos===(round?1:5)?'아직 짐이 없어. 중간 창고에서 먼저 멈춰 줘.':'멈췄어. 짐을 싣는 창고와 목적지의 표지를 살펴봐.';
       refresh();});
+    return ()=>controller.abort();
+  }};
+}
+/** The experiment is the main activity. A district ends with one evidence-based reflection. */
+function playInquiryView(n:number,a:Activity,s:Save,base:View):View {
+  a.values.inquiryVersion=2;
+  a.values.inquiryActivity=n;
+  const oldPhase=inquiryPhase(a);
+  if(oldPhase==='predict'||oldPhase==='apply'||n%2===1||!missionReady(n,a,s)){
+    a.values.inquiryPhase='experiment';
+    if(!missionReady(n,a,s)){a.values.reflected=false;a.values.reasoned=false;}
+  }
+  if(inquiryPhase(a)==='complete'&&!inquiryReady(n,a))a.values.inquiryPhase='explain';
+  const phase=inquiryPhase(a);
+  if(phase==='experiment')return {html:`<div class="inquiry-shell play-inquiry" data-phase="experiment"><div class="inquiry-workbench">${base.html}</div></div>`,bind:base.bind};
+  const d=discoveries[Math.floor((n-1)/2)],complete=phase==='complete'&&inquiryReady(n,a);
+  const evidence=(a.trials||[]).slice(-1);
+  return {html:`<div class="inquiry-shell play-inquiry" data-phase="${complete?'complete':'explain'}"><div class="inquiry-card play-discovery"><span class="inquiry-kicker">우리 구역의 발견 · 한 가지만 떠올려 봐</span><h2>${d.question}</h2><p>방금 직접 움직이고 관찰한 결과를 골라 줘.</p><div class="inquiry-options play-discovery-options">${d.choices.map((t,i)=>`<button type="button" class="inquiry-option ${a.values.reflection===i?'selected':''}" data-inquiry-group="reflection" data-value="${i}" aria-pressed="${a.values.reflection===i}" ${complete?'disabled':''}>${complete&&i===d.answer?icon('check',24):''}<span>${t}</span></button>`).join('')}</div><p class="inquiry-feedback ${complete?'success':''}" role="status">${escape(complete?d.finding:a.values.reflectionFeedback||'정답을 서두르지 않아도 돼. 실험에서 본 움직임을 떠올려 봐.')}</p><details class="inquiry-evidence"><summary>내 실험 기록 펼치기</summary>${evidence.length?`<div class="trial-grid">${evidence.map(trialPicture).join('')}</div>`:''}<ul>${a.records.filter(r=>!r.key.startsWith('inquiry')).slice(-2).map(r=>`<li>${escape(r.label)}: ${escape(readableRecord(r.result))}</li>`).join('')}</ul></details>${complete?'':`<button class="quest-text-button" data-inquiry="revisit">실험대로 돌아가 보기</button>`}</div></div>`,bind(c){
+    const controller=new AbortController(),opts={signal:controller.signal};
+    const refresh=()=>{c.touch();c.refresh();};
+    c.root.querySelectorAll<HTMLButtonElement>('[data-inquiry-group="reflection"]').forEach(b=>b.addEventListener('click',()=>{
+      if(!missionReady(n,a,s)||inquiryPhase(a)!=='explain')return;
+      const selected=Number(b.dataset.value);
+      a.values.reflection=selected;
+      if(selected===d.answer){
+        a.values.reflected=true;a.values.inquiryPhase='complete';a.values.reflectionFeedback='';
+        record(a,{key:'inquiry-discovery',label:'실험으로 발견한 규칙',result:d.choices[selected]});
+      }else{
+        a.values.reflected=false;a.values.reflectionFeedback=d.feedback;
+      }
+      refresh();
+    },opts));
+    c.root.querySelector('[data-inquiry="revisit"]')?.addEventListener('click',()=>{a.values.inquiryPhase='experiment';refresh();},opts);
     return ()=>controller.abort();
   }};
 }

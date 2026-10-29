@@ -1,13 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { completeActivity, emptyActivity, freshSave, migrateSave, ready } from '../src/domain';
+import { completeActivity, coreReady, emptyActivity, freshSave, migrateSave, ready } from '../src/domain';
 import { addTrial } from '../src/trial-records';
 import { courierPosition, doors, nearestRoad, roadRoute, roads } from '../src/expedition';
 import { assemblyAligned, magneticReach, ringFloating } from '../src/mission-model';
 import { initializeFinal } from '../src/final-mission';
-import { restorationView } from '../src/restoration';
+import { installRestoration, restorationView } from '../src/restoration';
 
 const proof=(a:ReturnType<typeof emptyActivity>,key:string,revision=0)=>addTrial(a,{key,activity:10,conditions:{label:key},initialObjects:[{id:'magnet',x:30,y:50}],objects:[{id:'magnet',x:50,y:50}],input:[{x:30,y:50},{x:50,y:50}],outcome:'success',designRevision:revision,template:'box'});
 describe('실험 증거와 기존 기록 호환',()=>{
+  it.each(['box','remote'] as const)('검증한 %s 설계는 설치 뒤 같은 사용 시험을 다시 요구하지 않는다',template=>{
+    const s=freshSave(),a=s.activities[10]=emptyActivity();s.completed.push(10);a.values.paceVersion=1;
+    Object.assign(s.design,{template,aligned:true,gap:22});
+    addTrial(a,{key:'use',activity:10,conditions:{aligned:true,gap:22},initialObjects:[],objects:[],input:[{x:50,y:37},{x:50,y:65}],outcome:'success',template,designRevision:s.design.revision});
+    installRestoration(s);const r=initializeFinal(s);
+    expect(r.operated).toBe(true);expect(coreReady(s,true)).toBe(true);
+    expect(r.attempt?.trials).toEqual(a.trials);expect(r.attempt).not.toBe(a);
+    expect(restorationView(s).html).toContain('data-restoration="finish"');
+    s.design.revision++;expect(coreReady(s,true)).toBe(false);
+    installRestoration(s);expect(r.operated).toBe(false);expect(r.attempt?.trials?.length||0).toBe(0);
+  });
+  it('설치만 하거나 실패·예전 설계·미완료·선택 도전이면 성공 기록을 대신 만들지 않는다',()=>{
+    for(const kind of ['missing','failed','stale','incomplete','legacy','challenge']){
+      const s=freshSave(),a=s.activities[10]=emptyActivity();s.completed.push(10);a.values.paceVersion=1;
+      Object.assign(s.design,{aligned:true,gap:22});
+      if(kind!=='missing')addTrial(a,{key:'use',activity:10,conditions:{aligned:true,gap:22},initialObjects:[],objects:[],input:[],outcome:kind==='failed'?'failure':'success',template:'box',designRevision:kind==='stale'?-1:0});
+      if(kind==='incomplete')s.completed=[];if(kind==='legacy')delete a.values.paceVersion;if(kind==='challenge')initializeFinal(s).mode='challenge';
+      installRestoration(s);expect(initializeFinal(s).operated,kind).toBe(false);expect(coreReady(s,true),kind).toBe(false);
+    }
+  });
   it('완료 버튼은 관찰 플래그만으로 발명 사용을 통과시키지 않는다',()=>{const s=freshSave(),a=emptyActivity();a.values={playVersion:4,use0:true,use1:true,'force-arrow':true};expect(ready(10,a,s)).toBe(false);proof(a,'use0');proof(a,'use1');expect(ready(10,a,s)).toBe(true);s.design.revision++;expect(ready(10,a,s)).toBe(false);});
   it('종이 비교는 같은 초기 배치에서 종이만 달라야 한다',()=>{const s=freshSave(),a=emptyActivity();a.values={playVersion:4};for(const key of ['far','near','paper','rescue']){proof(a,key);a.trials!.at(-1)!.conditions={gap:key==='far'?35:12,paper:key==='paper'};}expect(ready(4,a,s)).toBe(true);a.trials!.find(t=>t.key==='paper')!.initialObjects[0].x++;expect(ready(4,a,s)).toBe(false);});
   it('철이 아닌 재료는 운반 성공을 요구하지 않는다',()=>{const s=freshSave(),a=emptyActivity();a.values.playVersion=4;for(const id of ['clip','nail','aluminum','wood','plastic','rubber'])a.values[`tested-${id}`]=true;expect(ready(3,a,s)).toBe(false);a.values['delivered-clip']=a.values['delivered-nail']=true;expect(ready(3,a,s)).toBe(true);});

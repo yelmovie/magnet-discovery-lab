@@ -3,6 +3,7 @@ import { emptyActivity, freshSave, type Activity, type Point, type Save } from '
 import { missionView } from '../src/mission-play';
 import { missionReady } from '../src/mission-model';
 import type { Context } from '../src/activity-types';
+import { bindPlacement } from '../src/manipulation';
 
 // Exercise the public manipulation events, including the animation clock, without
 // depending on canvas pixels. Visual layout is checked in the actual browser.
@@ -13,6 +14,7 @@ class ElementStub extends EventTarget {
   textContent = ''; className = ''; disabled = false; inert = false;
   elements = new Map<string, ElementStub>();
   board: ElementStub = this;
+  captured = new Set<number>();
   getBoundingClientRect() { return { left: 0, top: 0, width: 1280, height: 720 }; }
   querySelector(selector: string): ElementStub | null {
     for (const part of selector.split(',').map(s => s.trim())) {
@@ -25,9 +27,9 @@ class ElementStub extends EventTarget {
   setAttribute() {}
   append(el: ElementStub) { if (el.dataset.object) this.elements.set(`[data-object="${el.dataset.object}"]`, el); }
   focus() {}
-  setPointerCapture() {}
-  hasPointerCapture() { return true; }
-  releasePointerCapture() {}
+  setPointerCapture(id:number) { this.captured.add(id); }
+  hasPointerCapture(id:number) { return this.captured.has(id); }
+  releasePointerCapture(id:number) { this.captured.delete(id);this.dispatchEvent(new Event('lostpointercapture')); }
   click() { this.dispatchEvent(new Event('click')); }
 }
 
@@ -185,7 +187,17 @@ describe('학생 조작으로 완성하는 탐구', () => {
     const first=mount(2);first.place('repair-magnet',{x:43,y:59});first.place('lid',{x:50,y:65});
     delete first.a.values.repairClosed;
     const resumed=mount(2,{},first);resumed.click('shake');expect(resumed.a.values.with0).toBe(true);expect(resumed.a.points.lid).toEqual({x:50,y:65});
-    resumed.place('repair-magnet',{x:24,y:61});expect(resumed.a.values.repairClosed).toBe(false);expect(resumed.a.points.lid).toEqual({x:50,y:38});
+    resumed.place('lid',{x:50,y:38});resumed.place('repair-magnet',{x:24,y:61});expect(resumed.a.values.repairClosed).toBe(false);expect(resumed.a.points.lid).toEqual({x:50,y:38});
+  });
+  it('덮개 아래의 보이지 않는 자석은 잡히지 않고 덮개를 열면 다시 잡힌다',()=>{
+    const inspection=mount(1),hidden=inspection.c.root.querySelector<HTMLButtonElement>('[data-drag="hidden-magnet"]')!;
+    expect(hidden.disabled).toBe(true);inspection.place('hidden-magnet',{x:78,y:52});expect(inspection.a.values.found0).not.toBe(true);
+    inspection.place('lid',{x:50,y:37});expect(hidden.disabled).toBe(false);inspection.place('hidden-magnet',{x:78,y:52});expect(inspection.a.values.found0).toBe(true);
+    const repair=mount(2),magnet=repair.c.root.querySelector<HTMLButtonElement>('[data-drag="repair-magnet"]')!;
+    repair.place('lid',{x:50,y:65});expect(magnet.disabled).toBe(false);
+    repair.place('repair-magnet',{x:43,y:59});repair.place('lid',{x:50,y:65});expect(magnet.disabled).toBe(true);
+    repair.place('repair-magnet',{x:24,y:61});expect(repair.a.points['repair-magnet']).toEqual({x:43,y:59});
+    repair.place('lid',{x:50,y:38});expect(magnet.disabled).toBe(false);repair.place('repair-magnet',{x:24,y:61});expect(repair.a.points['repair-magnet']).toEqual({x:24,y:61});
   });
   it('고장 증거를 확인하기 전에는 진단이나 철판 수리로 건너뛸 수 없다', () => {
     const m = mount(2, { round: 2 });
@@ -204,6 +216,26 @@ describe('학생 조작으로 완성하는 탐구', () => {
   it('수조 밖으로 끌다 조작이 취소돼도 실제 제한된 손잡이 위치를 저장한다',()=>{
     const m=mount(7);m.cancelDrag('cleaner',{x:27,y:47},{x:2,y:2});
     expect(m.a.points.cleaner).toEqual({x:26,y:35});
+  });
+  it.each(['resize','blur','visibilitychange','pointercancel','lostpointercapture'])('%s로 드래그가 끊겨도 포인터를 풀고 임의로 관찰 완료하지 않는다',type=>{
+    const m=mount(5),el=m.c.root.querySelector('[data-drag="probe"]') as unknown as ElementStub;
+    el.dispatchEvent(new PointerEvent('pointerdown',{clientX:29*12.8,clientY:54*7.2,pointerId:7,isPrimary:true,button:0}));
+    el.dispatchEvent(new PointerEvent('pointermove',{clientX:48*12.8,clientY:53*7.2,pointerId:7,isPrimary:true,button:0}));
+    expect(el.hasPointerCapture(7)).toBe(true);
+    (type==='visibilitychange'?document:type.startsWith('pointer')||type==='lostpointercapture'?el:window).dispatchEvent(new Event(type));
+    expect(el.hasPointerCapture(7)).toBe(false);expect(m.a.points.probe).toEqual({x:48,y:53});expect(m.a.values.test0S).not.toBe(true);
+    el.dispatchEvent(new PointerEvent('pointerup',{pointerId:7,isPrimary:true,button:0}));expect(m.a.values.test0S).not.toBe(true);
+    m.drag('probe',{x:48,y:53},{x:47,y:53});expect(m.a.values.test0S).toBe(true);
+  });
+  it.each(['resize','blur','visibilitychange','pointercancel','lostpointercapture'])('%s 뒤 이전 손가락을 떼어도 선택한 물체가 엉뚱한 곳으로 배치되지 않는다',type=>{
+    const root=new ElementStub(),piece=new ElementStub(),board=new ElementStub();let selecting=true,placed=0;
+    root.closest=selector=>selector==='[data-drag]'&&selecting?piece:selector==='.play-board'?board:null;
+    Object.assign(piece,{getAttribute:()=> '시험 물체. 이동'});piece.addEventListener('piece-place',()=>placed++);
+    cleanups.push(bindPlacement(root as unknown as HTMLElement));root.dispatchEvent(new Event('piece-select'));selecting=false;
+    const down=()=>root.dispatchEvent(new PointerEvent('pointerdown',{clientX:640,clientY:360,pointerId:7,isPrimary:true,button:0}));
+    const up=()=>root.dispatchEvent(new PointerEvent('pointerup',{clientX:640,clientY:360,pointerId:7,isPrimary:true,button:0}));
+    down();(type==='visibilitychange'?document:type.startsWith('pointer')||type==='lostpointercapture'?root:window).dispatchEvent(new Event(type));up();expect(placed).toBe(0);
+    down();up();expect(placed).toBe(1);
   });
   it('배달 점검은 점검소에 도착하고 조종 자석을 멀리 해야 기록된다', () => {
     const m = mount(8, { car: 50 });
@@ -241,5 +273,144 @@ describe('학생 조작으로 완성하는 탐구', () => {
     expect(paper.a.trials?.find(t=>t.key==='paper')?.initialObjects).toEqual(paper.a.trials?.find(t=>t.key==='near')?.initialObjects);
     paper.a.values.round=3;const rescue=mount(4,{},paper);rescue.place('distance-magnet',{x:57,y:42});rescue.click('release');
     expect(missionReady(4,rescue.a,rescue.s)).toBe(true);
+  });
+});
+
+
+describe('반복을 줄인 새 탐구 흐름', () => {
+  const short = (n:number) => mount(n,{paceVersion:1,mechanicsVersion:1});
+  const reopen = (n:number,m:ReturnType<typeof mount>) => mount(n,{},m);
+  it('한 장치에서 꺼낸 자석과 철판의 반응을 봐야 탐색이 끝난다',()=>{
+    let m=short(1);
+    m.place('lid',{x:50,y:37});m.place('hidden-magnet',{x:78,y:52});
+    expect(missionReady(1,m.a,m.s)).toBe(false);
+    m=reopen(1,m);m.place('hidden-magnet',{x:68,y:59});
+    expect(missionReady(1,m.a,m.s)).toBe(true);
+    expect(missionView(1,m.a,m.s).html).not.toContain('책 보관함도 살펴보기');
+    expect(m.a.values.found1).toBeUndefined();
+  });
+  it('자석 없는 경우와 있는 경우를 한 번씩 비교하고 수리를 끝낸다',()=>{
+    let m=short(2);m.place('lid',{x:50,y:65});m.click('shake');
+    expect(missionReady(2,m.a,m.s)).toBe(false);
+    m.place('repair-magnet',{x:43,y:59});m.place('lid',{x:50,y:65});m.click('shake');
+    expect(missionReady(2,m.a,m.s)).toBe(true);
+    expect(missionView(2,m.a,m.s).html).not.toContain('책 보관함도 고쳐');
+  });
+  it('철과 비철금속·나무를 실제 검사하고 분류해야 진행된다',()=>{
+    const m=short(3);
+    m.place('sweep-magnet',{x:36,y:42});m.place('sweep-magnet',{x:86,y:38});
+    m.place('sweep-magnet',{x:66,y:43});m.place('material-2',{x:86,y:70});
+    expect(missionReady(3,m.a,m.s)).toBe(false);
+    m.place('sweep-magnet',{x:36,y:65});m.place('material-3',{x:86,y:70});
+    expect(missionReady(3,m.a,m.s)).toBe(true);
+    expect(m.a.values['tested-plastic']).not.toBe(true);
+  });
+  it('선택 재료는 따로 펼치기 전 이동 경로에서 붙지 않는다',()=>{
+    let m=short(3);
+    expect(m.c.root.querySelector('[data-drag="material-1"]')).toBeNull();
+    m.place('sweep-magnet',{x:52,y:42});
+    expect(m.a.values['tested-nail']).not.toBe(true);
+    m.click('more-materials');m=reopen(3,m);
+    expect(m.c.root.querySelector('[data-drag="material-1"]')).not.toBeNull();
+    m.place('sweep-magnet',{x:52,y:42});expect(m.a.values['tested-nail']).toBe(true);
+  });
+  it('비자성 검사를 마치면 손으로 분류할 재료를 자석이 가리지 않는다',()=>{
+    const m=short(3);m.place('sweep-magnet',{x:66,y:43});
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('손으로 잡아 오른쪽 아래');
+    expect(m.a.points['sweep-magnet']).toEqual({x:54,y:43});
+    m.place('material-2',{x:86,y:70});
+    const sorted=m.c.root.querySelector<HTMLButtonElement>('[data-drag="material-2"]')!;
+    expect(sorted.disabled).toBe(true);expect(sorted.style.pointerEvents).toBe('none');
+  });
+  it('먼 곳·가까운 곳·종이 비교를 마치면 같은 개념의 구조 활동을 요구하지 않는다',()=>{
+    let m=short(4);m.click('release');m=reopen(4,m);m.click('next');
+    m=reopen(4,m);m.place('distance-magnet',{x:49,y:55});m.click('release');
+    m=reopen(4,m);m.click('next');m=reopen(4,m);
+    m.place('paper',{x:55,y:55});m.click('release');
+    expect(missionReady(4,m.a,m.s)).toBe(true);
+    expect(m.a.trials?.find(t=>t.key==='paper')?.initialObjects).toEqual(m.a.trials?.find(t=>t.key==='near')?.initialObjects);
+    expect(missionView(4,m.a,m.s).html).not.toContain('철 열쇠를 구하자');
+  });
+  it('한 자석에서 두 극 반응을 비교한 뒤 양끝 표시를 복원한다',()=>{
+    let m=short(5);m.place('probe',{x:48,y:53});m.click('flip');m=reopen(5,m);
+    m.place('probe',{x:48,y:53});m.place('stickerS',{x:59,y:40});
+    expect(missionReady(5,m.a,m.s)).toBe(false);
+    m.place('stickerN',{x:70,y:40});expect(missionReady(5,m.a,m.s)).toBe(true);
+    expect(missionView(5,m.a,m.s).html).not.toContain('두 번째 문 자석');
+  });
+  it('관찰 자리에 놓은 자석을 뒤집으면 이동 반복 없이 새 반응과 처음 위치를 기록한다',()=>{
+    const m=short(5);m.place('probe',{x:48,y:53});
+    const before={...m.a.points['unknown-magnet']};m.click('flip');
+    expect(m.a.points.probe).toEqual({x:48,y:53});
+    expect(m.a.values.test0N).toBe(true);expect(m.a.values.test0S).toBe(true);
+    const trial=m.a.trials?.find(t=>t.key==='pole0N');
+    expect(trial?.outcome).toBe('attract');
+    expect(trial?.initialObjects.find(o=>o.id==='unknown-magnet')).toMatchObject(before);
+    expect(trial?.objects.find(o=>o.id==='unknown-magnet')).toMatchObject({x:59,y:53});
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('스티커');
+  });
+  it('두 고리를 놓은 배치를 유지하여 띄우기와 붙이기만 비교한다',()=>{
+    let m=short(6);m.place('ring0',{x:68,y:71});m.place('ring1',{x:68,y:56});
+    m.c.root.querySelector('[data-drag="ring1"]')!.dispatchEvent(new Event('dblclick'));
+    m.click('check');tick(1);
+    m=reopen(6,m);m.click('next');expect(m.a.values.round).toBe(2);
+    expect(m.a.points.ring0).toEqual({x:68,y:71});
+    m=reopen(6,m);expect(m.c.root.querySelector('[data-drag="ring2"]')).toBeNull();
+    m.c.root.querySelector('[data-drag="ring1"]')!.dispatchEvent(new Event('dblclick'));
+    m.click('check');tick(1);
+    expect(missionReady(6,m.a,m.s)).toBe(true);
+    expect(m.a.trials?.find(t=>t.key==='join2')?.objects[1].y).toBe(65);
+  });
+  it('청소는 기다리기로 통과하지 않고 짧게 쓸어 닦으면 된다',()=>{
+    const m=short(7);m.place('cleaner',{x:40,y:44});tick(12);
+    expect(m.a.values.clean0).not.toBe(true);
+    for(const x of [46,34]){m.place('cleaner',{x,y:44});tick(1.5);}
+    expect(m.a.values.clean0).toBe(true);
+    expect(Number(m.a.values.scrubTurns0)).toBeLessThan(2);
+  });
+  it('세 얼룩을 이어서 한 번씩 지나가면 되풀이해서 문지르지 않아도 청소된다',()=>{
+    const m=short(7);
+    for(const [x,y] of [[36,44],[44,44],[52,44],[60,44],[70,44],[65,54],[59,65],[53,69]]){
+      m.place('cleaner',{x,y});tick(.8);
+    }
+    expect([0,1,2].every(i=>m.a.values[`clean${i}`]===true)).toBe(true);
+    expect(missionReady(7,m.a,m.s)).toBe(true);
+    expect([0,1,2].every(i=>Number(m.a.values[`scrubTurns${i}`])<2)).toBe(true);
+  });
+  it('당겨진 카트는 조종 자석을 통과해 방향이 뒤집히지 않는다',()=>{
+    const m=short(8);m.place('controller',{x:35,y:59});tick(5);
+    expect(Number(m.a.values.car)).toBeCloseTo(29,1);
+    tick(5);expect(Number(m.a.values.car)).toBeCloseTo(29,1);
+    expect(m.a.values.segment0).not.toBe(true);
+  });
+  it('올바른 조종 위치로 돌아오면 이전 방향 경고를 지운다',()=>{
+    const m=short(8);m.place('controller',{x:19,y:59});tick(.1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('이번 의뢰는');
+    m.place('controller',{x:Number(m.a.values.car)+10,y:59});tick(.1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('좋아!');
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).not.toContain('이번 의뢰는');
+  });
+  it('각 배달은 요청한 힘으로 운반하고 목적지에서 자석을 떼어야 끝난다',()=>{
+    let m=short(8);
+    for(let round=0;round<2;round++){
+      if(round){m=reopen(8,m);m.click('next');m=reopen(8,m);m.click('flip');}
+      expect(m.c.root.querySelector('[data-mission="checkpoint"]')).toBeNull();
+      for(let i=0;i<80&&Number(m.a.values.car??27)<71;i++){
+        m.place('controller',{x:Number(m.a.values.car??27)+(round?-8:8),y:59});tick(.2);
+      }
+      expect(m.a.values[`segment${round}`]).not.toBe(true);
+      m.click('detach');
+      expect(m.a.values[`segment${round}`]).toBe(true);
+      expect(m.a.trials?.some(t=>t.key===`stop${round}`)).toBe(true);
+    }
+    expect(missionReady(8,m.a,m.s)).toBe(true);
+    expect(missionView(8,m.a,m.s).html).not.toContain('반대 방향으로도');
+  });
+  it('발명품은 현재 설계의 실제 사용 성공 한 번으로 끝나며 설계 변경은 무효화한다',()=>{
+    let m=short(10);m.place('use-handle',{x:50,y:65});m.click('test');
+    expect(missionReady(10,m.a,m.s)).toBe(true);
+    const html=missionView(10,m.a,m.s).html;expect(html).not.toContain('다른 사용 상황');expect(html).not.toContain('data-drag="force-arrow"');
+    m=reopen(10,m);m.place('design-magnet',{x:44,y:55});
+    expect(missionReady(10,m.a,m.s)).toBe(false);
   });
 });

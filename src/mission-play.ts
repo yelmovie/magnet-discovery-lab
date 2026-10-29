@@ -34,6 +34,7 @@ class Surface {
   }
   get a() { return this.c.a; }
   get s() { return this.c.s; }
+  get compact() { return this.a.values.paceVersion === 1; }
   p(id: string, fallback: Point) { return this.a.points[id] ||= { ...fallback }; }
   set(id: string, p: Point) { this.a.points[id] = { ...p }; const el = this.c.root.querySelector<HTMLElement>(`[data-drag="${id}"], [data-object="${id}"]`); if (el) { el.style.left = `${p.x}%`; el.style.top = `${p.y}%`; } }
   has(key: string) { return this.a.values[key] === true; }
@@ -81,7 +82,7 @@ class Surface {
     const sensor=this.c.root.querySelector<HTMLElement>('.force-sensor');
     if(sensor){
       let d=100;
-      if(this.n===3){const m=this.a.points['sweep-magnet']||pt(20,39);d=Math.min(...materialPositions.map((p,i)=>this.has(`delivered-${materials[i].id}`)?100:distance(m,this.a.points[`material-${i}`]||p)));}
+      if(this.n===3){const m=this.a.points['sweep-magnet']||pt(20,39);d=Math.min(...materialPositions.map((p,i)=>!materialVisible(this.a,materials[i].id)||this.has(`sorted-${materials[i].id}`)?100:distance(m,this.a.points[`material-${i}`]||p)));}
       if(this.n===4)d=distance(this.a.points['distance-magnet']||pt(25,55),Number(this.a.values.round)===3?pt(69,42):pt(61,55));
       if(this.n===7)d=distance(this.a.points.cleaner||pt(27,47),this.a.points['inner-pad']||pt(29,48));
       if(this.n===8)d=distance(this.a.points.controller||pt(20,40),pt(Number(this.a.values.car??27),59));
@@ -119,7 +120,7 @@ class Surface {
   }
   label(text: string, p: Point, small = false, color = '#203e40') {
     // The inquiry header already gives this instruction and progress count.
-    if(this.a.values.inquiryVersion===1&&p.x===50&&(p.y===26||p.y===29))return;
+    if(this.a.values.inquiryVersion&&p.x===50&&(p.y===26||p.y===29))return;
     const g = this.ctx,scale=this.c.root.querySelector('canvas')!.getBoundingClientRect().width/W,font=Math.max(small?20:26,(small?16:20)/Math.max(.5,scale));g.save(); g.font = `${small?'600':'700'} ${font}px "Magnet Quest Sans", Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.lineWidth = 7; g.strokeStyle = '#fff8e4ed'; g.strokeText(text, p.x / 100 * W, p.y / 100 * H); g.fillStyle = color; g.fillText(text, p.x / 100 * W, p.y / 100 * H); g.restore();
   }
@@ -163,32 +164,41 @@ class Surface {
   cleanup() { this.stopped=true;this.cleanups.forEach(fn=>fn()); }
 }
 
-function hit(h: Hit) { return `<button class="canvas-hit ${h.kind || ''}" data-drag="${h.id}" style="left:${h.p.x}%;top:${h.p.y}%" aria-label="${e(h.label)}. 끌어서 이동, 방향키로 이동 후 Enter로 놓기."><span class="sr-only">${e(h.label)}</span></button>`; }
+function hit(h: Hit) {
+  // Match the whole pictured object, including its ends, rather than only its centre.
+  const handle=h.id==='lid'||h.kind==='lid-handle';
+  const sticker=/^sticker[NS]$/.test(h.id),paper=h.id==='paper';
+  const magnet=/magnet|probe|controller|cleaner/.test(h.id)||h.kind==='remote-handle';
+  const magnetWidth:Record<string,number>={'hidden-magnet':116,'repair-magnet':116,'sweep-magnet':144,'distance-magnet':130,probe:144,cleaner:102,controller:116,'design-magnet':124,'use-handle':124};
+  const size=handle?[116,56]:/^ring/.test(h.id)?[142,102]:/^material/.test(h.id)?[102,102]:h.id==='paper'?[56,172]:h.id==='base'?[204,148]:magnet?[magnetWidth[h.id]||156,68]:h.id==='design-target'?[128,76]:[72,72];
+  const grip=handle?'<span class="canvas-handle-grip" aria-hidden="true">↕ 손잡이</span>':sticker?`<span class="canvas-pole-sticker pole-${h.id.slice(-1)}" aria-hidden="true">${h.id.slice(-1)}</span>`:paper?'<span class="canvas-paper-grip" aria-hidden="true">↔ 종이</span>':'';
+  return `<button class="canvas-hit ${h.kind || ''} ${handle?'canvas-handle':''} ${magnet?'canvas-magnet-hit':''}" data-drag="${h.id}" style="left:${h.p.x}%;top:${h.p.y}%;width:${size[0]/W*100}%;height:${size[1]/H*100}%" aria-label="${e(h.label)}. 끌어서 이동, 방향키로 이동 후 Enter로 놓기.">${grip}<span class="sr-only">${e(h.label)}</span></button>`;
+}
 function action(id: string, text: string, disabled = false) { return `<button class="mission-action" data-mission="${id}" ${disabled?'disabled':''}>${text}</button>`; }
 function initialize(n: number, a: Activity) {
   if(a.values.playVersion===4)return;
   // Completed historical evidence is immutable. New attempts start a coherent new experiment.
-  const fresh=emptyActivity();a.points=fresh.points;a.values={playVersion:4,mechanicsVersion:1};a.records=fresh.records;a.trials=[];a.mask=[];
+  const fresh=emptyActivity();a.points=fresh.points;a.values={playVersion:4,mechanicsVersion:1,paceVersion:1};a.records=fresh.records;a.trials=[];a.mask=[];
   a.values.round=0;
 }
 export function missionView(n: number, a: Activity, s: Save): View {
   initialize(n,a);
-  const round=Number(a.values.round||0), hits:Hit[]=[];let actions='';
+  const round=Number(a.values.round||0), compact=a.values.paceVersion===1, hits:Hit[]=[];let actions='';
   const p=(id:string, fallback:Point)=>a.points[id]||fallback;
-  if(n===1){hits.push({id:'lid',p:p('lid',pt(50,63)),label:'덮개 손잡이'},{id:'hidden-magnet',p:p('hidden-magnet',pt(43,59)),label:'장치 안의 자석'});if(a.values[`found${round}`]&&a.values[`latch${round}`]&&round===0)actions=action('next','책 보관함도 살펴보기 →');}
-  if(n===2){hits.push({id:'repair-magnet',p:p('repair-magnet',pt(24,61)),label:'넣고 뺄 수 있는 자석'},{id:'lid',p:p('lid',pt(50,38)),label:'덮개 손잡이'});if(round===2)hits.push({id:'repair-plate',p:p('repair-plate',pt(75,47)),label:'자리가 어긋난 철판'});actions=action('shake','같은 힘으로 흔들어 보기');if(a.values.with0&&a.values.without0&&round===0)actions=action('next','책 보관함도 고쳐 주기 →');if(a.values.with1&&a.values.without1&&round===1)actions=action('next','새 우편함의 철판도 맞춰 줘 →');}
+  if(n===1){hits.push({id:'lid',p:p('lid',pt(50,63)),label:'덮개 손잡이'},{id:'hidden-magnet',p:p('hidden-magnet',pt(43,59)),label:'장치 안의 자석'});if(!compact&&a.values[`found${round}`]&&a.values[`latch${round}`]&&round===0)actions=action('next','책 보관함도 살펴보기 →');}
+  if(n===2){hits.push({id:'repair-magnet',p:p('repair-magnet',pt(24,61)),label:'넣고 뺄 수 있는 자석'},{id:'lid',p:p('lid',pt(50,38)),label:'덮개 손잡이'});if(round===2)hits.push({id:'repair-plate',p:p('repair-plate',pt(75,47)),label:'자리가 어긋난 철판'});actions=action('shake','같은 힘으로 흔들어 보기');if(!compact&&a.values.with0&&a.values.without0&&round===0)actions=action('next','책 보관함도 고쳐 주기 →');if(a.values.with1&&a.values.without1&&round===1)actions=action('next','새 우편함의 철판도 맞춰 줘 →');}
   if(n===2&&round===2&&!a.values.diagnosis2)actions+=`<div class="mission-diagnosis">${action('fault-distance','철판 위치를 고칠래')}${action('fault-color','자석 색을 바꿀래')}</div>`;
-  if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});materials.forEach((m,i)=>{if(!a.values[`sorted-${m.id}`])hits.push({id:`material-${i}`,p:p(`material-${i}`,materialPositions[i]),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});}
-  if(n===4){hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:'조사 자석'});if(round===2)hits.push({id:'paper',p:p('paper',pt(23,76)),label:'얇은 종이판'});actions=action('release','손을 떼고 관찰');if(a.values[`done${round}`]&&round<3)actions=action('next',round===0?'가까이에서는 어떨까? →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');}
-  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,77)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,77)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(a.values.solved0&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
-  if(n===6){for(let i=0;i<(round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check','손을 떼고 고리 관찰');if(a.values[`done${round}`]&&round<2)actions=action('next',round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
+  if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});materials.forEach((m,i)=>{if(materialVisible(a,m.id)&&!a.values[`sorted-${m.id}`])hits.push({id:`material-${i}`,p:p(`material-${i}`,materialPositions[i]),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});if(compact&&!a.values.extraMaterials)actions=action('more-materials','다른 재료도 살펴보기');}
+  if(n===4){hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:'조사 자석'});if(round===2)hits.push({id:'paper',p:p('paper',pt(23,76)),label:'얇은 종이판'});actions=action('release','손을 떼고 관찰');if(a.values[`done${round}`]&&round<(compact?2:3))actions=action('next',round===0?'가까이에서는 어떨까? →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');}
+  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,77)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,77)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
+  if(n===6){for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check','손을 떼고 고리 관찰');if(a.values[`done${round}`]&&round<2)actions=action('next',compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
-  if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('checkpoint','점검소에서 멈추고 확인');if(a.values[`segment${round}`]&&round<2)actions=action('next',round===0?'뒤에서 밀어 배달하기 →':'반대 방향으로도 배달하기 →');actions+=action('detach','자석 떼기')+action('safe','안전 위치로');}
+  if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+(compact?'':action('checkpoint','점검소에서 멈추고 확인'));if(a.values[`segment${round}`]&&round<(compact?1:2))actions=action('next',round===0?'뒤에서 밀어 배달하기 →':'반대 방향으로도 배달하기 →');actions+=action('detach','자석 떼기')+(compact?'':action('safe','안전 위치로'));}
   if(n===9){
     if(!a.values.chosen)actions=`<div class="mission-requests">${action('box','우편함이 자꾸 열려요')}${action('remote','유리 너머 물건을 옮겨 주세요')}</div>`;
     else {hits.push({id:'base',p:p('base',pt(18,69)),label:'장치 몸체'},{id:'design-magnet',p:p('design-magnet',pt(22,44)),label:'설계 자석'},{id:'design-target',p:p('design-target',pt(77,45)),label:'마주 볼 철판 또는 자석'});actions=action('pair',s.design.pair==='iron'?'자석으로 바꾸기':'철판으로 바꾸기')+action('flip','자석 뒤집기')+action('prototype','시제품 반응 시험');}
   }
-  if(n===10){hits.push({id:'use-handle',p:p('use-handle',s.design.template==='remote'?(s.activities[9]?.points['design-magnet']||pt(43,55)):pt(50,37)),label:s.design.template==='box'?'덮개 손잡이':'원격 조작 손잡이'},{id:'design-magnet',p:p('design-magnet',s.activities[9]?.points['design-magnet']||pt(43,55)),label:'내 설계 자석'},{id:'design-target',p:p('design-target',s.activities[9]?.points['design-target']||pt(57,55)),label:'내 설계 대상 부품'});actions=action('test','사용 시험')+action('flip','자석 뒤집기');if(a.values.use0&&round===0)actions=action('next','다른 사용 상황으로 시험 →');if(a.values.use1)hits.push({id:'force-arrow',p:p('force-arrow',pt(16,78)),label:'힘이 작용한 곳을 나타낼 화살표'});}
+  if(n===10){hits.push({id:'use-handle',kind:s.design.template==='box'?'lid-handle':'remote-handle',p:p('use-handle',s.design.template==='remote'?(s.activities[9]?.points['design-magnet']||pt(43,55)):pt(50,37)),label:s.design.template==='box'?'덮개 손잡이':'원격 조작 손잡이'},{id:'design-magnet',p:p('design-magnet',s.activities[9]?.points['design-magnet']||pt(43,55)),label:'내 설계 자석'},{id:'design-target',p:p('design-target',s.activities[9]?.points['design-target']||pt(57,55)),label:'내 설계 대상 부품'});actions=action('test','사용 시험')+action('flip','자석 뒤집기');if(!compact&&a.values.use0&&round===0)actions=action('next','다른 사용 상황으로 시험 →');if(!compact&&a.values.use1)hits.push({id:'force-arrow',p:p('force-arrow',pt(16,78)),label:'힘이 작용한 곳을 나타낼 화살표'});}
   if(n===10&&s.design.template==='remote'){
     for(let i=hits.length-1;i>=0;i--)if((!a.values.adjusting&&(hits[i].id==='design-magnet'||hits[i].id==='design-target'))||(a.values.adjusting&&hits[i].id==='use-handle'))hits.splice(i,1);
     actions+=action('adjust',a.values.adjusting?'조작 손잡이로':'배치 고치기');
@@ -202,7 +212,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
 
 function inspect(v: Surface){
   const i=Number(v.a.values.round||0);let opened=v.has(`open${i}`);
-  v.draw=()=>{v.base();v.fixture(i,!opened,!v.has(`found${i}`),!v.has(`latch${i}`));v.target(pt(78,52),'관찰 돋보기',145,130);if(opened||v.has(`found${i}`))v.magnet(v.p('hidden-magnet',pt(43,59)),'N',.75);v.label(!opened?'손잡이를 위로 올려 내부 조사':!v.has(`found${i}`)?'자석을 돋보기로 꺼내 조사':!v.has(`latch${i}`)?'꺼낸 자석을 철판 가까이 대 봐':'자석과 철판 사이에 당기는 힘 발견!',pt(50,29),true);if(v.has(`latch${i}`)){const q=v.p('hidden-magnet',pt(68,59));v.iron(pt(q.x-7,q.y),'철판',52);v.arrow(pt(59,59),pt(q.x-7,q.y));}else if(v.has(`found${i}`))v.target(pt(68,59),'철판 가까이',105,70);};
+  v.draw=()=>{v.base();const magnet=v.c.root.querySelector<HTMLButtonElement>('[data-drag="hidden-magnet"]');if(magnet)magnet.disabled=!v.has(`open${i}`);v.fixture(i,!opened,!v.has(`found${i}`),!v.has(`latch${i}`));v.target(pt(78,52),'관찰 돋보기',145,130);if(opened||v.has(`found${i}`))v.magnet(v.p('hidden-magnet',pt(43,59)),'N',.75);v.label(!opened?'손잡이를 위로 올려 내부 조사':!v.has(`found${i}`)?'자석을 돋보기로 꺼내 조사':!v.has(`latch${i}`)?'꺼낸 자석을 철판 가까이 대 봐':'자석과 철판 사이에 당기는 힘 발견!',pt(50,29),true);if(v.has(`latch${i}`)){const q=v.p('hidden-magnet',pt(68,59));v.iron(pt(q.x-7,q.y),'철판',52);v.arrow(pt(59,59),pt(q.x-7,q.y));}else if(v.has(`found${i}`))v.target(pt(68,59),'철판 가까이',105,70);};
   v.drag('lid',pt(50,63),p=>{if(p.y<47){opened=true;v.mark(`open${i}`,'덮개 열기','장치 안쪽을 열어 관찰했어.');v.tell('안쪽의 자석을 돋보기로 꺼내 봐.');v.draw();}},p=>{if(p.y<47)opened=true;});
   v.drag('hidden-magnet',pt(43,59),p=>{if(!v.has(`open${i}`)){v.set('hidden-magnet',pt(43,59));v.tell('먼저 손잡이를 위로 올려 안쪽을 열어 봐.');}
     else if(v.has(`found${i}`)&&distance(p,pt(59,59))<13){v.mark(`latch${i}`,'고정 장치의 힘 조사','꺼낸 자석을 가까이 대니 철판이 자석 쪽으로 움직였어.');v.proof(`latch${i}`,'자석과 철판 사이 힘 관찰');v.tell('철판이 자석 쪽으로 움직였어. 이 힘이 덮개를 붙잡았구나!',true);v.refresh();}
@@ -215,7 +225,7 @@ function repair(v: Surface){
   setClosed(closed);
   const installed=()=>distance(v.p('repair-magnet',pt(24,61)),pt(43,59))<9;
   const plateAligned=()=>i<2||distance(v.p('repair-plate',pt(75,47)),pt(59,59))<7;
-  v.draw=()=>{v.base();v.fixture(i===1?1:0,closed,installed(),i<2);if(!closed){v.target(pt(43,59),'자석 자리',120,66);v.magnet(v.p('repair-magnet',pt(24,61)),'N',.72);}if(i===2){v.target(pt(59,59),plateAligned()?'':'철판 자리',90,70);v.iron(v.p('repair-plate',pt(75,47)),'철판',65);}v.label(i===2?'새 우편함: 철판 자리도 맞춰 줘!':`${v.has(`without${i}`)?'✓':'○'} 자석 없이   ${v.has(`with${i}`)?'✓':'○'} 자석 넣고`,pt(50,29),true);};
+  v.draw=()=>{v.base();const hidden=closed&&installed(),magnet=v.c.root.querySelector<HTMLButtonElement>('[data-drag="repair-magnet"]');if(magnet)magnet.disabled=hidden;v.fixture(i===1?1:0,closed,installed(),i<2);if(!closed)v.target(pt(43,59),'자석 자리',120,66);if(!hidden)v.magnet(v.p('repair-magnet',pt(24,61)),'N',.72);if(i===2){v.target(pt(59,59),plateAligned()?'':'철판 자리',90,70);v.iron(v.p('repair-plate',pt(75,47)),'철판',65);}v.label(i===2?'새 우편함: 철판 자리도 맞춰 줘!':`${v.has(`without${i}`)?'✓':'○'} 자석 없이   ${v.has(`with${i}`)?'✓':'○'} 자석 넣고`,pt(50,29),true);};
   v.drag('repair-magnet',pt(24,61),()=>{setClosed(false);v.draw();});
   v.drag('lid',pt(50,38),p=>{setClosed(p.y>55);v.tell(closed?'이제 같은 힘으로 흔들어 보자.':'손잡이를 아래로 내려 닫아 봐.');v.draw();});
   if(i===2)v.drag('repair-plate',pt(75,47),()=>{setClosed(false);if(!v.has('diagnosis2')){v.set('repair-plate',pt(75,47));v.tell('먼저 자석을 넣고 흔들어 본 뒤, 고칠 곳을 찾아 줘.');}v.draw();});
@@ -229,9 +239,12 @@ function repair(v: Surface){
   v.button('next',()=>{v.a.values.round=i+1;v.a.values.repairClosed=false;v.a.points={};v.refresh();});
 }
 const materialPositions=[pt(36,42),pt(52,42),pt(66,43),pt(36,65),pt(52,65),pt(66,65)];
+const coreMaterials=['clip','aluminum','wood'];
+const materialVisible=(a:Activity,id:string)=>a.values.paceVersion!==1||a.values.extraMaterials===true||coreMaterials.includes(id)||a.values[`tested-${id}`]===true;
 function salvage(v: Surface){
   let held=-1;const magnet=v.p('sweep-magnet',pt(20,39)),bins=[pt(86,44),pt(86,70)];
-  const sorted=()=>materials.filter(m=>v.has(`sorted-${m.id}`)).length;
+  const required=v.compact?coreMaterials:materials.map(m=>m.id);
+  const sorted=()=>required.filter(id=>v.has(`sorted-${id}`)).length;
   const sort=(i:number,p:Point,byMagnet=false)=>{
     const m=materials[i],bin=bins.findIndex(q=>distance(p,q)<10);
     if(bin<0)return false;
@@ -241,23 +254,24 @@ function salvage(v: Surface){
     v.mark(`sorted-${m.id}`,`${m.name} 분류`,bin===0?'붙는 재료로 분류했어.':'붙지 않는 재료로 분류했어.');
     if(m.magnetic)v.mark(`delivered-${m.id}`,`${m.name} 운반`,'자석에 붙은 철 부품을 수리함으로 옮겼어.');
     v.set(`material-${i}`,pt(82+(i%3)*4,bin===0?43:69));held=-1;
-    const el=v.c.root.querySelector<HTMLButtonElement>(`[data-drag="material-${i}"]`);if(el)el.disabled=true;
+    const el=v.c.root.querySelector<HTMLButtonElement>(`[data-drag="material-${i}"]`);if(el){el.disabled=true;el.style.pointerEvents='none';}
     v.proof(`sort-${m.id}`,`${m.name} 관찰 후 분류`,'success',{material:m.id,magnetic:m.magnetic,byMagnet});
-    v.tell(sorted()===6?'여섯 재료를 증거로 분류했어! 금속이라고 모두 자석에 붙지는 않아.':`${m.name} 분류 완료! ${sorted()}/6개를 제자리에 보냈어.`,true);
-    if(sorted()===6)v.proof('materials','여섯 재료의 반응을 비교하여 분류하고 철 부품 운반');
+    v.tell(sorted()===required.length?'재료의 반응을 비교했어! 금속이라고 모두 자석에 붙지는 않아. 남은 재료도 자유롭게 살펴봐.':`${m.name} 분류 완료! 핵심 재료 ${sorted()}/${required.length}개를 비교했어.`,true);
+    if(sorted()===required.length)v.proof('materials','서로 다른 재료의 반응을 비교하여 분류하고 철 부품 운반');
     return true;
   };
   const scan=(p:Point)=>{
     if(held>=0){v.set(`material-${held}`,pt(p.x,p.y+6));sort(held,pt(p.x,p.y+6),true);return;}
-    materials.forEach((m,i)=>{if(v.has(`sorted-${m.id}`)||held>=0)return;const q=v.p(`material-${i}`,materialPositions[i]);if(magneticReach(p,q,true)&&distance(p,q)<10){
-      if(!v.has(`tested-${m.id}`)){v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');v.tell(m.magnetic?`${m.name}이 붙었어! 오른쪽 바구니까지 옮겨 줘.`:`${m.name}은 가까이 대도 따라오지 않아.`);}
+    materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id)||v.has(`sorted-${m.id}`)||held>=0)return;const q=v.p(`material-${i}`,materialPositions[i]);if(magneticReach(p,q,true)&&distance(p,q)<10){
+      if(!v.has(`tested-${m.id}`)){v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');v.tell(m.magnetic?`${m.name}이 붙었어! 자석으로 오른쪽 위 수리함까지 옮겨 줘.`:`${m.name}은 따라오지 않아. 이제 ${m.name}을 손으로 잡아 오른쪽 아래 분류함에 넣어 줘.`);}
       if(m.magnetic&&held<0)held=i;
     }});
   };
-  v.draw=()=>{v.base();v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료',190,120);materials.forEach((m,i)=>{const p=v.p(`material-${i}`,materialPositions[i]);
-    if(v.has(`sorted-${m.id}`)){v.label('✓',p,true);return;}v.material(i,p);if(v.has(`tested-${m.id}`))v.label(m.magnetic?'따라왔어':'그대로야',pt(p.x,p.y-9),true);});v.magnet(v.p('sweep-magnet',magnet),'N',.9);v.label(`반응 조사 → 증거로 분류 → 철 부품 운반  ${sorted()}/6`,pt(50,29),true);};
-  v.drag('sweep-magnet',magnet,p=>{scan(p);v.draw();},scan);
-  materials.forEach((m,i)=>{if(v.has(`sorted-${m.id}`))return;v.drag(`material-${i}`,materialPositions[i],p=>{if(held===i)held=-1;sort(i,p);v.draw();});});
+  v.draw=()=>{v.base();v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id))return;const p=v.p(`material-${i}`,materialPositions[i]);
+    if(v.has(`sorted-${m.id}`)){v.label('✓',p,true);return;}v.material(i,p);if(v.compact)v.label(required.includes(m.id)?'미션 재료':'더 탐구',pt(p.x,p.y+14),true);if(v.has(`tested-${m.id}`))v.label(m.magnetic?'따라왔어':'손으로 옮기기',pt(p.x,p.y-9),true);});v.magnet(v.p('sweep-magnet',magnet),'N',.9);v.label(`자석으로 조사하고 분류하기  ${sorted()}/${required.length}`,pt(50,29),true);};
+  v.drag('sweep-magnet',magnet,p=>{scan(p);if(held<0){const beside=materials.findIndex((m,i)=>materialVisible(v.a,m.id)&&!m.magnetic&&!v.has(`sorted-${m.id}`)&&v.has(`tested-${m.id}`)&&distance(p,v.p(`material-${i}`,materialPositions[i]))<10);if(beside>=0){const q=v.p(`material-${beside}`,materialPositions[beside]);v.set('sweep-magnet',pt(q.x-12,q.y));}}v.draw();},scan);
+  materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id)||v.has(`sorted-${m.id}`))return;v.drag(`material-${i}`,materialPositions[i],p=>{if(held===i)held=-1;sort(i,p);v.draw();});});
+  v.button('more-materials',()=>{v.a.values.extraMaterials=true;v.refresh();});
 }
 function distanceLab(v: Surface){
   const r=Number(v.a.values.round||0), target=r===3?pt(69,42):pt(61,55);let result=v.has(`done${r}`);
@@ -293,7 +307,7 @@ function poles(v: Surface){
     const trial=v.proof(`pole${r}${facing}`,`${facing}극을 가까이 댄 반응`,repel?'repel':'attract',{facing,hidden});
     trial.initialObjects=[{id:'probe',...probeStart,pole:probe},{id:'unknown-magnet',...targetStart,pole:hidden}];probeStart={...p};
     trial.objects=[{id:'probe',...p,pole:probe},{id:'unknown-magnet',...v.a.points['unknown-magnet'],pole:hidden}];
-    v.tell(`${facing}극을 가까이 대니 ${reaction}. 다른 쪽 극도 대 보자.`);v.draw();};
+    v.tell(`${facing}극을 가까이 대니 ${reaction}. ${v.has(`test${r}N`)&&v.has(`test${r}S`)?'두 반응을 비교했어! 이제 N·S 스티커를 양끝에 붙여 줘.':'뒤집기 버튼으로 반대쪽 극도 대 보자.'}`);v.draw();};
   v.draw=()=>{v.base();v.target(pt(48,53),'기준 자석 대는 자리',145,76);const q=v.a.points['unknown-magnet']||(reaction==='밀려났어'?pt(72,53):reaction==='당겨졌어'?pt(59,53):target);
     v.magnet(q,hidden,.85);if(!v.has(`solved${r}`)){const g=v.ctx,x=q.x*W/100-59,y=q.y*H/100-25,paper=v.asset('notebook','/assets/quest/notebook-page.webp');g.save();g.beginPath();g.roundRect(x,y,118,50,8);g.clip();if(paper.complete&&paper.naturalWidth)g.drawImage(paper,240,220,472,200,x,y,118,50);else{g.fillStyle='#eadca4';g.fillRect(x,y,118,50);}g.restore();g.strokeStyle='#b49b60';g.lineWidth=2;g.beginPath();g.roundRect(x,y,118,50,8);g.stroke();v.label('?',q);}
     v.target(pt(59,40),'왼쪽 극',78,62);v.target(pt(70,40),'오른쪽 극',78,62);v.magnet(v.p('probe',pt(29,54)),probe,.9);v.label('N',v.p('stickerN',pt(33,77)));v.label('S',v.p('stickerS',pt(47,77)));v.label(`${v.has(`test${r}N`)?'✓':'○'} N극 반응    ${v.has(`test${r}S`)?'✓':'○'} S극 반응 → 양쪽 표시 복원`,pt(50,29),true);
@@ -308,11 +322,13 @@ function poles(v: Surface){
     v.set(`sticker${pole}`,pt(side==='left'?59:70,40));v.mark(`label${r}${pole}`,'자석 끝의 극 복원',`${side==='left'?'왼쪽':'오른쪽'} 끝을 ${pole}극으로 표시했어.`);
     if(v.has(`label${r}N`)&&v.has(`label${r}S`)){v.mark(`solved${r}`,'양쪽 극 표시 복원',`왼쪽은 ${hidden}극, 오른쪽은 ${opposite(hidden)}극으로 관찰에 맞게 복원했어.`);v.proof(`gate${r}`,'양쪽 극 표시를 복원해 문 수리');v.refresh();}else {v.tell('한쪽 극을 찾았어! 다른 끝에는 어떤 표시가 필요할까?',true);v.draw();}
   });
-  v.button('flip',()=>{probe=opposite(probe);v.a.values.probePole=probe;probeStart=pt(29,54);v.set('probe',probeStart);v.tell('이제 반대쪽 극을 대고 움직임을 비교해 봐.');v.refresh();});
+  v.button('flip',()=>{probe=opposite(probe);v.a.values.probePole=probe;
+    if(v.compact){probeStart={...v.p('probe',pt(29,54))};if(distance(probeStart,pt(48,53))<=5){test(probeStart);return;}v.tell('자석을 뒤집었어. 점선 자리에 대고 움직임을 비교해 봐.');v.c.touch();v.draw();return;}
+    probeStart=pt(29,54);v.set('probe',probeStart);v.tell('이제 반대쪽 극을 대고 움직임을 비교해 봐.');v.refresh();});
   v.button('next',()=>{v.a.values.round=1;delete v.a.values.reaction;v.a.points={};v.refresh();});
 }
 function rings(v: Surface){
-  const r=Number(v.a.values.round||0),count=r===0?2:3;
+  const r=Number(v.a.values.round||0),count=v.compact||r===0?2:3;
   const pole=(i:number)=>(v.a.values[`ringPole${i}`]||'N') as Pole;
   const slot=(i:number)=>pt(68,71-i*15);
   const snapshot=():TrialObject[]=>Array.from({length:count},(_,i)=>({id:`ring${i}`,...v.p(`ring${i}`,pt(23+i*16,73)),topPole:pole(i),bottomPole:opposite(pole(i))}));
@@ -322,7 +338,7 @@ function rings(v: Surface){
     for(let i=0;i<count;i++){v.target(slot(i),i===0?'아래': '',145,65);const q=v.p(`ring${i}`,pt(23+i*16,73));
       if(!v.equipment(pole(i)==='N'?'ringN':'ringS',q,134,96)){const x=q.x*W/100,y=q.y*H/100;g.fillStyle=pole(i)==='N'?'#db584a':'#4386b1';g.strokeStyle='#2b5360';g.lineWidth=3;g.beginPath();g.ellipse(x,y,64,24,0,0,Math.PI*2);g.fill();g.stroke();g.fillStyle='#d7c397';g.beginPath();g.ellipse(x,y,15,7,0,0,Math.PI*2);g.fill();}}
     for(let i=0;i<count;i++){const q=v.p(`ring${i}`,pt(23+i*16,73));v.label(`${i+1} 위 ${pole(i)} / 아래 ${opposite(pole(i))}`,q.x>60?pt(q.x-18,q.y):pt(q.x,q.y-8),true);}
-    v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:'세 고리를 서로 붙게!',pt(50,29),true);
+    v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:`${count}개 고리를 서로 붙게!`,pt(50,29),true);
   };
   for(let i=0;i<count;i++){
     v.drag(`ring${i}`,pt(23+i*16,73),p=>{if(distance(p,slot(i))<11)v.set(`ring${i}`,slot(i));v.draw();});
@@ -337,12 +353,12 @@ function rings(v: Surface){
     const correct=Array.from({length:count-1},(_,i)=>ringFloating(pole(i),pole(i+1))===(r<2)).every(Boolean);
     v.settle(targets,()=>{
       v.a.values.ringReleased=true;
-      const trial=v.proof(correct?['float2','float3','join3'][r]:`rings-failed${r}`,r<2?`${count}개 고리 띄우기`:'3개 고리 붙이기',correct?'success':'failure');trial.initialObjects=initial;trial.objects=snapshot();
+      const trial=v.proof(correct?(v.compact&&r===2?'join2':['float2','float3','join3'][r]):`rings-failed${r}`,r<2?`${count}개 고리 띄우기`:`${count}개 고리 붙이기`,correct?'success':'failure');trial.initialObjects=initial;trial.objects=snapshot();
       if(!correct){v.tell(r<2?'마주 보는 면이 다른 극이라 붙었어. 한 고리를 뒤집어 봐.':'마주 보는 면이 같은 극이라 떨어져 있어. 윗면만 보지 말고 아랫면도 생각해 봐.');playEffect('bump',v.s.settings);v.c.touch();return;}
       v.mark(`done${r}`,'고리 배치 문제 해결',r<2?'같은 극을 마주 보게 하여 고리를 떨어뜨렸어.':'다른 극을 마주 보게 하여 고리를 붙였어.');playEffect('success',v.s.settings);v.refresh();
     });
   });
-  v.button('next',()=>{v.a.values.round=r+1;v.a.values.ringReleased=false;v.a.points={};v.refresh();});
+  v.button('next',()=>{v.a.values.round=v.compact?2:r+1;v.a.values.ringReleased=false;if(v.compact){for(let i=0;i<count;i++)v.set(`ring${i}`,slot(i));}else v.a.points={};v.refresh();});
   // The 3D card mirrors this bench; it never changes the experiment.
   v.button('view3d',()=>v.c.root.dispatchEvent(new CustomEvent('open-3d',{bubbles:true,detail:{kind:'rings',released:v.has('ringReleased'),rings:Array.from({length:count},(_,i)=>{const q=v.p(`ring${i}`,pt(23+i*16,73));return {top:pole(i),onPole:v.has('ringReleased')||Math.abs(q.x-68)<7&&Math.abs(q.y-slot(i).y)<7};})}})));
 }
@@ -350,25 +366,27 @@ function rings(v: Surface){
 function aquarium(v: Surface){
   let previous=performance.now(), raf=0, moved=false, lastSave=0;
   let pad=v.p('inner-pad',pt(29,48));const dirt=[pt(40,44),pt(66,44),pt(59,65)], counts=[0,1,2].map(i=>Number(v.a.values[`scrubDistance${i}`]||0)),turns=[0,1,2].map(i=>Number(v.a.values[`scrubTurns${i}`]||0)),directions=[0,0,0],legs=[0,0,0];
-  const progress=(i:number)=>Math.min(100,Math.round(Math.min(counts[i]/18,turns[i]/2)*100));
+  const progress=(i:number)=>Math.min(100,Math.round((v.compact?counts[i]/8:Math.min(counts[i]/18,turns[i]/2))*100));
   const padInfo=document.createElement('span');padInfo.className='sr-only';padInfo.dataset.object='inner-pad';padInfo.style.left=`${pad.x}%`;padInfo.style.top=`${pad.y}%`;padInfo.textContent='유리 안쪽에서 바깥 손잡이를 따라 움직이는 청소 패드';v.c.root.querySelector('.mission-board')!.append(padInfo);
   v.draw=()=>{v.base();const g=v.ctx;g.fillStyle='#79c3cb55';g.beginPath();g.roundRect(290,235,730,325,24);g.fill();
     v.sprite('aquarium',250,170,800,440);
-    dirt.forEach((p,i)=>{if(v.has(`clean${i}`)){v.label('✓',p);return;}g.fillStyle=`rgba(116,137,72,${.85-progress(i)/160})`;for(let j=0;j<7;j++){g.beginPath();g.ellipse(p.x*W/100+Math.sin(j*2.3)*45,p.y*H/100+Math.cos(j)*25,25,18,0,0,Math.PI*2);g.fill();}v.label(`${progress(i)}% · 왕복 ${Math.min(2,turns[i])}/2`,pt(p.x,p.y-8),true);});
+    dirt.forEach((p,i)=>{if(v.has(`clean${i}`)){v.label('✓',p);return;}g.fillStyle=`rgba(116,137,72,${.85-progress(i)/160})`;for(let j=0;j<7;j++){g.beginPath();g.ellipse(p.x*W/100+Math.sin(j*2.3)*45,p.y*H/100+Math.cos(j)*25,25,18,0,0,Math.PI*2);g.fill();}v.label(v.compact?`${progress(i)}%`:`${progress(i)}% · 왕복 ${Math.min(2,turns[i])}/2`,pt(p.x,p.y-8),true);});
     if(!v.equipment('pad',pad,115,88))v.iron(pad,'',95);v.label('안쪽 패드',pt(pad.x,pad.y+9),true);const handle=v.p('cleaner',pt(27,47));v.magnet(handle,'N',.6);v.label('유리 밖 손잡이',pt(handle.x,handle.y-8),true);v.label('유리 안',pt(74,32),true);
-    v.label(`손잡이를 천천히 이끌고 얼룩 위에서 좌우로 왕복  ${[0,1,2].filter(i=>v.has(`clean${i}`)).length}/3`,pt(50,26),true);
+    v.label(`${v.compact?'손잡이로 얼룩 위를 쓸어 닦아 줘':'손잡이를 천천히 이끌고 얼룩 위에서 좌우로 왕복'}  ${[0,1,2].filter(i=>v.has(`clean${i}`)).length}/3`,pt(50,26),true);
     if(distance(handle,pad)<18)v.arrow(pad,handle,'#d99c3d');
   };
   const moveHandle=(p:Point)=>{moved=true;v.set('cleaner',pt(clamp(p.x,26,77),clamp(p.y,35,74)));};
   v.drag('cleaner',pt(27,47),moveHandle,moveHandle);
   const frame=(now:number)=>{if(v.stopped)return;const dt=Math.max(0,Math.min((now-previous)/1000,.045));previous=now;
-    if(!document.hidden&&!document.querySelector('dialog[open],.modal-backdrop')&&moved){const handle=v.p('cleaner',pt(27,47)),d=distance(handle,pad);if(d<18){if(v.feedback==='손잡이가 너무 멀어졌어. 안쪽 패드 가까이 돌아와 줘.')v.tell('안쪽 패드와 다시 연결됐어. 얼룩 위에서 천천히 좌우로 왕복해 줘.');const k=1-Math.exp(-dt*4),before={...pad};pad=pt(pad.x+(handle.x-pad.x)*k,pad.y+(handle.y-pad.y)*k);v.set('inner-pad',pad);const travel=distance(before,pad),dx=pad.x-before.x;
-      dirt.forEach((p,i)=>{if(!v.has(`clean${i}`)&&distance(p,pad)<7&&travel>.015){counts[i]+=travel;
+    if(!document.hidden&&!document.querySelector('dialog[open],.modal-backdrop')&&moved){const handle=v.p('cleaner',pt(27,47)),d=distance(handle,pad);if(d<18){if(v.feedback==='손잡이가 너무 멀어졌어. 안쪽 패드 가까이 돌아와 줘.')v.tell(v.compact?'안쪽 패드와 다시 연결됐어. 얼룩 위를 쓸어 닦아 줘.':'안쪽 패드와 다시 연결됐어. 얼룩 위에서 천천히 좌우로 왕복해 줘.');const k=1-Math.exp(-dt*4),before={...pad};pad=pt(pad.x+(handle.x-pad.x)*k,pad.y+(handle.y-pad.y)*k);v.set('inner-pad',pad);const travel=distance(before,pad),dx=pad.x-before.x;
+      dirt.forEach((p,i)=>{if(!v.has(`clean${i}`)&&distance(p,pad)<7&&travel>.015){
+        // Count only the part of an entering step that actually covered the stain.
+        counts[i]+=v.compact&&distance(p,before)>=7?Math.min(travel,7-distance(p,pad)):travel;
         if(Math.abs(dx)>.012){const direction=Math.sign(dx);if(directions[i]&&direction!==directions[i]&&legs[i]>=2.5){turns[i]++;legs[i]=0;}else if(direction!==directions[i])legs[i]=0;directions[i]=direction;legs[i]+=Math.abs(dx);}
         v.a.values[`scrubDistance${i}`]=counts[i];v.a.values[`scrubTurns${i}`]=turns[i];
-        if(counts[i]>=18&&turns[i]>=2){v.mark(`clean${i}`,'왕복 조작으로 청소',`${i+1}번째 얼룩을 유리 밖 자석으로 좌우 왕복하여 닦았어.`);v.tell('왕복해서 닦으니 깨끗해졌어! 다음 얼룩까지 천천히 이어 가자.',true);}}});}
+        if(v.compact?counts[i]>=8:counts[i]>=18&&turns[i]>=2){v.mark(`clean${i}`,'유리 너머 청소',`${i+1}번째 얼룩 위로 안쪽 패드를 움직여 닦았어.`);v.tell('깨끗해졌어! 다음 얼룩까지 천천히 이어 가자.',true);}}});}
       else v.tell('손잡이가 너무 멀어졌어. 안쪽 패드 가까이 돌아와 줘.');
-      if([0,1,2].every(i=>v.has(`clean${i}`))&&!v.has('clean-proof')){v.proof('clean','유리 밖 자석으로 세 구역을 왕복 청소','success',{scrubDistance:Math.round(counts.reduce((sum,x)=>sum+x,0)),reversals:turns.reduce((sum,x)=>sum+x,0)});v.a.values['clean-proof']=true;v.tell('세 곳 모두 깨끗해! 유리에 막혀도 자석의 힘으로 안쪽을 움직였어.',true);}
+      if([0,1,2].every(i=>v.has(`clean${i}`))&&!v.has('clean-proof')){v.proof('clean','유리 밖 자석으로 세 구역 청소','success',{scrubDistance:Math.round(counts.reduce((sum,x)=>sum+x,0)),reversals:turns.reduce((sum,x)=>sum+x,0)});v.a.values['clean-proof']=true;v.tell('세 곳 모두 깨끗해! 유리에 막혀도 자석의 힘으로 안쪽을 움직였어.',true);}
       if(now-lastSave>1000){v.c.touch();lastSave=now;}
     }v.draw();raf=requestAnimationFrame(frame);
   };raf=requestAnimationFrame(frame);v.cleanups.push(()=>cancelAnimationFrame(raf));
@@ -377,6 +395,14 @@ function delivery(v: Surface){
   const r=Number(v.a.values.round||0),start=r===2?74:27,goal=r===2?30:73;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
   const carPoint=()=>pt(car,59);const permitted=(q:Point)=>r===0?q.x>car:r===1?q.x<car:true;
   const forceOn=()=>{const q=v.p('controller',pt(20,40));return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
+  // In the short route, withdrawing the magnet is the stop action itself.
+  const finishStopped=()=>{
+    if(!v.compact||v.has(`segment${r}`)||Math.abs(car-goal)>=3||forceOn()||controlled<20)return false;
+    v.mark(`segment${r}`,'택배 배달',r===0?'다른 극으로 당기고 자석을 떼어 배달 장소에 멈췄어.':'같은 극으로 밀고 자석을 떼어 배달 장소에 멈췄어.');
+    v.proof(`stop${r}`,'목적지에서 자석을 멀리하여 정차','success',{car,controllerY:v.p('controller',pt(20,40)).y});
+    v.proof(`delivery${r}`,'극의 힘으로 운반하고 정차','success',{method:r===0?'pull':'push',pole,goal,controlledDistance:Math.round(controlled)});
+    v.tell('배달 완료! 자석을 멀리하니 카트도 멈췄어.',true);v.refresh();return true;
+  };
   const state=document.createElement('p');state.className='delivery-state';state.setAttribute('role','status');v.c.root.querySelector('.mission-board')!.append(state);
   const safePosition=(p:Point):Point=>{
     const board=v.c.root.querySelector<HTMLElement>('.mission-board')!.getBoundingClientRect();
@@ -389,11 +415,15 @@ function delivery(v: Surface){
     return pt(clamp(p.x,halfX/board.width*100,100-halfX/board.width*100),clamp(p.y,(top+halfY)/board.height*100,(bottom-halfY)/board.height*100));
   };
   const carInfo=document.createElement('span');carInfo.className='sr-only';carInfo.dataset.object='cart-magnet';carInfo.style.left=`${car}%`;carInfo.style.top='59%';carInfo.textContent='왼쪽 N극, 오른쪽 S극을 가진 택배 카트';v.c.root.querySelector('.mission-board')!.append(carInfo);
-  v.draw=()=>{v.base();const status=`${v.has(`checkpoint${r}`)?'정차 점검 완료 · 다음은 배달 장소':'정차 목표 · 가운데 점검소'} / ${forceOn()?'연결됨 · 힘이 닿아':'연결 끊김 · 카트 멈춤'}`;if(state.textContent!==status)state.textContent=status;const g=v.ctx;if(!v.sprite('rail',272,392,766,62)){g.strokeStyle='#8b7653';g.lineWidth=9;g.beginPath();g.moveTo(280,445);g.lineTo(1030,445);g.stroke();g.strokeStyle='#eadba7';g.lineWidth=3;g.beginPath();g.moveTo(280,432);g.lineTo(1030,432);g.stroke();}v.target(pt(goal,59),'배달 장소',125,105);v.target(pt(50,59),v.has(`checkpoint${r}`)?'점검 완료 ✓':'점검소 · 잠깐 정차',125,110);
-    if(!v.sprite('cart',car*W/100-115,300,230,170)){g.fillStyle='#d79d53';g.fillRect(car*W/100-60,375,120,60);}v.sprite('parcel',car*W/100-45,327,90,80);v.magnet(carPoint(),'N',.48);v.magnet(v.p('controller',pt(20,40)),pole,.7);v.arrow(pt(start,74),pt(goal,74));v.label(`${['앞에서 당기기','뒤에서 밀기','반대 방향 배달'][r]} → ${v.has(`checkpoint${r}`)?'받는 곳까지 운반':'가운데 정차 후 자석 떼기'}`,pt(50,29),true);
+  v.draw=()=>{v.base();const status=`${v.compact?'목적지에 도착하면 자석을 떼어 멈춰 줘':v.has(`checkpoint${r}`)?'정차 점검 완료 · 다음은 배달 장소':'정차 목표 · 가운데 점검소'} / ${forceOn()?'연결됨 · 힘이 닿아':'연결 끊김 · 카트 멈춤'}`;if(state.textContent!==status)state.textContent=status;const g=v.ctx;if(!v.sprite('rail',272,392,766,62)){g.strokeStyle='#8b7653';g.lineWidth=9;g.beginPath();g.moveTo(280,445);g.lineTo(1030,445);g.stroke();g.strokeStyle='#eadba7';g.lineWidth=3;g.beginPath();g.moveTo(280,432);g.lineTo(1030,432);g.stroke();}v.target(pt(goal,59),'배달 장소',125,105);if(!v.compact)v.target(pt(50,59),v.has(`checkpoint${r}`)?'점검 완료 ✓':'점검소 · 잠깐 정차',125,110);
+    if(v.compact&&!v.has(`segment${r}`)){
+      const guide=pt(car+(r===0?11:-11),59),q=v.p('controller',pt(20,40));v.target(guide,'',145,74);v.label(r===0?'앞에서 이끌어 줘':'뒤에서 따라가 줘',pt(guide.x,47),true);
+      g.save();g.lineWidth=5;g.strokeStyle=forceOn()?'#2d8a79':'#af8655';g.setLineDash(forceOn()?[]:[8,9]);g.beginPath();g.moveTo(car*W/100,59*H/100);g.lineTo(q.x*W/100,q.y*H/100);g.stroke();g.restore();
+    }
+    if(!v.sprite('cart',car*W/100-115,300,230,170)){g.fillStyle='#d79d53';g.fillRect(car*W/100-60,375,120,60);}v.sprite('parcel',car*W/100-45,327,90,80);v.magnet(carPoint(),'N',.48);v.magnet(v.p('controller',pt(20,40)),pole,.7);v.arrow(pt(start,74),pt(goal,74));v.label(`${['앞에서 당기기','뒤에서 밀기','반대 방향 배달'][r]} → ${v.compact?'배달 장소에서 자석 떼기':v.has(`checkpoint${r}`)?'받는 곳까지 운반':'가운데 정차 후 자석 떼기'}`,pt(50,29),true);
   };
-  v.drag('controller',pt(20,40),()=>{},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
-  const detach=(safe=false)=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(safe?20:q.x,38)));v.c.touch();v.tell('자석을 떼어 연결을 끊었어. 카트 위치와 지금까지의 실험 증거는 그대로야.');v.draw();};
+  v.drag('controller',pt(20,40),()=>{finishStopped();},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
+  const detach=(safe=false)=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(safe?20:q.x,38)));v.c.touch();if(finishStopped())return;v.tell('자석을 떼어 연결을 끊었어. 카트 위치와 지금까지의 실험 증거는 그대로야.');v.draw();};
   v.button('detach',()=>detach());v.button('safe',()=>detach(true));
   v.button('checkpoint',()=>{if(Math.abs(car-50)>4)return v.tell('먼저 가운데 점검소의 점선 안으로 카트를 보내 줘.');if(forceOn())return v.tell('카트가 움직이는 중이야. 조종 자석을 위로 떼어 카트를 멈춰 줘.');if(!v.has(`checkpoint${r}`)){v.mark(`checkpoint${r}`,'운반 중 정차','힘이 닿지 않도록 조종 자석을 멀리 하여 점검소에서 정차했어.');v.proof(`stop${r}`,'자석 거리로 정차 제어','success',{car,controllerY:v.p('controller',pt(20,40)).y});}v.tell('짐 점검 완료! 다시 자석을 가까이 대고 배달 장소로 출발하자.',true);v.draw();});
   const frame=(now:number)=>{if(v.stopped)return;const dt=Math.max(0,Math.min(.045,(now-prev)/1000));prev=now;
@@ -401,17 +431,25 @@ function delivery(v: Surface){
       const q=v.p('controller',pt(20,40)),d=distance(q,carPoint());if(d<18&&Math.abs(q.y-59)<12){const side=q.x>car?1:-1;
         // Cart's physical left face is N, right face S. Controller's corresponding facing face is used.
         const cartFacing=side>0?'S':'N',controlFacing=side>0?pole:opposite(pole),attract=cartFacing!==controlFacing;
-        const dir=side*(attract?1:-1),before=car;car=clamp(car+dir*(18-d)/18*dt*17,24,79);v.a.values.car=car;v.set('cart-magnet',carPoint());
+        const dir=side*(attract?1:-1),before=car;
+        // Slow the approach so there is time to detach, without completing or stopping at the goal.
+        const approach=v.compact&&Math.abs(car-goal)<5?.4:1;
+        let next=car+dir*(18-d)/18*dt*17*approach;
+        // An attracted cart meets the controller instead of passing through it and reversing.
+        if(v.compact&&attract)next=side>0?Math.max(car,Math.min(next,q.x-6)):Math.min(car,Math.max(next,q.x+6));
+        car=clamp(next,24,79);v.a.values.car=car;v.set('cart-magnet',carPoint());
         const correctMethod=permitted(q)&&((r===0&&attract)||(r===1&&!attract)||r===2);
         if(correctMethod&&Math.sign(car-before)===Math.sign(goal-start)){controlled+=Math.abs(car-before);v.a.values[`controlled${r}`]=controlled;}
         if(!permitted(q))v.tell(r===0?'이번 의뢰는 앞에서 당기기야. 카트 앞으로 가 봐.':r===1?'이번 의뢰는 뒤에서 밀기야. 카트 뒤로 가 봐.':'극과 위치를 바꿔 원하는 방향으로 움직여.');
-        if(Math.abs(car-goal)<3&&!v.has(`checkpoint${r}`))v.tell('중간 점검이 남았어. 극을 바꾸어 점검소로 돌아가 멈춰 줘.');
-        if(Math.abs(car-goal)<3&&v.has(`checkpoint${r}`)&&correctMethod&&controlled<20)v.tell('이번 의뢰의 방법으로 충분히 운반하지 못했어. 중간으로 돌아가 요청한 밀기·당기기로 다시 보내 줘.');
-        if(Math.abs(car-goal)<3&&v.has(`checkpoint${r}`)&&correctMethod&&controlled>=20){
+        else if(correctMethod&&v.feedback.startsWith('이번 의뢰는'))v.tell(r===0?'좋아! 카트 앞에서 가까운 거리를 유지하며 이끌어 줘.':'좋아! 카트 뒤에서 가까운 거리를 유지하며 밀어 줘.');
+        if(v.compact&&Math.abs(car-goal)<3&&controlled>=20)v.tell('목적지야! 자석을 위로 떼거나 ‘자석 떼기’를 눌러 멈춰 줘.');
+        if(!v.compact&&Math.abs(car-goal)<3&&!v.has(`checkpoint${r}`))v.tell('중간 점검이 남았어. 극을 바꾸어 점검소로 돌아가 멈춰 줘.');
+        if(Math.abs(car-goal)<3&&(v.compact||v.has(`checkpoint${r}`))&&correctMethod&&controlled<20)v.tell('이번 의뢰의 방법으로 충분히 운반하지 못했어. 중간으로 돌아가 요청한 밀기·당기기로 다시 보내 줘.');
+        if(!v.compact&&Math.abs(car-goal)<3&&v.has(`checkpoint${r}`)&&correctMethod&&controlled>=20){
           v.mark(`segment${r}`,'택배 배달',['카트 앞에서 다른 극으로 당겨 배달했어.','카트 뒤에서 같은 극으로 밀어 배달했어.','극과 위치를 조절해 반대 방향으로 배달했어.'][r]);v.proof(`delivery${r}`,'극의 힘으로 경로 운반','success',{method:r===0?'pull':r===1?'push':'reverse',pole,goal,controlledDistance:Math.round(controlled)});v.tell('도착했어! 시민이 택배를 받았어.',true);v.refresh();return;
         }
       }if(now-lastSave>1000){v.c.touch();lastSave=now;}
-    }v.set('controller',safePosition(v.p('controller',pt(20,40))));v.draw();raf=requestAnimationFrame(frame);
+    }if(finishStopped())return;v.set('controller',safePosition(v.p('controller',pt(20,40))));v.draw();raf=requestAnimationFrame(frame);
   };raf=requestAnimationFrame(frame);v.cleanups.push(()=>cancelAnimationFrame(raf));
   v.button('next',()=>{v.a.values.round=r+1;v.a.values.car=r+1===2?74:27;v.a.points={};v.refresh();});
 }
@@ -439,7 +477,7 @@ function useDesign(v: Surface){
   const r=Number(v.a.values.round||0),remote=v.s.design.template==='remote';let operated=v.has(`use${r}`);
   const m=v.p('design-magnet',v.s.activities[9]?.points['design-magnet']||pt(43,55)),t=v.p('design-target',v.s.activities[9]?.points['design-target']||pt(57,55));
   const sync=()=>{v.s.design.gap=distance(v.p('design-magnet',m),v.p('design-target',t))*2;v.s.design.aligned=assemblyAligned(v.p('design-magnet',m),v.p('design-target',t),remote);};
-  const change=()=>{sync();delete v.a.points['operating-magnet'];delete v.a.points['operating-target'];v.set('use-handle',remote?v.p('design-magnet',m):pt(50,37));v.s.design.revision++;delete v.a.values.use0;delete v.a.values.use1;delete v.a.values['force-arrow'];v.a.values.round=0;v.tell('배치를 고쳤어. 바뀐 설계로 두 상황을 다시 확인하자.');v.refresh();};
+  const change=()=>{sync();delete v.a.points['operating-magnet'];delete v.a.points['operating-target'];v.set('use-handle',remote?v.p('design-magnet',m):pt(50,37));v.s.design.revision++;delete v.a.values.use0;delete v.a.values.use1;delete v.a.values['force-arrow'];v.a.values.round=0;v.tell(v.compact?'배치를 고쳤어. 바뀐 설계로 다시 사용해 보자.':'배치를 고쳤어. 바뀐 설계로 두 상황을 다시 확인하자.');v.refresh();};
   sync();
   const destination=pt(t.x,r===0?42:66),forceSpot=remote?pt((m.x+t.x)/2,v.p('operating-target',t).y):pt(50,54);
   if(!operated)operated=remote?!!v.a.points['use-handle']&&distance(v.a.points['use-handle'],m)>.5&&distance(v.p('operating-target',t),destination)<6:(v.a.points['use-handle']?.y||37)>59;
@@ -455,7 +493,7 @@ function useDesign(v: Surface){
     if(v.s.design.pair==='magnet'&&v.s.design.pole==='N')return v.tell('같은 극이 마주 봐 밀어내고 있어. 자석을 뒤집어 봐.');
     operated=operated&&(remote?distance(v.p('operating-target',t),destination)<6:v.p('use-handle',pt(50,37)).y>59);if(!operated)return v.tell(remote?`먼저 손잡이를 ${r===0?'위':'아래'} 선반의 점선 목적지까지 옮겨 줘.`:'먼저 덮개 손잡이를 아래로 내려 닫아 줘.');
     // Canonical design convention uses pole S for a successful box magnet pair.
-    v.mark(`use${r}`,'다른 조건에서 사용',remote?'유리 너머 부품을 자석으로 옮겼어.':r===0?'편지를 넣고도 덮개가 고정됐어.':'책을 넣고도 덮개가 고정됐어.');v.proof(`use${r}`,'내 설계로 두 조건 사용 시험','success',{gap:v.s.design.gap,aligned:true,load:r===0?'letter':'book'});
+    v.mark(`use${r}`,'다른 조건에서 사용',remote?'유리 너머 부품을 자석으로 옮겼어.':r===0?'편지를 넣고도 덮개가 고정됐어.':'책을 넣고도 덮개가 고정됐어.');v.proof(`use${r}`,v.compact?'내 설계의 실제 사용 시험':'내 설계로 두 조건 사용 시험','success',{gap:v.s.design.gap,aligned:true,load:r===0?'letter':'book'});
     // This interoperable proof lets the final restoration use the student's actual design.
     v.a.values.adjusting=false;v.proof('use','현재 발명 설계 작동','success',{gap:v.s.design.gap,aligned:true});v.refresh();
   });

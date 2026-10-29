@@ -1,5 +1,5 @@
 import type { Activity } from './domain';
-import { inquiries } from './inquiry-content';
+import { discoveries, inquiries } from './inquiry-content';
 export type InquiryPhase = 'predict' | 'experiment' | 'explain' | 'apply' | 'complete';
 export function inquiryPhase(a: Activity): InquiryPhase {
   const p = a.values.inquiryPhase;
@@ -9,6 +9,11 @@ export function explanationCorrect(n: number, claim: number, proof: number): boo
   const q=inquiries[n-1]; return !!q && claim===q.claim && proof===q.proof;
 }
 export function inquiryReady(n: number, a: Activity): boolean {
+  if(a.values.inquiryVersion===2){
+    if(n<1||n>10||a.values.inquiryActivity!==n)return false;
+    if(n%2===1)return inquiryPhase(a)==='experiment'||inquiryPhase(a)==='complete';
+    return a.values.reflected===true&&a.values.reflection===discoveries[n/2-1].answer&&inquiryPhase(a)==='complete';
+  }
   if(a.values.inquiryVersion !== 1) return true; // Historical records retain their original completion rules.
   const q=inquiries[n-1];
   return !!q && Number.isInteger(a.values.prediction) && Number(a.values.prediction)>=0 && Number(a.values.prediction)<q.guesses.length &&

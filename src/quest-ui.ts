@@ -50,7 +50,7 @@ export function questTitle(save: { started: boolean; evidence?: { stage: number 
       <div class="quest-title-brand"><p class="quest-title-kicker">초등 과학 · 자석 탐험</p><img class="quest-title-logo" src="/assets/quest/logo.webp" alt="밀고 당기는 도시" width="1774" height="887" fetchpriority="high"></div>
       <h1 class="quest-title-subtitle">멈춘 도시를<br>다시 움직여 줘!</h1>
       <p class="quest-title-intro">우편함부터 멈춘 택배까지.<br>자석의 비밀을 알아내고, 시민들의 불편을 해결하자.</p>
-      <p class="quest-title-method"><span>예상하기</span><i aria-hidden="true">→</i><span>직접 실험</span><i aria-hidden="true">→</i><span>발명하기</span></p>
+      <p class="quest-title-method"><span>직접 조작</span><i aria-hidden="true">→</i><span>규칙 발견</span><i aria-hidden="true">→</i><span>발명하기</span></p>
       <div class="quest-title-actions"><button type="button" class="quest-cta quest-start" data-action="start">${save.started ? '이어서 탐험하기' : '도시 탐험 시작'}${icon('arrow', 27)}</button>${save.started ? '<button type="button" class="quest-text-button" data-action="new">새로 시작</button>' : ''}</div>
       <p class="quest-title-save">${icon(finished ? 'check' : 'book', 18)}${finished ? '도시 복구 완료 · 나의 발견을 다시 만나 봐' : save.started ? `${count}개 구역 복구 · 내 탐험 기록이 기다리고 있어` : '열 번의 탐구와 나만의 발명 · 이 기기에 자동 저장'}</p>
     </div>

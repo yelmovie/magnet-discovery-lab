@@ -20,31 +20,32 @@ export function assemblyIssue(magnet:Point,target:Point,remote:boolean):string {
 export function missionReady(screen: number, a: Activity, s: Save): boolean {
   const f = (k: string) => a.values[k] === true;
   const proof = (key: string) => !!a.trials?.some(t => t.key === key && validTrial(t) && t.outcome === 'success');
+  const compact=a.values.paceVersion===1;
   if(a.values.mechanicsVersion===1){
-    if(screen===1&&![0,1].every(i=>f(`latch${i}`)))return false;
-    if(screen===2&&!f('diagnosis2'))return false;
-    if(screen===3&&!['clip','nail','aluminum','wood','plastic','rubber'].every(id=>f(`sorted-${id}`)))return false;
-    if(screen===8&&![0,1,2].every(i=>f(`checkpoint${i}`)))return false;
+    if(screen===1&&!(compact?[0]:[0,1]).every(i=>f(`latch${i}`)))return false;
+    if(screen===2&&!compact&&!f('diagnosis2'))return false;
+    if(screen===3&&!(compact?['clip','aluminum','wood']:['clip','nail','aluminum','wood','plastic','rubber']).every(id=>f(`sorted-${id}`)))return false;
+    if(screen===8&&(compact?![0,1].every(i=>proof(`stop${i}`)):![0,1,2].every(i=>f(`checkpoint${i}`))))return false;
     if(screen===9&&!a.trials?.some(t=>t.key==='prototype'&&validTrial(t)&&t.designRevision===s.design.revision&&t.template===s.design.template))return false;
   }
   switch (screen) {
-    case 1: return [0, 1].every(i => f(`found${i}`) && proof(`inspect${i}`));
-    case 2: return [0, 1].every(i => f(`with${i}`) && f(`without${i}`) && proof(`repair${i}`)) && f('with2') && proof('repair2');
-    case 3: return ['clip','nail','aluminum','wood','plastic','rubber'].every(id => f(`tested-${id}`)) && ['clip','nail'].every(id => f(`delivered-${id}`));
+    case 1: return (compact?[0]:[0,1]).every(i => f(`found${i}`) && proof(`inspect${i}`));
+    case 2: return (compact?[0]:[0,1]).every(i => f(`with${i}`) && f(`without${i}`) && proof(`repair${i}`)) && (compact || f('with2') && proof('repair2'));
+    case 3: return (compact?['clip','aluminum','wood']:['clip','nail','aluminum','wood','plastic','rubber']).every(id => f(`tested-${id}`)) && (compact?['clip']:['clip','nail']).every(id => f(`delivered-${id}`));
     case 4: {
       const trial=(key:string)=>a.trials?.find(t=>t.key===key&&validTrial(t)&&t.outcome==='success');
       const far=trial('far'),near=trial('near'),paper=trial('paper'),rescue=trial('rescue');
-      return !!far && !!near && !!paper && !!rescue && Number(far.conditions.gap)>=27 &&
-        Number(near.conditions.gap)<=15 && Number(paper.conditions.gap)<=15 && Number(rescue.conditions.gap)<=15 &&
+      return !!far && !!near && !!paper && (compact || !!rescue) && Number(far.conditions.gap)>=27 &&
+        Number(near.conditions.gap)<=15 && Number(paper.conditions.gap)<=15 && (compact || !!rescue && Number(rescue.conditions.gap)<=15) &&
         near.conditions.paper===false && paper.conditions.paper===true &&
         JSON.stringify(near.initialObjects)===JSON.stringify(paper.initialObjects);
     }
-    case 5: return [0, 1].every(i => f(`test${i}N`) && f(`test${i}S`) && f(`solved${i}`));
-    case 6: return ['float2', 'float3', 'join3'].every(proof);
+    case 5: return (compact?[0]:[0,1]).every(i => f(`test${i}N`) && f(`test${i}S`) && f(`solved${i}`));
+    case 6: return (compact?['float2','join2']:['float2','float3','join3']).every(proof);
     case 7: return [0, 1, 2].every(i => f(`clean${i}`)) && proof('clean');
-    case 8: return [0, 1, 2].every(i => f(`segment${i}`) && proof(`delivery${i}`));
+    case 8: return (compact?[0,1]:[0,1,2]).every(i => f(`segment${i}`) && proof(`delivery${i}`));
     case 9: return f('base') && f('magnet') && f('target');
-    case 10: return [0, 1].every(i => !!a.trials?.some(t => t.key === `use${i}` && validTrial(t) && t.outcome === 'success' && t.designRevision === s.design.revision && t.template === s.design.template)) && f('force-arrow');
+    case 10: return (compact?[0]:[0,1]).every(i => !!a.trials?.some(t => t.key === `use${i}` && validTrial(t) && t.outcome === 'success' && t.designRevision === s.design.revision && t.template === s.design.template)) && (compact || f('force-arrow'));
     default: return false;
   }
 }
