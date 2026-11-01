@@ -84,3 +84,11 @@ body.reduce-motion .story-layer :is(.story-place, .story-caption).is-on { opacit
 }
 .story-caption[data-side='left'] { align-self: flex-start; justify-items: start; }
 .story-caption[data-side='left'] .story-line { text-align: left; }
+/* Very short screens (browser zoom, phone landscape): the bottom stack scrolls instead of growing past the top. */
+@media (max-height: 480px) {
+  .story-bottom { top: 76px; bottom: 10px; overflow-y: auto; overscroll-behavior: contain; }
+  .story-bottom::before { content: ''; flex: 1 0 0; }
+  .story-card { gap: 4px; padding: var(--space-sm) var(--space-md); }
+  .story-card-title { font-size: 26px; }
+  .story-finish { min-height: 48px; }
+}

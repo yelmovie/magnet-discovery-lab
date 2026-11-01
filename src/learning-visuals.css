@@ -22,7 +22,7 @@
 .learning-visual-guide h2 { margin: 0 40px 16px 0; font-family: var(--font-display); font-size: clamp(25px, 3vw, 34px); }
 .learning-visual-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: center; }
 .learning-visual-layout figure { margin: 0; padding: 8px; border: 1px solid #d6c9a8; border-radius: 18px; background: #fffdf5; }
-.learning-visual-layout figure > img { display: block; width: 100%; height: auto; aspect-ratio: 3/2; object-fit: contain; border-radius: 12px; }
+.learning-visual-frame > img { display: block; width: 100%; height: auto; aspect-ratio: 3/2; object-fit: contain; border-radius: 12px; }
 .learning-visual-layout figcaption { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px 4px 4px; }
 .learning-visual-layout figcaption span { padding: 6px 10px; border: 1px solid #c2d1be; border-radius: 8px; background: #eef3e6; color: #315d50; font-size: 16px; }
 .learning-visual-layout ol { display: grid; gap: 18px; margin: 0; padding-left: 28px; }
@@ -70,7 +70,7 @@
   #app .mission-head:has(.learning-visual-preview) .discovery-count { display: none; }
   .learning-visual-layout { grid-template-columns: 1fr; gap: 16px; }
   .learning-visual-layout figure { max-width: 480px; margin-inline: auto; }
-  .learning-visual-layout figure > img { max-height: 30dvh; }
+  .learning-visual-frame > img { max-height: 30dvh; }
   .learning-visual-layout ol { gap: 12px; }
   .modal.learning-visual-dialog { padding: 20px; }
   #app .quest-activity::after { top: auto; bottom: 84px; left: 24px; right: 24px; padding: 8px 12px; font-size: 15px; }
@@ -88,3 +88,13 @@
   .learning-visual-layout { gap: 16px; }
   .learning-visual-layout ol { gap: 10px; }
 }
+
+/* 크게 보기: one column, the picture grows past the frame and pans with its own scrollbars. */
+.learning-visual-layout figure { position: relative; }
+.learning-visual-frame { border-radius: 12px; }
+.learning-visual-zoom { position: absolute; top: 14px; right: 14px; z-index: 1; min-height: 44px; padding: 6px 14px; border: 2px solid #7e8d73; border-radius: 10px; background: #fff8e7f0; color: #173f47; font: 400 17px/1.2 var(--font-display); cursor: zoom-in; }
+.learning-visual-zoom[aria-pressed='true'] { cursor: zoom-out; background: #f4c35c; border-color: #a9712f; }
+.modal.learning-visual-dialog.is-zoomed .learning-visual-layout { grid-template-columns: 1fr; }
+.modal.learning-visual-dialog.is-zoomed .learning-visual-layout figure { max-width: none; }
+.modal.learning-visual-dialog.is-zoomed .learning-visual-frame { max-height: min(62dvh, 640px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; cursor: grab; }
+.modal.learning-visual-dialog.is-zoomed .learning-visual-frame > img { width: max(130%, 1024px); max-width: none; max-height: none; aspect-ratio: auto; }

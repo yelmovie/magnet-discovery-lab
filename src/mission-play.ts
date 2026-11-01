@@ -197,13 +197,13 @@ export function missionView(n: number, a: Activity, s: Save): View {
   if(n===2&&round===2&&!a.values.diagnosis2)actions+=`<div class="mission-diagnosis">${action('fault-distance','철판 위치를 고칠래')}${action('fault-color','자석 색을 바꿀래')}</div>`;
   if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});materials.forEach((m,i)=>{if(materialVisible(a,m.id)&&!a.values[`sorted-${m.id}`])hits.push({id:`material-${i}`,p:p(`material-${i}`,materialPositions[i]),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});if(compact&&!a.values.extraMaterials)actions=action('more-materials','다른 재료도 살펴보기');}
   if(n===4){hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:'조사 자석'});if(round===2)hits.push({id:'paper',p:p('paper',pt(23,76)),label:'얇은 종이판'});actions=action('release','손을 떼고 관찰');if(a.values[`done${round}`]&&round<(compact?2:3))actions=action('next',round===0?'가까이에서는 어떨까? →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');}
-  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,77)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,77)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
+  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,72)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,72)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
   if(n===6){for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check','손을 떼고 고리 관찰');if(a.values[`done${round}`]&&round<2)actions=action('next',compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
   if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+(compact?'':action('checkpoint','점검소에서 멈추고 확인'));if(a.values[`segment${round}`]&&round<(compact?1:2))actions=action('next',round===0?'뒤에서 밀어 배달하기 →':'반대 방향으로도 배달하기 →');actions+=action('detach','자석 떼기')+(compact?'':action('safe','안전 위치로'));}
   if(n===9){
     if(!a.values.chosen)actions=`<div class="mission-requests">${action('box','우편함이 자꾸 열려요')}${action('remote','유리 너머 물건을 옮겨 주세요')}</div>`;
-    else {hits.push({id:'base',p:p('base',pt(18,69)),label:'장치 몸체'},{id:'design-magnet',p:p('design-magnet',pt(22,44)),label:'설계 자석'},{id:'design-target',p:p('design-target',pt(77,45)),label:'마주 볼 철판 또는 자석'});actions=action('pair',s.design.pair==='iron'?'자석으로 바꾸기':'철판으로 바꾸기')+action('flip','자석 뒤집기')+action('prototype','시제품 반응 시험');}
+    else {hits.push({id:'base',p:p('base',pt(18,65)),label:'장치 몸체'},{id:'design-magnet',p:p('design-magnet',pt(22,44)),label:'설계 자석'},{id:'design-target',p:p('design-target',pt(77,45)),label:'마주 볼 철판 또는 자석'});actions=action('pair',s.design.pair==='iron'?'자석으로 바꾸기':'철판으로 바꾸기')+action('flip','자석 뒤집기')+action('prototype','시제품 반응 시험');}
   }
   if(n===10){hits.push({id:'use-handle',kind:s.design.template==='box'?'lid-handle':'remote-handle',p:p('use-handle',s.design.template==='remote'?(s.activities[9]?.points['design-magnet']||pt(43,55)):pt(50,37)),label:s.design.template==='box'?'덮개 손잡이':'원격 조작 손잡이'},{id:'design-magnet',p:p('design-magnet',s.activities[9]?.points['design-magnet']||pt(43,55)),label:'내 설계 자석'},{id:'design-target',p:p('design-target',s.activities[9]?.points['design-target']||pt(57,55)),label:'내 설계 대상 부품'});actions=action('test','사용 시험')+action('flip','자석 뒤집기');if(!compact&&a.values.use0&&round===0)actions=action('next','다른 사용 상황으로 시험 →');if(!compact&&a.values.use1)hits.push({id:'force-arrow',p:p('force-arrow',pt(16,78)),label:'힘이 작용한 곳을 나타낼 화살표'});}
   if(n===10&&s.design.template==='remote'){
@@ -317,15 +317,15 @@ function poles(v: Surface){
     v.tell(`${facing}극을 가까이 대니 ${reaction}. ${v.has(`test${r}N`)&&v.has(`test${r}S`)?'두 반응을 비교했어! 이제 N·S 스티커를 양끝에 붙여 줘.':'뒤집기 버튼으로 반대쪽 극도 대 보자.'}`);v.draw();};
   v.draw=()=>{v.base();v.target(pt(48,53),'기준 자석 대는 자리',145,76);const q=v.a.points['unknown-magnet']||(reaction==='밀려났어'?pt(72,53):reaction==='당겨졌어'?pt(59,53):target);
     v.magnet(q,hidden,.85);if(!v.has(`solved${r}`)){const g=v.ctx,x=q.x*W/100-59,y=q.y*H/100-25,paper=v.asset('notebook','/assets/quest/notebook-page.webp');g.save();g.beginPath();g.roundRect(x,y,118,50,8);g.clip();if(paper.complete&&paper.naturalWidth)g.drawImage(paper,240,220,472,200,x,y,118,50);else{g.fillStyle='#eadca4';g.fillRect(x,y,118,50);}g.restore();g.strokeStyle='#b49b60';g.lineWidth=2;g.beginPath();g.roundRect(x,y,118,50,8);g.stroke();v.label('?',q);}
-    v.target(pt(59,40),'왼쪽 극',78,62);v.target(pt(70,40),'오른쪽 극',78,62);v.magnet(v.p('probe',pt(29,54)),probe,.9);v.label('N',v.p('stickerN',pt(33,77)));v.label('S',v.p('stickerS',pt(47,77)));v.label(`${v.has(`test${r}N`)?'✓':'○'} N극 반응    ${v.has(`test${r}S`)?'✓':'○'} S극 반응 → 양쪽 표시 복원`,pt(50,29),true);
+    v.target(pt(59,40),'왼쪽 극',78,62);v.target(pt(70,40),'오른쪽 극',78,62);v.magnet(v.p('probe',pt(29,54)),probe,.9);v.label('N',v.p('stickerN',pt(33,72)));v.label('S',v.p('stickerS',pt(47,72)));v.label(`${v.has(`test${r}N`)?'✓':'○'} N극 반응    ${v.has(`test${r}S`)?'✓':'○'} S극 반응 → 양쪽 표시 복원`,pt(50,29),true);
     if(reaction){const before=v.a.points['initial:unknown-magnet']||target;v.label(reaction,pt(76,65),true);v.arrow(pt(before.x,70),pt(q.x,70));if(v.has('lens')){v.target(before,'처음 위치',145,74);v.arrow(pt(before.x,before.y-9),pt(q.x,q.y-9),'#e0a337');}}
   };
   v.drag('probe',pt(29,54),test);
-  for(const pole of ['N','S'] as Pole[])v.drag(`sticker${pole}`,pole==='N'?pt(33,77):pt(47,77),p=>{
+  for(const pole of ['N','S'] as Pole[])v.drag(`sticker${pole}`,pole==='N'?pt(33,72):pt(47,72),p=>{
     const side=Math.abs(p.x-59)<5&&Math.abs(p.y-40)<8?'left':Math.abs(p.x-70)<5&&Math.abs(p.y-40)<8?'right':null;
     if(!side)return;
     if(!v.has(`test${r}N`)||!v.has(`test${r}S`))return v.tell('두 극을 각각 가까이 대고 움직임을 비교해 보자.');
-    if(pole!==(side==='left'?hidden:opposite(hidden))){v.tell(side==='left'?`${pole}극끼리라면 밀어내야 해. 관찰한 반응과 다시 맞춰 봐.`:'한 자석의 양쪽 끝은 서로 다른 극이야. 왼쪽에 붙인 표시와 비교해 봐.');v.set(`sticker${pole}`,pole==='N'?pt(33,77):pt(47,77));v.draw();return;}
+    if(pole!==(side==='left'?hidden:opposite(hidden))){v.tell(side==='left'?`${pole}극끼리라면 밀어내야 해. 관찰한 반응과 다시 맞춰 봐.`:'한 자석의 양쪽 끝은 서로 다른 극이야. 왼쪽에 붙인 표시와 비교해 봐.');v.set(`sticker${pole}`,pole==='N'?pt(33,72):pt(47,72));v.draw();return;}
     v.set(`sticker${pole}`,pt(side==='left'?59:70,40));v.mark(`label${r}${pole}`,'자석 끝의 극 복원',`${side==='left'?'왼쪽':'오른쪽'} 끝을 ${pole}극으로 표시했어.`);
     if(v.has(`label${r}N`)&&v.has(`label${r}S`)){v.mark(`solved${r}`,'양쪽 극 표시 복원',`왼쪽은 ${hidden}극, 오른쪽은 ${opposite(hidden)}극으로 관찰에 맞게 복원했어.`);v.proof(`gate${r}`,'양쪽 극 표시를 복원해 문 수리');v.refresh();}else {v.tell('한쪽 극을 찾았어! 다른 끝에는 어떤 표시가 필요할까?',true);v.draw();}
   });
@@ -466,13 +466,13 @@ function design(v: Surface){
   v.draw=()=>{v.base();if(!chosen){v.sprite('postal-box',245,290,365,255);v.sprite('postal-lid',245,190,365,175);v.sprite('cart',760,305,300,235);v.label('밀이의 우편함',pt(33,77));v.label('당이의 원격 운반 도구',pt(72,77));return;}
     v.target(pt(50,61),remote?'운반 장치 몸체':'우편함 몸체',400,150);if(v.has('base'))v.sprite(remote?'cart':'postal-box',400,285,480,270);
     v.target(pt(44,53),'자석 자리',135,75);v.target(pt(57,53),'마주 보는 부품',135,75);if(remote){if(!v.sprite('glass',630,288,24,224)){v.ctx.fillStyle='#8dc9cf99';v.ctx.fillRect(636,305,12,190);}v.label('유리판',pt(50,40),true);}
-    if(!v.has('base')){const body=v.p('base',pt(18,69));if(v.sprite(remote?'cart':'postal-box',body.x*W/100-98,body.y*H/100-70,196,140))v.label('몸체',pt(body.x,body.y+12),true);else v.iron(body,'몸체',100);}v.magnet(v.p('design-magnet',pt(22,44)),opposite(v.s.design.pole),.75);
+    if(!v.has('base')){const body=v.p('base',pt(18,65));if(v.sprite(remote?'cart':'postal-box',body.x*W/100-98,body.y*H/100-70,196,140))v.label('몸체',pt(body.x,body.y+12),true);else v.iron(body,'몸체',100);}v.magnet(v.p('design-magnet',pt(22,44)),opposite(v.s.design.pole),.75);
     if(v.s.design.pair==='iron')v.iron(v.p('design-target',pt(77,45)),'철판',65);else v.magnet(v.p('design-target',pt(77,45)),'N',.75);const tested=v.a.trials?.some(t=>t.key==='prototype'&&t.designRevision===v.s.design.revision);v.label(tested?'시험 결과를 확인했어 · 다음 사용 시험에서 개선하기':'몸체 → 두 부품 배치 → 시제품 반응 시험',pt(50,29),true);
     if(tested){const m=v.p('design-magnet',pt(22,44)),t=v.p('design-target',pt(77,45));if(v.s.design.aligned&&v.s.design.gap<=36)v.arrow(t,pt(t.x+(v.s.design.pair==='magnet'&&v.s.design.pole==='N'?7:-7),t.y));}
   };
   for(const template of ['box','remote'] as const)v.button(template,()=>{v.s.design={template,pair:'iron',pole:'N',gap:65,aligned:false,revision:v.s.design.revision+1};v.a.values.chosen=true;v.a.points={};v.refresh();});
   if(!chosen)return;
-  v.drag('base',pt(18,69),p=>{if(distance(p,pt(50,61))<13){v.set('base',pt(50,61));v.mark('base','장치 몸체','시민의 요청에 맞는 몸체를 놓았어.');}v.draw();});
+  v.drag('base',pt(18,65),p=>{if(distance(p,pt(50,61))<13){v.set('base',pt(50,61));v.mark('base','장치 몸체','시민의 요청에 맞는 몸체를 놓았어.');}v.draw();});
   const align=()=>{const m=v.p('design-magnet',pt(22,44)),t=v.p('design-target',pt(77,45));v.s.design.gap=distance(m,t)*2;v.s.design.aligned=assemblyAligned(m,t,remote);changed();v.draw();};
   v.drag('design-magnet',pt(22,44),()=>{align();v.mark('magnet','자석 배치','자석의 위치를 직접 정했어.');});
   v.drag('design-target',pt(77,45),()=>{align();v.mark('target','대상 부품 배치','자석과 마주 볼 부품의 위치를 정했어.');});

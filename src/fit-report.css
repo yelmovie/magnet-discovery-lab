@@ -1,0 +1,118 @@
+/* Report and certificate: fit in one screen without page scroll. Loaded last, overrides earlier files.
+   Landscape screens only (>= 760px wide, wider than tall); portrait keeps its scrolling layout and print keeps
+   the print rules in styles.css / polish.css. Sizes follow the stage from fit-screen.css (--stage-w/-h, at
+   least 860x560), so below that the whole stage scrolls instead of these pages squeezing. */
+
+@media screen and (min-width: 760px) and (min-aspect-ratio: 1/1) {
+  :root {
+    --fit-vw: var(--stage-w, 100vw);
+    --fit-vh: var(--stage-h, 100dvh);
+    /* Room the HUD needs on each side of a centred top line (two icons + gap + clearance). */
+    --fit-hud-side: calc(var(--hud-inset) + 2 * var(--hud-icon-size) + 2 * var(--space-sm));
+  }
+
+  /* ── Report: heading, tabs, one evidence card and the action bar share the screen ── */
+  body.quest-mode #app > main.page-report {
+    display: flex; flex-direction: column; gap: var(--space-sm);
+    padding: var(--hud-inset) clamp(16px, 4vw, 64px);
+    overflow-y: auto;
+  }
+  /* Auto margins centre the group when there is room and collapse (never cut the top) when there is not. */
+  #app > main.page-report > .report-heading { flex: none; margin: auto auto 0; max-width: calc(var(--fit-vw) - 2 * var(--fit-hud-side)); }
+  #app > main.page-report > .report-actions { flex: none; margin: 0 auto auto; }
+  #app .page-report .report-heading h1 { margin: 2px 0 4px; font-size: clamp(30px, min(3vw, var(--fit-vh) * .05), 46px); }
+  #app .page-report .report-heading p { margin: 0; line-height: 1.35; }
+
+  /* The card is the only part that gives up height; it scrolls inside itself when its record list is opened. */
+  #app .page-report .report-list { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; width: min(1040px, 100%); max-width: none; margin: 0 auto; padding: 0; }
+  #app .page-report .evidence-browser { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #app .page-report .evidence-tabs { flex: none; margin: 0 0 var(--space-sm); }
+  #app .page-report .evidence-panel { flex: 0 1 auto; min-height: 190px; display: flex; flex-direction: column; }
+  #app .page-report .evidence-panel .evidence-card {
+    flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: var(--space-md) clamp(16px, 2vw, 24px); column-gap: var(--space-md);
+  }
+  #app .page-report .evidence-card > div {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+    grid-template-areas: "eyebrow eyebrow eyebrow" "title title title" "pic pic pic" "details details concept";
+    gap: var(--space-sm) var(--space-md); padding-right: 0;
+  }
+  #app .page-report .evidence-card > div > .eyebrow { grid-area: eyebrow; padding-right: 72px; }
+  #app .page-report .evidence-card > div > h3 { grid-area: title; margin: 0; padding-right: 72px; }
+  #app .page-report .evidence-card > div > details { grid-area: details; align-self: start; }
+  #app .page-report .evidence-card > div > .concept-link { grid-area: concept; align-self: start; margin: 0; }
+  #app .page-report .evidence-card summary { padding: 6px 0; }
+  #app .page-report .evidence-card ul { margin: 4px 0 0; }
+  /* Short screens: zone name and record title share one line. */
+  @media (max-height: 780px) {
+    #app .page-report .evidence-card > div { grid-template-areas: "eyebrow title title" "pic pic pic" "details details concept"; }
+    #app .page-report .evidence-card > div > .eyebrow { padding-right: 0; }
+    /* The 발견 stamp moves under the zone number so it never sits on the picture. */
+    #app .page-report .evidence-card .evidence-stamp { top: auto; right: auto; bottom: var(--space-md); left: 10px; }
+  }
+
+  /* Picture and its caption side by side instead of a tall float. */
+  #app .page-report .evidence-panel .evidence-card .trial-picture { grid-area: pic; float: none; width: auto; max-width: none; margin: 0; }
+  #app .page-report .evidence-card .trial-picture:has(svg) {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; gap: var(--space-sm) var(--space-md);
+  }
+  #app .page-report .evidence-card .trial-picture svg { height: auto; aspect-ratio: 400 / 170; max-height: min(var(--fit-vh) * .27, 260px); }
+  /* Opening the full record list makes the picture smaller so the list has room. */
+  #app .page-report .evidence-card:has(details[open]) .trial-picture svg { max-height: min(var(--fit-vh) * .18, 180px); }
+
+  #app .page-report .report-actions { width: min(1040px, 100%); padding: var(--space-sm) var(--space-md); }
+
+  /* ── Certificate: sheet and the learner's choices side by side at every landscape width ──
+     The sheet is sized from the free height (keeping the frame's 1600:1062 ratio) and its buttons sit under
+     it, so the panel only holds the name and the five abilities. */
+  body.quest-mode #app > main.page-certificate {
+    --cert-top: calc(var(--hud-inset) + var(--hud-icon-size) + var(--space-sm));
+    --cert-bottom: var(--hud-inset);
+    --cert-panel: clamp(290px, 34vw, 430px);
+    --cert-gap: clamp(12px, 2vw, 32px);
+    --cert-actions: 56px;
+    --cert-col: calc(min(1500px, var(--fit-vw) - 2 * var(--hud-inset)) - var(--cert-panel) - var(--cert-gap));
+    --cert-w: min(var(--cert-col), (var(--fit-vh) - var(--cert-top) - var(--cert-bottom) - var(--cert-actions) - var(--cert-gap)) * 1600 / 1062);
+    --cert-h: calc(var(--cert-w) * 1062 / 1600);
+    display: block; padding: var(--cert-top) var(--hud-inset) var(--cert-bottom); overflow-y: auto;
+  }
+  #app .page-certificate .certificate-stage {
+    position: relative; height: 100%; width: min(1500px, 100%); margin: 0 auto;
+    grid-template-columns: minmax(0, 1fr) var(--cert-panel); grid-template-rows: minmax(0, 1fr);
+    align-items: center; justify-items: stretch; gap: var(--cert-gap);
+  }
+  /* The bottom margin keeps room for the buttons, so sheet + buttons are centred together. */
+  #app .page-certificate .certificate {
+    position: relative; width: min(100%, var(--cert-w)); max-height: none; justify-self: center;
+    margin: 0 auto calc(var(--cert-actions) + var(--cert-gap));
+  }
+  /* Buttons stay in the panel's markup (tab order: name, abilities, buttons) but are drawn under the sheet. */
+  #app .page-certificate .certificate-actions {
+    position: absolute; left: 0; right: calc(var(--cert-panel) + var(--cert-gap));
+    bottom: calc((100% - var(--cert-h) - var(--cert-gap) - var(--cert-actions)) / 2); height: var(--cert-actions);
+    display: flex; justify-content: center; align-items: flex-start; flex-wrap: nowrap; gap: var(--space-sm);
+    margin: 0; padding: 0; border: 0; background: none;
+  }
+  #app .page-certificate .certificate-actions .btn { width: auto; min-height: 50px; padding-inline: 14px; font-size: var(--font-size-button); }
+  /* The panel scrolls only on the smallest screens, where the five abilities do not all fit. */
+  #app .page-certificate .certificate-panel { width: auto; max-height: 100%; overflow-y: auto; gap: var(--space-sm); padding: 14px 18px; word-break: keep-all; }
+  #app .page-certificate .ability-picker { grid-template-columns: minmax(0, 1fr); }
+  #app .page-certificate .ability-picker legend { line-height: 1.25; }
+  #app .page-certificate .ability-picker p { line-height: 1.35; }
+  #app .page-certificate .ability-option { padding-block: 5px; }
+
+  /* A narrower sheet keeps every line inside the frame: decorations go first, the record stays. */
+  @container (max-width: 760px) {
+    #app .page-certificate :is(.certificate-achievements, .certificate-bottom .mascot) { display: none; }
+    #app .page-certificate .certificate h2 { margin: .15em 0 .1em; }
+    #app .page-certificate .certificate p { margin: .3em 0; }
+    #app .page-certificate .certificate-bottom { margin-top: .3em; }
+    #app .page-certificate .certificate .certificate-preview { margin: 0 0 .2em; padding: 2px 10px; line-height: 1.25; }
+  }
+  @container (max-width: 600px) {
+    #app .page-certificate .certificate-overline { display: none; }
+    /* Teacher preview note moves just above the sheet so the record lines keep the frame's room. */
+    #app .page-certificate .certificate-border { position: static; }
+    #app .page-certificate .certificate .certificate-preview { position: absolute; bottom: 100%; left: 50%; translate: -50% -4px; margin: 0; white-space: nowrap; }
+  }
+}

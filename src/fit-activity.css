@@ -1,0 +1,65 @@
+/* Activity screens 1-10 and the final restoration: one-screen fit fixes. Loaded last, overrides earlier files.
+   learning-visuals.css is injected after this file (imported from learning-visuals.ts), so rules here use
+   body.quest-mode #app ... specificity instead of relying on order. */
+
+/* Landscape stage = fit-screen.css (--stage-w/--stage-h, 860x560 minimum). The board is a 16:9 box centred in it;
+   --fit-board-x/y are its letterbox gaps, so board-relative controls can be anchored to the screen edges. */
+@media (min-aspect-ratio: 1/1) {
+  #app :is(.quest-activity, .restoration-operation) {
+    --fit-board-x: calc((var(--stage-w, 100vw) - min(var(--stage-w, 100vw), var(--stage-h, 100dvh) * 1.777778)) / 2);
+    --fit-board-y: calc((var(--stage-h, 100dvh) - min(var(--stage-h, 100dvh), var(--stage-w, 100vw) * .5625)) / 2);
+    --fit-tool-row: 72px; /* bottom tool row (눌러서 이동 · 내 실험 다시 보기): 18px gap + 48px button + 6px */
+  }
+
+  /* Earned-tool pocket: at 16:9 and wider the board starts at the top edge, so top:6% put the pocket under the
+     HUD sound/settings icons; on short wide screens right:2% of a narrower board put it under the mission head.
+     Pin it to the screen corner just below the HUD and keep it inside the gutter beside the head. */
+  body.quest-mode #app .mission-board > .mission-pocket {
+    top: calc(var(--hud-inset) + var(--hud-icon-size) + 12px - var(--fit-board-y));
+    right: calc(var(--hud-inset) - var(--fit-board-x));
+    max-width: min(165px, calc((var(--stage-w, 100vw) - min(840px, var(--stage-w, 100vw) - 320px)) / 2 - var(--hud-inset) - 8px));
+  }
+
+  /* Bench buttons: shrink-to-fit width was capped at 50% by left:50%, so short labels wrapped onto two lines
+     (906x755) and grew into the pieces. One line where it fits; and never lower than the bottom tool row,
+     which they covered on short 16:9 screens (1280x570-720, "내 실험 다시 보기"). */
+  body.quest-mode #app .mission-actions { width: max-content; bottom: max(8%, calc(var(--fit-tool-row) - var(--fit-board-y))); }
+  /* Final restoration: 14% hid the canvas label "밀이의 우편함" under the test buttons; same rule as the activity. */
+  body.quest-mode #app .restoration-operation .mission-actions { bottom: max(8%, calc(var(--fit-tool-row) - var(--fit-board-y))); }
+
+  /* Act 6 ring flip buttons: 88% ran into the bottom tool row on short screens. Sit just under the rings
+     (ring pieces end at 80% of the board) instead. */
+  body.quest-mode #app .screen-6 .ring-flip { top: calc(80% + 25px) !important; }
+}
+@media (min-aspect-ratio: 1/1) and (max-width: 1100px) {
+  body.quest-mode #app .mission-board > .mission-pocket {
+    max-width: calc((var(--stage-w, 100vw) - min(760px, var(--stage-w, 100vw) - 280px)) / 2 - var(--hud-inset) - 8px);
+  }
+}
+/* Portrait phones (secondary): the 16:9 bench is only ~210px tall, so bench buttons sat on the pieces.
+   Move them into the free band under the bench, right-aligned so a second row stays clear of the coach robot. */
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
+  body.quest-mode #app .mission-board > .mission-actions {
+    top: calc(100% + 10px); bottom: auto; left: auto; right: 12px; transform: none;
+    width: max-content; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; row-gap: 8px;
+  }
+  /* The distance gauge already sits right under the bench here (production.css). */
+  body.quest-mode #app .mission-board:has(> .force-sensor) > .mission-actions { top: calc(100% + 70px); }
+  body.quest-mode #app .mission-board .mission-requests { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  body.quest-mode #app .mission-board .mission-requests > [data-mission='remote'] { order: -1; }
+  /* Act 6: the 3D button covered the ring tower and the two flip buttons overlapped each other and the rings.
+     3D goes left of the check button under the bench; the flips get the next row, right of the coach. */
+  body.quest-mode #app .mission-board > .mission-3d { top: calc(100% + 10px); left: 12px; right: auto; }
+  body.quest-mode #app .screen-6 .ring-flip { top: calc(100% + 98px) !important; white-space: nowrap; }
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='1번'] { left: 50% !important; }
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='2번'] { left: 80% !important; }
+  /* Hint bubble / move panel replace the mission head; 100vw - 320px left them ~55px wide on a phone. */
+  body.quest-mode #app :is(.coach-bubble:not([hidden]), .mission-access[open]) {
+    top: 76px; width: calc(100vw - 24px); max-height: calc(var(--head-bottom, 310px) - 76px);
+  }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 640px) {
+  #app :is(.quest-activity, .restoration-operation) { --fit-tool-row: 66px; } /* tools sit at bottom:12px here */
+  /* Restoration companion (당이) is 116px wide at every size; the 118px offset meant for the small coach overlapped it. */
+  body.quest-mode #app .restoration-operation .mission-access { left: 148px; }
+}

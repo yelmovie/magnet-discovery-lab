@@ -202,7 +202,7 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
   #app .inquiry-options { margin-top: 12px; gap: 10px; }
   #app .inquiry-option { min-height: 58px; padding: 10px 14px; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .inquiry-shell { --inquiry-nav-top: 254px; --inquiry-card-top: 310px; }
   #app .inquiry-steps { gap: 3px; max-width: calc(100% - 20px); padding: 4px; border-radius: 12px; }
   #app .inquiry-steps > :is(span, li, button, a) { padding: 7px 9px; gap: 4px; font-size: 16px; }
@@ -229,7 +229,7 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
   #app .quest-title-logo { max-height: 33dvh; }
   #app .quest-title-actions .quest-cta { min-height: 54px; font-size: 22px; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .quest-title-content { padding: 84px 16px 28px; }
   #app .quest-title-brand { width: min(94vw, 560px); }
   #app .quest-title-logo { max-height: 30dvh; }
@@ -278,7 +278,7 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
   #app .inquiry-shell[data-phase='predict'] .inquiry-card h2 { margin-bottom: 6px; }
   #app .inquiry-shell[data-phase='predict'] .inquiry-card p { margin-block: 6px 10px; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .inquiry-shell:not([data-phase='experiment']) { --inquiry-nav-top: 208px; --inquiry-card-top: 264px; }
   #app .inquiry-shell[data-phase='experiment'] { --inquiry-nav-top: 272px; }
   #app .inquiry-shell[data-phase='predict'] .inquiry-options { grid-template-columns: 1fr; }

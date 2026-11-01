@@ -221,7 +221,7 @@ body.quest-mode .view3d .view3d-note { min-height: 1.45em; margin: 10px 0 0; fon
   #app .ability-picker { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   #app .ability-picker :is(legend, p) { grid-column: 1 / -1; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .mission-head { top: 76px; width: calc(100% - 24px); padding: 8px 12px 10px; }
   #app .mission-head .mission-question { font-size: 25px; }
   #app .certificate-border { padding: 10cqw 12cqw 9cqw; }

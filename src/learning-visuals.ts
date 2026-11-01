@@ -29,7 +29,17 @@ export function visualPreview(n: number, template: string): string {
   return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="${v.title} · 장치 그림 크게 보기"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치 살펴보기 <b aria-hidden="true">＋</b></span></button>`;
 }
 
+/** 크게 보기: the picture gets the whole dialog width and pans with scrollbars inside its frame. */
+export function bindVisualGuide(dialog: HTMLElement) {
+  const zoom = dialog.querySelector<HTMLButtonElement>('.learning-visual-zoom');
+  zoom?.addEventListener('click', () => {
+    const on = zoom.getAttribute('aria-pressed') !== 'true';
+    zoom.setAttribute('aria-pressed', String(on)); zoom.textContent = on ? '원래 크기로' : '그림 크게 보기';
+    dialog.classList.toggle('is-zoomed', on);
+  });
+}
+
 export function visualGuideMarkup(n: number, template: string): string {
   const v=visual(n,template);
-  return `<div class="learning-visual-guide"><span class="learning-visual-kicker">그림에서 찾고, 실험대에서 확인해요</span><h2>${v.title}</h2><div class="learning-visual-layout"><figure><img src="/assets/learning/${v.image}.webp" alt="${v.alt}" width="1024" height="688"><figcaption>${v.parts.map(p=>`<span>${p}</span>`).join('')}</figcaption></figure><ol>${[['눈으로 찾기',v.look],['직접 움직이기',v.move],['변화 관찰하기',v.notice]].map(([title,text])=>`<li><strong>${title}</strong><p>${text}</p></li>`).join('')}</ol></div><button class="btn primary" data-action="modal-close">그림 속 부품을 직접 움직여 보기</button></div>`;
+  return `<div class="learning-visual-guide"><span class="learning-visual-kicker">그림에서 찾고, 실험대에서 확인해요</span><h2>${v.title}</h2><div class="learning-visual-layout"><figure><div class="learning-visual-frame"><img src="/assets/learning/${v.image}.webp" alt="${v.alt}" width="1024" height="688"></div><button type="button" class="learning-visual-zoom" aria-pressed="false">그림 크게 보기</button><figcaption>${v.parts.map(p=>`<span>${p}</span>`).join('')}</figcaption></figure><ol>${[['눈으로 찾기',v.look],['직접 움직이기',v.move],['변화 관찰하기',v.notice]].map(([title,text])=>`<li><strong>${title}</strong><p>${text}</p></li>`).join('')}</ol></div><button class="btn primary" data-action="modal-close">그림 속 부품을 직접 움직여 보기</button></div>`;
 }

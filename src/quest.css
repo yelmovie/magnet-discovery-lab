@@ -545,7 +545,7 @@ body.quest-mode .question-zone.is-complete { background: var(--quest-green-soft)
   #app .expedition-next { right: var(--space-md); bottom: var(--space-md); font-size: 22px; }
 }
 /* Portrait is a usable scrolling fallback; it never blocks the child with a rotate screen. */
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   body.quest-mode { overflow-y: auto; }
   body.quest-mode #app { overflow: visible; height: auto; min-height: 100dvh; }
   body.quest-mode #app > main.page { height: auto; min-height: 100dvh; overflow: visible; }

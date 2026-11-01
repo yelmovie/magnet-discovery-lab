@@ -7,7 +7,10 @@ import './learning-ux.css';
 import './production.css';
 import './inquiry.css';
 import './polish.css';
-import { visualPreview, visualGuideMarkup } from './learning-visuals';
+import './fit-screen.css';
+import './fit-activity.css';
+import './fit-report.css';
+import { visualPreview, visualGuideMarkup, bindVisualGuide } from './learning-visuals';
 import { coachMarkup, bindCoach } from './coach';
 import { concepts, conceptMarkup, bindConcept } from './concept-video';
 import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
@@ -344,7 +347,7 @@ function bindCommon() {
       case 'complete': b.disabled = true; void finishActivity(); break;
       case 'hint': notify(screen === 10 ? designResult(s.design).reason : missionGuides[screen-1]); break;
       case 'observations': openRecords(); break;
-      case 'visual-guide': showModal(visualGuideMarkup(screen,s.design.template),'장치 그림 살펴보기').dialog.classList.add('learning-visual-dialog'); break;
+      case 'visual-guide': { const guide=showModal(visualGuideMarkup(screen,s.design.template),'장치 그림 살펴보기').dialog; guide.classList.add('learning-visual-dialog'); bindVisualGuide(guide); break; }
       case 'reset-activity': { const a = s.activities[screen]; a.points = {}; a.values.round = 0; a.values.car = 24; a.values.cargo = 25; a.values.distanceStep = 'free'; a.values['paper-in'] = false; delete a.values.say; cleanPage(); render(); touch(); break; }
       case 'reviewed': if (!adminOn() && s.evidence.length !== 5) break; s.final.report = true; touch(); go('core'); break;
       case 'apply-blueprint': {

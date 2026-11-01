@@ -229,12 +229,6 @@ body.quest-mode .game-settings-reset { margin:auto; width:min(600px,calc(100vw -
   #app .certificate-bottom .mascot { display:none; }
   #app .ending .ending-painted { height:35dvh; }
 }
-@media(max-width:759px) and (min-aspect-ratio:1/1) {
-  #app .mission-question { max-width:calc(100% - 250px); font-size:26px; }
-  #app .mission-wayfinding { max-width:95%; }
-  #app .mission-study-tools { display:none; }
-  #app .quest-activity { height:100dvh; }
-}
 @media(max-aspect-ratio:1/1) and (max-width:759px) {
   #app .quest-activity { min-height:760px; height:100dvh; }
   #app .mission-question { top:78px; max-width:calc(100% - 24px); }
