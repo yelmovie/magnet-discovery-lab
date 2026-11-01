@@ -327,7 +327,7 @@ function openSettings() {
     onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
     onAdminToggle:enabled=>{void (async()=>{if(enabled&&saveTimer)await flush();cleanPage();restorePractice();if(enabled){adminBackup=structuredClone(s);s=structuredClone(s);}else{s=adminBackup!;adminBackup=null;}syncAudioSettings(s.settings);backStack.length=0;go(page==='title'?'title':'city',false);})();},
     onStory:()=>openFilm('intro',()=>{},true),onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
-    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:'',ability:undefined};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
+    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:'',ability:undefined};backStack.length=0;go('title',false);touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
   });
 }
 function bindCommon() {
@@ -336,7 +336,7 @@ function bindCommon() {
       case 'home': void flush(); go('title'); break;
       case 'back': void flush(); goBack(); break;
       case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else go('city'); break;
-      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:'',ability:undefined}; s.started = true; go('city'); touch(); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
+      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:'',ability:undefined}; s.started = true; backStack.length = 0; go('title', false); touch(); openFilm('intro', () => go('city')); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
       case 'city': void flush(); go('city'); break;
       case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;
