@@ -1,0 +1,102 @@
+[
+  {
+    "id": "aquarium",
+    "src": "/assets/learning/aquarium.webp",
+    "source": "assets/source/learning-20261029/aquarium.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 69166
+  },
+  {
+    "id": "delivery",
+    "src": "/assets/learning/delivery.webp",
+    "source": "assets/source/learning-20261029/delivery.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 45764
+  },
+  {
+    "id": "invention",
+    "src": "/assets/learning/invention.webp",
+    "source": "assets/source/learning-20261029/invention.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 68294
+  },
+  {
+    "id": "lens",
+    "src": "/assets/learning/lens.webp",
+    "source": "assets/source/learning-20261029/lens.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 33162
+  },
+  {
+    "id": "mailbox",
+    "src": "/assets/learning/mailbox.webp",
+    "source": "assets/source/learning-20261029/mailbox.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 51106
+  },
+  {
+    "id": "materials",
+    "src": "/assets/learning/materials.webp",
+    "source": "assets/source/learning-20261029/materials.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 85068
+  },
+  {
+    "id": "paper",
+    "src": "/assets/learning/paper.webp",
+    "source": "assets/source/learning-20261029/paper.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 28950
+  },
+  {
+    "id": "poles",
+    "src": "/assets/learning/poles.webp",
+    "source": "assets/source/learning-20261029/poles.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 38416
+  },
+  {
+    "id": "rings",
+    "src": "/assets/learning/rings.webp",
+    "source": "assets/source/learning-20261029/rings.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 36212
+  },
+  {
+    "id": "tray",
+    "src": "/assets/learning/tray.webp",
+    "source": "assets/source/learning-20261029/tray.png",
+    "generator": "Higgsfield gpt_image_2_5",
+    "date": "2026-10-29",
+    "width": 1024,
+    "height": 688,
+    "bytes": 41072
+  }
+]

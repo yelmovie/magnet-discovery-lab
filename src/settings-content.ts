@@ -55,6 +55,7 @@ export const settingsContent = {
   copyrightGuide: [
     '캐릭터·배경·장식에는 프로젝트용 AI 생성 그림을 사용했어요. 장치의 모습은 실제 사진이 아닌 학습용 재현 이미지예요.',
     '효과음은 Kenney Interface Sounds의 CC0 공개 음원을 편집해 사용해요. 배경 음악 2곡은 Suno로 만든 AI 생성 음원이고, 영상의 짧은 음은 프로젝트에서 직접 합성했어요.',
+    '인트로·엔딩 영상은 AI로 생성한 영상에 빛·색종이 같은 효과와 효과음을 더해 편집했어요. 자막은 영상에 굽지 않고 화면 글자로 보여 줘요.',
     '출처와 라이선스 상세 내용은 프로젝트의 assets/CREDITS.md에서 확인할 수 있어요.',
   ],
   sources: '자료 출처 모아 보기',
@@ -63,6 +64,7 @@ export const settingsContent = {
     ['자석 탐구의 교육 내용', '교육부 고시 제2022-33호 별책 9 과학과 교육과정 · 교육부, 충청북도교육청 공개 교육과정 PDF · 성취기준 원문 확인 자료'],
     ['캐릭터·도시·실험 장면', '프로젝트용 AI 생성 이미지 · 생성·수정 이력은 assets/CREDITS.md에 기록해요.'],
     ['배경 음악·효과음', '효과음: Kenney · Interface Sounds 1.0 · CC0 1.0 (kenney.nl/assets/interface-sounds). 배경 음악: 사용자가 Suno로 제작해 제공한 메인·파이널 연주곡. 영상의 짧은 음: 프로젝트 자체 절차 합성.'],
+    ['인트로·엔딩 영상', 'AI 생성 영상(장면 그림: 프로젝트용 AI 생성 이미지) · 효과: 프로젝트 자체 SVG 렌더·FFmpeg 편집 · 효과음: 자체 합성과 Kenney CC0.'],
     ['개념 영상·수리 도우미', '12초 모션 그래픽 5편: Pillow·FFmpeg로 직접 제작. 수리 로봇 자꾸: 프로젝트 자체 SVG.'],
     ['게임·화면 개발 도구', 'Phaser · MIT / Vite · MIT / TypeScript · Apache-2.0 / Vitest · MIT'],
   ] as const,

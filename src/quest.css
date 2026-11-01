@@ -295,7 +295,7 @@ body.quest-mode #app .sprite-mascot {
   filter: drop-shadow(0 5px 2px #173f4733); pointer-events: none;
 }
 #app .expedition-player .sprite-mascot, #app .expedition-npc .sprite-mascot { filter: none; }
-#app .expedition-npc { pointer-events: auto; cursor: pointer; }
+#app .expedition-npc { pointer-events: none; }
 #app .expedition-npc .quest-talk-mark { top: -25px; right: 0; }
 #app .expedition-player.is-walking { animation: quest-map-walk .22s ease-in-out infinite alternate; }
 #app .expedition-next { position: absolute; z-index: var(--layer-controls); right: var(--space-lg); bottom: var(--space-lg); max-width: calc(100% - 220px); }

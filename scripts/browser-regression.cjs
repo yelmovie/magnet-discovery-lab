@@ -85,9 +85,9 @@ async function experiments(n){
  if(n===10){await put('use-handle',50,65);await mission('test');await mission('next');await put('use-handle',50,65);await mission('test');await put('force-arrow',50,54);}
 }
 async function student(){
- await fresh({width:1024,height:768});await action('start');await action('modal-close');
+ await fresh({width:1024,height:768});await action('start');await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();
  let first=1;if(process.env.RESUME&&fs.existsSync(out+'/student-checkpoint.json')){const checkpoint=JSON.parse(fs.readFileSync(out+'/student-checkpoint.json'));await seed(checkpoint.state);first=checkpoint.next;}for(let n=first;n<=10;n++){await begin(n);await experiments(n);await explain(n);fs.writeFileSync(out+'/student-checkpoint.json',JSON.stringify({next:n+1,state:await save()}));}
- const state=await save();assert.equal(state.evidence.length,5);assert.equal(state.completed.length,10);await page.evaluate(()=>window.__lab.go('report'));await action('reviewed');await put('blueprint',53,56);await put('use-handle',50,65);await mission('test');await page.locator('[data-restoration="finish"]').click();assert.equal((await save()).final.complete,true);await action('certificate');await page.screenshot({path:out+'/student-ending-1024.png'});check('ordinary student all 5 zones / 10 experiments / 10 field missions / plaza / ending');
+ const state=await save();assert.equal(state.evidence.length,5);assert.equal(state.completed.length,10);await page.evaluate(()=>window.__lab.go('report'));await action('reviewed');await put('blueprint',53,56);await put('use-handle',50,65);await mission('test');await page.locator('[data-restoration="finish"]').click();assert.equal((await save()).final.complete,true);await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();await page.screenshot({path:out+'/student-ending-1024.png'});check('ordinary student all 5 zones / 10 experiments / 10 field missions / plaza / ending');
  await reload();assert.equal((await save()).final.complete,true);check('ending persists after reload');
  fs.writeFileSync(out+'/test-student.json',JSON.stringify(await save(),null,2));
 }

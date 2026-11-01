@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { completeActivity, coreReady, emptyActivity, freshSave, migrateSave, ready } from '../src/domain';
 import { addTrial } from '../src/trial-records';
-import { courierPosition, doors, nearestRoad, roadRoute, roads } from '../src/expedition';
+import { courierPosition, doors, nearestRoad, roadRoute, roads, trailPoint } from '../src/expedition';
 import { assemblyAligned, magneticReach, ringFloating } from '../src/mission-model';
 import { initializeFinal } from '../src/final-mission';
 import { installRestoration, restorationView } from '../src/restoration';
@@ -48,5 +48,6 @@ describe('자석 모형과 실제 지도 길',()=>{
   it('원격 장치 부품은 유리의 양쪽에 마주 놓아야 한다',()=>{expect(assemblyAligned({x:44,y:53},{x:57,y:53},true)).toBe(true);expect(assemblyAligned({x:20,y:53},{x:30,y:53},true)).toBe(false);expect(assemblyAligned({x:44,y:40},{x:57,y:65},true)).toBe(false);});
   it('시작점부터 여섯 시설의 출입문까지 연결되어 있다',()=>{for(const door of doors){const route=roadRoute(roads[0],door);expect(route[0]).toEqual(roads[0]);expect(route.at(-1)).toEqual(roads[door]);expect(route.length).toBeGreaterThan(1);}});
   it('첫 RAF 시간이 이르거나 경로가 한 바퀴 돌아도 택배가 유효한 길 위에 있다',()=>{for(const phase of [-.001,0,.1,9.99,10,20.5,NaN]){const p=courierPosition(phase);expect(Number.isFinite(p.x)&&Number.isFinite(p.y)).toBe(true);expect(nearestRoad(p).x).toBeCloseTo(p.x,5);}expect(courierPosition(10)).toEqual(courierPosition(0));});
+  it('당이는 밀이가 지나온 길 위에서 일정한 거리만큼 뒤따른다',()=>{const trail=roadRoute(roads[0],12);const p=trailPoint(trail,3.6);expect(nearestRoad(p).x).toBeCloseTo(p.x,5);expect(nearestRoad(p).y).toBeCloseTo(p.y,5);expect(trailPoint([{x:50,y:88}],3.6)).toEqual({x:50,y:88});});
   it('걷는 좌표는 길에 투영되며 물이나 건물로 빠지지 않는다',()=>{expect(nearestRoad({x:50,y:83})).toEqual({x:50,y:83});const p=nearestRoad({x:5,y:10});expect(p.x).toBeGreaterThan(5);expect(Number.isFinite(p.y)).toBe(true);});
 });

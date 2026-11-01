@@ -7,6 +7,14 @@ import { advanceInquiry, inquiryNext, inquiryView } from '../src/inquiry';
 import { addTrial } from '../src/trial-records';
 
 describe('조작 중심 탐구 흐름',()=>{
+  it('교사용 미리보기는 실험을 마치지 않아도 발견 정리를 열고 고를 수 있다',()=>{
+    const a=emptyActivity(),s=freshSave();a.values.paceVersion=1;
+    inquiryView(2,a,s);expect(advanceInquiry(a)).toBe(true);
+    inquiryView(2,a,s);expect(inquiryPhase(a)).toBe('experiment');
+    a.values.inquiryPhase='explain';
+    const view=inquiryView(2,a,s,true);
+    expect(inquiryPhase(a)).toBe('explain');expect(view.html).toContain('data-inquiry-group="reflection"');
+  });
   it('새 활동 10개는 예상을 맞히거나 시작 버튼을 누르지 않고 실험대로 열린다',()=>{
     for(let n=1;n<=10;n++){
       const a=emptyActivity(),s=freshSave();a.values.paceVersion=1;

@@ -77,6 +77,10 @@ class Surface {
   draw = () => {};
   base() {
     this.ctx.clearRect(0, 0, W, H);
+    // Quiet the detailed room behind the actual draggable apparatus.
+    const mat=this.ctx;mat.save();mat.shadowColor='#193f3a28';mat.shadowBlur=18;mat.shadowOffsetY=7;
+    mat.fillStyle='#fff9ebdf';mat.strokeStyle='#c5ac76';mat.lineWidth=2;
+    mat.beginPath();mat.roundRect(128,226,1080,384,26);mat.fill();mat.shadowBlur=0;mat.shadowOffsetY=0;mat.stroke();mat.restore();
     // A visible manipulation trail makes the student's route observable, including remote control.
     if([3,7,8].includes(this.n)&&this.path.length>1){const g=this.ctx;g.save();g.strokeStyle='#397f7b80';g.lineWidth=5;g.setLineDash([6,10]);g.beginPath();this.path.forEach((p,i)=>i?g.lineTo(p.x*W/100,p.y*H/100):g.moveTo(p.x*W/100,p.y*H/100));g.stroke();g.restore();}
     const sensor=this.c.root.querySelector<HTMLElement>('.force-sensor');
@@ -126,7 +130,10 @@ class Surface {
   }
   target(p: Point, name: string, w = 130, h = 90) {
     const g = this.ctx, x = p.x / 100 * W, y = p.y / 100 * H; g.save(); g.setLineDash([9, 8]); g.strokeStyle = '#2d7f71'; g.lineWidth = 3;
-    g.fillStyle = '#fff9e77a'; g.beginPath(); g.roundRect(x-w/2, y-h/2, w, h, 18); g.fill(); g.stroke(); g.restore(); if (name) this.label(name, pt(p.x, p.y + h / H * 50 + 3), true);
+    g.fillStyle = '#fff9e77a'; g.beginPath(); g.roundRect(x-w/2, y-h/2, w, h, 18); g.fill();
+    const picture=name==='관찰 돋보기'?'lens':name.includes('재료')?'tray':null;
+    if(picture){const img=this.asset(`learning-${picture}`,`/assets/learning/${picture}.webp`);if(img.complete&&img.naturalWidth){g.save();g.clip();const scale=Math.min(w/img.naturalWidth,h/img.naturalHeight);g.drawImage(img,x-img.naturalWidth*scale/2,y-img.naturalHeight*scale/2,img.naturalWidth*scale,img.naturalHeight*scale);g.restore();}}
+    g.stroke(); g.restore(); if (name) this.label(name, pt(p.x, p.y + h / H * 50 + 3), true);
   }
   arrow(from: Point, to: Point, color = '#2c8b7a') {
     const g = this.ctx, x = from.x * W / 100, y = from.y * H / 100, tx = to.x * W / 100, ty = to.y * H / 100, a = Math.atan2(ty-y, tx-x);
@@ -170,9 +177,9 @@ function hit(h: Hit) {
   const sticker=/^sticker[NS]$/.test(h.id),paper=h.id==='paper';
   const magnet=/magnet|probe|controller|cleaner/.test(h.id)||h.kind==='remote-handle';
   const magnetWidth:Record<string,number>={'hidden-magnet':116,'repair-magnet':116,'sweep-magnet':144,'distance-magnet':130,probe:144,cleaner:102,controller:116,'design-magnet':124,'use-handle':124};
-  const size=handle?[116,56]:/^ring/.test(h.id)?[142,102]:/^material/.test(h.id)?[102,102]:h.id==='paper'?[56,172]:h.id==='base'?[204,148]:magnet?[magnetWidth[h.id]||156,68]:h.id==='design-target'?[128,76]:[72,72];
+  const size=handle?[116,56]:/^ring/.test(h.id)?[142,102]:/^material/.test(h.id)?[102,102]:h.id==='paper'?[104,172]:h.id==='base'?[204,148]:magnet?[magnetWidth[h.id]||156,68]:h.id==='design-target'?[128,76]:[72,72];
   const grip=handle?'<span class="canvas-handle-grip" aria-hidden="true">↕ 손잡이</span>':sticker?`<span class="canvas-pole-sticker pole-${h.id.slice(-1)}" aria-hidden="true">${h.id.slice(-1)}</span>`:paper?'<span class="canvas-paper-grip" aria-hidden="true">↔ 종이</span>':'';
-  return `<button class="canvas-hit ${h.kind || ''} ${handle?'canvas-handle':''} ${magnet?'canvas-magnet-hit':''}" data-drag="${h.id}" style="left:${h.p.x}%;top:${h.p.y}%;width:${size[0]/W*100}%;height:${size[1]/H*100}%" aria-label="${e(h.label)}. 끌어서 이동, 방향키로 이동 후 Enter로 놓기.">${grip}<span class="sr-only">${e(h.label)}</span></button>`;
+  return `<button class="canvas-hit ${h.kind ? `canvas-${h.kind}` : ''} ${handle?'canvas-handle':''} ${magnet?'canvas-magnet-hit':''}" data-drag="${h.id}" style="left:${h.p.x}%;top:${h.p.y}%;width:${size[0]/W*100}%;height:${size[1]/H*100}%" aria-label="${e(h.label)}. 끌어서 이동, 방향키로 이동 후 Enter로 놓기.">${grip}<span class="sr-only">${e(h.label)}</span></button>`;
 }
 function action(id: string, text: string, disabled = false) { return `<button class="mission-action" data-mission="${id}" ${disabled?'disabled':''}>${text}</button>`; }
 function initialize(n: number, a: Activity) {

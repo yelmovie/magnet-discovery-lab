@@ -67,9 +67,9 @@ export function inquirySteps(n:number,a:Activity):string {
   const labels=n%2?['예상하기','직접 실험','증거로 설명']:['예상하기','직접 실험','증거로 설명','현장 의뢰'];
   return `<nav class="inquiry-steps" aria-label="탐구 단계"><strong class="sr-only">탐구 단계</strong>${labels.map((t,i)=>`<span class="${i===index?'active':i<index?'done':''}" ${i===index?'aria-current="step"':''}><b>${i<index?'✓':i+1}</b>${t}</span>`).join('')}</nav>`;
 }
-export function inquiryView(n:number,a:Activity,s:Save):View {
+export function inquiryView(n:number,a:Activity,s:Save,preview=false):View {
   const base=missionView(n,a,s); // Initialize hands-on state before adding inquiry state.
-  if(a.values.paceVersion===1||a.values.inquiryVersion===2)return playInquiryView(n,a,s,base);
+  if(a.values.paceVersion===1||a.values.inquiryVersion===2)return playInquiryView(n,a,s,base,preview);
   a.values.inquiryVersion=1;
   if(['explain','apply','complete'].includes(inquiryPhase(a))&&!missionReady(n,a,s)){
     a.values.inquiryPhase='experiment';a.values.reasoned=false;
@@ -127,11 +127,12 @@ export function inquiryView(n:number,a:Activity,s:Save):View {
   }};
 }
 /** The experiment is the main activity. A district ends with one evidence-based reflection. */
-function playInquiryView(n:number,a:Activity,s:Save,base:View):View {
+// Teacher preview may open the discovery step before the experiment is finished.
+function playInquiryView(n:number,a:Activity,s:Save,base:View,preview=false):View {
   a.values.inquiryVersion=2;
   a.values.inquiryActivity=n;
   const oldPhase=inquiryPhase(a);
-  if(oldPhase==='predict'||oldPhase==='apply'||n%2===1||!missionReady(n,a,s)){
+  if(oldPhase==='predict'||oldPhase==='apply'||n%2===1||!(preview||missionReady(n,a,s))){
     a.values.inquiryPhase='experiment';
     if(!missionReady(n,a,s)){a.values.reflected=false;a.values.reasoned=false;}
   }
@@ -144,7 +145,7 @@ function playInquiryView(n:number,a:Activity,s:Save,base:View):View {
     const controller=new AbortController(),opts={signal:controller.signal};
     const refresh=()=>{c.touch();c.refresh();};
     c.root.querySelectorAll<HTMLButtonElement>('[data-inquiry-group="reflection"]').forEach(b=>b.addEventListener('click',()=>{
-      if(!missionReady(n,a,s)||inquiryPhase(a)!=='explain')return;
+      if(!(preview||missionReady(n,a,s))||inquiryPhase(a)!=='explain')return;
       const selected=Number(b.dataset.value);
       a.values.reflection=selected;
       if(selected===d.answer){

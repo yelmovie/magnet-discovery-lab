@@ -27,7 +27,7 @@ async function fresh(viewport) {
   page.on('pageerror', error => results.push({name:'pageerror', status:'fail', message:error.message}));
   page.on('response', response => { if(response.status()>=400)results.push({name:'HTTP '+response.status(),status:'fail',url:response.url()}); });
   await page.goto(base); await page.waitForFunction(()=>!!window.__lab);
-  await action('start'); await action('modal-close');
+  await action('start'); await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();
   return context;
 }
 async function reload() {
@@ -107,7 +107,7 @@ async function student() {
   await put('blueprint',53,56);
   assert.equal(await page.locator('[data-mission="test"]').count(),0,'validated design does not repeat use test after installation');
   await page.locator('[data-restoration="finish"]').click();assert.equal((await save()).final.complete,true);
-  await action('certificate');await page.screenshot({path:out+'/certificate.png'});await reload();assert.equal((await save()).final.complete,true);
+  await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();await page.screenshot({path:out+'/certificate.png'});await reload();assert.equal((await save()).final.complete,true);
   check('five districts, final restoration, certificate and reload');
   const original=await save();fs.writeFileSync(out+'/student.json',JSON.stringify(original,null,2));
   await context.close();return original;

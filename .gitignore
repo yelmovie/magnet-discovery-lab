@@ -16,3 +16,9 @@ assets/source/**/meshy/*.glb
 graphify-out/
 .tmp/
 .npm-cache/
+assets/source/learning-20261029/
+._*
+
+# Story film originals stay local (large); edited copies live in public/video/story/
+assets/source/video/story/*-original-*.mp4
+_unused/video-storyboards-zip-20261101/

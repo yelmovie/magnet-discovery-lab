@@ -1,0 +1,90 @@
+/* Illustrations explain the same objects the learner moves on the bench. */
+#app .mission-head:has(.learning-visual-preview) {
+  grid-template-columns: 124px minmax(0, 1fr) auto;
+  grid-template-areas: 'art stage count' 'art q q' 'art steps steps' 'next next next';
+  gap: 6px 14px;
+}
+#app .learning-visual-preview {
+  grid-area: art; display: flex; flex-direction: column; align-self: stretch;
+  justify-content: center; min-height: 112px; width: 124px; padding: 4px;
+  overflow: hidden; border: 1px solid #c7b98c; border-radius: 12px;
+  background: #fff9eb; color: #245950; box-shadow: 0 3px 0 #c7b98c;
+  pointer-events: auto; cursor: zoom-in;
+}
+#app .learning-visual-preview img { display: block; width: 100%; height: 78px; object-fit: contain; border-radius: 8px; }
+#app .learning-visual-preview span { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 30px; font: 400 16px/1.2 var(--font-display); }
+#app .learning-visual-preview b { font: 700 19px/1 var(--font-body); }
+#app .learning-visual-preview:hover { border-color: #2e6960; background: #f0f4e5; }
+#app .learning-visual-preview:focus-visible { outline: 3px solid #246c65; outline-offset: 4px; }
+.modal.learning-visual-dialog { width: min(1000px, 94vw); max-width: 1000px; padding: 28px; background: #fffaf0; }
+.learning-visual-guide { color: #173f47; }
+.learning-visual-kicker { display: block; padding-right: 36px; margin-bottom: 6px; color: #51736a; font-size: 16px; font-weight: 700; }
+.learning-visual-guide h2 { margin: 0 40px 16px 0; font-family: var(--font-display); font-size: clamp(25px, 3vw, 34px); }
+.learning-visual-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: center; }
+.learning-visual-layout figure { margin: 0; padding: 8px; border: 1px solid #d6c9a8; border-radius: 18px; background: #fffdf5; }
+.learning-visual-layout figure > img { display: block; width: 100%; height: auto; aspect-ratio: 3/2; object-fit: contain; border-radius: 12px; }
+.learning-visual-layout figcaption { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px 4px 4px; }
+.learning-visual-layout figcaption span { padding: 6px 10px; border: 1px solid #c2d1be; border-radius: 8px; background: #eef3e6; color: #315d50; font-size: 16px; }
+.learning-visual-layout ol { display: grid; gap: 18px; margin: 0; padding-left: 28px; }
+.learning-visual-layout li { padding-left: 6px; }
+.learning-visual-layout li::marker { color: #af7a29; font-weight: 800; }
+.learning-visual-layout strong { font-family: var(--font-display); font-size: 21px; font-weight: 400; }
+.learning-visual-layout p { margin: 6px 0 0; color: #3f5d55; font-size: 18px; line-height: 1.55; word-break: keep-all; }
+.learning-visual-guide > .btn { display: block; margin: 22px auto 0; max-width: 100%; min-height: 52px; font-size: 19px; }
+#app .learning-scene-art { background-image: none; overflow: hidden; border-radius: 16px; }
+#app .learning-scene-art > img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
+/* Keep earned-tool help clear of parts delivered to the upper-right tray. */
+#app .mission-pocket { top: 6%; min-height: 48px; }
+#app .canvas-handle, #app .canvas-hit[data-drag='paper'] { min-width: 90px; }
+#app .screen-6 .ring-flip { top: 88% !important; }
+
+/* Optional guidance uses the instruction plaque, leaving the apparatus clear. */
+#app .quest-activity:has(.coach-bubble:not([hidden]), .mission-access[open]) .mission-head { visibility: hidden; }
+#app .coach-bubble:not([hidden]), #app .mission-access[open] {
+  position: fixed; top: 16px; bottom: auto; left: 50%; right: auto; translate: -50% 0;
+  width: min(840px, calc(100vw - 320px)); max-width: none;
+  max-height: calc(var(--head-bottom, 218px) - 32px); overflow: auto;
+  padding: 12px 16px; border-radius: 18px; box-shadow: 0 10px 26px #173f4733;
+}
+#app .coach-bubble .coach-clue { margin: 6px 0 8px; font-size: 18px; line-height: 1.35; }
+#app .coach-bubble .coach-heading { font-size: 17px; }
+#app .coach-bubble .coach-heading button { min-width: 44px; width: 44px; height: 44px; }
+#app .coach-bubble .coach-more { min-height: 44px; padding: 6px 12px; font-size: 17px; }
+#app .mission-access[open] > summary { margin-bottom: 8px; min-height: 44px; }
+#app .mission-access[open] .placement-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 0; padding: 0; }
+#app .mission-access[open] [data-selected-label] { flex: 1 0 100%; text-align: center; font-size: 17px; }
+#app .mission-access[open] .placement-controls button { min-width: 48px; min-height: 44px; }
+#app .mission-head .play-question[open] { position: relative; flex-basis: auto; padding: 0; }
+#app .mission-head .play-question-copy { position: absolute; top: calc(100% + 12px); right: 0; width: min(440px, calc(100vw - 64px)); padding: 14px 18px; border: 2px solid #8ca78d; border-radius: 14px; background: #fffdf1; box-shadow: 0 8px 24px #173f4733; text-align: left; }
+@media(max-width:1100px) {
+  #app .mission-head:has(.learning-visual-preview) { grid-template-columns: 100px minmax(0, 1fr) auto; gap: 6px 10px; }
+  #app .learning-visual-preview { width: 100px; }
+  #app .learning-visual-preview span { font-size: 14px; }
+  #app .mission-head:has(.learning-visual-preview) .mission-question { font-size: clamp(24px, 2.45vw, 32px); }
+}
+@media(max-width:800px) {
+  #app .mission-head:has(.learning-visual-preview) { grid-template-columns: 84px minmax(0, 1fr); grid-template-areas:'art stage' 'art q' 'steps steps' 'next next'; }
+  #app .learning-visual-preview { width: 84px; min-height: 88px; }
+  #app .learning-visual-preview img { height: 56px; }
+  #app .learning-visual-preview span { flex-wrap: wrap; gap: 0; }
+  #app .mission-head:has(.learning-visual-preview) .discovery-count { display: none; }
+  .learning-visual-layout { grid-template-columns: 1fr; gap: 16px; }
+  .learning-visual-layout figure { max-width: 480px; margin-inline: auto; }
+  .learning-visual-layout figure > img { max-height: 30dvh; }
+  .learning-visual-layout ol { gap: 12px; }
+  .modal.learning-visual-dialog { padding: 20px; }
+  #app .quest-activity::after { top: auto; bottom: 84px; left: 24px; right: 24px; padding: 8px 12px; font-size: 15px; }
+  #app .screen-5 .mission-actions { bottom: -4%; }
+}
+@media(max-height:650px) and (min-width:801px) {
+  #app .mission-pocket { top: 82px; }
+  #app .mission-head .play-question-copy { top: auto; bottom: calc(100% + 4px); padding: 8px 12px; }
+  #app .quest-activity .play-discovery > p:not(.inquiry-feedback) { display: none; }
+  #app .quest-activity .play-discovery .play-discovery-options { margin: 8px 0; }
+  #app .quest-activity .play-discovery .inquiry-option { min-height: 72px; padding: 10px; }
+  #app .quest-activity .play-discovery .inquiry-feedback { margin: 8px 0; padding: 8px 12px; font-size: 16px; line-height: 1.35; }
+  #app .learning-visual-preview { min-height: 90px; }
+  #app .learning-visual-preview img { height: 58px; }
+  .learning-visual-layout { gap: 16px; }
+  .learning-visual-layout ol { gap: 10px; }
+}

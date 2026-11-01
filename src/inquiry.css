@@ -16,8 +16,10 @@
 #app .mission-world:has([data-drag='controller']) .mission-actions { max-width: calc(100% - 40px); width: max-content; flex-wrap: wrap; gap: 8px; bottom: 12%; }
 #app .mission-world:has([data-drag='controller']) .mission-actions .mission-action { font-size: 17px; padding: 8px 12px; }
 #app .delivery-state { position: absolute; top: 42%; left: 50%; translate: -50% -50%; z-index: 10; pointer-events: none; padding: 6px 12px; border-radius: 10px; background: #fffdf0e8; color: #234f4b; font-size: 17px; }
-#app .expedition-overview { position: absolute; left: 20px; top: 100px; z-index: 20; min-height: 48px; }
-#app .expedition-destination { position: absolute; right: 20px; top: 100px; z-index: 20; margin: 0; padding: 10px 14px; border-radius: 12px; background: #fffdf0ed; color: #234f4b; }
+#app .expedition-map-tools { position: absolute; top: var(--hud-inset); left: calc(var(--hud-inset) + 2 * var(--hud-icon-size) + 2 * var(--space-sm)); z-index: var(--layer-hud); display: flex; gap: var(--space-sm); }
+#app .expedition-map-tools .quest-icon[aria-pressed="true"] { background: var(--quest-gold-light); border-color: var(--quest-gold-edge); box-shadow: 0 4px 0 var(--quest-gold-edge), inset 0 2px 0 #fff; }
+#app .expedition-viewport { cursor: grab; }
+#app .expedition-viewport.is-dragging, #app .expedition-viewport.is-dragging * { cursor: grabbing; }
 #app .map-overview .expedition-building { scale: calc(1 / var(--map-scale)); }
 
 /* Short, optional thinking prompt; opening it never blocks the experiment. */
