@@ -117,6 +117,6 @@ node scripts/verify-release.mjs https://magnet-city.pages.dev
 node scripts/release-smoke.cjs https://magnet-city.pages.dev test-results/release-smoke
 ```
 
-`verify-release.mjs`는 `dist/`의 모든 파일을 운영에서 다시 받아 SHA-256을 비교하고, `release-smoke.cjs`는 운영 주소에서 시작 화면과 3D 카드 3종을 두 해상도로 확인한다. 최근 배포 기록: [MAGNET-RELEASE-20261025-2](docs/reviews/MAGNET-RELEASE-20261025-2.md).
+`verify-release.mjs`는 `dist/`의 모든 파일을 운영에서 다시 받아 SHA-256을 비교하고, `release-smoke.cjs`는 운영 주소에서 시작 화면과 3D 카드 3종을 두 해상도로 확인한다. 최근 배포 기록: [MAGNET-RELEASE-20261104](docs/reviews/MAGNET-RELEASE-20261104.md). 이 기록의 「발명품 3D 시연 진입 없음」이 정리될 때까지 `release-smoke.cjs`의 상자·운반기 확인은 실패한다.
 
 검증한 빌드 파일을 직접 올리는 방식이다. GitHub에 커밋만 푸시하면 자동으로 배포되는 구성은 아니다.
