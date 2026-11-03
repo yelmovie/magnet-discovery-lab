@@ -6,7 +6,7 @@ export interface AudioSettings {
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
   musicVolume?: number;
 }
-export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step';
+export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate';
 
 const EFFECT_GAIN = 0.16;
 const DEFAULT_VOLUME = 0.35;
@@ -15,6 +15,8 @@ const musicFiles: Record<MusicTheme, string> = { main: '/audio/music/main-theme.
 let theme: MusicTheme = 'main';
 let music: HTMLAudioElement | undefined;
 let musicPlayPending = false, musicRevision = 0;
+export type NarrationState = 'loading' | 'playing' | 'ended' | 'stopped' | 'blocked' | 'unavailable' | 'muted';
+let narration: { audio: HTMLAudioElement; stop: (state: NarrationState) => void } | undefined;
 type Voice = { oscillator: OscillatorNode; gain: GainNode };
 let current: AudioSettings = {};
 let context: AudioContext | undefined;
@@ -23,7 +25,7 @@ let effectVoices: Voice[] = [];
 let explicitlyPaused = false;
 let installed = false;
 let activated = false;
-const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step' };
+const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate' };
 const sampleBuffers = new Map<string, AudioBuffer>();
 const sampleVoices = new Set<AudioBufferSourceNode>();
 let samplesRequested = false, lastEffect = 0;
@@ -80,7 +82,7 @@ function applyMusic() {
     music.src = musicFiles[theme]; music.loop = theme === 'main'; document.body.append(music);
   }
   if (!music) return;
-  music.volume = settings.musicVolume;
+  music.volume = settings.musicVolume * (narration ? 0.25 : 1);
   if (!music.paused || music.ended || musicPlayPending) return;
   musicPlayPending = true;
   const revision = musicRevision;
@@ -114,6 +116,9 @@ function note(frequency: number, when: number, duration: number, bus: GainNode, 
 }
 
 function apply() {
+  if (narration && (!normalizedAudioSettings(current).effects || paused())) {
+    narration.stop(paused() ? 'stopped' : 'muted');
+  }
   applyMusic();
   if (!context || !effectBus) return;
   const settings = normalizedAudioSettings(current);
@@ -129,6 +134,7 @@ function activate() {
 
 function visibilityChanged() {
   if (isHidden()) {
+    narration?.stop('stopped');
     pauseMusic();
     silence(effectVoices); stopSamples();
     if (context?.state === 'running') void context.suspend().catch(() => {});
@@ -150,14 +156,51 @@ export function ensureAudio(settings: AudioSettings) {
 
 export function syncAudioSettings(settings: AudioSettings) { ensureAudio(settings); }
 
+/** A dialogue owns its voice. Replacing it or closing the dialogue cancels pending playback too. */
+export function playNarration(src: string, settings: AudioSettings = current, onState?: (state: NarrationState) => void): () => void {
+  narration?.stop('stopped');
+  ensureAudio(settings);
+  if (!normalizedAudioSettings(current).effects) { onState?.('muted'); return () => {}; }
+  if (paused()) { onState?.('stopped'); return () => {}; }
+  if (typeof document === 'undefined') { onState?.('unavailable'); return () => {}; }
+  activate();
+  const audio = document.createElement('audio');
+  audio.hidden = true; audio.preload = 'none'; audio.src = src; audio.volume = 0.95;
+  audio.dataset.residentVoice = 'true';
+  document.body.append(audio);
+  let finished = false;
+  const finish = (state: NarrationState) => {
+    if (finished) return;
+    finished = true;
+    audio.onended = null; audio.onerror = null;
+    audio.pause(); audio.removeAttribute('src'); audio.load(); audio.remove();
+    if (narration?.audio === audio) narration = undefined;
+    applyMusic(); onState?.(state);
+  };
+  narration = { audio, stop: finish };
+  audio.onended = () => finish('ended');
+  audio.onerror = () => finish('unavailable');
+  applyMusic(); onState?.('loading');
+  try {
+    void audio.play().then(() => {
+      if (finished) { audio.pause(); return; }
+      onState?.('playing');
+    }).catch(error => {
+      finish(error?.name === 'NotAllowedError' ? 'blocked' : 'unavailable');
+    });
+  } catch { finish('unavailable'); }
+  return () => finish('stopped');
+}
+
 /** A new effect always replaces the previous effect, including its scheduled notes. */
 export function playEffect(kind: EffectKind, settings: AudioSettings = current) {
   ensureAudio(settings);
   if (!normalizedAudioSettings(current).effects || paused()) return;
-  activate(); silence(effectVoices); stopSamples();
+  activate();
   if (!context || !effectBus) return;
   // Repeated feedback from animation frames must never create a wall of sound.
   const nowMs=Date.now();if((kind==='step'||kind==='bump')&&nowMs-lastEffect<160)return;lastEffect=nowMs;
+  silence(effectVoices); stopSamples();
   const buffer=sampleBuffers.get(sampleFiles[kind]||'');
   if(buffer&&context.createBufferSource){
     const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=kind==='step'?.25:.72;source.connect(gain);gain.connect(effectBus);sampleVoices.add(source);
@@ -166,7 +209,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
   const notes: Record<EffectKind, number[]> = {
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
-    bump: [294, 294], error: [294, 294], step: [392],
+    bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285],
   };
   const frequencies = notes[kind] ?? notes.click, now = context.currentTime + 0.005;
   frequencies.forEach((frequency, i) => note(frequency, now + i * 0.075, kind === 'reward' ? 0.25 : 0.12, effectBus!, effectVoices, kind === 'step' ? 0.12 : 0.48, 'triangle'));
@@ -175,11 +218,12 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
 /** Quiet audio during story/video playback and explicit game suspension. */
 export function setAudioPaused(value: boolean) {
   explicitlyPaused = value;
-  if (value) { pauseMusic(); silence(effectVoices); stopSamples(); }
+  if (value) { narration?.stop('stopped'); pauseMusic(); silence(effectVoices); stopSamples(); }
   else if (activated) activate();
 }
 
 export function disposeAudio() {
+  explicitlyPaused = true; narration?.stop('stopped');
   music?.pause(); music?.remove(); music = undefined; theme = 'main'; musicRevision++; musicPlayPending = false;
   silence(effectVoices); stopSamples(); sampleBuffers.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {

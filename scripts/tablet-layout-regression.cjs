@@ -2,6 +2,7 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
+const {assembleMailbox}=require('./browser-mailbox.cjs');
 const base=process.env.TEST_URL||'http://127.0.0.1:5173/';
 const out=process.env.TEST_OUT||'test-results/tablet-layout';
 fs.mkdirSync(out,{recursive:true});
@@ -27,7 +28,7 @@ for(const n of [2,4,6,8,10]){
  fixtures.push({name:`stage-${n}-reflection`,n,values:{inquiryPhase:'explain',with0:true,without0:true,segment0:true,segment1:true},trials});
 }
 let browser,page,cdp;const reports=[],errors=[],touchChecks=[];
-async function show(f){await page.evaluate(f=>window.__tablet.show(f),f);await page.locator('.quest-activity').waitFor();}
+async function show(f){await page.evaluate(f=>window.__tablet.show(f),f);await page.locator('.quest-activity').waitFor();if(f.name==='stage-1-open')await assembleMailbox(page);}
 async function audit(name,shot=false){
  const result=await page.evaluate(()=>{
   const viewport={width:innerWidth,height:innerHeight};
@@ -70,17 +71,21 @@ async function dragPiece(id,x,y,edge=false){
 }
 const current=n=>page.evaluate(n=>structuredClone(window.__tablet.save.activities[n]),n);
 async function touchMatrix(size){
- await show({n:1});await dragPiece('lid',50,37,true);assert.equal((await current(1)).values.open0,true);
- await dragPiece('hidden-magnet',78,52,true);assert.equal((await current(1)).values.found0,true);
+ await show({n:1});await assembleMailbox(page);
+ assert.equal((await current(1)).values.found0,true);await dragPiece('lid',44,59,true);await page.waitForFunction(()=>window.__tablet.save.activities[1].values.latch0);
  await show({n:2});await dragPiece('lid',50,65,true);await page.locator('[data-mission="shake"]').tap();assert.equal((await current(2)).values.without0,true);
- await dragPiece('repair-magnet',43,59,true);await dragPiece('lid',50,65);await page.locator('[data-mission="shake"]').tap();assert.equal((await current(2)).values.with0,true);
+ await dragPiece('repair-magnet',50,44,true);await dragPiece('lid',50,65);await page.locator('[data-mission="shake"]').tap();assert.equal((await current(2)).values.with0,true);
  await show({n:3});await dragPiece('sweep-magnet',36,42,true);assert.equal((await current(3)).values['tested-clip'],true);
  await dragPiece('sweep-magnet',86,38);assert.equal((await current(3)).values['sorted-clip'],true);
  await dragPiece('sweep-magnet',66,43);await dragPiece('material-2',86,70,true);assert.equal((await current(3)).values['sorted-aluminum'],true);
  await show({n:4});await dragPiece('distance-magnet',49,55,true);assert.ok(Math.abs((await current(4)).points['distance-magnet'].x-49)<1);
  await show(fixtures.find(f=>f.name==='stage-4-paper'));await dragPiece('paper',55,55,true);await page.locator('[data-mission="release"]').tap();assert.equal((await current(4)).values.done2,true);
- await show({n:5});await dragPiece('probe',48,53,true);await page.locator('[data-mission="flip"]').tap();assert.equal((await current(5)).values.test0N,true);
- await dragPiece('stickerS',59,40);await dragPiece('stickerN',70,40);assert.equal((await current(5)).values.solved0,true);
+ await show({n:5});await dragPiece('probe',48,53,true);await page.locator('[data-mission="flip"]').tap();
+ await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
+ assert.equal((await current(5)).values.test0N,undefined);await dragPiece('probe',48,53,true);
+ await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
+ const poleState=await current(5),bar=poleState.points['unknown-magnet'];assert.equal(poleState.values.test0N,true);
+ await dragPiece('stickerS',bar.x-5.5,bar.y);await dragPiece('stickerN',bar.x+5.5,bar.y);assert.equal((await current(5)).values.solved0,true);
  await show({n:6});await dragPiece('ring0',68,71,true);await dragPiece('ring1',68,56,true);await page.locator('.ring-flip').nth(1).tap();await page.locator('[data-mission="check"]').tap();assert.equal((await current(6)).values.done0,true);
  await show({n:7});await dragPiece('cleaner',35,47,true);assert.ok(Math.abs((await current(7)).points.cleaner.x-35)<1);
  await show({n:8});await dragPiece('controller',38,59,true);await page.waitForTimeout(200);assert.ok(Number((await current(8)).values.car)>27);
@@ -117,7 +122,9 @@ async function main(){
   for(const n of [1,3,5,6,8,10]){
    await show({name:'overlay',n});await page.locator('.coach-toggle').tap();await audit(`stage-${n}-hint`);
    await page.locator('.coach-close').tap();await page.locator('.mission-access summary').tap();await audit(`stage-${n}-placement`);
-   await show({name:'think',n});await page.locator('.play-question summary').tap();await audit(`stage-${n}-question`);
+   await show({name:'think',n});
+   if(await page.locator('.bench-wide').count())await page.locator('[data-mission="bench-view"]').tap();
+   await page.locator('.play-question summary').tap();await audit(`stage-${n}-question`);
   }
   console.log(`AUDIT ${size.width}x${size.height}: ${reports.filter(r=>r.viewport.width===size.width&&r.viewport.height===size.height).reduce((a,r)=>a+r.issues.length,0)} candidates`);
   if(process.env.TOUCH==='1')await touchMatrix(size);

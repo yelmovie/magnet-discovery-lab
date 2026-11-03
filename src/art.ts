@@ -15,7 +15,10 @@ export const icon = (name: string, size = 22): string => {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.spark}</svg>`;
 };
 export function mascot(type: 'mili' | 'dangi' = 'mili', size = 110, pose = 0): string {
-  return `<span class="mascot sprite-mascot ${type}" role="img" aria-label="${type === 'mili' ? '밀이' : '당이'}" style="--size:${size}px;--pose:${Math.max(0, Math.min(3, pose))};background-image:url('/assets/adventure/${type}-poses-tablet.webp')"></span>`;
+  return `<span class="mascot sprite-mascot ${type}" role="img" aria-label="${type === 'mili' ? '밀이' : '당이'}" style="--size:${size}px;--pose:${Math.max(0, Math.min(3, pose))};background-image:url('/assets/adventure/${type}-poses-pixel.webp')"></span>`;
+}
+export function walkingMascot(type: 'mili' | 'dangi', size = 104): string {
+  return `<span class="map-mascot ${type}" aria-hidden="true" data-facing="down" data-step="1" style="--size:${size}px;--facing:0;--step:1;background-image:url('/assets/adventure/${type}-walk-pixel.webp')"></span>`;
 }
 export function magnet(pole = 'N', cls = ''): string { return `<div class="bar-magnet ${pole === 'S' ? 'flipped' : ''} ${cls}"><span>N</span><span>S</span></div>`; }
 export function objectArt(id: string): string {

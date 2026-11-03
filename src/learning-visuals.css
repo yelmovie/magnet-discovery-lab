@@ -35,7 +35,7 @@
 #app .learning-scene-art > img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
 /* Keep earned-tool help clear of parts delivered to the upper-right tray. */
 #app .mission-pocket { top: 6%; min-height: 48px; }
-#app .canvas-handle, #app .canvas-hit[data-drag='paper'] { min-width: 90px; }
+#app .canvas-handle { min-width: 90px; }
 #app .screen-6 .ring-flip { top: 88% !important; }
 
 /* Optional guidance uses the instruction plaque, leaving the apparatus clear. */
@@ -98,3 +98,58 @@
 .modal.learning-visual-dialog.is-zoomed .learning-visual-layout figure { max-width: none; }
 .modal.learning-visual-dialog.is-zoomed .learning-visual-frame { max-height: min(62dvh, 640px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; cursor: grab; }
 .modal.learning-visual-dialog.is-zoomed .learning-visual-frame > img { width: max(130%, 1024px); max-width: none; max-height: none; aspect-ratio: auto; }
+/* Put the question first, with evidence nearby and one clearly labelled answer group. */
+#app .quest-activity:has(.play-discovery) .mission-head {display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 14px;padding:6px 12px;}
+#app .quest-activity:has(.play-discovery) .mission-head :is(.learning-visual-preview,.mission-question,.mission-next-action,.discovery-count){display:none}
+#app .quiz-question{display:flex;align-items:baseline;gap:12px;margin:0 0 12px}
+#app .quiz-question strong{background:#245e56;color:white;border-radius:9px;padding:6px 12px;white-space:nowrap}
+#app .quiz-question h2{margin:0;font-size:clamp(23px,2.4vw,34px);line-height:1.28}
+#app .quiz-evidence-strip{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;padding:8px 12px;border:1px solid #ccd9c7;border-radius:12px;background:#edf4ed}
+#app .quiz-scenes{display:flex;gap:10px;min-width:0}
+#app .quiz-scenes figure{margin:0;width:clamp(74px,13vw,156px);text-align:center}
+#app .quiz-scenes img{display:block;width:100%;height:clamp(42px,8vh,76px);background:#fff8e7;object-fit:contain;border-radius:7px}
+#app .quiz-scenes figcaption{font-size:clamp(12px,1.4vw,15px);font-weight:700;color:#365b57}
+#app .quiz-video{margin-left:auto;min-height:44px;padding:5px 12px;background:white;border:2px solid #446d60;border-radius:9px;font:inherit;font-weight:700;color:#1c524b;cursor:pointer}
+#app .quiz-video small{font-size:.8em}
+body.quest-mode #app .quest-activity .play-discovery .quiz-answer-label{display:block;margin:12px 0 5px;font-weight:800;color:#225d53}
+#app .play-discovery .play-discovery-options{margin:0 0 10px}
+#app .play-discovery .inquiry-option{display:flex;align-items:center;gap:9px;min-height:62px;text-align:left;line-height:1.35}
+#app .quiz-choice-number{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:50%;background:#e0ece3;color:#24594f}
+#app .inquiry-option.selected .quiz-choice-number{background:#24594f;color:white}
+#app .quest-activity > .mission-cta.missing-step{display:none}
+#app .quest-activity > .mission-cta.missing-step[hidden]{display:none!important}
+#app .missing-step[data-step-tip]::before{content:attr(data-step-tip);position:absolute;right:0;bottom:calc(100% + 10px);width:max-content;max-width:min(310px,80vw);padding:10px 14px;border:2px solid #698574;border-radius:12px;background:#fff9e9;color:#204d46;white-space:normal;text-align:left;font:700 16px/1.45 var(--font-body);pointer-events:none}
+body.quest-mode #app .quest-activity:has([data-phase="experiment"]) > [data-action="complete"]:disabled{display:none}
+body.quest-mode #app .quest-activity:has([data-phase="experiment"]) > [data-action="complete"]:disabled + .missing-step{display:inline-flex;background:#ffedbc;color:#4f3614}
+#app .coach-bubble button + [data-concept]{margin-left:6px}
+@media(max-width:640px){#app .quiz-evidence-strip{gap:6px;padding:6px}#app .quiz-video{font-size:14px}#app .quiz-question{gap:6px}}
+
+/* Keep the choices and compact observation strip in view together. Optional detail expands on demand. */
+body.quest-mode #app .quest-activity .play-discovery {
+  padding:clamp(12px,1.6vw,22px);scrollbar-gutter:stable;
+}
+body.quest-mode #app .quest-activity .play-discovery .quiz-question {margin:0 0 7px;align-items:center;}
+body.quest-mode #app .quest-activity .play-discovery .quiz-question h2 {margin:0;font-size:clamp(21px,2.1vw,30px);}
+body.quest-mode #app .quest-activity .play-discovery .play-discovery-options {gap:8px;margin:5px 0 8px;}
+body.quest-mode #app .quest-activity .play-discovery .inquiry-option {min-height:52px;padding:8px 10px;font-size:clamp(16px,1.6vw,21px);}
+#app .play-discovery .quiz-tools {display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px 12px;}
+body.quest-mode #app .play-discovery .quiz-tools .inquiry-evidence {flex:1 1 190px;margin:0;}
+#app .play-discovery .quiz-tools:has(details[open]) {display:block;}
+body.quest-mode #app .play-discovery .quiz-tools summary {display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:700;}
+#app .play-discovery .quiz-tools summary::before {content:'▸';margin-inline-end:.38em;}
+#app .play-discovery .quiz-tools details[open] summary::before {content:'▾';}
+#app .play-discovery .quiz-tools > button {min-height:44px;padding:6px 10px;}
+@media (max-height:720px), (max-width:759px) {
+  #app .quiz-evidence-strip {flex-wrap:nowrap;padding:5px 8px;gap:8px;}
+  #app .quiz-scenes {flex:1 1 auto;gap:5px;}
+  #app .quiz-scenes figure {width:clamp(58px,12vw,108px);min-width:0;}
+  #app .quiz-scenes img {height:clamp(38px,7vh,50px);}
+  #app .quiz-video {flex:none;padding:4px 7px;}
+  #app .quiz-video small {display:none;}
+  body.quest-mode #app .quest-activity .play-discovery .quiz-answer-label {margin:6px 0 3px;}
+}
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  #app .quest-activity:has(.play-discovery) .mission-head {gap:3px 5px;padding:5px 8px;}
+  #app .play-discovery .quiz-tools {gap:2px;}
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-option {min-height:48px;padding:6px 9px;}
+}

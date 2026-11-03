@@ -6,6 +6,7 @@
 // Usage: node scripts/layout-audit.cjs [baseUrl=http://127.0.0.1:4197] [--out dir] [--only page|state-prefix] [--sizes 1280x800,1100x800 (any WxH list instead of the default 12)]
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path');
+const {assembleMailbox}=require('./browser-mailbox.cjs');
 const argv=process.argv.slice(2),opt=k=>{const i=argv.indexOf(k);return i<0?undefined:argv.splice(i,2)[1];};
 const out=opt('--out')||'test-results/layout-audit',only=opt('--only'),sizesArg=opt('--sizes');
 const base=(argv[0]||'http://127.0.0.1:4197').replace(/\/?$/,'/');
@@ -57,7 +58,7 @@ const STATES=[
  {name:'city-concept',page:'city',evidence:2,after:[call('openConcept',1)]},
  {name:'city-settings',page:'city',evidence:2,after:[click('[data-action=settings]'),click('.settings-fold > summary')]},
  ...Array.from({length:10},(_,i)=>({name:`act${i+1}`,...act(i+1)})),
- {name:'act1-open',...act(1,{values:{open0:true},points:{lid:{x:50,y:37}}})},
+ {name:'act1-open',...act(1),after:[assembleMailbox]},
  {name:'act2-reflection',...act(2,reflection(2))},
  {name:'act4-paper',...act(4,{values:{round:2},points:{'distance-magnet':{x:49,y:55}}})},
  {name:'act5-stickers',...act(5,{values:{test0N:true,test0S:true},points:{probe:{x:48,y:53}}})},

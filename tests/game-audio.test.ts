@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { disposeAudio, ensureAudio, normalizedAudioSettings, playEffect, setAudioPaused, setMusicTheme, syncAudioSettings } from '../src/game-audio';
+import { disposeAudio, ensureAudio, normalizedAudioSettings, playEffect, playNarration, setAudioPaused, setMusicTheme, syncAudioSettings } from '../src/game-audio';
 
 const gainDouble = () => ({ gain: { value: 0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() });
 const oscillatorDouble = () => ({ frequency: { value: 0 }, type: 'sine', connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn(), onended: undefined as (() => void) | undefined });
@@ -29,11 +29,14 @@ class MusicDouble {
   static instances: MusicDouble[] = [];
   hidden = false; preload = ''; dataset: Record<string, string> = {};
   src = ''; loop = false; volume = 1; paused = true; ended = false; currentTime = 0;
+  onended: (() => void) | null = null;
+  onerror: (() => void) | null = null;
   constructor() { MusicDouble.instances.push(this); }
   play = vi.fn(async () => { this.paused = false; });
   pause = vi.fn(() => { this.paused = true; });
   load = vi.fn(() => { this.currentTime = 0; this.ended = false; });
   remove = vi.fn();
+  removeAttribute = vi.fn((name:string) => { if(name==='src')this.src=''; });
 }
 
 function environment() {
@@ -154,16 +157,87 @@ describe('music and game effects', () => {
         const source={buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;
       }
     }
-    const request=vi.fn(async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)}));
+    const request=vi.fn(async(_url:string)=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)}));
     vi.stubGlobal('window',{AudioContext:SampleAudio});vi.stubGlobal('fetch',request);
     playEffect('pick',{music:false,effects:true});
     for(let i=0;i<10;i++)await Promise.resolve();
-    expect(request).toHaveBeenCalledTimes(8);
-    playEffect('drop');expect(sources).toHaveLength(1);expect(sources[0].start).toHaveBeenCalledOnce();
-    syncAudioSettings({music:false,effects:false});expect(sources[0].stop).toHaveBeenCalledOnce();
-    playEffect('reward');expect(sources).toHaveLength(1);
-    playEffect('reward',{music:false,effects:true});expect(sources).toHaveLength(2);
-    setAudioPaused(true);expect(sources[1].stop).toHaveBeenCalledOnce();
-    playEffect('success');expect(sources).toHaveLength(2);expect(request).toHaveBeenCalledTimes(8);
+    const files=['click','pick','drop','compare','success','reward','bump','step','snap','lid','pad','crate'];
+    expect(request.mock.calls.map(([url])=>url).sort()).toEqual(files.map(name=>`/audio/${name}.mp3`).sort());
+    const experimentSounds=['snap','lid','pad','crate'] as const;
+    for(const kind of experimentSounds)playEffect(kind);
+    expect(sources).toHaveLength(4);
+    sources.forEach(source=>expect(source.start).toHaveBeenCalledOnce());
+    syncAudioSettings({music:true,effects:false});expect(sources[3].stop).toHaveBeenCalledOnce();
+    for(const kind of experimentSounds)playEffect(kind);
+    expect(sources).toHaveLength(4);
+    playEffect('crate',{music:false,effects:true});expect(sources).toHaveLength(5);
+    setAudioPaused(true);expect(sources[4].stop).toHaveBeenCalledOnce();
+    playEffect('success');expect(sources).toHaveLength(5);expect(request).toHaveBeenCalledTimes(files.length);
+  });
+});
+
+describe('resident dialogue voices',()=>{
+  it('respects muted effects and restores music after replacing or finishing a voice',async()=>{
+    const doc=environment(),muted=vi.fn();
+    playNarration('/audio/voices/resident-1-hello.mp3',{music:false,effects:false},muted);
+    expect(muted).toHaveBeenLastCalledWith('muted');
+    expect(MusicDouble.instances).toHaveLength(0);
+    ensureAudio({music:true,effects:true,musicVolume:.4});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0],firstState=vi.fn();
+    const stopFirst=playNarration('/audio/voices/resident-1-hello.mp3',undefined,firstState);
+    const first=MusicDouble.instances[1];
+    expect(first.src).toBe('/audio/voices/resident-1-hello.mp3');
+    expect(music.volume).toBeCloseTo(.1);
+    playNarration('/audio/voices/resident-1-news.mp3');
+    const second=MusicDouble.instances[2];
+    expect(first.paused).toBe(true);expect(first.remove).toHaveBeenCalledOnce();
+    stopFirst();expect(second.paused).toBe(false);
+    syncAudioSettings({music:true,effects:true,musicVolume:.8});expect(music.volume).toBeCloseTo(.2);
+    second.onended!();expect(second.remove).toHaveBeenCalledOnce();expect(music.volume).toBeCloseTo(.8);
+    await Promise.resolve();expect(firstState).not.toHaveBeenCalledWith('playing');
+  });
+
+  it('does not restart a cancelled pending voice when its play promise resolves later',async()=>{
+    const doc=environment();ensureAudio({music:false,effects:true});
+    const pending=new MusicDouble();let resolvePlay!:()=>void;
+    pending.play.mockImplementationOnce(()=>new Promise<void>(resolve=>{resolvePlay=resolve;}));
+    vi.spyOn(doc,'createElement').mockReturnValueOnce(pending);
+    const firstState=vi.fn(),secondState=vi.fn();
+    playNarration('/audio/voices/resident-2-hello.mp3',undefined,firstState);
+    const stop=playNarration('/audio/voices/resident-2-science.mp3',undefined,secondState);
+    resolvePlay();await Promise.resolve();
+    expect(pending.paused).toBe(true);expect(firstState).not.toHaveBeenCalledWith('playing');
+    expect(secondState).toHaveBeenLastCalledWith('playing');
+    stop();expect(secondState).toHaveBeenLastCalledWith('stopped');
+  });
+
+  it('stops voices on mute, a hidden tab, and video playback without silently resuming them',async()=>{
+    const doc=environment();ensureAudio({music:true,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    const state=vi.fn();playNarration('/audio/voices/resident-3-hello.mp3',undefined,state);
+    const first=MusicDouble.instances.at(-1)!;
+    syncAudioSettings({music:true,effects:false});expect(first.paused).toBe(true);expect(state).toHaveBeenLastCalledWith('muted');
+    playNarration('/audio/voices/resident-3-again.mp3',{music:true,effects:true},state);
+    const second=MusicDouble.instances.at(-1)!;
+    doc.hidden=true;doc.dispatchEvent(new Event('visibilitychange'));expect(second.paused).toBe(true);
+    doc.hidden=false;doc.dispatchEvent(new Event('visibilitychange'));await Promise.resolve();
+    expect(second.play).toHaveBeenCalledOnce();
+    playNarration('/audio/voices/resident-3-news.mp3');const third=MusicDouble.instances.at(-1)!;
+    setAudioPaused(true);expect(third.paused).toBe(true);setAudioPaused(false);
+    expect(third.play).toHaveBeenCalledOnce();
+  });
+
+  it('recovers from missing files and autoplay denial while preserving the written dialogue',async()=>{
+    const doc=environment();ensureAudio({music:true,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0],blocked=new MusicDouble(),state=vi.fn();
+    blocked.play.mockRejectedValueOnce(Object.assign(new Error('blocked'),{name:'NotAllowedError'}));
+    vi.spyOn(doc,'createElement').mockReturnValueOnce(blocked);
+    playNarration('/audio/voices/resident-4-hello.mp3',undefined,state);
+    await Promise.resolve();await Promise.resolve();
+    expect(state).toHaveBeenLastCalledWith('blocked');expect(blocked.remove).toHaveBeenCalledOnce();
+    expect(music.volume).toBeCloseTo(.35);
+    playNarration('/audio/voices/resident-4-science.mp3',undefined,state);
+    const missing=MusicDouble.instances.at(-1)!;missing.onerror!();
+    expect(state).toHaveBeenLastCalledWith('unavailable');expect(missing.remove).toHaveBeenCalledOnce();
+    expect(music.volume).toBeCloseTo(.35);
   });
 });

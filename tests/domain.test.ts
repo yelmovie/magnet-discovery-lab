@@ -30,6 +30,30 @@ describe('meaningful completion', () => {
     expect(ready(5, a, s)).toBe(true);
   });
   it('denies inaccessible activities and empty completion', () => { const s = freshSave(); s.activities[2] = emptyActivity(); expect(accessible(s, 1)).toBe(true); expect(accessible(s, 2)).toBe(false); expect(accessible(s, 3)).toBe(false); expect(completeActivity(s, 2)).toBe(false); expect(accessible(s, 11)).toBe(false); });
+  it('구형 저장의 완료 표시는 유지하고 남아 있는 관찰만 구역 증거에 보관한다', () => {
+    const s = freshSave(), second = s.activities[2] = emptyActivity();
+    second.values = { playVersion: 3, with0: true, without0: true, with1: true, without1: true };
+    second.records.push({ key: 'with', label: '자석을 넣음', result: '덮개가 닫혀 있었어.' });
+    s.resume = 2;
+    const before = structuredClone(s);
+    expect(completeActivity(s, 2)).toBe(false);
+    expect(s).toEqual(before);
+
+    s.completed.push(1);
+    expect(validSave(s)).toBe(true);
+    expect(completeActivity(s, 2)).toBe(true);
+    const archive = structuredClone(s.evidence);
+    expect(s.completed).toEqual([1, 2]);
+    expect(s.activities[1]).toBeUndefined();
+    expect(archive[0].activities).toEqual([emptyActivity(), second]);
+    expect(archive[0].summary).toEqual([expect.stringContaining('관찰 기록이 남아 있지 않아'), '자석을 넣음: 덮개가 닫혀 있었어.']);
+    expect(s.resume).toBe(0);
+    expect(accessible(s, 3)).toBe(true);
+    second.records[0].result = '다시 관찰했어.';
+    expect(completeActivity(s, 2)).toBe(true);
+    expect(s.evidence).toEqual(archive);
+    expect(validSave(s)).toBe(true);
+  });
   it('creates one immutable evidence snapshot for the two activities', () => {
     const s = freshSave(); s.completed = [1]; s.activities[1] = emptyActivity(); s.activities[2] = emptyActivity();
     for (const i of [0, 1]) for (const name of ['with', 'without', 'role']) s.activities[2].values[`${name}${i}`] = true;

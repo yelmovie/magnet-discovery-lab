@@ -40,6 +40,11 @@
 .settings-records{width:100%;justify-content:space-between;margin-bottom:10px}
 .settings-admin{width:100%;margin:8px 0 13px;background:#f0f7ec;border-color:#a6b88c;box-shadow:0 3px 0 #a6b88c}
 .settings-admin[aria-pressed="true"]{color:#fff;background:#167c75;border-color:#0e5d58;box-shadow:0 3px 0 #0e5d58}
+.settings-activities{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px}
+.settings-activities .settings-button{justify-content:flex-start;text-align:left}
+#app .quest-icon:has(.teacher-hud-label){align-content:center;gap:1px;padding:2px;background:#167c75;color:#fff;border-color:#0e5d58}
+#app .quest-icon:has(.teacher-hud-label) svg{width:21px;height:21px}
+.teacher-hud-label{font-size:13px;font-weight:700;line-height:1}
 .settings-dialog-body .settings-signature{margin:14px 0 0;padding-top:12px;border-top:1px solid #e3dbc5;font-size:16px}
 .settings-dialog-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 26px 20px;border-top:1px solid var(--settings-line);background:#fffcf3;flex:none}
 .settings-primary{min-width:120px;background:#167c75;border-color:#0e5d58;color:#fff;box-shadow:0 3px 0 #0e5d58}

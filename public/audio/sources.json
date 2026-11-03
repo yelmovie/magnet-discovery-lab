@@ -12,5 +12,17 @@
     "reward": "confirmation_004",
     "bump": "error_003",
     "step": "tick_001"
+  },
+  "impact": {
+    "creator": "Kenney",
+    "pack": "Impact Sounds 1.0",
+    "license": "CC0-1.0",
+    "url": "https://kenney.nl/assets/impact-sounds",
+    "files": {
+      "snap": "impactMetal_light_001",
+      "lid": "impactWood_light_002",
+      "crate": "impactWood_medium_001",
+      "pad": "impactSoft_medium_002"
+    }
   }
 }

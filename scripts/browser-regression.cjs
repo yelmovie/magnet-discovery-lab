@@ -2,6 +2,7 @@
 // existing navigation guards; it never writes completion flags or production data.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
+const {assembleMailbox}=require('./browser-mailbox.cjs');
 const fs=require('node:fs');
 const out=process.env.TEST_OUT||'test-results/fixes-20261025';fs.mkdirSync(out,{recursive:true});
 const results=process.env.RESUME&&fs.existsSync(out+'/browser-results.json')?JSON.parse(fs.readFileSync(out+'/browser-results.json')).filter(r=>r.status==='pass'):[];
@@ -62,11 +63,24 @@ async function fields(stage){
  check('field missions '+stage+' / 2, scroll, focus, correction');
 }
 async function experiments(n){
- if(n===1){for(let i=0;i<2;i++){await put('lid',50,37);await put('hidden-magnet',78,52);await put('hidden-magnet',68,59);if(!i)await mission('next');}}
- if(n===2){for(let i=0;i<2;i++){await put('lid',50,65);await mission('shake');await put('repair-magnet',43,59);await put('lid',50,65);await mission('shake');await mission('next');}await put('repair-magnet',43,59);await put('lid',50,65);await mission('shake');await mission('fault-color');await mission('fault-distance');await put('repair-plate',59,59);await put('lid',50,65);await mission('shake');}
+ if(n===1){await assembleMailbox(page);for(let i=0;i<2;i++){await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(i=>window.__lab.save.activities[1].values['latch'+i],i);if(!i&&await page.locator('[data-mission="next"]').count())await mission('next');else break;}}
+ if(n===2){for(let i=0;i<2;i++){await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));await mission('next');}await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));await mission('fault-color');await mission('fault-distance');await put('repair-plate',48,61);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));}
  if(n===3){const points=[[36,42],[52,42],[66,43],[36,65],[52,65],[66,65]];for(let i=0;i<6;i++){await put('sweep-magnet',...points[i]);if(i<2)await put('sweep-magnet',86,38);else{if(i===2)await put('material-2',86,44);await put('material-'+i,86,70);}}}
  if(n===4){await mission('release');await mission('next');await put('distance-magnet',52,55);await mission('release');await reload();assert.equal((await save()).activities[4].values.done1,true);await mission('next');await put('paper',56.5,55);await mission('release');await mission('next');await put('distance-magnet',57,42);await mission('release');check('mid-experiment save/reload and fair paper comparison');}
- if(n===5){for(let r=0;r<2;r++){for(let i=0;i<4;i++){const before=(await save()).activities[5],facing=(before.values.probePole||'N')==='N'?'S':'N',hidden=r?'N':'S';await put('probe',48,53);const state=(await save()).activities[5];assert.equal(state.values.reaction,facing===hidden?'밀려났어':'당겨졌어');assert.equal(state.points['unknown-magnet'].x,facing===hidden?72:59);if(i<3)await mission('flip');}await put('sticker'+(r?'N':'S'),59,40);await put('sticker'+(r?'S':'N'),70,40);if(!r)await mission('next');}await action('observations');assert.match(await page.locator('.trial-replay-result').textContent(),/대상 자석/);await page.locator('.modal-close').click();}
+ if(n===5){
+   for(let r=0;r<2;r++){
+     for(let i=0;i<4;i++){
+       const before=(await save()).activities[5],facing=(before.values.probePole||'N')==='N'?'S':'N',hidden=r?'N':'S';
+       await put('probe',48,53);await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
+       const state=(await save()).activities[5];assert.equal(state.values.reaction,facing===hidden?'밀려났어':'당겨졌어');assert.equal(state.points['unknown-magnet'].x,facing===hidden?77:48+(192+211-2)/25.6);
+       if(i<3){await mission('flip');await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);}
+     }
+     const bar=(await save()).activities[5].points['unknown-magnet'];
+     await put('sticker'+(r?'N':'S'),bar.x-5.5,bar.y);await put('sticker'+(r?'S':'N'),bar.x+5.5,bar.y);
+     if(!r)await mission('next');
+   }
+   await action('observations');assert.match(await page.locator('.trial-replay-result').textContent(),/대상 자석/);await page.locator('.modal-close').click();
+ }
  if(n===6){for(let r=0;r<3;r++){const count=r?3:2;for(let i=0;i<count;i++)await put('ring'+i,68,71-i*15);if(!r){await mission('check');await wait(750);}const values=(await save()).activities[6].values;for(let i=0;i<count;i++){const desired=r<2&&i===1?'S':'N';if((values['ringPole'+i]||'N')!==desired)await page.locator('.ring-flip').nth(i).click();}await mission('check');await wait(750);if(r<2)await mission('next');}}
  if(n===7){
   await put('cleaner',77,74);await wait(100);assert.match(await page.locator('.mission-feedback').textContent(),/너무 멀어/);await put('cleaner',30,48);await wait(150);assert.match(await page.locator('.mission-feedback').textContent(),/다시 연결/);
@@ -105,7 +119,7 @@ async function previewProtection(original){
  const stored=()=>page.evaluate(()=>new Promise((resolve,reject)=>{const request=indexedDB.open('push-pull-city',1);request.onsuccess=()=>{const db=request.result,r=db.transaction('saves').objectStore('saves').get('main');r.onsuccess=()=>{resolve(JSON.stringify(r.result));db.close();};r.onerror=reject;};request.onerror=reject;}));
  const before=await stored();
  const admin=async()=>{await action('settings');const folds=page.locator('details').filter({has:page.locator('[data-settings-action="admin"]')});for(let i=0;i<await folds.count();i++)if(!await folds.nth(i).evaluate(el=>el.open))await folds.nth(i).locator(':scope > summary').click();await page.locator('[data-settings-action="admin"]').click();await wait(100);};
- const reset=async()=>{await action('settings');await page.locator('[data-settings-action="reset"]').click();assert.match(await page.locator('#settings-reset-description').textContent(),/사본/);await page.locator('[data-confirm="reset"]').click();await wait(100);};
+ const reset=async()=>{await action('settings');await page.locator('[data-settings-action="reset"]').click();assert.match(await page.locator('#settings-reset-title').textContent(),/교사용 진행 기록/);assert.match(await page.locator('#settings-reset-description').textContent(),/학생의 기록은 그대로/);await page.locator('[data-confirm="reset"]').click();await wait(100);};
  await admin();await begin(5);await put('probe',48,53);await reset();assert.equal(await stored(),before);await admin();assert.equal(await stored(),before);await page.reload();await page.waitForFunction(()=>!!window.__lab);assert.equal(await stored(),before);
  await admin();await reset();await page.reload();await page.waitForFunction(()=>!!window.__lab);assert.equal(await stored(),before);
  check('teacher preview enter/reset/exit/reload: exact IndexedDB original unchanged');

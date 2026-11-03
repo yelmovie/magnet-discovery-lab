@@ -4,9 +4,18 @@ let expectedRevision = 0;
 let queue = Promise.resolve();
 export let persistenceError = '';
 export let migrationNotice = '';
+function openDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('push-pull-city', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('saves');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('다른 탭을 닫고 다시 열어줘.'));
+  });
+}
 export async function load(): Promise<Save> {
   try {
-    db = await new Promise<IDBDatabase>((resolve, reject) => { const r = indexedDB.open('push-pull-city', 1); r.onupgradeneeded = () => r.result.createObjectStore('saves'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); r.onblocked = () => reject(new Error('다른 탭을 닫고 다시 열어줘.')); });
+    db = await openDatabase();
     const raw: unknown = await new Promise((resolve, reject) => { const r = db!.transaction('saves').objectStore('saves').get('main'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
     if (raw === undefined) return freshSave();
     if (!validSave(raw)) { persistenceError = '기존 저장을 읽을 수 없어. 원본은 보존했어. 새로 시작을 선택하면 초기화할 수 있어.'; db.close(); db = null; return freshSave(); }
@@ -37,23 +46,42 @@ export async function load(): Promise<Save> {
 }
 export function persist(s: Save): Promise<void> {
   if (!db) return Promise.reject(new Error(persistenceError || '저장소에 연결할 수 없어.'));
-  const snapshot = structuredClone(s);
-  const operation = queue.catch(() => undefined).then(() => new Promise<void>((resolve, reject) => {
-    const tx = db!.transaction('saves', 'readwrite'); const store = tx.objectStore('saves'); const read = store.get('main');
-    read.onsuccess = () => {
-      const revision = (read.result as Save | undefined)?.revision ?? 0;
-      if (revision !== expectedRevision) { persistenceError = '다른 탭의 진행이 바뀌었어. 다른 탭을 닫고 이 화면을 새로고침해줘.'; tx.abort(); return; }
-      snapshot.revision = expectedRevision + 1; snapshot.updated = new Date().toISOString(); store.put(snapshot, 'main');
-    };
-    tx.oncomplete = () => { expectedRevision = snapshot.revision; s.revision = expectedRevision; persistenceError = ''; resolve(); };
-    tx.onerror = () => reject(new Error('저장 공간을 확인하고 다시 시도해줘.'));
-    tx.onabort = () => reject(new Error(persistenceError || '저장하지 못했어. 다시 시도해줘.'));
-  }));
-  queue = operation; return operation;
+  return writeSave(s, false);
 }
-export async function clearSave(): Promise<void> {
-  await queue.catch(() => undefined);
-  if (!db) { db = await new Promise<IDBDatabase>((resolve, reject) => { const r = indexedDB.open('push-pull-city', 1); r.onupgradeneeded = () => r.result.createObjectStore('saves'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); }); }
-  await new Promise<void>((resolve, reject) => { const tx = db!.transaction('saves', 'readwrite'); tx.objectStore('saves').delete('main'); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
-  expectedRevision = 0; persistenceError = '';
+export function resetSave(s: Save): Promise<void> {
+  return writeSave(s, true);
+}
+function writeSave(s: Save, resetting: boolean): Promise<void> {
+  const snapshot = structuredClone(s);
+  const operation = queue.catch(() => undefined).then(async () => {
+    const connection = db ?? await openDatabase();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const tx = connection.transaction('saves', 'readwrite'), store = tx.objectStore('saves'), read = store.get('main');
+        let failure = '저장 공간을 확인하고 다시 시도해줘.';
+        read.onsuccess = () => {
+          const revision = read.result?.revision ?? 0;
+          if (!resetting && revision !== expectedRevision) {
+            failure = persistenceError = '다른 탭의 진행이 바뀌었어. 이 화면을 새로고침해줘.';
+            tx.abort();
+            return;
+          }
+          // A reset also advances the stored revision so older tabs cannot restore their copies.
+          snapshot.revision = Math.max(expectedRevision, Number.isSafeInteger(revision) ? revision : 0) + 1;
+          snapshot.updated = new Date().toISOString();
+          store.put(snapshot, 'main');
+        };
+        tx.oncomplete = () => resolve();
+        tx.onabort = tx.onerror = () => reject(new Error(failure));
+      });
+    } catch (error) {
+      if (!db) connection.close();
+      throw error;
+    }
+    db = connection;
+    expectedRevision = s.revision = snapshot.revision;
+    persistenceError = '';
+    if (resetting) migrationNotice = '';
+  });
+  queue = operation; return operation;
 }

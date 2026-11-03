@@ -68,6 +68,17 @@
 | bump.mp3 | error_003.ogg | 다시 관찰할 단서 |
 | step.mp3 | tick_001.ogg | 짧은 이동음 |
 
+### 장치 실험 효과음
+
+Kenney의 *Impact Sounds 1.0*에서 가져온 소리를 MP3로 변환했다. 배포본에 원본 라이선스 `public/audio/Impact-License.txt`와 음원별 대응표 `public/audio/sources.json`을 동봉한다. [공식 음원](https://kenney.nl/assets/impact-sounds) · [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
+
+| 배포 파일 | Kenney 원본 | 소리가 나는 장면 |
+|---|---|---|
+| snap.mp3 | impactMetal_light_001.ogg | 자석이 철판이나 다른 자석에 붙을 때 |
+| lid.mp3 | impactWood_light_002.ogg | 나무 덮개 손잡이를 잡을 때 |
+| pad.mp3 | impactSoft_medium_002.ogg | 수조 안쪽 패드로 얼룩을 닦았을 때 |
+| crate.mp3 | impactWood_medium_001.ogg | 짐을 실은 카트가 배달 장소에 멈출 때 |
+
 ## 폰트
 
 - Jua (Woowahan Brothers)와 Pretendard (Kil Hyung-jin)의 OFL 1.1 원문을 `public/fonts/`에 동봉. 기존 사용 가능 원본에서 필요한 글리프만 번들.
@@ -110,3 +121,31 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 - 원본: `assets/source/3d-base-20261025/meshy/` (저장소 제외, 해시는 `originals.json`). 배포본: `public/assets/3d/`, 원본↔배포 대조표는 같은 폴더 `README.md`.
 - 가공: `scripts/pack-glb.mjs` (gltf-transform MIT · meshoptimizer MIT · sharp Apache-2.0). three.js MIT로 화면에 표시.
 - 쓰는 곳: 극성 복원 센터 고리 3D 보기, 광장 복구 발명품 작동 시연(자석 잠금 상자·유리 너머 운반기).
+
+## 우편함 재질과 손잡이
+
+원목 재질 `mailbox-wood.webp`와 나무·황동 손잡이 `mailbox-pull-handle.webp`는 이 프로젝트용으로 생성한 그림이다. 실험대는 원목 재질을 몸체와 뚜껑에 따로 입혀 경첩을 움직인다.
+
+## 힘 실험 연구소의 종이
+
+`public/assets/quest/prop-paper-sheet.webp`는 내장 imagegen으로 만든 낱장 종이다. 생성한 그림의 투명도를 유지해 게임용 WebP로 저장했다.
+
+> 투명 배경 게임 소품. 초등 과학 실험에서 쓰는 흰 공책 종이 딱 한 장을 정면에 가깝게 보여 줘. 따뜻한 옆빛에 보이는 무광 종이결, 성긴 연하늘색 가로줄 여섯 개, 살짝 앞으로 접힌 오른쪽 윗귀와 가볍게 휘는 아래 가장자리. 세로로 긴 전체 윤곽과 넓은 면이 한눈에 읽히는 세밀한 반실사 일러스트. 글씨, 구멍, 테두리 장식, 받침대, 그림자 배경 없이.
+
+## 지도에 돌아오는 주민
+
+우체부·재료 연구원·시계탑 지기·수조 관리인·발명가는 이 프로젝트용으로 내장 imagegen을 사용해 한 장의 그림으로 생성했다. 원본은 `assets/source/quest/restored-residents-20261102.png`에 보관하고, 투명 영역을 따라 나눈 다섯 WebP(`public/assets/quest/resident-1.webp` ~ `resident-5.webp`)를 지도와 대화창이 함께 사용한다.
+
+## 지도 주민의 한국어 목소리
+
+`public/audio/voices/resident-*.mp3` 20개는 공개 모델 [Supertone Supertonic 2](https://huggingface.co/Supertone/supertonic-2)의 기본 목소리로 이 프로젝트의 대사를 로컬에서 합성한 음성이다. 인물의 목소리를 복제하지 않았다. 유료 API나 체험 크레딧을 사용하지 않았다.
+
+- 모델·기본 목소리: OpenRAIL-M. [고정 버전 라이선스 원문](https://huggingface.co/Supertone/supertonic-2/blob/75e6727618a02f323c720cba9478152d4bc16ca4/LICENSE), 사본 `public/audio/voices/model-license.txt`.
+- 생성 코드: Supertone Inc., MIT. [공식 코드](https://github.com/supertone-oss-archive/supertonic), 사본 `public/audio/voices/source-license.txt`.
+- OpenRAIL-M은 상업적 사용을 금지하지 않으며, 6항에 따라 모델 제공자는 생성 결과에 권리를 주장하지 않는다. 라이선스의 사용 조건은 적용된다.
+- 대사·음성 ID·SHA-256: `public/audio/voices/manifest.json`. 제작·재생성·검증 설명: `docs/resident-voices.md`.
+- 모델과 생성 런타임은 게임 배포에 포함하지 않는다.
+
+## 실험에서 잡고 놓는 손
+
+클립·고리 실험의 `experiment-hand-held.webp`와 `experiment-hand-released.webp`는 내장 imagegen으로 만든 투명 배경 그림이다. 실제 손가락의 집는 지점을 물체에 맞추고, 놓는 손이 물러난 뒤 물체를 움직인다. 원본과 생성 프롬프트는 `assets/source/quest/experiment-hands.json`에 정리했다. `scripts/prepare-hand-images.cjs`로 투명도를 보존한 384px WebP를 만든다.

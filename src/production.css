@@ -150,7 +150,7 @@ body.quest-mode #app .quest-text-button { font-family: var(--font-body); }
 #app .inquiry-options.compact .inquiry-option { width: auto; min-width: 70px; min-height: 52px; justify-content: center; padding: 6px 12px; }
 #app .field-pair { position: relative; }
 /* The paper is laid into the gap; inserting it must not move either object. */
-#app .field-pair > .field-paper { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 18px; height: 86px; z-index: 2; font-size: 16px; pointer-events: none; }
+#app .field-pair > .field-paper { position: absolute; left: 50%; top: 50%; translate: -50% -50%; transform: skewY(-8deg); width: clamp(16px, var(--field-gap, 30px), 40px); height: 78px; z-index: 2; pointer-events: none; }
 #app .field-material { width: 120px; height: 80px; flex: 0 0 120px; }
 #app .field-material > .material-art { width: 80px; height: 80px; max-width: 100%; }
 body.quest-mode #app .field-pair .bar-magnet { width: 120px; height: 44px; flex: none; }
@@ -401,14 +401,13 @@ body.quest-mode .scene-ring-equipment .scene-ring-upper { bottom: 58%; }
 /* The entire pictured prop can be grabbed. Informational overlays never trap a touch. */
 #app .canvas-magnet-hit { z-index: calc(var(--layer-props) + 1); }
 #app .canvas-hit[disabled], #app .force-sensor { pointer-events: none; }
-#app .canvas-handle-grip, #app .canvas-paper-grip {
+#app .canvas-handle-grip {
   display: inline-grid; place-items: center; min-width: 78px; min-height: 44px;
   padding: 4px 10px; border: 2px solid #80613a; border-radius: 12px;
   background: linear-gradient(#ffe5a7, #eabd72); color: #493d29;
   box-shadow: 0 3px 0 #80613a66; font: 700 16px/1.2 var(--font-body); white-space: nowrap;
   pointer-events: none;
 }
-#app .canvas-paper-grip { min-width: 56px; background: #fff8dc; border-color: #b49b60; padding-inline: 5px; }
 #app .canvas-pole-sticker {
   display: inline-grid; place-items: center; width: 48px; height: 48px; border: 3px solid #fff7dc;
   border-radius: 50%; color: #fff; background: #bf443c; box-shadow: 0 2px 0 #593f32, 0 0 0 1px #bda675;
@@ -438,4 +437,14 @@ body.quest-mode .scene-ring-equipment .scene-ring-upper { bottom: 58%; }
 /* Large boards use bigger HUD icons; the earned-tool chip starts below them. */
 @media (min-width: 1500px) and (min-height: 850px) {
   body.quest-mode #app .mission-pocket { top: calc(var(--hud-inset) + var(--hud-icon-size) + 14px); }
+}
+/* Choose a hypothesis in one tap; release remains a separate observation. */
+#app .distance-choices { position:absolute; left:17%; top:37%; width:30%; display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+#app .distance-choices > span { flex-basis:100%; text-align:center; color:#244e52; font-weight:800; font-size:clamp(15px,1.4vw,21px); }
+#app .distance-choices .mission-action { position:static; transform:none; min-width:52px; min-height:44px; padding:7px 12px; font-size:clamp(16px,1.4vw,21px); }
+#app .distance-choices .mission-action[aria-pressed='true'] { color:#fff; background:#2b7068; border-color:#245f59; box-shadow:0 3px 0 #194e48; }
+#app .release-hand-icon { width:42px; height:42px; object-fit:contain; vertical-align:middle; margin:-8px 4px -8px -8px; pointer-events:none; }
+@media(max-width:700px) {
+  #app .distance-choices { left:15%; top:36%; width:36%; gap:4px; }
+  #app .distance-choices .mission-action { min-width:44px; padding:5px; }
 }

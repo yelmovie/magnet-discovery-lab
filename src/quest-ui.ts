@@ -8,12 +8,14 @@ export interface QuestHudOptions {
   sound?: boolean;
   canBack?: boolean;
   first?: boolean;
+  teacher?: boolean;
 }
 
 /** The four shared controls float over the world; they never create a header bar. */
-export function questHud({ home = true, back = true, sound = true, canBack = true, first = false }: QuestHudOptions = {}): string {
-  const control = (action: string, label: string, graphic: string, extra = '') => `<button type="button" class="quest-icon" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(graphic, 27)}</button>`;
-  return `<nav class="quest-hud" aria-label="화면과 소리 설정"><div class="quest-hud-left">${!first && home ? control('home', '시작 화면으로 가요', 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${control('sound', sound ? '소리를 꺼요' : '소리를 켜요', sound ? 'sound' : 'mute', `aria-pressed="${sound}"`)}${control('settings', '설정을 열어요', 'gear')}</div></nav>`;
+export function questHud({ home = true, back = true, sound = true, canBack = true, first = false, teacher = false }: QuestHudOptions = {}): string {
+  const control = (action: string, label: string, graphic: string, extra = '', caption = '') => `<button type="button" class="quest-icon" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(graphic, 27)}${caption}</button>`;
+  const settings=control('settings',teacher?'교사용 해금 중 · 설정을 열어요':'설정을 열어요','gear','',teacher?'<span class="teacher-hud-label">교사</span>':'');
+  return `<nav class="quest-hud" aria-label="화면과 소리 설정"><div class="quest-hud-left">${!first && home ? control('home', '시작 화면으로 가요', 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${control('sound', sound ? '소리를 꺼요' : '소리를 켜요', sound ? 'sound' : 'mute', `aria-pressed="${sound}"`)}${settings}</div></nav>`;
 }
 
 export interface QuestCompanionOptions {
@@ -32,7 +34,7 @@ export function questCompanion({ message, mood = 0, type = 'dangi', open = false
 }
 
 /** The opening keeps only the invitation, the two ways in and the city's helpers. */
-export function questTitle(save: { started: boolean }): string {
+export function questTitle(save: { started: boolean }, teacher=false): string {
   const arrow = icon('arrow', 27);
   const startButton = save.started
     ? '<button type="button" class="quest-cta quest-cta-secondary" data-action="new">시작하기</button>'
@@ -47,7 +49,7 @@ export function questTitle(save: { started: boolean }): string {
       <h1 class="quest-title-subtitle">멈춘 도시를 <br>다시 움직여 줘!</h1>
       <div class="quest-title-stage">
         <div class="quest-title-friend quest-title-friend-left">${questCompanion({ type: 'mili', message: '자석에 붙는 물건, 직접 찾아보자!' })}</div>
-        <div class="quest-title-actions">${startButton}${continueButton}</div>
+        <div class="quest-title-actions">${teacher?`<button type="button" class="quest-cta quest-start" data-action="city">교사용 지도 열기${arrow}</button>`:startButton+continueButton}</div>
         <div class="quest-title-friend quest-title-friend-right">${questCompanion({ type: 'dangi', message: '단서를 모아 우리만의 발명품을 만들자!' })}</div>
       </div>
     </div>

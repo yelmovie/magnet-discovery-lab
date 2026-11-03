@@ -26,8 +26,9 @@ class CityScene extends Phaser.Scene {
  private path!:Phaser.GameObjects.Graphics; private paused=false; private keys!:Record<string,Phaser.Input.Keyboard.Key>; private held={x:0,y:0}; private moving=false;
  private pendingTo:number|null=null;
  constructor(opts:CityOptions){super('city');this.opts=opts;}
- preload(){this.load.on('loaderror',(file:Phaser.Loader.File)=>{if(file.key==='city-map-v2')this.opts.onLoadError?.('/assets/adventure/city-map-v2.webp');});this.load.image('city-map-v2','/assets/adventure/city-map-v2.webp');this.load.spritesheet('mili-v2','/assets/adventure/mili-poses-tablet.webp',{frameWidth:304,frameHeight:405});this.load.spritesheet('dangi-v2','/assets/adventure/dangi-poses-tablet.webp',{frameWidth:304,frameHeight:405});}
+ preload(){this.load.on('loaderror',(file:Phaser.Loader.File)=>{if(file.key==='city-map-v2')this.opts.onLoadError?.('/assets/adventure/city-map-v2.webp');});this.load.image('city-map-v2','/assets/adventure/city-map-v2.webp');this.load.spritesheet('mili-v2','/assets/adventure/mili-poses-pixel.webp',{frameWidth:192,frameHeight:256});this.load.spritesheet('dangi-v2','/assets/adventure/dangi-poses-pixel.webp',{frameWidth:192,frameHeight:256});}
  create(){
+  for(const key of ['mili-v2','dangi-v2'])this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
   this.cameras.main.setZoom(2).centerOn(240,160);
   this.add.image(0,0,'city-map-v2').setOrigin(0).setDisplaySize(480,320);this.path=this.add.graphics().setDepth(2);
   const start=nodes[nearest(this.opts.start)],shadow=this.add.ellipse(0,0,17,5,0x173e4b,.25),sprite=this.add.sprite(0,-1,'mili-v2',0).setDisplaySize(20,27).setOrigin(.5,1);

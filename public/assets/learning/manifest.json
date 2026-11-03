@@ -82,12 +82,12 @@
   {
     "id": "rings",
     "src": "/assets/learning/rings.webp",
-    "source": "assets/source/learning-20261029/rings.png",
-    "generator": "Higgsfield gpt_image_2_5",
-    "date": "2026-10-29",
+    "source": "assets/source/learning-reference/rings.png",
+    "generator": "활동 6 실험대 캔버스",
+    "date": "2026-11-02",
     "width": 1024,
     "height": 688,
-    "bytes": 36212
+    "bytes": 16072
   },
   {
     "id": "tray",

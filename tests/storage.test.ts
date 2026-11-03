@@ -70,3 +70,46 @@ describe('v2 preference compatibility', () => {
     expect(next.settings.music).toBe(true);expect(data.get('main')).toEqual(old);
   });
 });
+
+describe('progress reset', () => {
+  it('commits the fresh record after pending saves and rejects a previous tab’s autosave', async () => {
+    const original = freshSave();
+    original.started = true;
+    original.revision = 1;
+    const data = databaseWith(original);
+    const staleTab = await import('../src/storage');
+    const staleCopy = await staleTab.load();
+    vi.resetModules();
+    const currentTab = await import('../src/storage');
+    const current = await currentTab.load();
+    const pending = currentTab.persist(current);
+    const next = freshSave();
+    next.settings.effects = false;
+    await Promise.all([pending, currentTab.resetSave(next)]);
+    expect(next.revision).toBe(3);
+    await expect(staleTab.persist(staleCopy)).rejects.toThrow('다른 탭');
+    expect(data.get('main')).toMatchObject({ revision: 3, started: false, settings: { effects: false } });
+    next.started = true;
+    await currentTab.persist(next);
+    expect(next.revision).toBe(4);
+  });
+  it('keeps the original record if the confirmed reset fails', async () => {
+    const original = freshSave();
+    original.started = true;
+    const data = databaseWith(original, true);
+    const storage = await import('../src/storage');
+    await storage.load();
+    await expect(storage.resetSave(freshSave())).rejects.toThrow();
+    expect(data.get('main')).toEqual(original);
+  });
+  it('allows an explicit reset to replace an unreadable record', async () => {
+    const data = databaseWith(freshSave());
+    data.set('main', { version: 99, revision: 7 });
+    const storage = await import('../src/storage');
+    await storage.load();
+    expect(storage.persistenceError).not.toBe('');
+    await storage.resetSave(freshSave());
+    expect(data.get('main')).toMatchObject({ version: 2, revision: 8, started: false });
+    expect(storage.persistenceError).toBe('');
+  });
+});

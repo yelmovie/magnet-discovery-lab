@@ -98,7 +98,7 @@ body.quest-mode {
 #app .field-chip-art :is(.material-art, .equipment-art) { width: 40px; height: 40px; filter: none; }
 #app .field-chip-art .equipment-art { height: auto; }
 body.quest-mode #app .field-chip-art .bar-magnet { width: 40px; height: 16px; font-size: 9px; }
-#app .field-paper { width: 22px; border: 0; background: url('/assets/quest/prop-paper.webp') center / contain no-repeat; color: transparent; }
+#app .field-paper { border: 0; background: url('/assets/quest/prop-paper-sheet.webp') center / 100% 100% no-repeat; color: transparent; }
 #app .route-track { border-bottom: 0; padding-bottom: 26px; background: url('/assets/quest/prop-rail.webp') center bottom / 100% 26px no-repeat; }
 
 /* ── Report: the city stays behind the research notebook ── */
