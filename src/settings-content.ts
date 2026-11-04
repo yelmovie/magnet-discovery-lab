@@ -67,7 +67,7 @@ export const settingsContent = {
   educationSources: '교육 내용 구성 참고: 교육부(moe.go.kr), 충청북도교육청(cbe.go.kr).',
   reset: '탐험 기록 초기화',
   resetTitle: '탐험 기록을 초기화할까요?',
-  resetDescription: '별명, 진행, 얻은 도구와 발견 도장, 실험·연구 기록, 발명 설계, 완료 기록이 이 기기에서 지워져요. 소리 설정은 남아요.',
+  resetDescription: '별명, 진행, 얻은 도구와 발견 도장, 실험·연구 기록, 발명 설계, 내 목소리 녹음, 완료 기록이 이 기기에서 지워져요. 소리 설정은 남아요.',
   resetCancel: '취소',
   resetConfirm: '기록 지우기',
   teacherReset: '교사용 기록 지우기',

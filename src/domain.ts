@@ -2,6 +2,7 @@ import { currentInventionTrial, paperComparison, validTrial, type Trial } from '
 import { missionReady } from './mission-model';
 import { inquiryReady } from './inquiry-model';
 import { reviewPassed, validReview, type FinalReview } from './final-review';
+import { ideaReady, validIdea, type Idea } from './idea-model';
 export type Pole = 'N' | 'S';
 export type Relation = 'attract' | 'repel' | 'none';
 export type Point = { x: number; y: number };
@@ -23,6 +24,7 @@ export interface Save {
   completed: number[]; evidence: Evidence[]; activities: Record<number, Activity>;
   greetedResidents?: number[];
   design: Design; designs: Partial<Record<'box' | 'remote', Design>>;
+  idea?: Idea;
   resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number };
   final: { report: boolean; latch: Pole; ring: Pole; plate: number; complete: boolean; date: string; review?: FinalReview; route?: { mode: 'basic' | 'challenge'; repair: 'delivery' | 'rings' | 'invention'; installed: boolean; operated: boolean; segments: string[]; revision: number; template: string; attempt?: Activity; optionalBackup?: string; replayEvidenceIds?: number[] } };
 }
@@ -66,6 +68,7 @@ export function value(a: Activity, key: string, fallback: number): number { retu
 export function flag(a: Activity, key: string): boolean { return a.values[key] === true; }
 export function record(a: Activity, o: Observation): void { const i = a.records.findIndex(r => r.key === o.key); if (i >= 0) a.records[i] = o; else a.records.push(o); }
 export function ready(screen: number, a: Activity, s: Save): boolean {
+  if (a.values.ideaVersion === 1) return ideaReady(screen, s.idea);
   if (a.values.playVersion === 4) return missionReady(screen, a, s) && inquiryReady(screen,a);
   const f = (k: string) => flag(a, k);
   if (a.values.playVersion === 3) {
@@ -179,6 +182,7 @@ export function migrateSave(input: unknown): Save | null {
   const next = structuredClone(input);
   next.version = 2;
   next.designs ||= {};
+  if (next.idea && !validIdea(next.idea)) delete next.idea;
   next.greetedResidents = Array.isArray(next.greetedResidents)
     ? next.evidence.map(e => e.stage).filter(stage => next.greetedResidents!.includes(stage))
     : [];

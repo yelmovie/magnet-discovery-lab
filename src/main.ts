@@ -25,13 +25,15 @@ import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } f
 import { bindResidentChat, chatMarkup, reunionTitle } from './resident-chat';
 import { openGameSettings } from './game-settings';
 import { playStory, type FilmId } from './story-video';
-import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
+import { ensureAudio, syncAudioSettings, playEffect, playNarration, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
 import { rewardBelt } from './adventure';
 import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, missionNames, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
-import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
+import { resetSave, load, persist, persistenceError, migrationNotice, clearRecordings } from './storage';
+import { ideaView } from './idea-lab';
+import { usesIdeaLab } from './idea-model';
 import { icon, magnet, mascot, objectArt } from './art';
 import type { View } from './activity-types';
 
@@ -56,6 +58,7 @@ type Route = { page: Page; screen: number };
 let adminBackup: { save: Save; route: Route; history: Route[]; practice: PracticeBackup | null } | null = null;
 let currentRoute: Route = { page: 'title', screen: 1 };
 const backStack: Route[] = [];
+let stopCompanionVoice = () => {};
 const adminOn = () => adminBackup !== null;
 const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects || settings.music; };
 const canEnter = (n: number) => accessible(s, n, adminOn());
@@ -75,7 +78,7 @@ function saveSnapshot(): Save {
 }
 async function flush() { if (adminOn() || resetting) return; clearTimeout(saveTimer); saveTimer=0; saving = true; saveView(); try { const owner=s, snap = saveSnapshot(); await persist(snap); owner.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
 function touch() { if (adminOn() || resetting) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
-function cleanPage() { autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
+function cleanPage() { stopCompanionVoice(); autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
 function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; practiceBackup = null; }
 function go(next: typeof page, remember = true) {
   if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) backStack.push({ ...currentRoute });
@@ -109,7 +112,7 @@ function render() {
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
   }
-  app.innerHTML = `${questHud({ first: page === 'title', sound: audioEnabled(), canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
+  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', sound: audioEnabled(), canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
   bindCommon();
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
@@ -164,6 +167,7 @@ function nextStep(a: Activity) {
 function activityPage() {
   const model=s;
   const a=model.activities[screen] ||= emptyActivity();
+  if(usesIdeaLab(model,screen)){a.values.ideaVersion=1;currentView=ideaView(screen,a,model,adminOn());return currentView.html;}
   currentView=inquiryView(screen,a,model,adminOn());
   const next=nextStep(a);
   return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template)}<span class="stage-label">${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
@@ -178,7 +182,7 @@ function openRecords() {
   dispose = bindTrialReplay(modal.dialog, trials, s.settings.motion);
 }
 function meta() {
-  const a = s.activities[screen]; if (page !== 'activity' || !a) return;
+  const a = s.activities[screen]; if (page !== 'activity' || !a || a.values.ideaVersion === 1) return;
   const done = ready(screen, a, s); const next=nextStep(a); const button = document.querySelector<HTMLButtonElement>('[data-action="complete"]'); if (button) { button.disabled = !next.enabled; button.innerHTML=`${next.label} ${icon('arrow',24)}`; }
   const blocked=document.querySelector<HTMLButtonElement>('[data-action="missing-step"]');if(blocked)blocked.hidden=next.enabled;
   const hint = document.querySelector('#completion-hint'); if (hint) hint.textContent = done ? '탐구를 마쳤어! 다음으로 가볼까?' : '직접 실험하고 발견을 기록해보자.';
@@ -187,6 +191,11 @@ function meta() {
 }
 function bindActivity() {
   const root = document.querySelector<HTMLElement>('#experiment-root')!;
+  if (s.activities[screen].values.ideaVersion === 1) {
+    const dispose = currentView.bind({ screen, a: s.activities[screen], s, root, refresh: () => { cleanup?.(); cleanup = undefined; render(); }, touch, meta, notify });
+    cleanup = () => dispose?.();
+    return;
+  }
   bindConceptLinks(document.querySelector('.quest-activity')!);
   const refresh = () => {
     const active = document.activeElement as HTMLElement | null, scroll = window.scrollY;
@@ -233,20 +242,20 @@ async function finishActivity() {
   try { await finishActivityOnce(); } finally { finishingActivity = false; }
 }
 async function finishActivityOnce() {
-  const activity=s.activities[screen];
-  if(inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
-  if(adminOn()){if(advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
-  if(inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
+  const activity=s.activities[screen], idea=activity.values.ideaVersion===1;
+  if(!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+  if(adminOn()){if(!idea&&advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
+  if(!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
   if (!ready(screen, s.activities[screen], s)) return;
   sound(true);
   if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); restorePractice(); s.resume = 0; await flush(); go('city'); notify('다시 탐구했어! 처음 발견과 복구 기록은 그대로 보관돼.'); return; }
   const stage = Math.floor((screen - 1) / 2);
   const newResident = screen % 2 === 0 && !s.evidence.some(e => e.stage === stage);
-  if (screen === 9) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
+  if (screen === 9 && !idea) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
   if (!completeActivity(s, screen)) return;
   await flush();
   if (screen % 2) {
-    startActivity(screen+1);notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
+    startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
   }
   go('city');
   if(newResident)city?.welcomeResident(stage);
@@ -407,7 +416,7 @@ async function restartExploration(startNow: boolean) {
   next.settings = { ...s.settings, nickname: '', ability: undefined };
   next.started = startNow;
   try {
-    if (!preview) await resetSave(next);
+    if (!preview) { await resetSave(next); await clearRecordings().catch(() => undefined); }
   } catch {
     resetting = false;
     app.inert = Boolean(document.querySelector('.modal-backdrop'));
@@ -444,14 +453,14 @@ function openSettings() {
 function bindCommon() {
   document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b => b.addEventListener('click', () => { const action = b.dataset.action; sound();
     switch (action) {
-      case 'home': void flush(); go('title'); break;
+      case 'home': void flush(); go(page === 'city' ? 'title' : 'city'); break;
       case 'back': void flush(); goBack(); break;
       case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else go('city'); break;
       case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', () => void restartExploration(true)); break;
       case 'city': void flush(); go('city'); break;
       case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;
-      case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);break;}
+      case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);stopCompanionVoice();if(open)stopCompanionVoice=playNarration(`/audio/voices/mascot-${b.dataset.companionType}-title.mp3`,s.settings);break;}
       case 'notebook': if (page === 'activity') openRecords(); else notebook(); break;
       case 'retry-save': void flush(); break;
       case 'walk-next': if (city) city.goTo(s.evidence.length === 5 ? 5 : s.evidence.length); else pendingPlace = s.evidence.length === 5 ? 5 : s.evidence.length; break;

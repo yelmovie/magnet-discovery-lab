@@ -153,7 +153,7 @@ async function teacherUnlock(){
     await page.getByText('교사용 도구',{exact:true}).click();
   };
   await begin(1);
-  await action('home');
+  await action('home');await action('home');
   const student=await save();
   await tools();await page.locator('[data-settings-action="admin"]').click();
   await page.locator('.quest-city').waitFor();

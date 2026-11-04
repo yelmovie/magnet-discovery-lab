@@ -3,6 +3,7 @@ import { initializeFinal } from './final-mission';
 import { currentInventionTrial } from './trial-records';
 import { icon, mascot } from './art';
 import { experimentScenes } from './experiment-scenes';
+import { ideaCard } from './idea-content';
 import { finalQuestions, initializeReview, reviewPassed } from './final-review';
 import { playEffect } from './game-audio';
 import './final-notebook.css';
@@ -21,6 +22,7 @@ export function installRestoration(s:Save):void {
 }
 
 function recordPhotos(s:Save,stage:number) {
+  if(stage===4&&s.idea&&s.activities[10]?.values.ideaVersion===1)return ideaCard(s.idea);
   const first=stage*2+1, evidence=s.evidence.find(e=>e.stage===stage);
   const activities={...s.activities};
   evidence?.activities.forEach((activity,index)=>{if(index<2)activities[first+index]=activity;});

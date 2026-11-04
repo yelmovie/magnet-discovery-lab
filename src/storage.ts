@@ -6,8 +6,12 @@ export let persistenceError = '';
 export let migrationNotice = '';
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('push-pull-city', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('saves');
+    const request = indexedDB.open('push-pull-city', 2);
+    request.onupgradeneeded = () => {
+      const names = request.result.objectStoreNames;
+      if (!names?.contains('saves')) request.result.createObjectStore('saves');
+      if (!names?.contains('recordings')) request.result.createObjectStore('recordings');
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
     request.onblocked = () => reject(new Error('다른 탭을 닫고 다시 열어줘.'));
@@ -43,6 +47,26 @@ export async function load(): Promise<Save> {
     // independent music/effect controls. Persistence still uses its revision.
     return migrateSave(raw)!;
   } catch { persistenceError = '이 환경에서는 진행이 저장되지 않아. 현재 창에서 계속 플레이할 수 있어.'; return freshSave(); }
+}
+// The learner's voice stays on this device, in its own store so autosaves never copy it.
+let previewRecording: Blob | undefined;
+function recordings<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  return (db ? Promise.resolve(db) : openDatabase()).then(connection => new Promise<T>((resolve, reject) => {
+    const request = run(connection.transaction('recordings', mode).objectStore('recordings'));
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  }));
+}
+export async function saveRecording(blob: Blob, preview = false): Promise<void> {
+  if (preview) { previewRecording = blob; return; }
+  await recordings('readwrite', store => store.put(blob, 'idea'));
+}
+export function loadRecording(preview = false): Promise<Blob | undefined> {
+  return preview ? Promise.resolve(previewRecording) : recordings<Blob | undefined>('readonly', store => store.get('idea'));
+}
+export async function clearRecordings(): Promise<void> {
+  previewRecording = undefined;
+  await recordings('readwrite', store => store.clear());
 }
 export function persist(s: Save): Promise<void> {
   if (!db) return Promise.reject(new Error(persistenceError || '저장소에 연결할 수 없어.'));

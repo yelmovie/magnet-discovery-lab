@@ -4,6 +4,7 @@ const escapeText = (value: unknown): string => String(value).replace(/[&<>"']/g,
 
 export interface QuestHudOptions {
   home?: boolean;
+  homeLabel?: string;
   back?: boolean;
   sound?: boolean;
   canBack?: boolean;
@@ -12,10 +13,10 @@ export interface QuestHudOptions {
 }
 
 /** The four shared controls float over the world; they never create a header bar. */
-export function questHud({ home = true, back = true, sound = true, canBack = true, first = false, teacher = false }: QuestHudOptions = {}): string {
+export function questHud({ home = true, homeLabel = '지도로 가요', back = true, sound = true, canBack = true, first = false, teacher = false }: QuestHudOptions = {}): string {
   const control = (action: string, label: string, graphic: string, extra = '', caption = '') => `<button type="button" class="quest-icon" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(graphic, 27)}${caption}</button>`;
   const settings=control('settings',teacher?'교사용 해금 중 · 설정을 열어요':'설정을 열어요','gear','',teacher?'<span class="teacher-hud-label">교사</span>':'');
-  return `<nav class="quest-hud" aria-label="화면과 소리 설정"><div class="quest-hud-left">${!first && home ? control('home', '시작 화면으로 가요', 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${control('sound', sound ? '소리를 꺼요' : '소리를 켜요', sound ? 'sound' : 'mute', `aria-pressed="${sound}"`)}${settings}</div></nav>`;
+  return `<nav class="quest-hud" aria-label="화면과 소리 설정"><div class="quest-hud-left">${!first && home ? control('home', homeLabel, 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${control('sound', sound ? '소리를 꺼요' : '소리를 켜요', sound ? 'sound' : 'mute', `aria-pressed="${sound}"`)}${settings}</div></nav>`;
 }
 
 export interface QuestCompanionOptions {
