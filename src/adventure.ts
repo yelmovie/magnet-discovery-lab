@@ -1,7 +1,7 @@
-import { flag, value, record, materials, opposite, relation, ringGaps, designResult, defaultDesign, type Activity, type Point, type Pole, type Save } from './domain';
-import { magnet, objectArt, mascot, icon } from './art';
+import { flag, value, record, opposite, relation, type Activity, type Point, type Pole, type Save } from './domain';
+import { magnet, mascot, icon } from './art';
 import { btn, on, update, type Context, type View } from './activity-types';
-import { bindDrag, draggable, spot, near, clamp, placementControls } from './manipulation';
+import { bindDrag, draggable, spot, near, placementControls } from './manipulation';
 import { investigateView, repairView, sortingView, ringsView, inventionView, inventionTestView, compassView } from './tablet-activities';
 import { deliveryView } from './delivery';
 import { distanceView } from './distance';
@@ -23,9 +23,8 @@ const done = (a: Activity, k: string, label: string, result: string) => {
   addTrial(a, { key: k, activity: value(a, 'activityNumber', 1), conditions: { label, result }, initialObjects, objects, input: [], outcome: result, pinned: true });
 };
 function say(c: Context, text: string, success = false) { c.a.values.say = text; c.a.values.mood = success ? 3 : 2; update(c); }
-function live(c: Context, text: string) { const el = c.root.querySelector('[data-live]'); if (el) el.textContent = text; }
 const cleanupAll = (items: (() => void)[]) => () => items.forEach(fn => fn());
-function shell(a: Activity, title: string, tip: string, board: string, controls = '', count = '') {
+function shell(a: Activity, title: string, tip: string, board: string, controls = '') {
   const mood = value(a, 'mood', 0);
   a.values.question = title;
   return `<div class="play-board">${board}</div><div class="action-dock">${controls}</div><div class="buddy-dialogue" role="status">${mascot('dangi', 52, mood)}<p data-live>${String(a.values.say || tip)}</p></div>${placementControls}`;
@@ -51,7 +50,7 @@ function poles(a: Activity): View {
   if (!a.values.poles) a.values.poles = 'NS' + (Math.random() < .5 ? 'SN' : 'NS');
   const hidden = String(a.values.poles)[r] as Pole, solved = flag(a, `solved${r}`), known = r < 2, tested = flag(a, `test${r}${p}`);
   const mp = pt(a, 'reference', 24, 48), last = tested ? relation(p, hidden) : undefined;
-  return { html: shell(a, known ? '자석을 가까이하고, 뒤집어서 한 번 더!' : '색이 없는 자석. 반응을 보고 극을 복원해 줘.', '기준 자석을 오른쪽 자석 가까이 끌어 봐. 반대 극으로 뒤집어 같은 방법으로 비교하자.', `${draggable('reference', `기준 자석. 오른쪽 끝 ${p}극`, mp, magnet(opposite(p)))}<div class="mystery-magnet ${tested ? last : ''}"><span>${known || solved ? hidden : '?'}</span><span>${known || solved ? opposite(hidden) : '?'}</span><b>${known ? '연습 자석' : `정체를 모르는 자석 ${r - 1}`}</b></div><div class="force-indicator">${tested ? last === 'repel' ? '←  밀어냄  →' : '→  끌어당김  ←' : '가까이 대어 봐'}</div>${!known && !solved ? `${draggable('labelN', 'N극 표시 스티커', { x: 31, y: 81 }, '<b>N</b>', 'pole-sticker n')}${draggable('labelS', 'S극 표시 스티커', { x: 47, y: 81 }, '<b>S</b>', 'pole-sticker s')}${spot({ x: 65, y: 49 }, '왼쪽 극 표시', 'label-target')}` : ''}<div class="pole-records">${(['N', 'S'] as Pole[]).map(q => `<span class="${flag(a, `test${r}${q}`) ? 'checked' : ''}">기준 ${q}극 → ${flag(a, `test${r}${q}`) ? relation(q, hidden) === 'repel' ? '밀어냄' : '끌어당김' : '관찰 전'}</span>`).join('')}</div>`, `${btn('flip', `기준 자석 뒤집기 · ${p}극`)}${r === 3 && solved ? btn('compass', '더 해 보기 · 나침반') : ''}${solved && r < 3 ? btn('next', r === 1 ? '회색 자석의 극 추리하기 →' : '다음 자석으로 →', 'primary') : ''}`, `힘 관찰 렌즈 사용 · ${r + 1} / 4`), bind(c) {
+  return { html: shell(a, known ? '자석을 가까이하고, 뒤집어서 한 번 더!' : '색이 없는 자석. 반응을 보고 극을 복원해 줘.', '기준 자석을 오른쪽 자석 가까이 끌어 봐. 반대 극으로 뒤집어 같은 방법으로 비교하자.', `${draggable('reference', `기준 자석. 오른쪽 끝 ${p}극`, mp, magnet(opposite(p)))}<div class="mystery-magnet ${tested ? last : ''}"><span>${known || solved ? hidden : '?'}</span><span>${known || solved ? opposite(hidden) : '?'}</span><b>${known ? '연습 자석' : `정체를 모르는 자석 ${r - 1}`}</b></div><div class="force-indicator">${tested ? last === 'repel' ? '←  밀어냄  →' : '→  끌어당김  ←' : '가까이 대어 봐'}</div>${!known && !solved ? `${draggable('labelN', 'N극 표시 스티커', { x: 31, y: 81 }, '<b>N</b>', 'pole-sticker n')}${draggable('labelS', 'S극 표시 스티커', { x: 47, y: 81 }, '<b>S</b>', 'pole-sticker s')}${spot({ x: 65, y: 49 }, '왼쪽 극 표시', 'label-target')}` : ''}<div class="pole-records">${(['N', 'S'] as Pole[]).map(q => `<span class="${flag(a, `test${r}${q}`) ? 'checked' : ''}">기준 ${q}극 → ${flag(a, `test${r}${q}`) ? relation(q, hidden) === 'repel' ? '밀어냄' : '끌어당김' : '관찰 전'}</span>`).join('')}</div>`, `${btn('flip', `기준 자석 뒤집기 · ${p}극`)}${r === 3 && solved ? btn('compass', '더 해 보기 · 나침반') : ''}${solved && r < 3 ? btn('next', r === 1 ? '회색 자석의 극 추리하기 →' : '다음 자석으로 →', 'primary') : ''}`), bind(c) {
     const clean = [bindDrag(c, 'reference', mp, q => {
       a.points.reference = q;
       if (!near(q, { x: 48, y: 48 }, 12)) return say(c, '기준 자석의 오른쪽 끝을 다른 자석의 왼쪽 끝 가까이 가져가 봐.');

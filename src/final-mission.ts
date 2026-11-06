@@ -2,7 +2,7 @@ import { emptyActivity, finalRepairPassed, flag, type Save, type Activity } from
 import { inventionTestView, ringsView } from './tablet-activities';
 import { deliveryView } from './delivery';
 import { btn, on, update, type View, type Context } from './activity-types';
-import { addTrial, trialPicture } from './trial-records';
+import { trialPicture } from './trial-records';
 import { draggable, bindDrag, placementControls } from './manipulation';
 import { objectArt } from './art';
 

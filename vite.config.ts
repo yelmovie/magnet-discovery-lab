@@ -4,6 +4,18 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [{
+    // A stylesheet in <head> holds back the first paint, so the boot screen would wait for it.
+    // Module scripts still wait for this stylesheet, so the game never renders unstyled.
+    name: 'paint-boot-screen-before-stylesheet',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        const link = html.match(/[ \t]*<link rel="stylesheet"[^>]*>\r?\n?/)?.[0];
+        return link ? html.replace(link, '').replace('</body>', `${link.trim()}</body>`) : html;
+      },
+    },
+  }, {
     name: 'exclude-macos-metadata-from-release',
     apply: 'build',
     writeBundle({ dir }) {

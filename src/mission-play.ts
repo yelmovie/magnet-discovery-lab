@@ -7,7 +7,7 @@ import { assemblyAligned, assemblyIssue, distance, cellLabel, clearanceCells, ne
 import { shakePrompt, missionGuides, missionQuestions, questRewards } from './mission-content';
 import { playEffect, type EffectKind } from './game-audio';
 import { mailbox, lidPosition, inSocket, magnetInstalled, mountedMagnet, updateMailboxLayout } from './mailbox';
-import { drawMailbox, drawAssemblyCase, drawMagnetTray, drawStrikeBracket } from './mailbox-art';
+import { drawMailbox, drawAssemblyCase, drawMagnetTray } from './mailbox-art';
 import { clipCompareView, clipStops, pullEase } from './clip-comparison';
 import { handImages, handPose, handRelease, afterHandRelease } from './experiment-hand';
 import { clearedGlass, drawGlassStain, glassStains, wipeGlass } from './aquarium-glass';
@@ -247,14 +247,14 @@ function inspectionNote(a:Activity) {
     <ol><li data-done="${found}"><span aria-hidden="true">${found?'✓':'1'}</span>열어 부품 찾기</li><li data-done="${done}"><span aria-hidden="true">${done?'✓':'2'}</span>닫아 붙는지 확인</li></ol>
   </div>`;
 }
-function initialize(n: number, a: Activity) {
+function initialize(a: Activity) {
   if(a.values.playVersion===4)return;
   // Completed historical evidence is immutable. New attempts start a coherent new experiment.
   const fresh=emptyActivity();a.points=fresh.points;a.values={playVersion:4,mechanicsVersion:1,paceVersion:1};a.records=fresh.records;a.trials=[];a.mask=[];
   a.values.round=0;
 }
 export function missionView(n: number, a: Activity, s: Save): View {
-  initialize(n,a);
+  initialize(a);
   const round=Number(a.values.round||0), compact=a.values.paceVersion===1, hits:Hit[]=[];let actions='', comparison='';
   if(n<=2)updateMailboxLayout(a);
   const p=(id:string, fallback:Point)=>a.points[id]||fallback;

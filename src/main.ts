@@ -36,14 +36,14 @@ import { accessible, completeActivity, coreReady, designResult, emptyActivity, e
 import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
 import { ideaView } from './idea-lab';
 import { usesIdeaLab } from './idea-model';
-import { icon, magnet, mascot, objectArt } from './art';
+import { icon, mascot } from './art';
 import type { View } from './activity-types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const autoplay = new ExperimentAutoplay();
 type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
 let s: Save = freshSave(), page: Page = 'title';
-let screen = 1, city: ExpeditionHandle | undefined, selected = -1, cleanup: (() => void) | undefined;
+let screen = 1, city: ExpeditionHandle | undefined, cleanup: (() => void) | undefined;
 let saveTimer = 0, saving = false, saveMessage = '', modalCleanup: (() => void) | undefined;
 let resetting = false;
 const resetChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('push-pull-city:reset') : null;
@@ -148,7 +148,6 @@ function showResident(stage:number) {
   });
 }
 function showPlace(index:number) {
-  selected=index;
   const open=adminOn() || index<=s.evidence.length, done=index<s.evidence.length;
   if(adminOn()){
     if(index===5){s.final.report=true;go(s.final.complete?'certificate':'core');}
@@ -435,7 +434,6 @@ async function restartExploration(startNow: boolean) {
   practiceBackup = null;
   pendingPlace = null;
   screen = 1;
-  selected = -1;
   backStack.length = 0;
   s = next;
   if (!preview) {

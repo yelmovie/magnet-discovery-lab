@@ -34,7 +34,18 @@ function stage(host: HTMLElement, target: THREE.Vector3, distance: number, motio
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  host.append(renderer.domElement);
+  const canvas = renderer.domElement;
+  host.append(canvas);
+  // Tablets under memory pressure can drop the GPU context; without this the learner sees an empty box.
+  const notice = document.createElement('p');
+  notice.className = 'view3d-loading'; notice.setAttribute('role', 'status');
+  notice.textContent = '3D 그림이 잠시 끊겼어. 창을 닫고 다시 열어 봐. 실험대에서는 그대로 계속할 수 있어.';
+  let lost = false, dirty = true;
+  const invalidate = () => { dirty = true; };
+  const onLost = () => { lost = true; canvas.style.visibility = 'hidden'; host.append(notice); };
+  const onRestored = () => { lost = false; canvas.style.visibility = ''; notice.remove(); invalidate(); };
+  canvas.addEventListener('webglcontextlost', onLost);
+  canvas.addEventListener('webglcontextrestored', onRestored);
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer), env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environment = env; scene.environmentIntensity = 0.55;
@@ -51,18 +62,29 @@ function stage(host: HTMLElement, target: THREE.Vector3, distance: number, motio
   // Low enough to peek under a ring, never under the table.
   controls.minPolarAngle = 0.3; controls.maxPolarAngle = 1.82; controls.minDistance = distance * 0.45; controls.maxDistance = distance * 1.6;
   controls.update();
-  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  controls.addEventListener('change', invalidate);
+  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); invalidate(); };
   const observer = new ResizeObserver(resize); observer.observe(host); resize();
-  const tickers: ((dt: number) => void)[] = [];
+  // A ticker returns true while it moves something. A still scene is not drawn again.
+  const tickers: ((dt: number) => boolean)[] = [];
   let raf = 0, last = performance.now();
-  const loop = (now: number) => { raf = requestAnimationFrame(loop); if (document.hidden) { last = now; return; } const dt = Math.min(0.05, (now - last) / 1000); last = now; tickers.forEach(t => t(dt)); controls.update(); renderer.render(scene, camera); };
+  const loop = (now: number) => {
+    raf = requestAnimationFrame(loop);
+    if (document.hidden) { last = now; invalidate(); return; }
+    if (lost) { last = now; return; }
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    for (const tick of tickers) if (tick(dt)) invalidate();
+    controls.update();
+    if (dirty) { dirty = false; renderer.render(scene, camera); }
+  };
   raf = requestAnimationFrame(loop);
   const dispose = () => {
     cancelAnimationFrame(raf); observer.disconnect(); controls.dispose();
+    canvas.removeEventListener('webglcontextlost', onLost); canvas.removeEventListener('webglcontextrestored', onRestored); notice.remove();
     scene.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh && !(o as THREE.Sprite).isSprite) return; m.geometry?.dispose(); const mats = Array.isArray(m.material) ? m.material : [m.material]; mats.forEach(mat => { if (!mat) return; Object.values(mat).forEach(v => { if (v instanceof THREE.Texture) v.dispose(); }); mat.dispose(); }); });
     env.dispose(); pmrem.dispose(); renderer.dispose(); renderer.domElement.remove();
   };
-  return { scene, tickers, dispose };
+  return { scene, tickers, invalidate, dispose };
 }
 
 function poleLabel(pole: Pole) {
@@ -93,6 +115,7 @@ export async function mountRingView(host: HTMLElement, rings: RingPose[], motion
       holder.add(top, bottom); view.scene.add(holder);
     }
   } catch (error) { view.dispose(); throw error; }
+  view.invalidate();
   return view.dispose;
 }
 
@@ -128,16 +151,19 @@ export async function mountRemoteDemo(host: HTMLElement, motion: boolean) {
     tray.position.set(REMOTE.handleX, trayY - 0.02, -REMOTE.glassHalf - REMOTE.trayHalfZ);
   };
   place();
+  view.invalidate();
   view.tickers.push(dt => {
+    const wasAway = away, wasTray = trayY;
     away += ((attached ? 0 : REMOTE.gap) - away) * Math.min(1, motion ? dt * 10 : 1);
     // A touching magnet drags the tray with a little lag; pulled away, the tray stays where it is.
     if (attached) trayY += (handleY() - trayY) * Math.min(1, motion ? dt * 6 : 1);
     place();
+    return Math.abs(away - wasAway) + Math.abs(trayY - wasTray) > 1e-6;
   });
   return {
     dispose: view.dispose,
-    setLevel(value: number) { level = Math.max(0, Math.min(1, value)); },
-    setAttached(value: boolean) { attached = value; },
+    setLevel(value: number) { level = Math.max(0, Math.min(1, value)); view.invalidate(); },
+    setAttached(value: boolean) { attached = value; view.invalidate(); },
     get trayLevel() { return (trayY - REMOTE.low) / (REMOTE.high - REMOTE.low); },
   };
 }
@@ -156,18 +182,20 @@ export async function mountBoxDemo(host: HTMLElement, motion: boolean, onSnap: (
   const SNAP = 16;
   const apply = () => { hinge.rotation.x = -THREE.MathUtils.degToRad(angle); };
   apply();
+  view.invalidate();
   view.tickers.push(dt => {
-    if (angle === goal) return;
+    if (angle === goal) return false;
     // Snapping accelerates like a pull; ordinary moves follow the slider smoothly.
     const speed = snapped ? 420 : 160, step = motion ? speed * dt : Math.abs(goal - angle);
     angle = angle > goal ? Math.max(goal, angle - step) : Math.min(goal, angle + step); apply();
+    return true;
   });
   return {
     dispose: view.dispose,
     setAngle(value: number) {
       if (value <= SNAP) { goal = 0; if (!snapped) { snapped = true; onSnap(); } }
       else { goal = value; snapped = false; }
-      if (!motion) { angle = goal; apply(); }
+      if (!motion) { angle = goal; apply(); view.invalidate(); }
     },
     get snapped() { return snapped; },
   };

@@ -1,0 +1,7 @@
+# Vite puts a content hash in these names, so a new build is always a new URL.
+/assets/index-*
+  Cache-Control: public, max-age=31536000, immutable
+/assets/three-view-*
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/*
+  Cache-Control: public, max-age=2592000

@@ -1,7 +1,7 @@
-import { flag, value, record, materials, opposite, relation, ringGaps, designResult, defaultDesign, type Activity, type Point, type Pole, type Save } from './domain';
+import { flag, value, record, materials, opposite, ringGaps, designResult, defaultDesign, type Activity, type Point, type Pole, type Save } from './domain';
 import { magnet, objectArt, mascot } from './art';
 import { btn, on, update, type Context, type View } from './activity-types';
-import { bindDrag, draggable, spot, near, placementControls, clamp } from './manipulation';
+import { bindDrag, draggable, spot, near, placementControls } from './manipulation';
 import { addTrial, currentInventionTrial, uprightMagnet, type TrialObject } from './trial-records';
 
 const pt = (a: Activity, id: string, x: number, y: number) => a.points[id] || { x, y };
