@@ -133,6 +133,6 @@ node scripts/verify-release.mjs https://magnet-city.pages.dev
 node scripts/release-smoke.cjs https://magnet-city.pages.dev test-results/release-smoke
 ```
 
-`verify-release.mjs`는 `dist/`의 모든 파일을 운영에서 다시 받아 SHA-256을 비교하고, `release-smoke.cjs`는 두 해상도에서 첫 조립과 이어하기, 고리 3D, 발명 수첩과 인증서를 확인한다. 운영은 [2026-11-04 배포 기록](docs/reviews/MAGNET-RELEASE-20261104.md)을 참고한다.
+`verify-release.mjs`는 `dist/`의 모든 파일을 운영에서 다시 받아 SHA-256을 비교하고, `release-smoke.cjs`는 두 해상도에서 첫 조립과 이어하기, 고리 3D, 발명 수첩과 인증서를 확인한다. 운영은 [2026-11-06 배포 기록](docs/reviews/RELEASE-REVIEW-20261106.md)을 참고한다.
 
 검증한 빌드 파일을 직접 올리는 방식이다. GitHub에 커밋만 푸시하면 자동으로 배포되는 구성은 아니다.
