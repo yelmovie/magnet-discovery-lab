@@ -45,6 +45,10 @@ export function trialOutcome(outcome: string): string {
 }
 export const readableRecord = (text:string) => text.replace(/\b(attract|repel|none|success|failure)\b/g,trialOutcome);
 export function trialTitle(t:Trial):string {
+  const title=plainTrialTitle(t);
+  return t.conditions.autoplay===true?`${title} · 자동재생`:title;
+}
+function plainTrialTitle(t:Trial):string {
   if(t.activity===4){
     if(t.conditions.paper===true)return '종이 한 장을 사이에 두면?';
     if(t.key==='rescue')return '철 열쇠 끌어오기';

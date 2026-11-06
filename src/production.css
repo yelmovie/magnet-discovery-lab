@@ -1,11 +1,6 @@
 /* The expedition's shared finish: warm paper, dark teal ink, and brass hardware. */
 body.quest-mode {
   --production-ink: #183f43;
-  --production-muted: #496663;
-  --production-paper: #fffcf1;
-  --production-line: #b7c0a8;
-  --production-teal: #246c65;
-  --production-brass: #ab7b35;
   --font-size-caption: clamp(16px, 1.2vw, 18px);
   --font-size-body: clamp(18px, 1.5vw, 23px);
   --font-size-button: clamp(20px, 1.65vw, 26px);

@@ -177,6 +177,25 @@ export function validSave(input: unknown): input is Save {
   if (s.final.complete && !coreReady(s)) return false;
   return Number.isFinite(s.city.x) && Number.isFinite(s.city.y);
 }
+/** Keeps every field that still reads correctly. Unknown versions stay untouched: a newer build wrote them. */
+export function repairSave(input: unknown): Save | null {
+  if (!input || typeof input !== 'object') return null;
+  const raw = input as Partial<Record<keyof Save, unknown>>;
+  if (raw.version !== 1 && raw.version !== 2) return null;
+  const next = freshSave();
+  const keep = <K extends keyof Save>(key: K, value: unknown) => { const trial = { ...next, [key]: value }; if (validSave(trial)) Object.assign(next, { [key]: value }); };
+  keep('revision', raw.revision); if (typeof raw.updated === 'string') next.updated = raw.updated;
+  if (Array.isArray(raw.completed)) keep('completed', raw.completed.filter(n => Number.isInteger(n) && n >= 1 && n <= 10));
+  if (Array.isArray(raw.evidence)) for (const evidence of raw.evidence) { const before = next.evidence.length; keep('evidence', [...next.evidence, evidence]); if (next.evidence.length === before) break; }
+  if (raw.activities && typeof raw.activities === 'object') for (const [n, activity] of Object.entries(raw.activities)) keep('activities', { ...next.activities, [n]: activity });
+  for (const key of ['design', 'designs', 'idea', 'greetedResidents', 'city', 'final'] as const) keep(key, raw[key]);
+  if (Number.isInteger(raw.resume)) next.resume = raw.resume as number;
+  if (raw.settings && typeof raw.settings === 'object') { const s = raw.settings as Partial<Save['settings']>; if (typeof s.sound === 'boolean') next.settings.sound = s.sound; if (typeof s.motion === 'boolean') next.settings.motion = s.motion; if (typeof s.nickname === 'string') next.settings.nickname = s.nickname; }
+  const recovered = next.completed.length > 0 || Object.keys(next.activities).length > 0;
+  if (!recovered) return null;
+  next.started = true;
+  return migrateSave(next);
+}
 export function migrateSave(input: unknown): Save | null {
   if (!validSave(input)) return null;
   const next = structuredClone(input);

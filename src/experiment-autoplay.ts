@@ -179,6 +179,7 @@ export class ExperimentAutoplay {
     caption.hidden=!run;
     if(run){const text=run.mode==='finished'?autoplayResult(a.stage,run.save):`${playing?'자동재생':'멈춤'} · ${run.label}`;if(caption.textContent!==text)caption.textContent=text;}
     if(run?.mode==='paused')a.root.dataset.demoPaused='true';else delete a.root.dataset.demoPaused;
+    if(run&&run.mode!=='finished')a.root.dataset.demoRun='true';else delete a.root.dataset.demoRun;
     a.root.classList.toggle('demo-bench',!!run&&run.mode!=='finished');
   }
   private pause() {

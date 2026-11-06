@@ -31,7 +31,7 @@ import { ensureAudio, syncAudioSettings, playEffect, playNarration, setAudioPaus
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
-import { rewardBelt } from './adventure';
+import { rewardBelt } from './rewards';
 import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, missionNames, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
 import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
 import { ideaView } from './idea-lab';

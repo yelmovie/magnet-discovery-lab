@@ -61,7 +61,7 @@ class Surface {
   }
   proof(key: string, label: string, outcome = 'success', extra: Record<string, string | number | boolean> = {}) {
     const objects = Object.entries(this.a.points).filter(([id]) => !id.startsWith('initial:')&&!id.startsWith('assembly-')).map(([id, p]) => ({ id, ...p }));
-    const trial=addTrial(this.a, { key, activity: this.n, conditions: { label, ...extra }, initialObjects: Object.entries(this.a.points).filter(([id]) => id.startsWith('initial:')&&!id.startsWith('initial:assembly-')).map(([id, p]) => ({ id: id.slice(8), ...p })), objects, input: this.path, outcome, designRevision: this.s.design.revision, template: this.s.design.template, pinned: true });
+    const trial=addTrial(this.a, { key, activity: this.n, conditions: { label, ...extra, ...(this.c.root.dataset.demoRun!==undefined?{autoplay:true}:{}) }, initialObjects: Object.entries(this.a.points).filter(([id]) => id.startsWith('initial:')&&!id.startsWith('initial:assembly-')).map(([id, p]) => ({ id: id.slice(8), ...p })), objects, input: this.path, outcome, designRevision: this.s.design.revision, template: this.s.design.template, pinned: true });
     record(this.a, { key, label, result: trialOutcome(outcome) }); this.c.touch(); this.c.meta(); this.path = [];return trial;
   }
   button(id: string, fn: () => void) { this.c.root.querySelector(`[data-mission="${id}"]`)?.addEventListener('click', fn); }

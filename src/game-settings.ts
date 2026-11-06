@@ -1,3 +1,4 @@
+import { activityMeta } from './activity-meta';
 import { type Save } from './domain';
 import { normalizedAudioSettings, playEffect, syncAudioSettings, type AudioSettings } from './game-audio';
 import { settingsContent as copy } from './settings-content';
@@ -28,6 +29,7 @@ function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
   const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
   const teacher = fold(copy.standards, `<dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
+    + fold(copy.goals, `<dl class="settings-standards">${activityMeta.map(meta => `<div><dt>활동 ${meta.activity} · [${meta.standards.join(', ')}]</dt><dd>${meta.objective}${meta.needsReview ? ` <small>${copy.goalsDraft}</small>` : ''}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.tools, `<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
   const copyright = paragraphs(copy.copyrightGuide)
     + fold(copy.sources, `<p>${copy.sourcesIntroduction}</p><dl class="settings-sources">${copy.sourceGroups.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)

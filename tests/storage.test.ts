@@ -64,6 +64,21 @@ describe('atomic v1 migration', () => {
   });
 });
 
+describe('damaged save repair', () => {
+  const damaged = () => { const save = freshSave(); save.started = true; save.revision = 4; save.completed = [1, 2]; save.activities[1] = { values: { latch0: true }, points: {}, records: [], mask: [] }; (save.activities as Record<number, unknown>)[2] = { values: 'broken' }; return save; };
+  it('keeps readable fields, backs up the original and tells the learner', async () => {
+    const original = damaged(), data = databaseWith(original), storage = await import('../src/storage'), next = await storage.load();
+    expect(next.completed).toEqual([1, 2]); expect(next.activities[1].values.latch0).toBe(true); expect(next.activities[2]).toBeUndefined();
+    expect(data.get('corrupt-backup')).toEqual(original); expect(data.get('main')).toEqual(next);
+    expect(storage.migrationNotice).toContain('되살렸어'); expect(storage.persistenceError).toBe('');
+    await storage.persist(next); expect(data.get('main')).toMatchObject({ revision: 5 });
+  });
+  it('leaves main intact when the repair cannot be committed', async () => {
+    const original = damaged(), data = databaseWith(original, true), storage = await import('../src/storage'); await storage.load();
+    expect(data.get('main')).toEqual(original); expect(data.has('corrupt-backup')).toBe(false); expect(storage.persistenceError).toContain('원본은 보존');
+  });
+});
+
 describe('v2 preference compatibility', () => {
   it('materializes independent sound defaults without rewriting the stored original on load', async () => {
     const old=freshSave();delete old.settings.music;delete old.settings.effects;delete old.settings.musicVolume;

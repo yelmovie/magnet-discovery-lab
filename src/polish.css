@@ -2,11 +2,9 @@
    image-backed props instead of flat boxes, and finish pages that keep the
    city's brass-and-paper art direction. Layout of the canvas board is untouched. */
 body.quest-mode {
-  --polish-paper: #fffcf2;
   --polish-ink: #173f47;
   --polish-muted: #4f6a62;
   --polish-brass: #ab7b35;
-  --polish-brass-light: #ffe7a2;
   --polish-line: #c9c09c;
   --polish-shadow: 0 4px 0 #173f4718, 0 14px 32px #173f4726;
   --font-size-chip: clamp(16px, 1.3vw, 19px);

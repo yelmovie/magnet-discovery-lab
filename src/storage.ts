@@ -1,4 +1,4 @@
-import { freshSave, migrateSave, validSave, type Save } from './domain';
+import { freshSave, migrateSave, repairSave, validSave, type Save } from './domain';
 let db: IDBDatabase | null = null;
 let expectedRevision = 0;
 let queue = Promise.resolve();
@@ -22,7 +22,21 @@ export async function load(): Promise<Save> {
     db = await openDatabase();
     const raw: unknown = await new Promise((resolve, reject) => { const r = db!.transaction('saves').objectStore('saves').get('main'); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
     if (raw === undefined) return freshSave();
-    if (!validSave(raw)) { persistenceError = '기존 저장을 읽을 수 없어. 원본은 보존했어. 새로 시작을 선택하면 초기화할 수 있어.'; db.close(); db = null; return freshSave(); }
+    if (!validSave(raw)) {
+      const repaired = repairSave(raw);
+      if (repaired) try {
+        // The damaged original is kept under its own key in the same commit as the repaired save.
+        await new Promise<void>((resolve, reject) => {
+          const tx = db!.transaction('saves', 'readwrite'), store = tx.objectStore('saves'), backup = store.get('corrupt-backup');
+          backup.onsuccess = () => { if (backup.result === undefined) store.put(raw, 'corrupt-backup'); store.put(repaired, 'main'); };
+          tx.oncomplete = () => resolve(); tx.onabort = tx.onerror = () => reject(new Error('저장 복구 실패'));
+        });
+        expectedRevision = repaired.revision;
+        migrationNotice = '저장 일부가 손상돼서 읽을 수 있는 기록만 되살렸어. 원본은 따로 보관했어.';
+        return repaired;
+      } catch { /* The untouched original stays in main; the message below explains what to do. */ }
+      persistenceError = '기존 저장을 읽을 수 없어. 원본은 보존했어. 새로 시작을 선택하면 초기화할 수 있어.'; db.close(); db = null; return freshSave();
+    }
     expectedRevision = raw.revision;
     if (raw.version === 1) {
       const migrated = migrateSave(raw)!;
