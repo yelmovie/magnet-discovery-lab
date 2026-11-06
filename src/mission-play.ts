@@ -584,7 +584,7 @@ function salvage(v: Surface){
     if(held<0){
       const beside=sortingSpecimens.filter(m=>!m.magnetic&&!v.has(`sorted-${m.id}`)&&v.has(`tested-${m.id}`))
         .map(m=>v.p(`material-${m.index}`,pt(m.x,m.y))).sort((a,b)=>distance(p,a)-distance(p,b))[0];
-      if(beside&&distance(p,beside)<10)v.set('sweep-magnet',pt(beside.x-12,beside.y));
+      if(beside&&distance(p,beside)<10)v.set('sweep-magnet',pt(Math.max(4,beside.x-12),beside.y));
     }
     v.draw();
   },scan);

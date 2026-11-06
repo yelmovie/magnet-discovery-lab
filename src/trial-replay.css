@@ -28,12 +28,12 @@ body.quest-mode .replay-scenes figure > svg {display:block;width:100%;height:aut
   font-size:clamp(16px,1.7vw,21px);line-height:1.4;font-weight:700;text-align:left;}
 .replay-controls {display:flex;align-items:center;gap:9px;}
 .replay-controls[hidden] {display:none;}
-.replay-controls button {min-width:94px;min-height:44px;padding:5px 10px;border:2px solid #386958;border-radius:11px;background:#2d685b;color:white;font:700 16px/1.2 var(--font-body);cursor:pointer;}
+.replay-controls button {min-width:94px;min-height:48px;padding:5px 10px;border:2px solid #386958;border-radius:11px;background:#2d685b;color:white;font:700 16px/1.2 var(--font-body);cursor:pointer;}
 .replay-time {display:flex;flex:1;min-width:0;align-items:center;gap:6px;margin:0;color:#3a5c50;font-size:14px;font-weight:700;white-space:nowrap;}
-.replay-time input[type=range] {flex:1;width:100%;min-width:45px;min-height:44px;margin:0;accent-color:#327461;cursor:pointer;}
+.replay-time input[type=range] {flex:1;width:100%;min-width:45px;min-height:48px;margin:0;accent-color:#327461;cursor:pointer;}
 .replay-empty {padding:14px 16px;border:1px solid #becab5;border-radius:12px;background:#eff4e9;line-height:1.55;}
 .record-drawer-content .replay-notes {margin:12px 0 0;border-top:1px solid #c2cab8;}
-.record-drawer-content .replay-notes summary {display:list-item;padding:10px 4px;min-height:44px;color:#365e4f;font-weight:700;cursor:pointer;}
+.record-drawer-content .replay-notes summary {display:list-item;padding:10px 4px;min-height:48px;color:#365e4f;font-weight:700;cursor:pointer;}
 .record-drawer-content :is(button,summary,input):focus-visible {outline:3px solid #146b5b;outline-offset:2px;}
 @media(max-width:680px) {
   .replay-layout {grid-template-columns:minmax(0,1fr);gap:8px;}
@@ -48,7 +48,7 @@ body.quest-mode .replay-scenes figure > svg {display:block;width:100%;height:aut
 @media(max-height:480px) and (min-aspect-ratio:1/1) {
   .modal:has(.record-drawer-content) {padding:10px 16px;max-height:96dvh;}
   .record-drawer-content > h2 {margin-bottom:5px;font-size:22px;}
-  .replay-choice {min-height:46px;padding:4px 6px;}
+  .replay-choice {min-height:48px;padding:4px 6px;}
   .replay-view h3 {margin:0 0 4px;}
   .record-drawer-content .replay-finding {padding:5px 8px;margin:4px 0;}
   body.quest-mode .replay-scenes figure > svg {max-height:24dvh;}

@@ -17,7 +17,7 @@ body.quest-mode #app:has(.final-review) { min-width: 0; height: 100dvh; }
 #app .final-notebook-heading strong { font: 400 clamp(24px,2.5vw,32px)/1.25 var(--font-display); }
 #app .final-notebook-heading > b { padding: 8px 12px; border-radius: 50%; border: 2px dashed #bb974e; color: #6d532a; background: #fff1c9; font: 700 18px/1.2 var(--font-body); white-space: nowrap; }
 #app .final-bookmarks { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
-#app .final-bookmark { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 1px solid #c8bea5; border-radius: 8px 8px 3px 3px; background: #eee9d8; color: #536f65; font: 700 16px/1.2 var(--font-body); cursor: pointer; }
+#app .final-bookmark { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 1px solid #c8bea5; border-radius: 8px 8px 3px 3px; background: #eee9d8; color: #536f65; font: 700 16px/1.2 var(--font-body); cursor: pointer; }
 #app .final-bookmark[aria-current="step"] { background: #246a60; border-color: #246a60; color: white; box-shadow: 0 3px 0 #bf963f; }
 #app .final-bookmark:disabled { opacity: .55; cursor: default; }
 #app .final-review-pages { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); gap: 24px; align-items: stretch; }

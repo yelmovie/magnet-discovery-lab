@@ -39,7 +39,7 @@ body.quest-mode .modal .apparatus-heading h2 { margin: 4px 0 0; font: 400 clamp(
 body.quest-mode .modal .apparatus-prompt { margin: 0; font: 400 clamp(18px, 2.25vw, 24px)/1.3 var(--font-display); }
 .apparatus-actions { display: grid; gap: 8px; }
 body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatus-footer .btn {
-  min-height: 48px; min-width: 44px; padding: 7px 10px; font-size: clamp(15px, 1.75vw, 19px); line-height: 1.2; white-space: nowrap;
+  min-height: 48px; min-width: 48px; padding: 7px 10px; font-size: clamp(15px, 1.75vw, 19px); line-height: 1.2; white-space: nowrap;
 }
 .apparatus-actions .btn:not(.primary), .apparatus-footer .btn { background: #fffdf3; color: #21484b; border: 2px solid #879b84; }
 .apparatus-actions .btn[aria-pressed='true'] { background: #dcebe3; border-color: #316e62; }
@@ -96,5 +96,5 @@ body.quest-mode .modal .apparatus-note {
   body.quest-mode .modal.apparatus-figure-dialog { padding: 10px; }
   body.quest-mode .modal .apparatus-prompt { font-size: 18px; }
   body.quest-mode .modal .apparatus-note { font-size: 14px; min-height: 0; }
-  body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatus-footer .btn { min-height: 44px; }
+  body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatus-footer .btn { min-height: 48px; }
 }

@@ -11,12 +11,12 @@
 .settings-dialog-body p{margin:0 0 12px;color:var(--settings-muted);font-size:18px;line-height:1.6}
 .settings-sound{display:grid;gap:14px;margin-bottom:20px}
 .settings-sound-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;font-size:20px;font-weight:800}
-.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:112px;min-height:46px;padding:6px 9px 6px 14px;border:2px solid #a69e85;border-radius:25px;background:#e5dfce;color:#475b61;font-size:17px;font-weight:800;box-shadow:0 2px 0 #a69e85}
+.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:112px;min-height:48px;padding:6px 9px 6px 14px;border:2px solid #a69e85;border-radius:25px;background:#e5dfce;color:#475b61;font-size:17px;font-weight:800;box-shadow:0 2px 0 #a69e85}
 .settings-switch i{width:27px;height:27px;flex:none;border-radius:50%;background:#fffaf0;box-shadow:0 1px 3px #24383c33}
 .settings-switch[aria-pressed="true"]{background:#167c75;border-color:#0e5d58;color:#fff;box-shadow:0 2px 0 #0e5d58}
 .settings-volume{display:grid;grid-template-columns:1fr auto;gap:7px 16px;align-items:center;font-size:19px;font-weight:800}
 .settings-volume output{color:var(--settings-accent);font-variant-numeric:tabular-nums}
-.settings-volume input{grid-column:1/-1;width:100%;height:44px;margin:0;accent-color:var(--settings-accent);cursor:pointer;touch-action:pan-x}
+.settings-volume input{grid-column:1/-1;width:100%;height:48px;margin:0;accent-color:var(--settings-accent);cursor:pointer;touch-action:pan-x}
 .settings-volume input:disabled{opacity:.4;cursor:default}
 .settings-replays{display:grid;gap:12px;margin-bottom:20px}
 .settings-button{display:flex;align-items:center;justify-content:center;gap:12px;min-height:48px;padding:11px 17px;border:2px solid #bcae8c;border-radius:14px;background:#fffdf6;color:var(--settings-ink);font-size:18px;font-weight:800;line-height:1.4;box-shadow:0 3px 0 #bcae8c;transition:transform .12s,background .12s,box-shadow .12s}

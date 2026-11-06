@@ -68,7 +68,7 @@ body.quest-mode .modal.town-reunion {
 }
 .town-replies .btn { text-align: start; }
 .resident-voice-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0 0 12px; text-align: start; }
-.resident-voice-controls .btn { min-height: 44px; }
+.resident-voice-controls .btn { min-height: 48px; }
 .resident-voice-controls small { color: #52685c; font: 500 14px/1.4 var(--font-body); }
 .friend-album {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
@@ -82,7 +82,7 @@ body.quest-mode .modal.town-reunion {
 body.quest-mode .resident-dialog .friend-receipt { margin: 6px 0 14px; font-size: 15px; color: #345d51; }
 @media (max-height:500px) and (orientation:landscape) {
   body.quest-mode .modal.town-reunion { width: min(640px,100%); padding: 8px 14px; }
-  .town-news img { height: 46px; width: 40px; }
+  .town-news img { height: 48px; width: 40px; }
   .town-news-actions { margin-top: 6px; }
 }
 @media (prefers-reduced-motion:no-preference) {

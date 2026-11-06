@@ -184,7 +184,7 @@ body.quest-mode .view3d-slider { display: flex; align-items: center; gap: 14px; 
 body.quest-mode .view3d-toggle { min-height: 48px; font-size: 18px; }
 body.quest-mode .view3d-toggle[aria-pressed='true'] { background: #fff0bd; border-color: #a57a31; }
 body.quest-mode .view3d-slider span { flex: none; }
-body.quest-mode .view3d-slider input { flex: 1; min-height: 44px; accent-color: var(--polish-brass); }
+body.quest-mode .view3d-slider input { flex: 1; min-height: 48px; accent-color: var(--polish-brass); }
 body.quest-mode .view3d .view3d-note { min-height: 1.45em; margin: 10px 0 0; font-weight: 700; color: #2f5a3a; }
 @media (max-height: 640px) { body.quest-mode .view3d-stage { height: 46dvh; } body.quest-mode .view3d .view3d-guide { margin-bottom: 8px; } }
 #app .restoration-success .restoration-3d { position: absolute; z-index: var(--layer-controls); left: 50%; bottom: 20px; translate: -50% 0; margin: 0; min-height: 52px; white-space: nowrap; }

@@ -83,7 +83,7 @@ function touch() { if (adminOn() || resetting) return; s.updated = new Date().to
 function cleanPage() { stopCompanionVoice(); autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
 function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; s.idea = practiceBackup.idea; practiceBackup = null; }
 function go(next: typeof page, remember = true) {
-  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) backStack.push({ ...currentRoute });
+  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) { backStack.push({ ...currentRoute }); history.pushState({ depth: (history.state?.depth ?? 0) + 1 }, ''); }
   cleanPage(); document.querySelector('.toast')?.remove(); if (next !== 'activity') restorePractice(); page = next;
   if (next === 'ending') setMusicTheme('final', true);
   currentRoute = { page, screen }; render(); window.scrollTo({ top: 0, behavior: 'instant' });
@@ -439,7 +439,7 @@ function bindCommon() {
   document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b => b.addEventListener('click', () => { const action = b.dataset.action; sound();
     switch (action) {
       case 'home': void flush(); go(page === 'city' ? 'title' : 'city'); break;
-      case 'back': void flush(); goBack(); break;
+      case 'back': void flush(); if (history.state?.depth) history.back(); else goBack(); break;
       case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else if (s.final.report && !s.final.complete && s.evidence.length === 5) go('core'); else go('city'); break;
       case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', () => void restartExploration(true)); break;
       case 'city': void flush(); go('city'); break;
@@ -475,6 +475,7 @@ function bindCommon() {
     }
   }));
 }
+window.addEventListener('popstate', () => { void flush(); goBack(); });
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });

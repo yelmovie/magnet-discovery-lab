@@ -12,7 +12,7 @@
   box-shadow: 0 3px 0 #b5944a30;
 }
 #app .inspection-symbol {
-  display: grid; place-items: center; width: 44px; height: 44px;
+  display: grid; place-items: center; width: 48px; height: 48px;
   border: 2px solid #bd9447; border-radius: 50%; background: #ffe5a1;
   font: 700 30px/1 var(--font-body);
 }
@@ -54,7 +54,7 @@ body.quest-mode #app .workshop-requests > button {
 #app .bench-view-toggle {
   position:absolute; z-index:16; left:var(--hud-inset,16px);
   top:calc(var(--hud-inset,16px) + var(--hud-icon-size,52px) + 10px);
-  min-height:44px; max-width:140px; padding:7px 12px; border:2px solid #658172;
+  min-height:48px; max-width:140px; padding:7px 12px; border:2px solid #658172;
   box-shadow:0 3px 0 #536c5e; background:#fffaf0; color:#214c46; line-height:1.2;
 }
 body.quest-mode #app .quest-activity:has(.bench-wide) > .mission-head { display:none; }
@@ -252,18 +252,18 @@ body.quest-mode #app .lab-coach .coach-bubble:not([hidden]),body.quest-mode #app
   body.quest-mode #app .quest-activity .learning-visual-preview span {font-size:12px;}
   body.quest-mode #app .quest-activity .learning-visual-preview img {height:32px;}
   #app .quest-activity .lab-coach {left:6px;bottom:6px;}
-  #app .quest-activity .coach-toggle {display:flex;align-items:center;gap:2px;min-height:44px;}
+  #app .quest-activity .coach-toggle {display:flex;align-items:center;gap:2px;min-height:48px;}
   #app .quest-activity .coach-toggle > .coach-body {width:30px;height:38px;}
-  #app .quest-activity .coach-toggle > span {min-height:44px;margin:0;padding:3px 6px;font-size:15px;}
+  #app .quest-activity .coach-toggle > span {min-height:48px;margin:0;padding:3px 6px;font-size:15px;}
   #app .quest-activity .mission-access:not([open]) {left:126px;bottom:6px;}
   #app .quest-activity .mission-study-tools {left:236px;bottom:6px;}
-  #app .quest-activity :is(.mission-access>summary,.mission-study-tools button,.mission-actions button,.mission-cta) {min-height:44px;padding:5px 8px;font-size:16px;}
+  #app .quest-activity :is(.mission-access>summary,.mission-study-tools button,.mission-actions button,.mission-cta) {min-height:48px;padding:5px 8px;font-size:16px;}
   #app .quest-activity > .mission-cta {bottom:6px;right:8px;}
   body.quest-mode #app .quest-activity :is(.coach-bubble:not([hidden]),.mission-access[open]) {top:4px;max-height:calc(100dvh - 62px);}
   #app .quest-activity .mission-head .play-question-copy {top:calc(100% + 2px);bottom:auto;}
   body.quest-mode #app .quest-activity .play-discovery {max-height:calc(100% - var(--inquiry-card-top) - 58px);padding:8px 12px;}
   body.quest-mode #app .screen-5 .mission-board > .mission-actions {left:auto;right:2%;transform:none;}
-  body.quest-mode #app .screen-6 .ring-flip {left:calc(6px - var(--fit-board-x)) !important;transform:none;min-height:44px;}
+  body.quest-mode #app .screen-6 .ring-flip {left:calc(6px - var(--fit-board-x)) !important;transform:none;min-height:48px;}
   body.quest-mode #app .screen-6 .ring-flip[aria-label^='1번'] {top:40% !important;}
   body.quest-mode #app .screen-6 .ring-flip[aria-label^='2번'] {top:54% !important;}
   body.quest-mode #app .screen-6 .ring-flip[aria-label^='3번'] {top:68% !important;}

@@ -1,7 +1,7 @@
 import { mailbox } from '../src/mailbox';
 import { mailboxParts, partKey, partInstalled } from '../src/mailbox-assembly';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { emptyActivity, freshSave, type Activity, type Point, type Save } from '../src/domain';
+import { emptyActivity, freshSave, validSave, type Activity, type Point, type Save } from '../src/domain';
 import { missionView } from '../src/mission-play';
 import { missionReady } from '../src/mission-model';
 import type { Context } from '../src/activity-types';
@@ -662,5 +662,34 @@ describe('먼 거리 관찰 뒤 직접 고르는 거리',()=>{
     const m=mount(4,{paceVersion:1,round:1});m.s.settings.motion=false;
     m.click('gap-3');m.click('release');expect(m.c.root.dataset.handState).toBe('released');
     m.click('gap-1');m.click('release');expect(m.a.values.done1).toBe(true);
+  });
+});
+
+// Every activity, many seeds: arbitrary touches in any order may never break the state a save depends on.
+describe('아무렇게나 조작해도 깨지지 않는 실험대',()=>{
+  const rng=(seed:number)=>()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296;};
+  const controls=(m:ReturnType<typeof mount>)=>[...(m.c.root as unknown as ElementStub).elements.keys()].filter(k=>/^\[data-(drag|mission)=/.test(k)&&!/bench-view|view3d/.test(k));
+  const sound=(m:ReturnType<typeof mount>)=>{
+    for(const [id,p] of Object.entries(m.a.points)){expect(Number.isFinite(p.x)&&Number.isFinite(p.y),id).toBe(true);expect(p.x,id).toBeGreaterThanOrEqual(-5);expect(p.x,id).toBeLessThanOrEqual(105);expect(p.y,id).toBeGreaterThanOrEqual(-5);expect(p.y,id).toBeLessThanOrEqual(105);}
+    expect(validSave(m.s)).toBe(true);
+    missionReady(m.c.screen,m.a,m.s);
+  };
+  for(let n=1;n<=8;n++)it(`활동 ${n}: 시드 12개 × 조작 120번`,()=>{
+    for(let seed=1;seed<=12;seed++){
+      const random=rng(seed*97+n);
+      let m=mount(n,{paceVersion:1,mechanicsVersion:1,inquiryVersion:2,inquiryActivity:n,inquiryPhase:'experiment'});
+      for(let step=0;step<120;step++){
+        const list=controls(m),target=list[Math.floor(random()*list.length)];
+        const id=/="([^"]+)"/.exec(target||'')?.[1];
+        const point={x:random()*100,y:random()*100};
+        if(id&&target.startsWith('[data-drag'))random()<.5?m.place(id,point):m.drag(id,m.a.points[id]||point,point);
+        else if(id)m.click(id);
+        tick(.28);
+        // The real page redraws after refresh(); a reopen is that redraw, with the same saved state.
+        if(step%15===14){sound(m);m=mount(n,{},m);}
+      }
+      sound(m);tick(2);sound(m);
+      cleanups.forEach(fn=>fn());cleanups=[];
+    }
   });
 });

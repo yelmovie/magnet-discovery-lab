@@ -48,12 +48,12 @@
 }
 #app .coach-bubble .coach-clue { margin: 6px 0 8px; font-size: 18px; line-height: 1.35; }
 #app .coach-bubble .coach-heading { font-size: 17px; }
-#app .coach-bubble .coach-heading button { min-width: 44px; width: 44px; height: 44px; }
-#app .coach-bubble .coach-more { min-height: 44px; padding: 6px 12px; font-size: 17px; }
-#app .mission-access[open] > summary { margin-bottom: 8px; min-height: 44px; }
+#app .coach-bubble .coach-heading button { min-width: 48px; width: 48px; height: 48px; }
+#app .coach-bubble .coach-more { min-height: 48px; padding: 6px 12px; font-size: 17px; }
+#app .mission-access[open] > summary { margin-bottom: 8px; min-height: 48px; }
 #app .mission-access[open] .placement-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 0; padding: 0; }
 #app .mission-access[open] [data-selected-label] { flex: 1 0 100%; text-align: center; font-size: 17px; }
-#app .mission-access[open] .placement-controls button { min-width: 48px; min-height: 44px; }
+#app .mission-access[open] .placement-controls button { min-width: 48px; min-height: 48px; }
 #app .mission-head .play-question[open] { position: relative; flex-basis: auto; padding: 0; }
 #app .mission-head .play-question-copy { position: absolute; top: calc(100% + 12px); right: 0; width: min(440px, calc(100vw - 64px)); padding: 14px 18px; border: 2px solid #8ca78d; border-radius: 14px; background: #fffdf1; box-shadow: 0 8px 24px #173f4733; text-align: left; }
 @media(max-width:1100px) {
@@ -92,7 +92,7 @@
 /* 크게 보기: one column, the picture grows past the frame and pans with its own scrollbars. */
 .learning-visual-layout figure { position: relative; }
 .learning-visual-frame { border-radius: 12px; }
-.learning-visual-zoom { position: absolute; top: 14px; right: 14px; z-index: 1; min-height: 44px; padding: 6px 14px; border: 2px solid #7e8d73; border-radius: 10px; background: #fff8e7f0; color: #173f47; font: 400 17px/1.2 var(--font-display); cursor: zoom-in; }
+.learning-visual-zoom { position: absolute; top: 14px; right: 14px; z-index: 1; min-height: 48px; padding: 6px 14px; border: 2px solid #7e8d73; border-radius: 10px; background: #fff8e7f0; color: #173f47; font: 400 17px/1.2 var(--font-display); cursor: zoom-in; }
 .learning-visual-zoom[aria-pressed='true'] { cursor: zoom-out; background: #f4c35c; border-color: #a9712f; }
 .modal.learning-visual-dialog.is-zoomed .learning-visual-layout { grid-template-columns: 1fr; }
 .modal.learning-visual-dialog.is-zoomed .learning-visual-layout figure { max-width: none; }
@@ -109,7 +109,7 @@
 #app .quiz-scenes figure{margin:0;width:clamp(74px,13vw,156px);text-align:center}
 #app .quiz-scenes img{display:block;width:100%;height:clamp(42px,8vh,76px);background:#fff8e7;object-fit:contain;border-radius:7px}
 #app .quiz-scenes figcaption{font-size:clamp(12px,1.4vw,15px);font-weight:700;color:#365b57}
-#app .quiz-video{margin-left:auto;min-height:44px;padding:5px 12px;background:white;border:2px solid #446d60;border-radius:9px;font:inherit;font-weight:700;color:#1c524b;cursor:pointer}
+#app .quiz-video{margin-left:auto;min-height:48px;padding:5px 12px;background:white;border:2px solid #446d60;border-radius:9px;font:inherit;font-weight:700;color:#1c524b;cursor:pointer}
 #app .quiz-video small{font-size:.8em}
 body.quest-mode #app .quest-activity .play-discovery .quiz-answer-label{display:block;margin:12px 0 5px;font-weight:800;color:#225d53}
 #app .play-discovery .play-discovery-options{margin:0 0 10px}
@@ -135,10 +135,10 @@ body.quest-mode #app .quest-activity .play-discovery .inquiry-option {min-height
 #app .play-discovery .quiz-tools {display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px 12px;}
 body.quest-mode #app .play-discovery .quiz-tools .inquiry-evidence {flex:1 1 190px;margin:0;}
 #app .play-discovery .quiz-tools:has(details[open]) {display:block;}
-body.quest-mode #app .play-discovery .quiz-tools summary {display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:700;}
+body.quest-mode #app .play-discovery .quiz-tools summary {display:flex;align-items:center;min-height:48px;cursor:pointer;font-weight:700;}
 #app .play-discovery .quiz-tools summary::before {content:'▸';margin-inline-end:.38em;}
 #app .play-discovery .quiz-tools details[open] summary::before {content:'▾';}
-#app .play-discovery .quiz-tools > button {min-height:44px;padding:6px 10px;}
+#app .play-discovery .quiz-tools > button {min-height:48px;padding:6px 10px;}
 @media (max-height:720px), (max-width:759px) {
   #app .quiz-evidence-strip {flex-wrap:nowrap;padding:5px 8px;gap:8px;}
   #app .quiz-scenes {flex:1 1 auto;gap:5px;}
