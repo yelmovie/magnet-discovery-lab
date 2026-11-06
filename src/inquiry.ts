@@ -7,6 +7,7 @@ import { defaultFieldSetup, explanationCorrect, fieldResult, inquiryPhase, inqui
 import { icon, magnet, objectArt, equipmentArt, sceneArt } from './art';
 import { trialPicture, readableRecord } from './trial-records';
 import { experimentScenes } from './experiment-scenes';
+import { promptPending, recordReflection } from './inquiry-prompts';
 
 const escape=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const choice=(group:string,value:string|number,label:string,selected:boolean)=>`<button type="button" class="inquiry-option ${selected?'selected':''}" data-inquiry-group="${group}" data-value="${value}" aria-pressed="${selected}">${label}</button>`;
@@ -14,6 +15,7 @@ const button=(id:string,label:string,disabled=false)=>`<button type="button" cla
 export function inquiryNext(n:number,a:Activity,s:Save):{label:string;enabled:boolean} {
   const phase=inquiryPhase(a);
   if(a.values.inquiryVersion===2){
+    if(phase==='experiment'&&promptPending(n,a,s))return {label:'내 생각을 골라 줘',enabled:false};
     if(phase==='experiment')return {label:n%2?'다음 탐구로':'발견 정리',enabled:missionReady(n,a,s)};
     return {label:phase==='complete'?'구역 복구하기':'발견을 하나 골라 줘',enabled:missionReady(n,a,s)&&inquiryReady(n,a)};
   }
@@ -65,7 +67,7 @@ function replayStrip(n:number,s:Save){
 export function inquirySteps(n:number,a:Activity):string {
   if(a.values.inquiryVersion===2){
     const phase=inquiryPhase(a),playing=phase==='experiment';
-    return `<nav class="inquiry-steps play-steps" aria-label="탐구 단계"><span class="${playing?'active':'done'}" ${playing?'aria-current="step"':''}>${playing?'1':'✓'} 직접 해 보기</span>${n%2?'':`<span class="${playing?'':phase==='complete'?'done':'active'}" ${phase==='explain'?'aria-current="step"':''}>${phase==='complete'?'✓':'2'} 발견 정리</span>`}${playing?`<details class="play-question"><summary>예상해 보기</summary><div class="play-question-copy"><p>${playQuestions[n-1]}</p><small>마음속으로 예상하고 바로 실험해 봐. 틀려도 괜찮아.</small></div></details>`:''}</nav>`;
+    return `<nav class="inquiry-steps play-steps" aria-label="탐구 단계"><span class="${playing?'active':'done'}" ${playing?'aria-current="step"':''}>${playing?'1':'✓'} 직접 해 보기</span>${n%2?'':`<span class="${playing?'':phase==='complete'?'done':'active'}" ${phase==='explain'?'aria-current="step"':''}>${phase==='complete'?'✓':'2'} 발견 정리</span>`}${playing?`<details class="play-question"><summary>예상해 보기</summary><div class="play-question-copy"><p>${playQuestions[n-1]}</p><small>${n===1?'덮개를 닫기 전에 내 예상을 골라 볼 거야. 틀려도 괜찮아.':'마음속으로 예상하고 바로 실험해 봐. 틀려도 괜찮아.'}</small></div></details>`:''}</nav>`;
   }
   const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?2:3}[phase];
   const labels=n%2?['예상하기','직접 실험','증거로 설명']:['예상하기','직접 실험','증거로 설명','현장 의뢰'];
@@ -154,7 +156,7 @@ function playInquiryView(n:number,a:Activity,s:Save,base:View,preview=false):Vie
     c.root.querySelectorAll<HTMLButtonElement>('[data-inquiry-group="reflection"]').forEach(b=>b.addEventListener('click',()=>{
       if(!(preview||missionReady(n,a,s))||inquiryPhase(a)!=='explain')return;
       const selected=Number(b.dataset.value);
-      a.values.reflection=selected;
+      a.values.reflection=selected;recordReflection(a,d,selected);
       if(selected===d.answer){
         a.values.reflected=true;a.values.inquiryPhase='complete';a.values.reflectionFeedback='';
         record(a,{key:'inquiry-discovery',label:'실험으로 발견한 규칙',result:d.choices[selected]});

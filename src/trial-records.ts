@@ -46,7 +46,7 @@ export function trialOutcome(outcome: string): string {
 export const readableRecord = (text:string) => text.replace(/\b(attract|repel|none|success|failure)\b/g,trialOutcome);
 export function trialTitle(t:Trial):string {
   const title=plainTrialTitle(t);
-  return t.conditions.autoplay===true?`${title} · 자동재생`:title;
+  return t.conditions.autoplay===true?`${title} · 자동으로 관찰함`:t.conditions.manual===true?`${title} · 직접 해봄`:title;
 }
 function plainTrialTitle(t:Trial):string {
   if(t.activity===4){

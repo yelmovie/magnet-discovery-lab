@@ -5,6 +5,7 @@ import { inquiryPhase } from './inquiry-model';
 import { distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
 import { magnetInstalled, mailbox } from './mailbox';
 import { nextMailboxPart, mailboxParts, partKey, partInstalled } from './mailbox-assembly';
+import { currentPrompt } from './inquiry-prompts';
 
 /** The generated repair companion uses the same existing hint control. */
 export function coachArt() {
@@ -22,6 +23,8 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
     const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?3:4}[phase];
     if(phase!=='experiment')return {action:{predict:'고치기 전에 결과를 예상해 보자',explain:'내가 발견한 규칙과 실제 실험 근거를 연결해 줘',apply:'배운 규칙으로 새로운 현장 의뢰 두 가지를 해결해 줘',complete:'탐구 기록 완성! 아래 버튼으로 이어가자',experiment:''}[phase],clues:[],focus:'',done:index,total:n%2?3:4};
   }
+  const prompt=a.values.inquiryVersion===2?currentPrompt(n,a,s):null;
+  if(prompt?.pending)return {action:prompt.action,clues:['정답을 맞히는 칸이 아니야. 네 생각이나 네가 본 장면을 골라 줘.'],focus:'',done:0,total:1};
   const f = (key: string) => a.values[key] === true, r = Number(a.values.round || 0);
   if(n===1&&a.values.assemblyVersion===1){
     const next=nextMailboxPart(a);

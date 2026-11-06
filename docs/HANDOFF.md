@@ -1,4 +1,8 @@
-# 밀고 당기는 도시 인계 · 2026-11-06 (배포 후)
+# 밀고 당기는 도시 인계 · 2026-11-06 (탐구 기록 고도화, 미배포)
+
+미배포 주의: 아래 운영 정보는 32f57d71 기준이다. 예상·관찰 비교, 직접/자동 구분, 학습 증거 작업은 작업 트리에만 있고 커밋·배포하지 않았다. dist도 이 작업으로 다시 빌드돼 운영과 다르다.
+공개 main은 10월 25일 시점(f3c2b93)이라 14커밋 뒤처져 있다. 운영의 원본은 이 브랜치다. main으로 덮어쓰거나 main에서 배포하지 말 것.
+자세한 내용: docs/reviews/INQUIRY-EVIDENCE-20261106.md. 시험: scripts/inquiry-evidence-regression.cjs (TEST_FIXTURE에 완주 저장 필요).
 
 위치: 외장 SSD의 iscreammedia_sc34/5magnet (맥 /Volumes/T7 Shield, 윈도우는 드라이브 문자가 바뀔 수 있음)
 저장소: yelmovie/magnet-discovery-lab, 브랜치 codex/magnet-quest-upgrade-20261021 푸시 완료 (main 미병합)

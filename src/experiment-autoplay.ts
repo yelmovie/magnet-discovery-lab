@@ -5,6 +5,7 @@ import { mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { glassStains } from './aquarium-glass';
 import { missionReady, paperGapMiddle } from './mission-model';
 import { materialBins, sortingSpecimens } from './material-sorting';
+import { promptPending } from './inquiry-prompts';
 import './experiment-autoplay.css';
 
 export const canDemonstrate = (stage: number, a: Activity) =>
@@ -112,6 +113,7 @@ type Mode = 'playing' | 'paused' | 'finished';
 interface Run { save: Save; steps: Step[]; index: number; mode: Mode; elapsed: number; acted: boolean; released?: boolean; wipeLeg?: number; label: string }
 export function autoplayResult(stage:number,save:Save) {
   const a=save.activities[stage];
+  if(a&&promptPending(stage,a,save))return '관찰 완료! 방금 본 결과를 골라 줘.';
   if(a&&missionReady(stage,a,save))return '관찰 완료! 아래 다음 버튼으로 이어가 봐.';
   if(stage===5)return '두 반응을 봤어! 이제 N극·S극 스티커를 직접 골라 붙여 봐.';
   return '관찰한 내용은 기록했어. 남은 안내를 보고 이어가 봐.';
@@ -156,7 +158,7 @@ export class ExperimentAutoplay {
     panel.querySelector('[data-demo="stop"]')!.addEventListener('click',stop,{signal});
     // Clicking or starting a keyboard action on the demo bench returns ownership to the learner.
     const takeOver=(event:Event)=>{
-      if(!this.run || !event.isTrusted)return;
+      if(!this.run || !event.isTrusted || (event.target as Element).closest?.('.inquiry-prompt-host'))return;
       if(event instanceof KeyboardEvent && !['Enter',' ','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;
       // Keep the very first real touch/key: it continues from the current position.
       this.reset();
@@ -205,6 +207,10 @@ export class ExperimentAutoplay {
       if(run.index>=run.steps.length){run.mode='finished';this.update();return;}
       run.label=run.steps[run.index].label;this.update();
     }else if(!run.acted && run.elapsed>=450){
+      // The demonstration never answers for the learner: it holds here until they choose.
+      const waiting=!!a.root.querySelector('[data-awaits-learner]'),label=waiting?'내 예상을 먼저 골라 줘':step.label;
+      if(run.label!==label){run.label=label;this.update();}
+      if(waiting){this.schedule();return;}
       const el=a.root.querySelector<HTMLButtonElement>(step.kind==='press'?step.selector:`[data-drag="${step.kind==='drive'?'controller':step.kind==='wipe'?'cleaner':step.id}"]`);
       if(!el || el.disabled){run.mode='paused';run.label='이 동작을 잠시 멈췄어. 남은 안내를 확인해 줘.';this.update();return;}
       let finished=false;

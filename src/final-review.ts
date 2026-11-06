@@ -1,6 +1,6 @@
 import type { Save } from './domain';
 
-export interface FinalReview { version: 1; page: number; answers: number[] }
+export interface FinalReview { version: 1; page: number; answers: number[]; first?: number[] }
 export const finalQuestions = [
   {
     tab:'우편함', note:'자석을 넣고 빼며 덮개가 열리는지 비교했어.',

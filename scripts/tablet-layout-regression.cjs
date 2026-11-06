@@ -28,7 +28,7 @@ for(const n of [2,4,6,8,10]){
  fixtures.push({name:`stage-${n}-reflection`,n,values:{inquiryPhase:'explain',with0:true,without0:true,segment0:true,segment1:true},trials});
 }
 let browser,page,cdp;const reports=[],errors=[],touchChecks=[];
-async function show(f){await page.evaluate(f=>window.__tablet.show(f),f);await page.locator('.quest-activity').waitFor();if(f.name==='stage-1-open')await assembleMailbox(page);}
+async function show(f){await page.evaluate(f=>window.__tablet.show(f),f);await page.locator('.quest-activity,.idea-lab').first().waitFor();if(f.name==='stage-1-open')await assembleMailbox(page);}
 async function audit(name,shot=false){
  const result=await page.evaluate(()=>{
   const viewport={width:innerWidth,height:innerHeight};
@@ -71,7 +71,7 @@ async function dragPiece(id,x,y,edge=false){
 }
 const current=n=>page.evaluate(n=>structuredClone(window.__tablet.save.activities[n]),n);
 async function touchMatrix(size){
- await show({n:1});await assembleMailbox(page);
+ await show({n:1});await assembleMailbox(page);await page.locator('[data-prompt-choice="stick"]').tap();
  assert.equal((await current(1)).values.found0,true);await dragPiece('lid',44,59,true);await page.waitForFunction(()=>window.__tablet.save.activities[1].values.latch0);
  await show({n:2});await dragPiece('lid',50,65,true);await page.locator('[data-mission="shake"]').tap();assert.equal((await current(2)).values.without0,true);
  await dragPiece('repair-magnet',50,44,true);await dragPiece('lid',50,65);await page.locator('[data-mission="shake"]').tap();assert.equal((await current(2)).values.with0,true);
@@ -89,16 +89,13 @@ async function touchMatrix(size){
  await show({n:6});await dragPiece('ring0',68,71,true);await dragPiece('ring1',68,56,true);await page.locator('.ring-flip').nth(1).tap();await page.locator('[data-mission="check"]').tap();assert.equal((await current(6)).values.done0,true);
  await show({n:7});await dragPiece('cleaner',35,47,true);assert.ok(Math.abs((await current(7)).points.cleaner.x-35)<1);
  await show({n:8});await dragPiece('controller',38,59,true);await page.waitForTimeout(200);assert.ok(Number((await current(8)).values.car)>27);
- await show({n:9});await page.locator('[data-mission="box"]').tap();await dragPiece('base',50,61,true);await dragPiece('design-magnet',43,55,true);await dragPiece('design-target',57,55,true);await page.locator('[data-mission="prototype"]').tap();assert.ok((await current(9)).trials.some(t=>t.key==='prototype'));
- await show({n:10});await dragPiece('use-handle',50,65,true);await page.locator('[data-mission="test"]').tap();assert.equal((await current(10)).values.use0,true);
- await show({n:10,template:'remote'});await dragPiece('use-handle',43,42,true);await page.locator('[data-mission="test"]').tap();assert.equal((await current(10)).values.use0,true);
  // Rotate during a real touch: the old gesture cannot place the piece, and a new drag still works.
  await show({n:3});const r=await page.locator('[data-drag="sweep-magnet"]').boundingBox();
  await finger('touchStart',r.x+r.width/2,r.y+r.height/2);await finger('touchMove',r.x+r.width/2+24,r.y+r.height/2);
  await page.setViewportSize({width:size.height,height:size.width});await finger('touchEnd');assert.equal(await page.locator('.dragging').count(),0);
  await dragPiece('sweep-magnet',36,42);assert.equal((await current(3)).values['tested-clip'],true);
  await page.setViewportSize(size);
- touchChecks.push(`${size.width}x${size.height}: 10 stages, paper, both inventions, edge grips and rotation`);
+ touchChecks.push(`${size.width}x${size.height}: 8 hands-on stages, paper, edge grips and rotation`);
  console.log('TOUCH PASS '+touchChecks.at(-1));
 }
 async function main(){
@@ -119,7 +116,7 @@ async function main(){
   await page.setViewportSize(size);
   for(const f of fixtures){await show(f);await audit(f.name,process.env.CAPTURE==='all'||(!process.env.CAPTURE&&(size.width===768||size.width===1024)&&!f.name.includes('reflection')));}
   // Optional overlays are real UI states, opened by touch rather than fixture flags.
-  for(const n of [1,3,5,6,8,10]){
+  for(const n of [1,3,5,6,8]){
    await show({name:'overlay',n});await page.locator('.coach-toggle').tap();await audit(`stage-${n}-hint`);
    await page.locator('.coach-close').tap();await page.locator('.mission-access summary').tap();await audit(`stage-${n}-placement`);
    await show({name:'think',n});

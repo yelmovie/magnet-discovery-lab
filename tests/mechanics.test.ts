@@ -156,6 +156,8 @@ describe('분리된 부품부터 조립하는 우편함',()=>{
     delete m.a.values.mechanicsVersion; // Older saved attempts must also require a real close.
     expect(missionReady(1,m.a,m.s)).toBe(false);
     m.place('lid',mailbox.handleClosed);tick(1);
+    expect(m.a.values.latch0,'예상을 고르기 전에는 닫히지 않는다').not.toBe(true);
+    m.a.values.predict='stick';mount(1,{},{a:m.a,s:m.s}).place('lid',mailbox.handleClosed);tick(1);
     expect(m.a.values.latch0).toBe(true);
     expect(missionReady(1,m.a,m.s)).toBe(true);
     const saved:Save=JSON.parse(JSON.stringify(m.s));
@@ -236,7 +238,7 @@ describe('학생 조작으로 완성하는 탐구', () => {
     const m = mount(1,assembledValues());
     m.place('lid', { x: 50, y: 37 });
     expect(m.a.values.found0).toBe(true); expect(m.a.values.latch0).not.toBe(true);
-    m.place('lid', { x: 44, y: 59 }); tick(1); expect(m.a.values.latch0).toBe(true);
+    m.a.values.predict='stick';mount(1,{},{a:m.a,s:m.s}).place('lid', { x: 44, y: 59 }); tick(1); expect(m.a.values.latch0).toBe(true);
   });
   it('이미지 로딩 중 화면을 다시 열어도 현재 화면에 완성된 이미지가 그려진다',()=>{
     const existing=imageInstances.get('/assets/quest/mailbox-wood.webp');if(existing)existing.complete=false;
@@ -415,7 +417,7 @@ describe('반복을 줄인 새 탐구 흐름', () => {
     m.place('lid',{x:50,y:37});
     expect(missionReady(1,m.a,m.s)).toBe(false);
     expect(missionView(1,m.a,m.s).html).toContain('data-inspection-step="1"');
-    m=reopen(1,m);m.place('lid',{x:44,y:59});tick(1);
+    m.a.values.predict='stick';m=reopen(1,m);m.place('lid',{x:44,y:59});tick(1);
     expect(missionReady(1,m.a,m.s)).toBe(true);
     expect(missionView(1,m.a,m.s).html).toContain('data-inspection-step="2"');
     expect(missionView(1,m.a,m.s).html).not.toContain('책 보관함도 살펴보기');

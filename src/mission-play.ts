@@ -14,6 +14,7 @@ import { salvage, distanceLab } from './missions-force';
 import { poles, rings } from './missions-poles';
 import { aquarium, delivery } from './missions-remote';
 import { design, useDesign } from './missions-workshop';
+import { bindInquiryPrompts } from './inquiry-prompts';
 
 function hit(h: Hit) {
   // Match the whole pictured object, including its ends, rather than only its centre.
@@ -54,6 +55,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
     }
     hits.push({id:'lid',p:p('lid',mailbox.handleClosed),label:'나무 손잡이. 위로 열고 아래로 닫기'});
     const inspected=a.values[`latch${round}`]===true;
+    if(!inspected)actions+=action('close-lid','손잡이 내려 덮개 닫기');
     if(!compact&&inspected&&round===0)actions+=action('next','책 보관함도 살펴보기 →');
     }
   }
@@ -97,7 +99,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
   const canExpand=n===8||n===9||n===10;
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
   const viewToggle=canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>`:'';
-  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestions[n-1])}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
+  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestions[n-1])}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div><div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuides[n-1]);});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;
@@ -105,6 +107,6 @@ export function missionView(n: number, a: Activity, s: Save): View {
       button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?'기본 보기':'조작 화면 전체보기';
       a.values.benchWide=expanded;c.touch();surface.draw();
     });
-    const binders=[inspect,repair,salvage,distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();return()=>surface.cleanup();
+    const binders=[inspect,repair,salvage,distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();surface.cleanups.push(bindInquiryPrompts(c,n,()=>surface.draw()));return()=>surface.cleanup();
   }};
 }

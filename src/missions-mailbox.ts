@@ -6,6 +6,7 @@ import { mailbox, lidPosition, inSocket, magnetInstalled, mountedMagnet } from '
 import { drawMailbox, drawMagnetTray } from './mailbox-art';
 import { mailboxParts, partKey, partInstalled, nextMailboxPart, mailboxAssembled, assemblyNear, type MailboxPart } from './mailbox-assembly';
 
+import { promptPending } from './inquiry-prompts';
 import { Surface, W, H, pt, clamp } from './mission-surface';
 
 export function inspectionNote(a:Activity) {
@@ -45,7 +46,10 @@ export function inspect(v: Surface){
   }
   v.draw=()=>{
     const handle=v.p('lid',handleClosed), fraction=opening(handle);
-    lid.disabled=v.animating||latched();
+    const waiting=promptPending(1,v.a,v.s)&&!latched();
+    lid.disabled=v.animating||latched()||waiting;
+    const close=v.c.root.querySelector<HTMLButtonElement>('[data-mission="close-lid"]');
+    if(close){close.disabled=v.animating||waiting;close.hidden=latched();}
     const note=v.c.root.querySelector<HTMLElement>('.mailbox-inspection');
     const step=latched()?2:found()?1:0;
     if(note&&note.dataset.step!==String(step)){
@@ -85,6 +89,7 @@ export function inspect(v: Surface){
   }
   function dropHandle(p:Point){
     if(latched())return;
+    if(promptPending(1,v.a,v.s)){v.set('lid',handleOpen);v.draw();return;}
     if(opening(p)>.8){v.set('lid',handleOpen);observe();}
     else if(found()&&p.y>=handleClosed.y-4){closeLatch();}
     else v.tell(found()?'손잡이를 아래로 더 내려 철판 가까이 가져가 봐.':'나무 손잡이를 위로 끝까지 올려 봐.');
@@ -92,6 +97,7 @@ export function inspect(v: Surface){
   }
   v.drag('lid',handleClosed,dropHandle,undefined,lidPosition);
 
+  v.button('close-lid',()=>{if(found()&&!latched()&&!v.animating&&!promptPending(1,v.a,v.s))closeLatch();});
   v.button('next',()=>{v.a.values.round=1;v.a.points={};v.refresh();});
 }
 function assembleMailbox(v:Surface){

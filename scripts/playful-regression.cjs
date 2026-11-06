@@ -58,7 +58,7 @@ async function bounds(n) {
 }
 async function experiments(n) {
   await bounds(n);
-  if(n===1){await assembleMailbox(page);await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);}
+  if(n===1){await assembleMailbox(page);await page.locator('[data-prompt-choice="stick"]').click();await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);await page.locator('[data-prompt-choice="same"]').click();}
   if(n===2){await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));}
   if(n===3){
     for(const [index,x,y,magnetic] of [[0,36,42,true],[1,52,42,true],[6,66,65,true],[2,66,43,false],[3,36,65,false],[4,52,65,false]]){
@@ -197,7 +197,7 @@ async function student() {
   const context=await fresh({width:1024,height:768});
   const began=Date.now();
   await action('walk-next');await action('enter');
-  for(let n=1;n<=8;n++){assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);}
+  for(let n=1;n<=8;n++){assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);if(n%2===0){await reload();assert.equal((await save()).evidence.length,n/2,'district '+n/2+' survives reconnecting');}}
   await workshop();
   await page.locator('[data-review-answer="1"]').click();
   await page.locator('[data-review-next]').click();
@@ -207,6 +207,7 @@ async function student() {
   await page.locator('[data-review-next]').click();
   await reviewNotebook(1);
   assert.match(await page.locator('.final-review-summary').textContent(),/어디에 쓰고 어떤 힘/);
+  assert.equal(await page.locator('.final-changed').count(),4,'first notebook answers stay visible after correcting them');await page.screenshot({path:out+'/final-summary.png'});
   await page.locator('[data-restoration="finish"]').click();
   await page.waitForFunction(()=>window.__lab.save.final.complete);
   await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();await page.screenshot({path:out+'/certificate.png'});await reload();assert.equal((await save()).final.complete,true);
@@ -218,7 +219,7 @@ async function touchMatrix(){
   for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:768,height:1024},{width:915,height:412},{width:830,height:515},{width:375,height:812}]){
     const context=await fresh(viewport);await begin(1);await bounds(1);await assembleMailbox(page);
     const piece=page.locator('[data-drag="lid"]'),board=page.locator('.mission-board');
-    await piece.tap();const b=await board.boundingBox();await board.tap({position:{x:b.width*.5,y:b.height*.60}});
+    await page.locator('[data-prompt-choice="apart"]').tap();await piece.tap();const b=await board.boundingBox();await board.tap({position:{x:b.width*.5,y:b.height*.60}});
     await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);
     assert.equal((await save()).activities[1].values.latch0,true,'real tap-to-place closes the assembled lid');
     await page.screenshot({path:out+`/touch-${viewport.width}.png`});check(`${viewport.width}x${viewport.height} real touch placement and layout`);await context.close();

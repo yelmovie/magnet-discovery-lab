@@ -35,7 +35,11 @@ async function finishAuto(page,n){
   await page.locator('[data-demo="toggle"]').click();
   assert.equal(await page.locator('[data-demo="toggle"]').textContent(),'일시정지');
   assert.equal(await page.locator('[data-demo="toggle"]').getAttribute('aria-label'),'일시정지');
-  await page.waitForFunction(()=>document.querySelector('[data-action="complete"]')?.disabled===false&&document.querySelector('[data-demo="toggle"]')?.textContent.includes('관찰 완료'),null,{timeout:120000});
+  await page.waitForFunction(()=>document.querySelector('[data-demo="toggle"]')?.textContent.includes('관찰 완료'),null,{timeout:120000});
+  // Odd activities ask what the learner saw; the demonstration never answers for them.
+  const answers={3:1,7:2};
+  if(answers[n]!==undefined){assert.equal(await page.locator('[data-action="complete"]').isDisabled(),true);await page.locator(`[data-prompt-choice="${answers[n]}"]`).click();}
+  await page.waitForFunction(()=>document.querySelector('[data-action="complete"]')?.disabled===false,null,{timeout:5000});
   await page.waitForTimeout(800);
   const state=await save(page),a=state.activities[n];
   assert.equal(await page.locator('[data-action="complete"]').isVisible(),true);

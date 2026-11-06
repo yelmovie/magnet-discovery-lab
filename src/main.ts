@@ -32,6 +32,7 @@ import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
 import { rewardBelt } from './rewards';
+import { learningNotesMarkup } from './learning-notes';
 import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, missionNames, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
 import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
 import { ideaView } from './idea-lab';
@@ -180,7 +181,7 @@ function openRecords() {
   const replay = trials.length || !a.records.length ? trialReplayMarkup(trials) : '<p class="replay-empty">이 탐구에는 글로 남긴 관찰이 있어.</p>';
   const notes = a.records.length ? `<details class="replay-notes" ${trials.length?'':'open'}><summary>관찰 메모 ${a.records.length}개</summary><ul class="observation-list">${a.records.map(r=>`<li><strong>${esc(r.label)}</strong><span>${esc(readableRecord(r.result))}</span></li>`).join('')}</ul></details>` : '';
   let dispose = () => {};
-  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${replay}${notes}</div>`, '내 실험 다시 보기',()=>dispose());
+  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${learningNotesMarkup([a])}${replay}${notes}</div>`, '내 실험 다시 보기',()=>dispose());
   dispose = bindTrialReplay(modal.dialog, trials, s.settings.motion);
 }
 function meta() {
@@ -286,7 +287,7 @@ function showReward(stage: number,newResident: boolean) {
   });
   bindConceptLinks(modal.dialog);
 }
-function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
+function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}${learningNotesMarkup(e.activities)}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
 function evidenceCollection(items: Evidence[], prefix: string) {
   const names=['생활','재료','극','원격','발명'];
   return `<div class="evidence-browser"><div class="evidence-tabs" role="tablist" aria-label="구역별 내 발견">${items.map((e,i)=>`<button type="button" role="tab" id="${prefix}-tab-${i}" aria-controls="${prefix}-panel-${i}" aria-selected="${i===items.length-1}" tabindex="${i===items.length-1?0:-1}" data-evidence="${i}">${e.stage+1} · ${names[e.stage]}</button>`).join('')}</div>${items.map((e,i)=>`<div class="evidence-panel" role="tabpanel" id="${prefix}-panel-${i}" aria-labelledby="${prefix}-tab-${i}" ${i===items.length-1?'':'hidden'}>${evidenceCard(e)}</div>`).join('')}</div>`;

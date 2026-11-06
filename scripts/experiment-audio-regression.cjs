@@ -56,10 +56,11 @@ async function run() {
       el.dispatchEvent(new CustomEvent('piece-place',{detail:{x:44,y}})),y);
     async function useLid() {
       await assembleMailbox(page);
+      await page.locator('[data-prompt-choice="stick"]').click();
       await lid.click();await moveLid(38);await moveLid(60);
       await page.waitForFunction(() => window.__soundLab.save.activities[1].values.latch0);
     }
-    await open(1);await assembleMailbox(page);await lid.click();
+    await open(1);await assembleMailbox(page);await page.locator('[data-prompt-choice="stick"]').click();await lid.click();
     await page.waitForFunction(names => names.every(n => window.__sounds.decoded.includes(n)),expected);
     await useLid();
     for(const [stage,name] of [[7,'pad'],[8,'crate']]){
