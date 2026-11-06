@@ -60,6 +60,7 @@ type Route = { page: Page; screen: number };
 let adminBackup: { save: Save; route: Route; history: Route[]; practice: PracticeBackup | null } | null = null;
 let currentRoute: Route = { page: 'title', screen: 1 };
 const backStack: Route[] = [];
+let historyDepth: number = history.state?.depth ?? 0;
 let stopCompanionVoice = () => {};
 const adminOn = () => adminBackup !== null;
 const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects || settings.music; };
@@ -83,7 +84,7 @@ function touch() { if (adminOn() || resetting) return; s.updated = new Date().to
 function cleanPage() { stopCompanionVoice(); autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
 function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; s.idea = practiceBackup.idea; practiceBackup = null; }
 function go(next: typeof page, remember = true) {
-  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) { backStack.push({ ...currentRoute }); history.pushState({ depth: (history.state?.depth ?? 0) + 1 }, ''); }
+  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) { backStack.push({ ...currentRoute }); historyDepth++; history.pushState({ depth: historyDepth }, ''); }
   cleanPage(); document.querySelector('.toast')?.remove(); if (next !== 'activity') restorePractice(); page = next;
   if (next === 'ending') setMusicTheme('final', true);
   currentRoute = { page, screen }; render(); window.scrollTo({ top: 0, behavior: 'instant' });
@@ -475,7 +476,14 @@ function bindCommon() {
     }
   }));
 }
-window.addEventListener('popstate', () => { void flush(); goBack(); });
+window.addEventListener('popstate', () => {
+  const depth: number = history.state?.depth ?? 0;
+  // There is no forward stack in the game, so a forward step simply returns to where the learner is.
+  if (depth > historyDepth) { history.go(historyDepth - depth); return; }
+  if (depth === historyDepth) return;
+  for (let extra = historyDepth - depth; extra > 1; extra--) backStack.pop();
+  historyDepth = depth; void flush(); goBack();
+});
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });
