@@ -12,7 +12,6 @@
     "story:render": "node scripts/render-story-videos.mjs"
   },
   "dependencies": {
-    "phaser": "3.90.0",
     "three": "0.186.1"
   },
   "devDependencies": {

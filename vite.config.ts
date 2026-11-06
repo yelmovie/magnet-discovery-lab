@@ -1,6 +1,10 @@
-import { readdirSync, unlinkSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { defineConfig } from 'vite';
+
+// Saved on install so a reload still works when the Wi-Fi drops. Everything else is saved on first use.
+const OFFLINE_SHELL = /^favicon\.svg$|^assets\/(index|three-view)-|^fonts\/.+\.woff2$|^audio\/[a-z-]+\.mp3$|^assets\/quest\/(logo|city-expedition)\.webp$|^assets\/adventure\/(mili|dangi)-(poses|walk)-pixel\.webp$/;
 
 export default defineConfig({
   plugins: [{
@@ -27,6 +31,26 @@ export default defineConfig({
           unlinkSync(join(entry.parentPath, entry.name));
         }
       }
+    },
+  }, {
+    name: 'offline-service-worker',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      // Registered after the title has its bandwidth, and only in the built site.
+      handler: html => html.replace('</body>', "<script>addEventListener('load',()=>setTimeout(()=>navigator.serviceWorker?.register('/sw.js').catch(()=>{}),2000));</script></body>"),
+    },
+    writeBundle({ dir }) {
+      if (!dir) return;
+      const output = resolve(dir), worker = join(output, 'sw.js');
+      const files = readdirSync(output, { recursive: true, withFileTypes: true })
+        .filter(entry => entry.isFile())
+        .map(entry => relative(output, join(entry.parentPath, entry.name)).replaceAll('\\', '/'))
+        .filter(file => file !== 'sw.js').sort();
+      const build = createHash('sha256');
+      for (const file of files) build.update(file).update(readFileSync(join(output, file)));
+      const shell = ['/', ...files.filter(file => OFFLINE_SHELL.test(file)).map(file => `/${file}`)];
+      writeFileSync(worker, readFileSync(worker, 'utf8').replace('__BUILD_ID__', build.digest('hex').slice(0, 12)).replace('/*__PRECACHE__*/[]', JSON.stringify(shell)));
     },
   }],
 });

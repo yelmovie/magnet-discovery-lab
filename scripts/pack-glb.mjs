@@ -16,16 +16,10 @@ const SOURCE = 'assets/source/3d-base-20261025/meshy';
 const OUT = process.env.GLB_OUT || 'public/assets/3d';
 const TMP = process.env.GLB_TMP || 'D:/DevTemp/5magnet-glb';
 // ratio < 1 simplifies with seam-locked borders; keep error ≤ 0.01 (higher collapses silhouettes).
-// Only box-body passed the side-by-side check (2026-10-25): at 0.25 the lid's hinge shading
-// shifted and the frame's glass showed crack-like facets, so those keep every triangle.
+// The ring card fills a small stage, so 1024 color and 512 data textures are enough.
 export const MODELS = {
   'ring-magnet': { ratio: 1 },
   'ring-stand': { ratio: 1 },
-  'box-body': { ratio: 0.25 },
-  'box-lid': { ratio: 1 },
-  'remote-frame': { ratio: 1 },
-  'remote-handle': { ratio: 1 },
-  'remote-tray': { ratio: 1 },
 };
 const ratioOverride = process.env.GLB_RATIO ? Number(process.env.GLB_RATIO) : null;
 const io = () => new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
@@ -34,11 +28,11 @@ const stats = doc => doc.getRoot().listMeshes().flatMap(m => m.listPrimitives())
 async function textures(src, out) {
   const doc = await io().read(src);
   await doc.transform(
-    textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 90, resize: [2048, 2048], slots: /^baseColorTexture$/ }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 85, resize: [1024, 1024], slots: /^baseColorTexture$/ }),
     // Normal and metal/roughness maps are data, not color: lossy WebP's chroma subsampling mixes
     // their channels into crack lines on brass and dark spots on wood, so encode them near-lossless.
-    textureCompress({ encoder: sharp, targetFormat: 'webp', nearLossless: true, resize: [1024, 1024], slots: /^normalTexture$/ }),
-    textureCompress({ encoder: sharp, targetFormat: 'webp', nearLossless: true, resize: [1024, 1024], slots: /^metallicRoughnessTexture$/ }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', nearLossless: true, resize: [512, 512], slots: /^normalTexture$/ }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', nearLossless: true, resize: [512, 512], slots: /^metallicRoughnessTexture$/ }),
   );
   await io().write(out, doc);
 }
@@ -67,7 +61,7 @@ if (mode === 'check') {
     if (bytes.toString('ascii', 0, 4) !== 'glTF' || !bytes.toString('utf8', 20, 4000).includes('EXT_meshopt_compression')) throw new Error(`${file} is not a meshopt-packed GLB`);
     total += bytes.length;
   }
-  if (total > 26 * 2 ** 20) throw new Error(`3D models total ${(total / 2 ** 20).toFixed(1)}MB, over the 26MB budget`);
+  if (total > 3 * 2 ** 20) throw new Error(`3D models total ${(total / 2 ** 20).toFixed(1)}MB, over the 3MB budget`);
   console.log(`3D models OK: ${Object.keys(MODELS).length} files, ${(total / 2 ** 20).toFixed(1)}MB`);
 }
 else if (mode === 'tex') await textures(args[0], args[1]);

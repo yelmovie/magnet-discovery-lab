@@ -6,7 +6,7 @@ body.quest-mode {
   --font-size-question: clamp(28px, 2.35vw, 42px);
 }
 body.quest-mode :is(p,button,summary,label,li) { line-break:strict; }
-body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:#10394368; backdrop-filter:blur(3px); }
+body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:#103943b0; }
 body.quest-mode .modal {
   position:relative; width:min(860px,100%); max-width:1040px;
   max-height:calc(100dvh - 40px); min-height:0; margin:0;

@@ -354,36 +354,16 @@ function openConcept(stage: number, replay = true, onContinue?: () => void) {
   setAudioPaused(true);
   dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();});
 }
-type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] } | { kind: 'box' } | { kind: 'remote' };
-const view3dCopy = {
-  rings: { title: '고리자석을 3D로 돌려 보기', guide: '끌어서 돌려 봐. 아래에서 올려다보면 마주 보는 면의 극이 보여.', stage: '기둥에 끼운 고리자석과 각 면의 극 표시', controls: '' },
-  box: { title: '자석 잠금 상자의 원리 보기', guide: '뚜껑을 천천히 내려 봐. 닫히기 직전에 무슨 일이 생길까?', stage: '자석이 붙은 뚜껑과 철판이 붙은 상자', controls: '<label class="view3d-slider"><span>뚜껑 각도</span><input type="range" min="0" max="70" step="1" value="70"></label>' },
-  remote: { title: '유리 너머 운반기 원리 보기', guide: '손잡이를 올리고 내려 봐. 유리 뒤 철 쟁반은 어떻게 움직일까?', stage: '유리판 앞의 자석 손잡이와 뒤의 철 쟁반', controls: '<label class="view3d-slider"><span>손잡이 높이</span><input type="range" min="0" max="100" step="1" value="0"></label><button type="button" class="btn view3d-toggle" aria-pressed="false">자석을 유리에서 떼기</button>' },
-};
+type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] };
 function open3d(detail: Open3d) {
-  const copy = view3dCopy[detail.kind];
+  const title = '고리자석을 3D로 돌려 보기';
   let dispose = () => {};
-  const modal = showModal(`<div class="view3d"><h2>${copy.title}</h2><p class="view3d-guide">${copy.guide}</p><div class="view3d-stage" role="img" aria-label="${copy.stage}"><p class="view3d-loading">3D 장면을 불러오는 중…</p></div><div class="view3d-controls">${copy.controls}</div><p class="view3d-note" role="status" aria-live="polite">${detail.kind === 'rings' ? (detail.released ? '실험대에서 손을 뗀 뒤의 모습이야.' : '아직 손을 떼기 전이야. 실험대에서 손을 떼면 높이가 바뀌어.') : ''}</p></div>`, copy.title, () => dispose());
+  const modal = showModal(`<div class="view3d"><h2>${title}</h2><p class="view3d-guide">끌어서 돌려 봐. 아래에서 올려다보면 마주 보는 면의 극이 보여.</p><div class="view3d-stage" role="img" aria-label="기둥에 끼운 고리자석과 각 면의 극 표시"><p class="view3d-loading">3D 장면을 불러오는 중…</p></div><p class="view3d-note" role="status" aria-live="polite">${detail.released ? '실험대에서 손을 뗀 뒤의 모습이야.' : '아직 손을 떼기 전이야. 실험대에서 손을 떼면 높이가 바뀌어.'}</p></div>`, title, () => dispose());
   modal.dialog.classList.add('view3d-dialog');
-  const stage = modal.dialog.querySelector<HTMLElement>('.view3d-stage')!, note = modal.dialog.querySelector<HTMLElement>('.view3d-note')!;
+  const stage = modal.dialog.querySelector<HTMLElement>('.view3d-stage')!;
   void import('./three-view').then(async m => {
-    let release: () => void;
-    if (detail.kind === 'rings') {
-      const lifts = m.ringLifts(detail.rings.filter(r => r.onPole).map(r => r.top), detail.released); let k = 0;
-      release = await m.mountRingView(stage, detail.rings.map(r => ({ ...r, lift: r.onPole ? lifts[k++] : 0 })), s.settings.motion);
-    } else if (detail.kind === 'remote') {
-      const slider = modal.dialog.querySelector<HTMLInputElement>('.view3d-slider input')!, toggle = modal.dialog.querySelector<HTMLButtonElement>('.view3d-toggle')!;
-      const demo = await m.mountRemoteDemo(stage, s.settings.motion);
-      const say = () => { const v = Number(slider.value), attached = toggle.getAttribute('aria-pressed') !== 'true'; note.textContent = !attached ? '자석이 유리에서 멀어져서 쟁반이 따라오지 않아.' : v >= 95 ? '편지가 위 선반 높이에 도착했어!' : v <= 5 ? '편지가 아래 선반 높이에 있어.' : '유리 너머 쟁반이 자석을 따라 움직여.'; };
-      slider.addEventListener('input', () => { demo.setLevel(Number(slider.value) / 100); say(); });
-      toggle.addEventListener('click', () => { const away = toggle.getAttribute('aria-pressed') !== 'true'; toggle.setAttribute('aria-pressed', String(away)); toggle.textContent = away ? '자석을 다시 유리에 붙이기' : '자석을 유리에서 떼기'; demo.setAttached(!away); playEffect(away ? 'pick' : 'drop', s.settings); say(); });
-      release = demo.dispose;
-    } else {
-      const slider = modal.dialog.querySelector<HTMLInputElement>('.view3d-slider input')!;
-      const demo = await m.mountBoxDemo(stage, s.settings.motion, () => { slider.value = '0'; playEffect('snap', s.settings); note.textContent = '착! 자석이 철판을 끌어당겨 뚜껑을 붙잡았어.'; });
-      slider.addEventListener('input', () => { demo.setAngle(Number(slider.value)); if (!demo.snapped) note.textContent = Number(slider.value) < 30 ? '거의 닫혔어. 자석과 철판이 가까워지고 있어.' : ''; });
-      release = demo.dispose;
-    }
+    const lifts = m.ringLifts(detail.rings.filter(r => r.onPole).map(r => r.top), detail.released); let k = 0;
+    const release = await m.mountRingView(stage, detail.rings.map(r => ({ ...r, lift: r.onPole ? lifts[k++] : 0 })), s.settings.motion);
     // Closed while loading: free the renderer at once instead of leaving it running detached.
     if (!stage.isConnected) return release();
     dispose = release; stage.querySelector('.view3d-loading')?.remove();

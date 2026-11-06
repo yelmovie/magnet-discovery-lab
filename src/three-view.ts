@@ -1,5 +1,5 @@
-// Look-and-try 3D cards. Loaded on demand so three.js never weighs on the first screen.
-// Judgement stays in the 2D experiments; these scenes only mirror state or demonstrate a device.
+// Look-and-try 3D card. Loaded on demand so three.js never weighs on the first screen.
+// Judgement stays in the 2D experiments; this scene only mirrors the bench.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -23,12 +23,6 @@ const model = (name: string) => {
 
 // Measured from the Meshy originals (metres): stand base top, ring thickness, ring outer radius.
 const STAND_TOP = 0.0142, RING_H = 0.01, RING_R = 0.0187, FLOAT_GAP = 0.014;
-// The lid was generated tilted 25.5° about X (fitted to its top face). Flattened it is 4.47 × 2.81 cm,
-// its rim underside sits 6.2 mm above its lowest point (the magnet). Scale fits the 11.6 × 9.3 cm
-// body rim, which tops out at 7.47 cm; the hinge leaves above it are at the back edge.
-const LID = { tilt: THREE.MathUtils.degToRad(-25.5), scale: new THREE.Vector3(2.64, 2.2, 3.37), panelBottom: 0.0062, zMin: -0.019 };
-const BODY = { top: 0.0747, hingeZ: -0.0465 };
-
 function stage(host: HTMLElement, target: THREE.Vector3, distance: number, motion: boolean, dir = new THREE.Vector3(0.55, 0.42, 0.72)) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -65,15 +59,12 @@ function stage(host: HTMLElement, target: THREE.Vector3, distance: number, motio
   controls.addEventListener('change', invalidate);
   const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); invalidate(); };
   const observer = new ResizeObserver(resize); observer.observe(host); resize();
-  // A ticker returns true while it moves something. A still scene is not drawn again.
-  const tickers: ((dt: number) => boolean)[] = [];
-  let raf = 0, last = performance.now();
-  const loop = (now: number) => {
+  let raf = 0;
+  // A still scene is not drawn again; damping keeps firing 'change' until the camera settles.
+  const loop = () => {
     raf = requestAnimationFrame(loop);
-    if (document.hidden) { last = now; invalidate(); return; }
-    if (lost) { last = now; return; }
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    for (const tick of tickers) if (tick(dt)) invalidate();
+    if (document.hidden) { invalidate(); return; }
+    if (lost) return;
     controls.update();
     if (dirty) { dirty = false; renderer.render(scene, camera); }
   };
@@ -84,7 +75,7 @@ function stage(host: HTMLElement, target: THREE.Vector3, distance: number, motio
     scene.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh && !(o as THREE.Sprite).isSprite) return; m.geometry?.dispose(); const mats = Array.isArray(m.material) ? m.material : [m.material]; mats.forEach(mat => { if (!mat) return; Object.values(mat).forEach(v => { if (v instanceof THREE.Texture) v.dispose(); }); mat.dispose(); }); });
     env.dispose(); pmrem.dispose(); renderer.dispose(); renderer.domElement.remove();
   };
-  return { scene, tickers, invalidate, dispose };
+  return { scene, invalidate, dispose };
 }
 
 function poleLabel(pole: Pole) {
@@ -126,77 +117,4 @@ export function ringLifts(tops: Pole[], released: boolean): number[] {
     if (i) y += RING_H + (!released || ringFloating(tops[i - 1], top) ? FLOAT_GAP : 0);
     return y;
   });
-}
-
-// Remote frame (metres): glass faces ±Z around z = 0, the brass slot is on the front right post,
-// handle travel spans the glass height. The handle model points its magnet to +X, the tray is 8.6 cm long.
-const REMOTE = { glassHalf: 0.004, handleX: 0.026, low: 0.04, high: 0.108, handleHalfZ: 0.015, trayHalfZ: 0.0105, gap: 0.03 };
-
-/** The handle slides on the front of the glass; the steel tray behind follows only while the magnet touches the glass. */
-export async function mountRemoteDemo(host: HTMLElement, motion: boolean) {
-  // From the right side: the frosted glass is opaque in the model, so the handle (front)
-  // and the tray (back) are both in view only when the glass is seen nearly edge-on.
-  const view = stage(host, new THREE.Vector3(0.01, 0.07, 0), 0.4, motion, new THREE.Vector3(0.95, 0.42, 0.32));
-  const handle = new THREE.Group(), tray = new THREE.Group();
-  try {
-    view.scene.add(await model('remote-frame'));
-    const h = await model('remote-handle'); h.rotation.y = Math.PI; handle.add(h);
-    tray.add(await model('remote-tray'));
-    view.scene.add(handle, tray);
-  } catch (error) { view.dispose(); throw error; }
-  let level = 0, trayY = REMOTE.low, attached = true, away = 0;
-  const handleY = () => REMOTE.low + (REMOTE.high - REMOTE.low) * level;
-  const place = () => {
-    handle.position.set(REMOTE.handleX, handleY() - 0.01, REMOTE.glassHalf + REMOTE.handleHalfZ + away);
-    tray.position.set(REMOTE.handleX, trayY - 0.02, -REMOTE.glassHalf - REMOTE.trayHalfZ);
-  };
-  place();
-  view.invalidate();
-  view.tickers.push(dt => {
-    const wasAway = away, wasTray = trayY;
-    away += ((attached ? 0 : REMOTE.gap) - away) * Math.min(1, motion ? dt * 10 : 1);
-    // A touching magnet drags the tray with a little lag; pulled away, the tray stays where it is.
-    if (attached) trayY += (handleY() - trayY) * Math.min(1, motion ? dt * 6 : 1);
-    place();
-    return Math.abs(away - wasAway) + Math.abs(trayY - wasTray) > 1e-6;
-  });
-  return {
-    dispose: view.dispose,
-    setLevel(value: number) { level = Math.max(0, Math.min(1, value)); view.invalidate(); },
-    setAttached(value: boolean) { attached = value; view.invalidate(); },
-    get trayLevel() { return (trayY - REMOTE.low) / (REMOTE.high - REMOTE.low); },
-  };
-}
-
-/** The learner lowers the lid; just before it shuts, the magnet pulls it onto the iron plate. */
-export async function mountBoxDemo(host: HTMLElement, motion: boolean, onSnap: () => void) {
-  const view = stage(host, new THREE.Vector3(0, 0.07, 0), 0.4, motion);
-  const hinge = new THREE.Group(), scaler = new THREE.Group();
-  try {
-    view.scene.add(await model('box-body'));
-    const lid = await model('box-lid'); lid.rotation.x = LID.tilt;
-    scaler.scale.copy(LID.scale); scaler.position.set(0, -LID.panelBottom * LID.scale.y, -LID.zMin * LID.scale.z);
-    scaler.add(lid); hinge.add(scaler); hinge.position.set(0, BODY.top, BODY.hingeZ); view.scene.add(hinge);
-  } catch (error) { view.dispose(); throw error; }
-  let angle = 70, goal = 70, snapped = false;
-  const SNAP = 16;
-  const apply = () => { hinge.rotation.x = -THREE.MathUtils.degToRad(angle); };
-  apply();
-  view.invalidate();
-  view.tickers.push(dt => {
-    if (angle === goal) return false;
-    // Snapping accelerates like a pull; ordinary moves follow the slider smoothly.
-    const speed = snapped ? 420 : 160, step = motion ? speed * dt : Math.abs(goal - angle);
-    angle = angle > goal ? Math.max(goal, angle - step) : Math.min(goal, angle + step); apply();
-    return true;
-  });
-  return {
-    dispose: view.dispose,
-    setAngle(value: number) {
-      if (value <= SNAP) { goal = 0; if (!snapped) { snapped = true; onSnap(); } }
-      else { goal = value; snapped = false; }
-      if (!motion) { angle = goal; apply(); view.invalidate(); }
-    },
-    get snapped() { return snapped; },
-  };
 }

@@ -1,5 +1,5 @@
 .game-settings,.game-settings-reset{--settings-ink:#173a46;--settings-muted:#506974;--settings-paper:#fff9e9;--settings-line:#d6c9a8;--settings-accent:#167c75;color:var(--settings-ink);font-family:inherit;background:var(--settings-paper);border:2px solid #736745;border-radius:25px;box-shadow:0 12px 0 #263e4920,0 26px 90px #1027316b;padding:0;max-width:calc(100vw - 32px);word-break:keep-all;overflow-wrap:break-word}
-.game-settings::backdrop,.game-settings-reset::backdrop{background:#0a293a99;backdrop-filter:blur(6px)}
+.game-settings::backdrop,.game-settings-reset::backdrop{background:#0a293abd;}
 .game-settings{width:760px;max-height:min(90dvh,920px);overflow:hidden}
 .game-settings[open]{display:flex;flex-direction:column}
 .game-settings button,.game-settings-reset button{font-family:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}

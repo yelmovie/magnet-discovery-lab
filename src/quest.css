@@ -563,8 +563,8 @@ body.quest-mode .question-zone.is-complete { background: var(--quest-green-soft)
 
 @keyframes quest-title-arrive { from { opacity: 0; scale: .96; } to { opacity: 1; scale: 1; } }
 @keyframes quest-character-idle { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
-@keyframes quest-map-walk { from { margin-top: 0; rotate: -1deg; } to { margin-top: -3px; rotate: 1deg; } }
-@keyframes quest-toast-in { from { opacity: 0; margin-top: 8px; } to { opacity: 1; margin-top: 0; } }
+@keyframes quest-map-walk { from { translate: 0 0; rotate: -1deg; } to { translate: 0 -3px; rotate: 1deg; } }
+@keyframes quest-toast-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 
 @media (min-width: 1500px) and (min-height: 850px) {
   :root { --hud-icon-size: 64px; --hud-inset: var(--space-lg); --button-height-lg: 72px; --hud-top: 108px; --companion-size: 140px; }
