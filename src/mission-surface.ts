@@ -144,12 +144,12 @@ export class Surface {
     return true;
   }
   material(index:number,p:Point,size=92,showName=true) {
-    const specimen=materialCatalog[index],nut=specimen.id==='nut';
+    const specimen=materialCatalog[index],nut=specimen.id==='nut',drawn=nut?size/2:size; // The nut art fills its frame; the others have margins.
     const img=nut?this.asset('iron-nut',ironNutArt):this.asset('material-kit','/assets/quest/material-kit.webp');
     if(img.complete&&img.naturalWidth){
       const cw=img.naturalWidth/(nut?1:3),ch=img.naturalHeight/(nut?1:2);
-      this.ctx.drawImage(img,nut?0:(index%3)*cw,nut?0:Math.floor(index/3)*ch,cw,ch,p.x*W/100-size/2,p.y*H/100-size/2,size,size);
-    }else this.iron(p,'',size*.65);
+      this.ctx.drawImage(img,nut?0:(index%3)*cw,nut?0:Math.floor(index/3)*ch,cw,ch,p.x*W/100-drawn/2,p.y*H/100-drawn/2,drawn,drawn);
+    }else this.iron(p,'',drawn*.65);
     if(showName)this.label(specimen.name,pt(p.x,p.y+8),true);
   }
   label(text: string, p: Point, small = false, color = '#203e40') {

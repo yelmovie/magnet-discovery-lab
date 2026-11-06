@@ -92,7 +92,7 @@ export function trialObjectArt(o:TrialObject,t:Trial,x:number,y:number,scale=1):
   const frame=(file:string,box:string,w:number,h:number,atlasW=1536,atlasH=1024)=>
     `<svg x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" viewBox="${box}" preserveAspectRatio="none" overflow="hidden"><image href="/assets/quest/${file}.webp" width="${atlasW}" height="${atlasH}"/></svg>`;
   const row=(file:string,i:number,w:number,h:number)=>frame(file,`2 ${i*112+2} 316 108`,w,h,320,448);
-  const material=(i:number)=>materialCatalog[i].id==='nut'?`<image href="${ironNutArt}" x="-31" y="-31" width="62" height="62"/>`:frame('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`,62,62);
+  const material=(i:number)=>materialCatalog[i].id==='nut'?`<image href="${ironNutArt}" x="-15.5" y="-15.5" width="31" height="31"/>`:frame('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`,62,62);
   const bar=(pole=o.pole)=>{
     if(o.topPole&&o.bottomPole)return `<g transform="translate(-17 -23)">${uprightMagnet(o.topPole,o.bottomPole,34,46)}</g>`;
     const shape=frame('magnet-bar','60 370 1420 285',70,24);
