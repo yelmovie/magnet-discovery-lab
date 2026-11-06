@@ -1,0 +1,26 @@
+#app .experiment-autoplay {
+  position:absolute; z-index:24; right:var(--hud-inset,14px);
+  top:calc(var(--hud-inset,14px) + var(--hud-icon-size,54px) + 9px);
+  display:grid; justify-items:end; gap:6px;
+  max-width:clamp(98px,13vw,170px); color:#224c45;
+}
+#app .experiment-autoplay button {
+  min-height:48px; padding:6px 10px; border:2px solid #426f63; border-radius:12px;
+  background:#fff9e9; color:#224c45; font:inherit; font-weight:750; line-height:1.15;
+  box-shadow:0 3px 0 #546d5e;
+}
+#app .experiment-autoplay [data-demo=toggle] { background:#28685f; color:white; }
+#app .experiment-autoplay [hidden] { display:none; }
+#app .experiment-autoplay .demo-caption {
+  border-radius:9px; background:#fff9e9; padding:7px 9px;
+  box-shadow:0 1px 5px #44321835; font-weight:650; font-size:clamp(13px,1.4vw,18px);
+  line-height:1.3; word-break:keep-all;
+}
+body.quest-mode #app .quest-activity:has(.experiment-autoplay) .mission-board > .mission-pocket {
+  margin-top:54px;
+}
+#app .quest-activity:has(.demo-bench) :is(.mission-pocket,.mission-study-tools,.mission-cta,.mission-access,.coach-toggle,.bench-view-toggle,.mission-3d) { visibility:hidden; }
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  #app .experiment-autoplay {top:var(--hud-inset,10px);right:calc(var(--hud-inset,10px) + 2 * (var(--hud-icon-size,48px) + 8px));max-width:125px;}
+  #app .experiment-autoplay .demo-caption {max-width:110px;}
+}

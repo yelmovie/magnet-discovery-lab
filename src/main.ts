@@ -7,36 +7,62 @@ import './learning-ux.css';
 import './production.css';
 import './inquiry.css';
 import './polish.css';
+import './fit-screen.css';
+import './fit-activity.css';
+import './fit-report.css';
+import { visualPreview, visualGuideMarkup, bindVisualGuide } from './learning-visuals';
+import { apparatusFigure, apparatusFigureMarkup, apparatusFigureTitle, bindApparatusFigure } from './apparatus-figures';
 import { coachMarkup, bindCoach } from './coach';
 import { concepts, conceptMarkup, bindConcept } from './concept-video';
 import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
-import { questHud, questCompanion, questTitle } from './quest-ui';
+import { questHud, questTitle } from './quest-ui';
 import { inquiryView, inquiryNext, advanceInquiry, inquirySteps } from './inquiry';
 import { inquiryPhase } from './inquiry-model';
 import { missionReady } from './mission-model';
+import { canDemonstrate, ExperimentAutoplay } from './experiment-autoplay';
+import { rememberExperiment } from './experiment-scenes';
 import { missionQuestions, missionGuides, questRewards, abilityStatements } from './mission-content';
-import { expeditionMarkup, mountExpedition, type ExpeditionHandle } from './expedition';
+import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
+import { bindResidentChat, chatMarkup, reunionTitle } from './resident-chat';
+import { restoredTownMessage } from './town-lights';
 import { openGameSettings } from './game-settings';
-import { ensureAudio, syncAudioSettings, playEffect, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
+import { playStory, type FilmId } from './story-video';
+import { ensureAudio, syncAudioSettings, playEffect, playNarration, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
-import { rewardBelt } from './adventure';
-import { accessible, completeActivity, coreReady, emptyActivity, evidenceNames, freshSave, missionNames, opposite, progress, ready, record, stageNames, titles, designResult, type Evidence, type Save } from './domain';
-import { clearSave, load, persist, persistenceError, migrationNotice } from './storage';
-import { icon, magnet, mascot, objectArt, sceneArt } from './art';
+import { rewardBelt } from './rewards';
+import { learningNotesMarkup } from './learning-notes';
+import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, missionNames, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
+import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
+import { ideaView } from './idea-lab';
+import { usesIdeaLab } from './idea-model';
+import { icon, mascot } from './art';
 import type { View } from './activity-types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
+const autoplay = new ExperimentAutoplay();
 type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
 let s: Save = freshSave(), page: Page = 'title';
-let screen = 1, city: ExpeditionHandle | undefined, selected = -1, cleanup: (() => void) | undefined;
-let saveTimer = 0, saving = false, saveMessage = '', modalCleanup: (() => void) | undefined, endingTimer = 0;
-let practiceBackup: { activities: Save['activities']; design: Save['design']; designs: Save['designs'] } | null = null;
-let adminBackup: Save | null = null;
+let screen = 1, city: ExpeditionHandle | undefined, cleanup: (() => void) | undefined;
+let saveTimer = 0, saving = false, saveMessage = '', modalCleanup: (() => void) | undefined;
+let resetting = false;
+const resetChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('push-pull-city:reset') : null;
+resetChannel?.addEventListener('message', event => {
+  if (event.data !== 'reset' || resetting) return;
+  resetting = true;
+  clearTimeout(saveTimer);
+  saveTimer = 0;
+  window.location.reload();
+});
+type PracticeBackup = Pick<Save,'activities'|'design'|'designs'|'idea'>;
+let practiceBackup: PracticeBackup | null = null;
 type Route = { page: Page; screen: number };
+let adminBackup: { save: Save; route: Route; history: Route[]; practice: PracticeBackup | null } | null = null;
 let currentRoute: Route = { page: 'title', screen: 1 };
 const backStack: Route[] = [];
+let historyDepth: number = history.state?.depth ?? 0;
+let stopCompanionVoice = () => {};
 const adminOn = () => adminBackup !== null;
 const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects || settings.music; };
 const canEnter = (n: number) => accessible(s, n, adminOn());
@@ -52,15 +78,15 @@ function saveView() {
 }
 function saveSnapshot(): Save {
   if (!practiceBackup) return s;
-  return { ...s, activities: practiceBackup.activities, design: practiceBackup.design, designs: practiceBackup.designs, resume: 0 };
+  return { ...s, activities: practiceBackup.activities, design: practiceBackup.design, designs: practiceBackup.designs, idea: practiceBackup.idea, resume: 0 };
 }
-async function flush() { if (adminOn()) return; clearTimeout(saveTimer); saveTimer=0; saving = true; saveView(); try { const snap = saveSnapshot(); await persist(snap); s.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
-function touch() { if (adminOn()) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
-function cleanPage() { cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; clearInterval(endingTimer); modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
-function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; practiceBackup = null; }
+async function flush() { if (adminOn() || resetting) return; clearTimeout(saveTimer); saveTimer=0; saving = true; saveView(); try { const owner=s, snap = saveSnapshot(); await persist(snap); owner.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
+function touch() { if (adminOn() || resetting) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
+function cleanPage() { stopCompanionVoice(); autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
+function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; s.idea = practiceBackup.idea; practiceBackup = null; }
 function go(next: typeof page, remember = true) {
-  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) backStack.push({ ...currentRoute });
-  cleanPage(); if (next !== 'activity') restorePractice(); page = next;
+  if (remember && (next !== currentRoute.page || (next === 'activity' && screen !== currentRoute.screen))) { backStack.push({ ...currentRoute }); historyDepth++; history.pushState({ depth: historyDepth }, ''); }
+  cleanPage(); document.querySelector('.toast')?.remove(); if (next !== 'activity') restorePractice(); page = next;
   if (next === 'ending') setMusicTheme('final', true);
   currentRoute = { page, screen }; render(); window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -71,7 +97,7 @@ function goBack() {
 }
 function startActivity(n: number, practice = false, remember = true) {
   if (!canEnter(n)) return notify('앞의 탐구를 마치면 이 활동이 열려.');
-  if ((practice || adminOn()) && !practiceBackup) { practiceBackup = { activities: structuredClone(s.activities), design: structuredClone(s.design), designs: structuredClone(s.designs) }; const first = Math.floor((n - 1) / 2) * 2 + 1; s.activities[first] = emptyActivity(); s.activities[first + 1] = emptyActivity(); }
+  if ((practice || adminOn()) && !practiceBackup) { practiceBackup = { activities: structuredClone(s.activities), design: structuredClone(s.design), designs: structuredClone(s.designs), idea: structuredClone(s.idea) }; const first = Math.floor((n - 1) / 2) * 2 + 1; s.activities[first] = emptyActivity(); s.activities[first + 1] = emptyActivity(); if (first === 9) s.idea = undefined; }
   screen = n; s.activities[n] ||= emptyActivity(); s.resume = practiceBackup ? 0 : n; go('activity', remember); touch();
 }
 function button(action: string, label: string, style = 'soft', disabled = false) { return `<button class="btn ${style}" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`; }
@@ -90,7 +116,7 @@ function render() {
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
   }
-  app.innerHTML = `${questHud({ first: page === 'title', sound: audioEnabled(), canBack: backStack.length > 0 })}<main id="main-content" class="page page-${page}">${html}</main>${page === 'city' ? questCompanion({message: '길이나 건물을 누르면 밀이와 함께 걸어가요. 직접 방향키나 화살표로 걸어도 좋아요. 고친 시설에서 받은 도구가 다음 탐구에 쓰여요.'}) : ''}`;
+  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', sound: audioEnabled(), canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
   bindCommon();
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
@@ -101,42 +127,79 @@ function render() {
     document.querySelectorAll<HTMLButtonElement>('[data-ability]').forEach(b => b.addEventListener('click', () => { const i = Number(b.dataset.ability), out = document.querySelector<HTMLElement>('#certificate-ability')!; s.settings.ability = i; document.querySelectorAll('[data-ability]').forEach(o => o.setAttribute('aria-pressed', String(o === b))); out.querySelector('strong')!.textContent = abilityStatements[i]; out.hidden = false; playEffect('success', s.settings); touch(); })); }
   saveView();
 }
-function titlePage() { return questTitle(s); }
+function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 let pendingPlace: number | null = null;
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onArrive:showPlace});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onArrive:showPlace,onResident:showResident});
   if(pendingPlace!==null){city.goTo(pendingPlace);pendingPlace=null;}
 }
+function showResident(stage:number) {
+  const {name}=residents[stage];
+  let dispose=()=>{};
+  const modal=showModal(chatMarkup(s,stage)+button('modal-close','지도로 돌아가기','primary'),`${name} 이야기`,()=>dispose());
+  modal.dialog.classList.add('resident-dialog');
+  dispose=bindResidentChat(modal.dialog,s,stage,()=>{
+    const marker=app.querySelector<HTMLButtonElement>(`[data-resident="${stage}"]`);
+    if(marker){
+      marker.dataset.greeted='true';
+      marker.setAttribute('aria-label',marker.title=`${name} 다시 대화하기`);
+      marker.querySelector('.resident-bubble')!.textContent='···';
+    }
+    playEffect('success',s.settings);touch();
+  });
+}
 function showPlace(index:number) {
-  selected=index;
   const open=adminOn() || index<=s.evidence.length, done=index<s.evidence.length;
-  showModal(`<div class="entrance-portrait">${mascot('mili',130,done?3:0)}</div><h2>${index===5?'중앙 광장':stageNames[index]}</h2><p>${open ? index===5?'다섯 발견과 내 설계도로 마지막 복구를 해 보자.':missionNames[index] : '앞 구역의 탐구를 마치면 새 도구와 함께 이곳이 열려.'}</p>${open&&index<5?`<p class="entrance-reward-preview">고치면 <strong>${questRewards[index].name}</strong>를 받아 다음 의뢰에 쓸 수 있어.</p>`:''}${open?button('enter',done?'다른 방법으로 다시 탐구':'안으로 들어가기 →','primary'):button('modal-close','길로 돌아가기','primary')}${done?'<p>처음 발견과 복구 기록은 그대로 보관돼.</p>':''}`, '시설 입구');
-  document.querySelector('[data-action="enter"]')?.addEventListener('click',()=>{modalCleanup?.();if(index===5){go(s.final.complete?'certificate':'report');}else {let n=index*2+1;if(!done&&s.completed.includes(n))n++;startActivity(n,done);}});
+  if(adminOn()){
+    if(index===5){s.final.report=true;go(s.final.complete?'certificate':'core');}
+    else startActivity(index*2+1);
+    return;
+  }
+  showModal(`<div class="entrance-portrait">${mascot('mili',130,done?3:0)}</div><h2>${index===5?'중앙 광장':stageNames[index]}</h2><p>${open ? index===5?'실험 사진을 보며 다섯 가지 발견을 수첩에 정리해 보자.':missionNames[index] : '앞 구역의 탐구를 마치면 새 도구와 함께 이곳이 열려.'}</p>${open&&index<5?`<p class="entrance-reward-preview">고치면 <strong>${questRewards[index].name}</strong>를 받아 다음 의뢰에 쓸 수 있어.</p>`:''}${open?button('enter',index===5?s.final.complete?'내 수료증 보기':'발견 정리 시작':done?'다른 방법으로 다시 탐구':'안으로 들어가기 →','primary'):button('modal-close','길로 돌아가기','primary')}${done?'<p>처음 발견과 복구 기록은 그대로 보관돼.</p>':''}`, '시설 입구');
+  document.querySelector('[data-action="enter"]')?.addEventListener('click',()=>{modalCleanup?.();if(index===5){s.final.report=true;touch();go(s.final.complete?'certificate':'core');}else {let n=index*2+1;if(!done&&s.completed.includes(n))n++;startActivity(n,done);}});
 }
 let currentView: View;
+// Teacher unlock opens every step, so "next" always moves on without writing completion records.
+function nextStep(a: Activity) {
+  const next = inquiryNext(screen, a, s);
+  if (!adminOn()) return next;
+  if (inquiryPhase(a) === 'experiment' && !(a.values.inquiryVersion === 2 && screen % 2)) return { label: next.label, enabled: true };
+  return { label: screen % 2 ? '다음 탐구로' : screen < 10 ? '다음 구역으로' : '도시로 돌아가기', enabled: true };
+}
 function activityPage() {
-  const a=s.activities[screen] ||= emptyActivity();
-  currentView=inquiryView(screen,a,s);
-  const next=inquiryNext(screen,a,s);
-  return `<section class="quest-activity"><header class="mission-head"><span class="stage-label">${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-head-row">${inquirySteps(screen,a)}<span class="discovery-count"></span></div><p class="mission-next-action" aria-live="polite"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup()}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기</button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button></section>`;
+  const model=s;
+  const a=model.activities[screen] ||= emptyActivity();
+  if(usesIdeaLab(model,screen)){a.values.ideaVersion=1;currentView=ideaView(screen,a,model,adminOn());return currentView.html;}
+  currentView=inquiryView(screen,a,model,adminOn());
+  const next=nextStep(a);
+  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
 }
 function openRecords() {
   const a = s.activities[screen];
-  const trials = (a.trials || []).filter(t=>t.objects.length);
+  const trials = a.trials || [];
+  const replay = trials.length || !a.records.length ? trialReplayMarkup(trials) : '<p class="replay-empty">이 탐구에는 글로 남긴 관찰이 있어.</p>';
+  const notes = a.records.length ? `<details class="replay-notes" ${trials.length?'':'open'}><summary>관찰 메모 ${a.records.length}개</summary><ul class="observation-list">${a.records.map(r=>`<li><strong>${esc(r.label)}</strong><span>${esc(readableRecord(r.result))}</span></li>`).join('')}</ul></details>` : '';
   let dispose = () => {};
-  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${trialReplayMarkup(trials)}${a.records.length ? `<details><summary>관찰 기록 ${a.records.length}개</summary><ul class="observation-list">${a.records.map(r => `<li><strong>${esc(r.label)}</strong><span>${esc(readableRecord(r.result))}</span></li>`).join('')}</ul></details>` : '<p>물체를 움직이면 나만의 실험이 여기에 남아.</p>'}</div>`, '내 실험 다시 보기',()=>dispose());
-  dispose = bindTrialReplay(modal.dialog, trials);
+  const modal = showModal(`<div class="record-drawer-content"><h2>내 실험 다시 보기</h2>${learningNotesMarkup([a])}${replay}${notes}</div>`, '내 실험 다시 보기',()=>dispose());
+  dispose = bindTrialReplay(modal.dialog, trials, s.settings.motion);
 }
 function meta() {
-  const a = s.activities[screen]; if (page !== 'activity' || !a) return;
-  const done = ready(screen, a, s); const next=inquiryNext(screen,a,s); const button = document.querySelector<HTMLButtonElement>('[data-action="complete"]'); if (button) { button.disabled = !next.enabled; button.innerHTML=`${next.label} ${icon('arrow',24)}`; }
+  const a = s.activities[screen]; if (page !== 'activity' || !a || a.values.ideaVersion === 1) return;
+  const done = ready(screen, a, s); const next=nextStep(a); const button = document.querySelector<HTMLButtonElement>('[data-action="complete"]'); if (button) { button.disabled = !next.enabled; button.innerHTML=`${next.label} ${icon('arrow',24)}`; }
+  const blocked=document.querySelector<HTMLButtonElement>('[data-action="missing-step"]');if(blocked)blocked.hidden=next.enabled;
   const hint = document.querySelector('#completion-hint'); if (hint) hint.textContent = done ? '탐구를 마쳤어! 다음으로 가볼까?' : '직접 실험하고 발견을 기록해보자.';
   const count = document.querySelector('#record-count'); if (count) count.textContent = `${a.records.length}개의 관찰`;
   document.querySelector('.quest-activity')?.dispatchEvent(new Event('coach-update'));
 }
 function bindActivity() {
   const root = document.querySelector<HTMLElement>('#experiment-root')!;
+  if (s.activities[screen].values.ideaVersion === 1) {
+    const dispose = currentView.bind({ screen, a: s.activities[screen], s, root, refresh: () => { cleanup?.(); cleanup = undefined; render(); }, touch, meta, notify });
+    cleanup = () => dispose?.();
+    return;
+  }
+  bindConceptLinks(document.querySelector('.quest-activity')!);
   const refresh = () => {
     const active = document.activeElement as HTMLElement | null, scroll = window.scrollY;
     const card = root.querySelector<HTMLElement>('.field-content') || root.querySelector<HTMLElement>('.inquiry-card'), cardTop = card?.scrollTop;
@@ -149,38 +212,82 @@ function bindActivity() {
       const nextCard = nextRoot.querySelector<HTMLElement>('.field-content') || nextRoot.querySelector<HTMLElement>('.inquiry-card');
       if (nextCard && cardTop !== undefined) nextCard.scrollTop = cardTop;
     }
+    if (phase === 'explain' && nextRoot.querySelector('[data-phase="complete"]')) {
+      document.querySelector<HTMLButtonElement>('[data-action="complete"]')?.focus({ preventScroll:true });
+    }
     window.scrollTo({ top: scroll, behavior: 'instant' });
   };
-  const viewCleanup = currentView.bind({ screen, a: s.activities[screen], s, root, refresh, touch, meta, notify });
+  const model=s, a=model.activities[screen];
+  const viewCleanup = currentView.bind({ screen, a, s:model, root, refresh, touch, meta, notify });
   const placementCleanup = bindPlacement(root);
-  const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, s.activities[screen], s);
+  const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, a, model);
   // Cards and feedback start below the mission head, whatever its wrapped height.
   const shell = document.querySelector<HTMLElement>('.quest-activity')!, head = shell.querySelector<HTMLElement>('.mission-head')!;
+  if(canDemonstrate(screen,a))root.insertAdjacentHTML('beforebegin',autoplay.markup());
+  const autoplayCleanup=autoplay.bind(shell,root,screen,s,notify);
+  // Keep optional help useful without stacking several panels over the experiment.
+  const helpEvents=new AbortController();
+  const closeOtherHelp=(keep:HTMLElement)=>{
+    shell.querySelectorAll<HTMLDetailsElement>('.mission-access[open], .play-question[open]').forEach(panel=>{if(panel!==keep)panel.open=false;});
+    const coach=shell.querySelector<HTMLButtonElement>('.coach-toggle');
+    if(keep!==coach&&coach?.getAttribute('aria-expanded')==='true')coach.click();
+  };
+  shell.addEventListener('toggle',event=>{const panel=event.target;if(panel instanceof HTMLDetailsElement&&panel.open&&panel.matches('.mission-access, .play-question'))closeOtherHelp(panel);},{capture:true,signal:helpEvents.signal});
+  shell.addEventListener('click',event=>{const coach=(event.target as HTMLElement).closest<HTMLElement>('.coach-toggle');if(coach?.getAttribute('aria-expanded')==='true')closeOtherHelp(coach);},{signal:helpEvents.signal});
   const placeHead = () => shell.style.setProperty('--head-bottom', `${Math.ceil(head.getBoundingClientRect().bottom - shell.getBoundingClientRect().top)}px`);
   const headObserver = new ResizeObserver(placeHead); headObserver.observe(head); placeHead();
-  cleanup = () => { viewCleanup?.(); placementCleanup(); coachCleanup(); headObserver.disconnect(); };
+  cleanup = () => { autoplayCleanup(); viewCleanup?.(); placementCleanup(); coachCleanup(); headObserver.disconnect(); helpEvents.abort(); };
   root.addEventListener('revise', () => startActivity(9));
   root.addEventListener('open-3d', event => open3d((event as CustomEvent<Open3d>).detail));
 }
+let finishingActivity = false;
 async function finishActivity() {
-  const activity=s.activities[screen];
-  if(inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
+  if (finishingActivity) return;
+  autoplay.reset();
+  finishingActivity = true;
+  try { await finishActivityOnce(); } finally { finishingActivity = false; }
+}
+async function finishActivityOnce() {
+  const activity=s.activities[screen], idea=activity.values.ideaVersion===1;
+  if(!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+  if(adminOn()){if(!idea&&advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
+  if(!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
   if (!ready(screen, s.activities[screen], s)) return;
   sound(true);
-  if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); const stage=Math.floor((screen-1)/2);restorePractice(); s.resume = 0; await flush(); go('city'); openConcept(stage,true); return; }
+  if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); restorePractice(); s.resume = 0; await flush(); go('city'); notify('다시 탐구했어! 처음 발견과 복구 기록은 그대로 보관돼.'); return; }
   const stage = Math.floor((screen - 1) / 2);
-  if (screen === 9) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
+  const newResident = screen % 2 === 0 && !s.evidence.some(e => e.stage === stage);
+  if (screen === 9 && !idea) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
   if (!completeActivity(s, screen)) return;
   await flush();
-  if (screen % 2) return startActivity(screen + 1);
+  if (screen % 2) {
+    startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
+  }
   go('city');
-  openConcept(stage, false, () => showReward(stage));
+  if(newResident)city?.welcomeResident(stage);
+  showReward(stage,newResident);
 }
-function showReward(stage: number) {
+function showReward(stage: number,newResident: boolean) {
   playEffect('reward',s.settings);
-  showModal(`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('modal-close', '복구된 도시 보기 →', 'primary')}</div>`, '연구 기록 완성');
+  const kit = questRewards[stage];
+  const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '광장에서 발견 정리 →', 'primary')}${newResident ? button('meet-resident', `${residents[stage].name} 만나기`) : button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
+  const reunion = `<div class="town-news"><img src="/assets/quest/resident-${stage+1}.webp" alt=""><div><small>마을 소식 · ${stage + 1} / 5 구역 복구</small><h2>${reunionTitle(stage)}</h2><p>${restoredTownMessage(stage)}</p></div></div>
+    <div class="town-news-earned"><span>${icon(kit.icon,24)}<b>${kit.name}</b><small>연구 가방에 저장</small></span><div><strong>도시 복구 ${progress(s)}%</strong><progress aria-label="도시 복구율" max="100" value="${progress(s)}"></progress></div></div>
+    <div class="town-news-actions">${button('next-zone',stage<4?'다음 구역으로 →':'광장에서 발견 정리 →','primary')}${button('meet-resident',`${residents[stage].name} 만나기`)}<button class="quest-text-button" data-concept="${stage}">개념 영상</button></div>`;
+  const modal=showModal(newResident?reunion:classic,newResident?reunionTitle(stage):'연구 기록 완성');
+  if(newResident){modal.dialog.classList.add('town-reunion');modal.dialog.parentElement!.classList.add('town-reunion-backdrop');}
+  modal.dialog.querySelector('[data-action="meet-resident"]')?.addEventListener('click', () => {
+    modal.close();
+    app.querySelector<HTMLButtonElement>(`[data-resident="${stage}"]`)?.click();
+  });
+  modal.dialog.querySelector('[data-action="next-zone"]')?.addEventListener('click', () => {
+    modal.close();
+    if (stage < 4) startActivity(stage * 2 + 3);
+    else { s.final.report = true; touch(); go('core'); }
+  });
+  bindConceptLinks(modal.dialog);
 }
-function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
+function evidenceCard(e: Evidence) { return `<article class="evidence-card"><span class="evidence-number">0${e.stage + 1}</span><div><span class="eyebrow">${stageNames[e.stage]}</span><h3>${evidenceNames[e.stage]}</h3>${e.activities.flatMap(a => a.trials || []).slice(-1).map(trialPicture).join('')}${learningNotesMarkup(e.activities)}<button type="button" class="btn concept-link" data-concept="${e.stage}">12초 개념 영상 다시 보기</button><details><summary>전체 실험 기록 ${e.summary.length}개</summary><ul>${e.summary.map(t => `<li>${esc(readableRecord(t))}</li>`).join('')}</ul></details></div><span class="evidence-stamp">발견</span></article>`; }
 function evidenceCollection(items: Evidence[], prefix: string) {
   const names=['생활','재료','극','원격','발명'];
   return `<div class="evidence-browser"><div class="evidence-tabs" role="tablist" aria-label="구역별 내 발견">${items.map((e,i)=>`<button type="button" role="tab" id="${prefix}-tab-${i}" aria-controls="${prefix}-panel-${i}" aria-selected="${i===items.length-1}" tabindex="${i===items.length-1?0:-1}" data-evidence="${i}">${e.stage+1} · ${names[e.stage]}</button>`).join('')}</div>${items.map((e,i)=>`<div class="evidence-panel" role="tabpanel" id="${prefix}-panel-${i}" aria-labelledby="${prefix}-tab-${i}" ${i===items.length-1?'':'hidden'}>${evidenceCard(e)}</div>`).join('')}</div>`;
@@ -198,35 +305,34 @@ function notebook() {
   bindConceptLinks(document.querySelector('.modal')!);
   bindEvidenceTabs(document.querySelector('.modal')!);
 }
-function reportPage() { return `<div class="report-heading"><span class="eyebrow">최종 연구 보고서</span><h1>다섯 번의 발견,<br>하나의 커다란 변화.</h1><p>구역을 눌러 내 발견을 살펴보고, 마지막 복구에 사용하자.</p></div><div class="report-list">${evidenceCollection(s.evidence,'report')}</div><div class="report-actions">${button('city', '도시로 돌아가기')}${button('reviewed', `마지막 복구 시작 ${icon('arrow')}`, 'primary', !adminOn() && s.evidence.length !== 5)}</div>`; }
+function reportPage() { return `<div class="report-heading"><span class="eyebrow">나의 탐험 기록</span><h1>다섯 건물에서 찾은 <br>자석의 비밀.</h1><p>실험 장면을 살펴보고, 다섯 문제로 발견을 정리하자.</p></div><div class="report-list">${s.evidence.length?evidenceCollection(s.evidence,'report'):'<p class="report-empty">미리보기라 아직 모인 발견이 없어. 다섯 구역을 마치면 여기에 내 실험 기록이 모여.</p>'}</div><div class="report-actions">${button('city', '도시로 돌아가기')}${button('reviewed', `발견 정리 시작 ${icon('arrow')}`, 'primary', !adminOn() && s.evidence.length !== 5)}</div>`; }
 let finalScene: View;
 function corePage() {
-  finalScene = restorationView(s);
+  finalScene = restorationView(s,adminOn());
   return '<div id="final-root" class="quest-core">' + finalScene.html + '</div>';
 }
 function bindCore() {
   const root = document.querySelector<HTMLElement>('#final-root')!;
-  const dispose = finalScene.bind({ screen: 10, a: s.final.route!.attempt!, s, root, touch, meta: () => {}, notify, refresh: () => { cleanup?.(); cleanup = undefined; render(); } });
-  const placement = bindPlacement(root);
+  const dispose = finalScene.bind({ screen: 10, a: emptyActivity(), s, root, touch, meta: () => {}, notify, refresh: () => { cleanup?.(); cleanup = undefined; render(); } });
   root.addEventListener('activate-final', () => { void activate(); });
-  root.addEventListener('open-3d', event => open3d((event as CustomEvent<Open3d>).detail));
-  cleanup = () => { dispose?.(); placement(); };
+  cleanup = () => { dispose?.(); };
 }
-async function activate() { if (!canActivate()) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
-function endingPage() { return `<section class="ending"><span class="eyebrow">도시가 다시 움직여요</span><div class="ending-art"><img src="/assets/quest/logo.webp" alt="다시 살아난 밀고 당기는 도시"/><div class="celebration-sparks">✦ <span>✧</span> ✦</div></div><h1 id="ending-title">네 발견이 도시를 깨웠어!</h1><p id="ending-text">작은 자석의 힘이 커다란 변화를 만들었어.</p><div class="ending-progress"><i id="ending-progress"></i></div><div class="ending-mascots">${mascot('mili', 100)}${mascot('dangi', 100)}</div>${button('certificate', '인증서로 건너뛰기 →', 'text-button')}</section>`; }
-function endingVignette(index:number):string {
-  const rooms=['life','material','poles','remote','workshop'];
-  return `<div class="ending-vignette ending-painted" style="background-image:url('/assets/quest/stage-${rooms[index]}.webp')"><span class="tag">${stageNames[index]}</span>${sceneArt(index,'ending-scene')}<span class="sr-only">${questRewards[index].change}</span><div class="restored-ribbon">${icon('check',22)} ${questRewards[index].name}으로 이어진 발견</div></div>`;
-}
-function bindEnding() {
-  let lastTick = performance.now(), elapsed = 0; const messages = ['잠금장치가 다시 작동해!', '재료 분류가 다시 시작됐어!', '고리 장치가 제자리를 찾았어!', '수조도, 카트도 다시 움직여!', '네 발명이 시민의 일상을 바꾸었어!'];
-  let lastPart = -1;
-  endingTimer = window.setInterval(() => { const now=performance.now(),delta=Math.max(0,now-lastTick);lastTick=now;if(document.hidden||document.querySelector('dialog[open],.modal-backdrop'))return;elapsed+=delta;const part = Math.min(4, Math.max(0, Math.floor((elapsed - 3000) / 3400))); const bar = document.querySelector<HTMLElement>('#ending-progress'); if (bar) bar.style.width = `${Math.min(100, elapsed / 240)}%`; const text = document.querySelector('#ending-text'); if (text && elapsed > 3000) text.textContent = messages[part]; if (elapsed > 3000 && part !== lastPart) { const art = document.querySelector('.ending-art'); if (art) art.innerHTML = endingVignette(part); lastPart = part; } if (elapsed >= (s.settings.motion ? 24000 : 6000)) go('certificate'); }, 200);
+async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
+// The ending page is the finale film; its closing card leads to the certificate.
+function endingPage() { return '<section class="ending-film" aria-label="도시 축제 영상"></section>'; }
+function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, onDone: () => go('certificate') }); }
+/** Story film over the current page (intro, or replays from settings). The page pauses underneath. */
+function openFilm(id: FilmId, onDone: () => void, replay = false) {
+  modalCleanup?.(); document.querySelector('.modal-backdrop')?.remove();
+  city?.pause(true); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: true }));
+  const release = () => { close(); if (modalCleanup === release) modalCleanup = undefined; city?.pause(false); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: false })); };
+  const close = playStory(id, { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, replay, onDone: () => { release(); onDone(); } });
+  modalCleanup = release;
 }
 function certificatePage() {
   const ability = abilityStatements[s.settings.ability ?? -1];
   const sheet = `<div class="certificate"><div class="certificate-border">${adminOn() ? '<p class="certificate-preview">관리자 미리보기 · 실제 수료 기록이 아니야</p>' : ''}<span class="certificate-overline">밀고 당기는 도시 · 자석 탐험대</span><div class="certificate-medal">${icon('spark', 38)}</div><h2>자석 도시 복구 연구원 인증서</h2><p class="certificate-name" id="certificate-name">${esc(s.settings.nickname || '우리 도시의 과학 탐험가')}</p><p>자석의 성질을 직접 관찰하고 실험하여<br><strong>밀고 당기는 도시를 다시 움직이게 했습니다.</strong></p><p class="certificate-ability" id="certificate-ability" ${ability ? '' : 'hidden'}>나는 이제 <strong>${esc(ability || '')}</strong></p><div class="certificate-achievements">${evidenceNames.map(n => `<span>${icon('check', 17)} ${n.replace(' 기록', '').replace(' 검증서', '')}</span>`).join('')}</div><div class="certificate-bottom">${mascot('mili', 78)}<div><strong>도시 복구 100% · 5개의 연구 기록</strong><span>${s.final.date ? new Date(s.final.date).toLocaleDateString('ko-KR') : ''}</span></div>${mascot('dangi', 78)}</div></div></div>`;
-  const panel = `<aside class="certificate-panel"><span class="eyebrow">미션 완료</span><h1>우리 도시의 과학 탐험가</h1><div class="certificate-name-input"><label for="nickname">인증서에 넣을 이름 <small>(선택)</small></label><input id="nickname" maxlength="20" placeholder="우리 도시의 과학 탐험가" value="${esc(s.settings.nickname)}"/></div><fieldset class="ability-picker"><legend>나는 이제 무엇을 할 수 있게 됐을까?</legend><p>가장 자신 있는 한 가지를 골라 인증서에 새겨 봐.</p>${abilityStatements.map((t, i) => `<button type="button" class="ability-option" data-ability="${i}" aria-pressed="${s.settings.ability === i}">${esc(t)}</button>`).join('')}</fieldset><div class="certificate-actions">${button('print', `${icon('print', 18)} 인증서 인쇄`, 'primary')}${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div></aside>`;
+  const panel = `<aside class="certificate-panel"><span class="eyebrow">미션 완료</span><h1>우리 도시의 과학 탐험가</h1><div class="certificate-name-input"><label for="nickname">인증서에 넣을 별명 <small>(선택)</small></label><input id="nickname" maxlength="20" placeholder="우리 도시의 과학 탐험가" value="${esc(s.settings.nickname)}"/></div><fieldset class="ability-picker"><legend>나는 이제 무엇을 할 수 있게 됐을까?</legend><p>가장 자신 있는 한 가지를 골라 인증서에 새겨 봐.</p>${abilityStatements.map((t, i) => `<button type="button" class="ability-option" data-ability="${i}" aria-pressed="${s.settings.ability === i}">${esc(t)}</button>`).join('')}</fieldset><div class="certificate-actions">${button('print', `${icon('print', 18)} 인증서 인쇄`, 'primary')}${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div></aside>`;
   return `<div class="certificate-stage">${sheet}${panel}</div>`;
 }
 function showModal(content: string, label: string, onClose?: () => void) {
@@ -250,82 +356,120 @@ function openConcept(stage: number, replay = true, onContinue?: () => void) {
   setAudioPaused(true);
   dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();});
 }
-type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] } | { kind: 'box' } | { kind: 'remote' };
-const view3dCopy = {
-  rings: { title: '고리자석을 3D로 돌려 보기', guide: '끌어서 돌려 봐. 아래에서 올려다보면 마주 보는 면의 극이 보여.', stage: '기둥에 끼운 고리자석과 각 면의 극 표시', controls: '' },
-  box: { title: '내 자석 잠금 상자 작동해 보기', guide: '뚜껑을 천천히 내려 봐. 닫히기 직전에 무슨 일이 생길까?', stage: '자석이 붙은 뚜껑과 철판이 붙은 상자', controls: '<label class="view3d-slider"><span>뚜껑 각도</span><input type="range" min="0" max="70" step="1" value="70"></label>' },
-  remote: { title: '내 유리 너머 운반기 작동해 보기', guide: '손잡이를 올리고 내려 봐. 유리 뒤 철 쟁반은 어떻게 움직일까?', stage: '유리판 앞의 자석 손잡이와 뒤의 철 쟁반', controls: '<label class="view3d-slider"><span>손잡이 높이</span><input type="range" min="0" max="100" step="1" value="0"></label><button type="button" class="btn view3d-toggle" aria-pressed="false">자석을 유리에서 떼기</button>' },
-};
+type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] };
 function open3d(detail: Open3d) {
-  const copy = view3dCopy[detail.kind];
+  const title = '고리자석을 3D로 돌려 보기';
   let dispose = () => {};
-  const modal = showModal(`<div class="view3d"><h2>${copy.title}</h2><p class="view3d-guide">${copy.guide}</p><div class="view3d-stage" role="img" aria-label="${copy.stage}"><p class="view3d-loading">3D 장면을 불러오는 중…</p></div><div class="view3d-controls">${copy.controls}</div><p class="view3d-note" role="status" aria-live="polite">${detail.kind === 'rings' ? (detail.released ? '실험대에서 손을 뗀 뒤의 모습이야.' : '아직 손을 떼기 전이야. 실험대에서 손을 떼면 높이가 바뀌어.') : ''}</p></div>`, copy.title, () => dispose());
+  const modal = showModal(`<div class="view3d"><h2>${title}</h2><p class="view3d-guide">끌어서 돌려 봐. 아래에서 올려다보면 마주 보는 면의 극이 보여.</p><div class="view3d-stage" role="img" aria-label="기둥에 끼운 고리자석과 각 면의 극 표시"><p class="view3d-loading">3D 장면을 불러오는 중…</p></div><p class="view3d-note" role="status" aria-live="polite">${detail.released ? '실험대에서 손을 뗀 뒤의 모습이야.' : '아직 손을 떼기 전이야. 실험대에서 손을 떼면 높이가 바뀌어.'}</p></div>`, title, () => dispose());
   modal.dialog.classList.add('view3d-dialog');
-  const stage = modal.dialog.querySelector<HTMLElement>('.view3d-stage')!, note = modal.dialog.querySelector<HTMLElement>('.view3d-note')!;
+  const stage = modal.dialog.querySelector<HTMLElement>('.view3d-stage')!;
   void import('./three-view').then(async m => {
-    let release: () => void;
-    if (detail.kind === 'rings') {
-      const lifts = m.ringLifts(detail.rings.filter(r => r.onPole).map(r => r.top), detail.released); let k = 0;
-      release = await m.mountRingView(stage, detail.rings.map(r => ({ ...r, lift: r.onPole ? lifts[k++] : 0 })), s.settings.motion);
-    } else if (detail.kind === 'remote') {
-      const slider = modal.dialog.querySelector<HTMLInputElement>('.view3d-slider input')!, toggle = modal.dialog.querySelector<HTMLButtonElement>('.view3d-toggle')!;
-      const demo = await m.mountRemoteDemo(stage, s.settings.motion);
-      const say = () => { const v = Number(slider.value), attached = toggle.getAttribute('aria-pressed') !== 'true'; note.textContent = !attached ? '자석이 유리에서 멀어져서 쟁반이 따라오지 않아.' : v >= 95 ? '편지가 위 선반 높이에 도착했어!' : v <= 5 ? '편지가 아래 선반 높이에 있어.' : '유리 너머 쟁반이 자석을 따라 움직여.'; };
-      slider.addEventListener('input', () => { demo.setLevel(Number(slider.value) / 100); say(); });
-      toggle.addEventListener('click', () => { const away = toggle.getAttribute('aria-pressed') !== 'true'; toggle.setAttribute('aria-pressed', String(away)); toggle.textContent = away ? '자석을 다시 유리에 붙이기' : '자석을 유리에서 떼기'; demo.setAttached(!away); playEffect(away ? 'pick' : 'drop', s.settings); say(); });
-      release = demo.dispose;
-    } else {
-      const slider = modal.dialog.querySelector<HTMLInputElement>('.view3d-slider input')!;
-      const demo = await m.mountBoxDemo(stage, s.settings.motion, () => { slider.value = '0'; playEffect('drop', s.settings); note.textContent = '착! 자석이 철판을 끌어당겨 뚜껑을 붙잡았어.'; });
-      slider.addEventListener('input', () => { demo.setAngle(Number(slider.value)); if (!demo.snapped) note.textContent = Number(slider.value) < 30 ? '거의 닫혔어. 자석과 철판이 가까워지고 있어.' : ''; });
-      release = demo.dispose;
-    }
+    const lifts = m.ringLifts(detail.rings.filter(r => r.onPole).map(r => r.top), detail.released); let k = 0;
+    const release = await m.mountRingView(stage, detail.rings.map(r => ({ ...r, lift: r.onPole ? lifts[k++] : 0 })), s.settings.motion);
     // Closed while loading: free the renderer at once instead of leaving it running detached.
     if (!stage.isConnected) return release();
     dispose = release; stage.querySelector('.view3d-loading')?.remove();
   }).catch(() => { stage.innerHTML = '<p class="view3d-loading">3D 장면을 불러오지 못했어. 실험대에서 그대로 계속할 수 있어.</p>'; });
 }
 function bindConceptLinks(root: HTMLElement) { root.querySelectorAll<HTMLButtonElement>('[data-concept]').forEach(button=>button.addEventListener('click',()=>openConcept(Number(button.dataset.concept)))); }
+function setTeacherPreview(enabled:boolean) {
+  if(enabled===adminOn())return;
+  cleanPage();
+  if(enabled){
+    if(saveTimer)void flush();
+    const preview=structuredClone(s);
+    adminBackup={save:s,route:{...currentRoute},history:backStack.splice(0),practice:practiceBackup};
+    s=preview;practiceBackup=null;
+    go('city',false);
+    document.querySelector<HTMLButtonElement>('[data-map-overview]')?.click();
+    notify('탐구 10개와 마지막 복구가 모두 열렸어. 원하는 건물로 가 봐.');
+  }else if(adminBackup){
+    const student=adminBackup;
+    adminBackup=null;s=student.save;practiceBackup=student.practice;
+    screen=student.route.screen;backStack.splice(0,backStack.length,...student.history);
+    go(student.route.page,false);
+    notify('학생용으로 돌아왔어. 원래 진행 기록이 그대로 남아 있어.');
+  }
+  syncAudioSettings(s.settings);
+}
+async function restartExploration(startNow: boolean) {
+  if (resetting) return;
+  resetting = true;
+  app.inert = true;
+  const preview = adminOn();
+  const hadPendingSave = Boolean(saveTimer);
+  clearTimeout(saveTimer);
+  saveTimer = 0;
+  const next = freshSave();
+  next.settings = { ...s.settings, nickname: '', ability: undefined };
+  next.started = startNow;
+  try {
+    if (!preview) await resetSave(next);
+  } catch {
+    resetting = false;
+    app.inert = Boolean(document.querySelector('.modal-backdrop'));
+    if (hadPendingSave) touch();
+    notify('탐험 기록을 초기화하지 못했어. 설정에서 다시 시도해 줘.');
+    return;
+  }
+  cleanPage();
+  practiceBackup = null;
+  pendingPlace = null;
+  screen = 1;
+  backStack.length = 0;
+  s = next;
+  if (!preview) {
+    saveMessage = '';
+    resetChannel?.postMessage('reset');
+  }
+  go('title', false);
+  resetting = false;
+  app.inert = false;
+  if (startNow) openFilm('intro', () => go('city'));
+  else notify(preview ? '교사용 진행 기록을 지웠어. 학생 기록은 그대로 남아 있어.' : '탐험 기록을 초기화했어. 새로 시작할 수 있어.');
+}
 function openSettings() {
   modalCleanup?.();
   modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{touch();syncAudioSettings(s.settings);const b=document.querySelector<HTMLButtonElement>('[data-action="sound"]');if(b){const on=audioEnabled();b.innerHTML=icon(on?'sound':'mute');b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'소리 끄기':'소리 켜기');}},
     onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
-    onAdminToggle:enabled=>{void (async()=>{if(enabled&&saveTimer)await flush();cleanPage();restorePractice();if(enabled){adminBackup=structuredClone(s);s=structuredClone(s);}else{s=adminBackup!;adminBackup=null;}syncAudioSettings(s.settings);backStack.length=0;go(page==='title'?'title':'city',false);})();},
-    onStory:openStory,onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
-    onReset:()=>{void(async()=>{try{const settings={...s.settings};clearTimeout(saveTimer);restorePractice();if(!adminOn())await clearSave();s=freshSave();s.settings={...settings,nickname:'',ability:undefined};s.started=true;go('city');touch();}catch{notify('기록 초기화에 실패했어. 다시 시도해 줘.');}})();}
+    onAdminToggle:setTeacherPreview,
+    onStory:()=>openFilm('intro',()=>{},true),onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
+    onReset:()=>void restartExploration(false)
   });
-}
-function openStory() {
-  showModal(`<div class="story-panorama"><img src="/assets/quest/city-expedition.webp" alt="고쳐야 할 시설들이 기다리는 자석 도시"></div><h2>오늘의 수리 대장, 너!</h2><p>밀이의 우편함은 열리고, 당이의 택배는 멈췄어.<br>자석을 직접 움직여 고치고, 얻은 도구로 다음 의뢰를 해결해 줘.</p><p>다섯 구역을 고치고 내 발명품까지 사용하면<br>도시 축제와 연구원 인증서가 기다려!</p><div class="reward-celebration">${mascot('mili',120)}${mascot('dangi',120)}</div>${button('modal-close','밀이·당이와 출발! →','primary')}`, '도시의 수리 의뢰');
-  setAudioPaused(true);
 }
 function bindCommon() {
   document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b => b.addEventListener('click', () => { const action = b.dataset.action; sound();
     switch (action) {
-      case 'home': void flush(); go('title'); break;
-      case 'back': void flush(); goBack(); break;
-      case 'start': if (!s.started) { s.started = true; touch(); go('city'); openStory(); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else go('city'); break;
-      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', async () => { try { clearTimeout(saveTimer); await clearSave(); const settings={...s.settings}; restorePractice(); s = freshSave(); s.settings={...settings,nickname:'',ability:undefined}; s.started = true; go('city'); touch(); } catch { notify('저장소를 초기화하지 못했어. 다른 탭을 닫고 다시 시도해줘.'); } }); break;
+      case 'home': void flush(); go(page === 'city' ? 'title' : 'city'); break;
+      case 'back': void flush(); if (history.state?.depth) history.back(); else goBack(); break;
+      case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else if (s.final.report && !s.final.complete && s.evidence.length === 5) go('core'); else go('city'); break;
+      case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', () => void restartExploration(true)); break;
       case 'city': void flush(); go('city'); break;
       case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;
-      case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);break;}
+      case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);stopCompanionVoice();if(open)stopCompanionVoice=playNarration(`/audio/voices/mascot-${b.dataset.companionType}-title.mp3`,s.settings);break;}
       case 'notebook': if (page === 'activity') openRecords(); else notebook(); break;
       case 'retry-save': void flush(); break;
       case 'walk-next': if (city) city.goTo(s.evidence.length === 5 ? 5 : s.evidence.length); else pendingPlace = s.evidence.length === 5 ? 5 : s.evidence.length; break;
       case 'complete': b.disabled = true; void finishActivity(); break;
       case 'hint': notify(screen === 10 ? designResult(s.design).reason : missionGuides[screen-1]); break;
       case 'observations': openRecords(); break;
+      case 'visual-guide': {
+        const kind=apparatusFigure(screen);
+        if(kind){
+          let dispose=()=>{};
+          const guide=showModal(apparatusFigureMarkup(kind),apparatusFigureTitle(kind),()=>dispose());
+          guide.dialog.classList.add('apparatus-figure-dialog');
+          dispose=bindApparatusFigure(guide.dialog.querySelector<HTMLElement>('.apparatus-figure')!,s.settings.motion);
+          break;
+        }
+        const guide=showModal(visualGuideMarkup(screen,s.design.template),'장치 그림 살펴보기');
+        guide.dialog.classList.add('learning-visual-dialog');
+        bindVisualGuide(guide.dialog);
+        break;
+      }
       case 'reset-activity': { const a = s.activities[screen]; a.points = {}; a.values.round = 0; a.values.car = 24; a.values.cargo = 25; a.values.distanceStep = 'free'; a.values['paper-in'] = false; delete a.values.say; cleanPage(); render(); touch(); break; }
       case 'reviewed': if (!adminOn() && s.evidence.length !== 5) break; s.final.report = true; touch(); go('core'); break;
-      case 'apply-blueprint': {
-        if (!adminOn() && !s.evidence[4]) break;
-        if (!designResult(s.design).ready) { notify('공방에서 성공한 설계의 배치를 다시 확인해 줘.'); break; }
-        if (s.design.template === 'box') s.final.latch = 'S'; else s.final.plate = Math.max(20, Math.min(36, s.design.gap));
-        touch(); render(); notify(s.design.template === 'box' ? '내 우편함의 당기는 힘을 잠금 장치에 적용했어!' : '내 원격 도구의 가까운 배치를 고정판에 적용했어!'); break;
-      }
-      case 'core-latch': s.final.latch = opposite(s.final.latch); touch(); render(); break;
-      case 'core-ring': s.final.ring = opposite(s.final.ring); touch(); render(); break;
       case 'activate': b.disabled = true; void activate(); break;
       case 'certificate': if (adminOn() || s.final.complete) go('certificate'); break;
       case 'replay-ending': if (adminOn() || s.final.complete) go('ending'); break;
@@ -333,6 +477,14 @@ function bindCommon() {
     }
   }));
 }
+window.addEventListener('popstate', () => {
+  const depth: number = history.state?.depth ?? 0;
+  // There is no forward stack in the game, so a forward step simply returns to where the learner is.
+  if (depth > historyDepth) { history.go(historyDepth - depth); return; }
+  if (depth === historyDepth) return;
+  for (let extra = historyDepth - depth; extra > 1; extra--) backStack.pop();
+  historyDepth = depth; void flush(); goBack();
+});
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });

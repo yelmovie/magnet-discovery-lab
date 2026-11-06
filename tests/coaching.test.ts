@@ -1,9 +1,23 @@
+import { mailbox } from '../src/mailbox';
+import { mailboxParts, partKey } from '../src/mailbox-assembly';
 import { describe, expect, it } from 'vitest';
 import { emptyActivity, freshSave } from '../src/domain';
 import { coaching } from '../src/coach';
 import { addTrial } from '../src/trial-records';
 
 describe('실험 상태에 따른 보조 캐릭터 안내',()=>{
+  it('조립하지 않은 다음 부품을 가리키고 여섯 부품 뒤에는 덮개 닫기를 안내한다',()=>{
+    const a=emptyActivity(),s=freshSave();
+    a.values={playVersion:4,mechanicsVersion:1,paceVersion:1,assemblyVersion:1};
+    for(const [index,part] of mailboxParts.entries()){
+      expect(coaching(1,a,s)).toMatchObject({focus:partKey(part),action:part.action,done:index,total:7});
+      a.values[partKey(part)]=true;
+    }
+    a.values.found0=true;
+    expect(coaching(1,a,s).focus).toBe('lid');
+    expect(coaching(1,a,s).action).toContain('손잡이를 내려');
+    expect(coaching(1,a,s).action).not.toContain('완료');
+  });
   it('탐구 실험 완료 뒤에도 실제 청소 발견 수를 유지한다',()=>{
     const a=emptyActivity(),s=freshSave();a.values={playVersion:4,mechanicsVersion:1,inquiryVersion:1,inquiryPhase:'experiment',clean0:true,clean1:true,clean2:true};
     addTrial(a,{key:'clean',activity:7,conditions:{},initialObjects:[],objects:[],input:[],outcome:'success'});
@@ -20,7 +34,7 @@ describe('실험 상태에 따른 보조 캐릭터 안내',()=>{
   it('덮개를 연 뒤에는 열기를 반복시키지 않고 관찰할 물체를 안내한다',()=>{
     const a=emptyActivity(),s=freshSave();a.values.playVersion=4;
     expect(coaching(1,a,s).focus).toBe('lid');a.values.open0=true;
-    expect(coaching(1,a,s).focus).toBe('hidden-magnet');
+    expect(coaching(1,a,s).focus).toBe('lid');
     a.values.found0=true;expect(coaching(1,a,s).action).toContain('다음 의뢰 버튼');
   });
   it('같은 장치의 두 조건을 모두 비교하면 다음 장치로 안내한다',()=>{
@@ -33,9 +47,9 @@ describe('실험 상태에 따른 보조 캐릭터 안내',()=>{
     expect(hint.focus).toBe('paper');expect(hint.action).toContain('자석은 그대로');
     expect(hint.clues.join()).toContain('종이의 영향만');
   });
-  it('극 추론에 필요한 두 반응을 보기 전에는 스티커 붙이기를 지시하지 않는다',()=>{
+  it('첫 반응을 본 뒤부터 스티커를 붙이도록 안내한다',()=>{
     const a=emptyActivity();a.values={playVersion:4,test0N:true};
-    expect(coaching(5,a,freshSave()).action).toContain('번갈아');a.values.test0S=true;
+    expect(coaching(5,a,freshSave()).action).toContain('지금 본 움직임');a.values.test0S=true;
     expect(coaching(5,a,freshSave()).action).toContain('두 반응을 근거');
   });
   it('가상 성공 플래그만 채운 상태를 완료 안내로 바꾸지 않는다',()=>{
@@ -49,5 +63,83 @@ describe('실험 상태에 따른 보조 캐릭터 안내',()=>{
     const a=emptyActivity(),s=freshSave(),before=JSON.stringify({a,s});
     for(let n=1;n<=10;n++){const hint=coaching(n,a,s);expect(hint.action.length).toBeGreaterThan(0);expect(hint.total).toBeGreaterThan(0);}
     expect(JSON.stringify({a,s})).toBe(before);
+  });
+});
+
+
+describe('짧은 탐구 흐름의 안내',()=>{
+  const paced=()=>{const a=emptyActivity();a.values={playVersion:4,mechanicsVersion:1,paceVersion:1,inquiryVersion:2,inquiryPhase:'experiment'};return a;};
+  it('구역 정리에서는 관찰한 발견만 고르게 안내한다',()=>{
+    const a=paced();a.values.inquiryPhase='explain';const hint=coaching(2,a,freshSave());
+    expect(hint.action).toContain('직접 본 움직임');expect(hint.action).not.toContain('근거를 연결');
+    a.values.inquiryPhase='complete';expect(coaching(2,a,freshSave()).action).toContain('구역을 고치자');
+  });
+  it('배달은 원하는 방법으로 한 번 운반한 뒤 목적지에서 멈추도록 안내한다',()=>{
+    const a=paced();a.values.car=73;const hint=coaching(8,a,freshSave());
+    expect(hint.action).toContain('자석을 떼어');expect(hint.action).not.toContain('점검소');expect(hint.total).toBe(1);
+    delete a.values.paceVersion;expect(coaching(8,a,freshSave()).action).not.toContain('점검소');
+    a.values.car=27;expect(coaching(8,a,freshSave()).action).toContain('밀어도 당겨도');
+  });
+  it('재료 활동은 검사와 분류가 끝난 물건을 여섯 개까지 센다',()=>{
+    const a=paced();a.values['tested-clip']=true;a.values['sorted-clip']=true;a.values['tested-nail']=true;
+    expect(coaching(3,a,freshSave())).toMatchObject({done:1,total:6});
+  });
+  it('새 발명은 현재 설계의 한 번 성공을 안내하고 낡은 성공은 인정하지 않는다',()=>{
+    const a=paced(),s=freshSave();a.values.use0=true;
+    expect(coaching(10,a,s).action).not.toContain('실험 완료');
+    addTrial(a,{key:'use0',activity:10,conditions:{},initialObjects:[],objects:[],input:[],outcome:'success',designRevision:s.design.revision,template:s.design.template});
+    expect(coaching(10,a,s)).toMatchObject({done:1,total:1});expect(coaching(10,a,s).action).toContain('실험 완료');
+    s.design.revision++;expect(coaching(10,a,s).action).not.toContain('실험 완료');
+    expect(coaching(10,a,s).clues.join(' ')).not.toContain('두 사용 상황');
+  });
+  it('같은 물건 비교는 덮개 닫기와 흔들기 뒤에 자석 넣기를 안내한다',()=>{
+    const a=paced(),s=freshSave();
+    expect(coaching(2,a,s).focus).toBe('lid');
+    a.values.repairClosed=true;expect(coaching(2,a,s)).toMatchObject({focus:'shake',action:expect.stringContaining('덮개가 열리는지')});
+    a.values.without0=true;a.values.repairClosed=false;expect(coaching(2,a,s).focus).toBe('repair-magnet');
+    a.points['repair-magnet']=mailbox.socket;expect(coaching(2,a,s).focus).toBe('lid');
+    a.values.repairClosed=true;expect(coaching(2,a,s)).toMatchObject({focus:'shake',action:expect.stringContaining('아까와 같은 세기로')});
+    delete a.values.without0;a.values.with0=true;
+    expect(coaching(2,a,s).action).toContain('위로 열고');expect(coaching(2,a,s).focus).toBe('lid');
+    a.values.repairClosed=false;
+    expect(coaching(2,a,s).action).toContain('바깥으로 빼고');expect(coaching(2,a,s).focus).toBe('repair-magnet');
+  });
+  it('붙지 않는 재료를 검사했으면 자석 대신 그 재료를 직접 집도록 안내한다',()=>{
+    const a=paced(),s=freshSave();a.values['sorted-clip']=true;a.values['tested-clip']=true;a.values['tested-aluminum']=true;
+    expect(coaching(3,a,s)).toMatchObject({focus:'material-2'});expect(coaching(3,a,s).action).toContain('손으로 오른쪽 아래');
+    a.values['sorted-aluminum']=true;expect(coaching(3,a,s).focus).toBe('sweep-magnet');expect(coaching(3,a,s).action).toContain('철못');
+    a.values['tested-wood']=true;expect(coaching(3,a,s).focus).toBe('material-3');
+  });
+  it('거리나 종이 배치가 준비되면 옮기기를 반복하지 않고 관찰 버튼을 안내한다',()=>{
+    const a=paced(),s=freshSave();expect(coaching(4,a,s).focus).toBe('release');
+    a.values.round=1;expect(coaching(4,a,s).focus).toBe('distance-magnet');
+    a.points['distance-magnet']={x:49,y:55};expect(coaching(4,a,s).focus).toBe('release');
+    a.values.round=2;expect(coaching(4,a,s).focus).toBe('paper');
+    a.points.paper={x:55,y:55};expect(coaching(4,a,s).focus).toBe('release');
+    a.points['distance-magnet']={x:30,y:55};expect(coaching(4,a,s).focus).toBe('distance-magnet');
+  });
+  it('한 극을 보고 스티커를 붙인 뒤에는 반대 극 확인을 안내한다',()=>{
+    const a=paced(),s=freshSave();a.values.test0S=true;
+    expect(coaching(5,a,s).focus).toBe('stickerN');
+    a.values.label0N=true;expect(coaching(5,a,s).focus).toBe('stickerS');
+    a.values.label0S=true;expect(coaching(5,a,s).focus).toBe('flip');
+    a.values.probePole='S';expect(coaching(5,a,s)).toMatchObject({focus:'probe',action:expect.stringContaining('N극을 오른쪽 점선에')});
+  });
+  it('고리는 아래부터 놓고 관찰하며 결과를 본 뒤 뒤집게 안내한다',()=>{
+    const a=paced(),s=freshSave();expect(coaching(6,a,s).focus).toBe('ring0');
+    a.points.ring0={x:68,y:71};expect(coaching(6,a,s).focus).toBe('ring1');
+    a.points.ring1={x:68,y:56};expect(coaching(6,a,s).focus).toBe('check');
+    a.values.ringReleased=true;a.points.ring1={x:68,y:65};expect(coaching(6,a,s).focus).toBe('2번 고리 뒤집기');
+  });
+  it('청소 연결이 끊기면 같은 청소 지시 대신 패드와 다시 연결하도록 안내한다',()=>{
+    const a=paced();a.points.cleaner={x:77,y:47};a.points['inner-pad']={x:29,y:48};
+    expect(coaching(7,a,freshSave()).action).toContain('패드 가까이');
+  });
+  it('배치와 작동이 끝나면 이미 사용한 부품 대신 다음 부품이나 시험을 가리킨다',()=>{
+    const a=paced(),s=freshSave();expect(coaching(9,a,s).focus).toBe('');
+    a.values.chosen=true;a.values.base=true;expect(coaching(9,a,s).focus).toBe('design-magnet');
+    a.values.magnet=true;expect(coaching(9,a,s).focus).toBe('design-target');
+    a.values.target=true;expect(coaching(9,a,s).focus).toBe('prototype');
+    a.points['use-handle']={x:50,y:65};expect(coaching(10,a,s).focus).toBe('test');
   });
 });

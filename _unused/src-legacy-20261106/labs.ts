@@ -1,6 +1,6 @@
 import { flag, value, materials, record, response, opposite, relation, ringGaps, type Activity, type Pole } from './domain';
 import { magnet, objectArt, icon } from './art';
-import { btn, choice, on, update, range, hint, readout, type View, type Context } from './activity-types';
+import { btn, choice, on, update, range, hint, readout, type View } from './activity-types';
 
 const deviceName = (n: number) => n === 0 ? '자석 보관함' : '자석 책갈피';
 function device(a: Activity, index: number, isCompare = false): string {

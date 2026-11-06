@@ -6,7 +6,7 @@ body.quest-mode {
   --font-size-question: clamp(28px, 2.35vw, 42px);
 }
 body.quest-mode :is(p,button,summary,label,li) { line-break:strict; }
-body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:#10394368; backdrop-filter:blur(3px); }
+body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:#103943b0; }
 body.quest-mode .modal {
   position:relative; width:min(860px,100%); max-width:1040px;
   max-height:calc(100dvh - 40px); min-height:0; margin:0;
@@ -228,12 +228,6 @@ body.quest-mode .game-settings-reset { margin:auto; width:min(600px,calc(100vw -
   #app .certificate h2 { margin:10px 0; }
   #app .certificate-bottom .mascot { display:none; }
   #app .ending .ending-painted { height:35dvh; }
-}
-@media(max-width:759px) and (min-aspect-ratio:1/1) {
-  #app .mission-question { max-width:calc(100% - 250px); font-size:26px; }
-  #app .mission-wayfinding { max-width:95%; }
-  #app .mission-study-tools { display:none; }
-  #app .quest-activity { height:100dvh; }
 }
 @media(max-aspect-ratio:1/1) and (max-width:759px) {
   #app .quest-activity { min-height:760px; height:100dvh; }

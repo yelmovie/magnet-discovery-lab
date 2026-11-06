@@ -7,11 +7,11 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest run",
-    "test:browser": "node scripts/browser-regression.cjs"
+    "test": "vitest run --exclude '**/._*'",
+    "test:browser": "node scripts/playful-regression.cjs",
+    "story:render": "node scripts/render-story-videos.mjs"
   },
   "dependencies": {
-    "phaser": "3.90.0",
     "three": "0.186.1"
   },
   "devDependencies": {

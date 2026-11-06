@@ -8,7 +8,8 @@ const origin = (process.argv[2] || 'https://magnet-city.pages.dev').replace(/\/$
 const out = process.argv[3];
 const walk = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
-const files = walk('dist').map(p => relative('dist', p).replaceAll('\\', '/')).sort();
+// Cloudflare Pages reads _headers as configuration and does not serve it as a file.
+const files = walk('dist').map(p => relative('dist', p).replaceAll('\\', '/')).filter(file => file !== '_headers').sort();
 const rows = [];
 for (let i = 0; i < files.length; i += 8) {
   rows.push(...await Promise.all(files.slice(i, i + 8).map(async file => {

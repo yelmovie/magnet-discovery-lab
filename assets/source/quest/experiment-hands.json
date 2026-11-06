@@ -1,0 +1,20 @@
+{
+  "mode": "built-in image_gen",
+  "date": "2026-11-03",
+  "prompts": {
+    "held": "Use case: scientific-educational. Asset type: a single transparent cutout hand sprite for a Korean fourth-grade science browser game with warm, beautifully painted 3D storybook wooden workshops and brass fittings. One anatomically correct RIGHT human hand with five fingers, natural warm light skin, a short teal fabric sleeve and a very small simple brown leather wrist cuff. Three-quarter side view from slightly above. Forearm enters from the UPPER RIGHT, fingers reach DOWN toward the LOWER LEFT. Soft warm lighting, convincing rounded forms, crisp readable silhouette suitable for 100-pixel display. No objects, magnets, rings, clip, table, scenery, text, letters, arrows, sparkles, extra hands, or watermark. True transparent background, not a checkerboard drawing. Entire hand and short cuff inside frame with 10% transparent padding. Square canvas. Pose: thumb and index finger form a precise small pinch at the LOWER LEFT of the hand, as if gently holding the edge of a small object; middle, ring and little fingers naturally curled behind. The contact point of thumb and index must be clearly visible, not hidden by the palm. This is the HOLDING pose.",
+    "released": "Use case: scientific-educational. Asset type: a single transparent cutout hand sprite for a Korean fourth-grade science browser game with warm, beautifully painted 3D storybook wooden workshops and brass fittings. One anatomically correct RIGHT human hand with five fingers, natural warm light skin, a short teal fabric sleeve and a very small simple brown leather wrist cuff. Three-quarter side view from slightly above. Forearm enters from the UPPER RIGHT, fingers reach DOWN toward the LOWER LEFT. Soft warm lighting, convincing rounded forms, crisp readable silhouette suitable for 100-pixel display. No objects, magnets, rings, clip, table, scenery, text, letters, arrows, sparkles, extra hands, or watermark. True transparent background, not a checkerboard drawing. Entire hand and short cuff inside frame with 10% transparent padding. Square canvas. Pose: thumb and index finger have just separated to release a small object, with the fingers gently opening downward toward the LOWER LEFT and the palm lifting away. Keep the hand relaxed and clearly EMPTY, not a waving hand or stop gesture. Show the same short teal sleeve and tiny brown cuff. This is the RELEASED pose."
+  },
+  "assets": [
+    {
+      "output": "public/assets/quest/experiment-hand-held.webp",
+      "source": "assets/source/quest/experiment-hand-held-20261103.png",
+      "usage": "Clip and ring experiments: visibly hold the object, then release before magnetic movement."
+    },
+    {
+      "output": "public/assets/quest/experiment-hand-released.webp",
+      "source": "assets/source/quest/experiment-hand-released-20261103.png",
+      "usage": "Clip and ring experiments: visibly hold the object, then release before magnetic movement."
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+body.quest-mode .modal.apparatus-figure-dialog {
+  width: min(960px, 96vw);
+  max-width: 960px;
+  max-height: min(92dvh, 770px);
+  padding: clamp(12px, 2.25vw, 28px);
+  background: #faf8ee;
+  border: 2px solid #a6ae96;
+  box-shadow: 0 6px 0 #6f826e, 0 22px 50px #17343c50;
+  scrollbar-gutter: stable;
+}
+.apparatus-figure {
+  text-align: start;
+  color: #173f47;
+  word-break: keep-all;
+}
+.apparatus-heading { padding-right: 48px; margin-bottom: 12px; }
+.apparatus-heading small {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  background: #e1eee7; color: #245e54; font: 700 14px/1.3 var(--font-body);
+}
+body.quest-mode .modal .apparatus-heading h2 { margin: 4px 0 0; font: 400 clamp(25px, 3.5vw, 37px)/1.16 var(--font-display); }
+.apparatus-layout { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); align-items: center; gap: clamp(9px, 2vw, 21px); }
+.apparatus-stage {
+  display: grid; place-items: center; min-width: 0; overflow: hidden;
+  border: 1px solid #bbcdbd; border-radius: 15px;
+  background: radial-gradient(ellipse at 48% 40%, #fffef7 28%, #edf2e9 100%);
+}
+.apparatus-drawing {
+  display: block; width: 100%; height: auto; aspect-ratio: 226/194; max-height: min(54dvh, 450px);
+  touch-action: pan-y; cursor: grab; user-select: none;
+}
+.apparatus-drawing [data-figure-grab] { cursor: grab; }
+.apparatus-drawing.is-dragging, .apparatus-drawing.is-dragging [data-figure-grab] { cursor: grabbing; }
+.apparatus-pin { pointer-events: none; }
+.apparatus-pin path { fill: none; stroke: #315e56; stroke-width: .9; stroke-linecap: round; }
+.apparatus-pin circle { fill: #245e54; stroke: #fffdf4; stroke-width: .9; }
+.apparatus-pin text { fill: #fffdf4; text-anchor: middle; dominant-baseline: central; font: 800 7px var(--font-body); }
+.apparatus-panel { display: grid; gap: 12px; align-content: center; }
+body.quest-mode .modal .apparatus-prompt { margin: 0; font: 400 clamp(18px, 2.25vw, 24px)/1.3 var(--font-display); }
+.apparatus-actions { display: grid; gap: 8px; }
+body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatus-footer .btn {
+  min-height: 48px; min-width: 48px; padding: 7px 10px; font-size: clamp(15px, 1.75vw, 19px); line-height: 1.2; white-space: nowrap;
+}
+.apparatus-actions .btn:not(.primary), .apparatus-footer .btn { background: #fffdf3; color: #21484b; border: 2px solid #879b84; }
+.apparatus-actions .btn[aria-pressed='true'] { background: #dcebe3; border-color: #316e62; }
+.apparatus-arrows, .apparatus-extra { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.apparatus-extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+[data-apparatus-figure='mailbox'] .apparatus-extra { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.quest-mode .modal .apparatus-extra .btn { padding-inline: 4px; white-space: normal; }
+body.quest-mode .modal .apparatus-extra .apparatus-auto { color: #fffdf6; background: #28695f; border-color: #24564e; }
+.apparatus-auto[data-playing='true']::before { content: '■'; }
+.apparatus-auto[data-playing='false']::before { content: '▶'; }
+.apparatus-auto::before { margin-inline-end: 4px; font-size: .65em; }
+.apparatus-glass-key {
+  display: flex; gap: 5px 12px; align-items: center; flex-wrap: wrap;
+  font: 700 clamp(13px, 1.4vw, 16px)/1.2 var(--font-body); color: #31534e;
+}
+.apparatus-glass-key span { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.apparatus-glass-key i { display: inline-block; width: 15px; height: 13px; flex: none; }
+.glass-key-stain { background: #a95c40; border: 2px solid #ecc28d; border-radius: 58% 36% 51% 42%; }
+.glass-key-leaf { background: #478e6d; border: 1px solid #38644e; border-radius: 74% 0 74% 0; }
+@media (max-width: 860px) and (orientation: landscape) {
+  .apparatus-auto::before { display: none; }
+}
+body.quest-mode .modal .apparatus-note {
+  margin: 0; min-height: 2.7em; padding: 8px 10px; border-radius: 8px; border-left: 4px solid #609080;
+  background: #e8f0e7; color: #244f49; font-size: clamp(14px, 1.75vw, 18px); line-height: 1.4;
+}
+.apparatus-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.apparatus-footer .btn { margin-inline-start: auto; }
+.apparatus-key { display: flex; gap: 5px 14px; flex: 1 1 270px; flex-wrap: wrap; align-items: center; list-style: none; margin: 0; padding: 0; font-size: clamp(14px, 1.7vw, 17px); }
+.apparatus-key[hidden] { display: none; }
+.apparatus-key li { display: flex; align-items: center; gap: 4px; }
+.apparatus-key b { display: inline-grid; place-items: center; border-radius: 50%; width: 23px; height: 23px; background: #245e54; color: #fff; font: 800 14px/1 var(--font-body); }
+@media (max-width: 619px) and (orientation: portrait) {
+  body.quest-mode .modal-backdrop:has(.apparatus-figure-dialog) { padding: 8px; }
+  body.quest-mode .modal.apparatus-figure-dialog { width: 100%; max-height: calc(100dvh - 18px); }
+  .apparatus-layout { grid-template-columns: minmax(0,1fr); }
+  .apparatus-drawing { max-height: 41dvh; }
+  .apparatus-panel { gap: 8px; }
+  [data-apparatus-figure='mailbox'] .apparatus-actions { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  [data-apparatus-figure='mailbox'] .apparatus-extra { display: contents; }
+  [data-apparatus-figure='aquarium'] .apparatus-drawing { max-height: 38dvh; }
+  .apparatus-footer { margin-top: 9px; }
+  .apparatus-footer .btn { width: 100%; }
+}
+@media (max-width: 619px) and (max-height: 760px) and (orientation: portrait) {
+  [data-apparatus-figure='aquarium'] .apparatus-drawing { max-height: 34dvh; }
+}
+@media (max-height: 540px) and (orientation: landscape) {
+  body.quest-mode .modal-backdrop:has(.apparatus-figure-dialog) { padding: 6px; }
+  body.quest-mode .modal.apparatus-figure-dialog { max-height: calc(100dvh - 14px); }
+  .apparatus-heading, .apparatus-footer { margin-block: 4px; }
+  .apparatus-drawing { max-height: 55dvh; }
+  .apparatus-panel { gap: 6px; }
+  body.quest-mode .modal.apparatus-figure-dialog { padding: 10px; }
+  body.quest-mode .modal .apparatus-prompt { font-size: 18px; }
+  body.quest-mode .modal .apparatus-note { font-size: 14px; min-height: 0; }
+  body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatus-footer .btn { min-height: 48px; }
+}

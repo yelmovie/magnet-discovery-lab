@@ -5,8 +5,27 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#f8f5eb" />
     <meta name="description" content="자석의 성질을 탐구하며 멈춘 도시를 복구하는 과학 모험" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://magnet-city.pages.dev/" />
+    <meta property="og:title" content="밀고 당기는 도시 · 자석 탐험대" />
+    <meta property="og:description" content="자석의 성질을 탐구하며 멈춘 도시를 복구하는 과학 모험" />
+    <meta property="og:image" content="https://magnet-city.pages.dev/og-image-v1.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:alt" content="밀고 당기는 도시 게임 제목과 자석 도시 풍경" />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>밀고 당기는 도시 · 자석 탐험대</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="image" href="/assets/quest/city-expedition.webp" fetchpriority="low" />
+    <style>
+      .boot { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; background: #17383f; color: #f8f5eb; font: 600 20px/1.5 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; word-break: keep-all; }
+      .boot p { margin: 0; }
+      .boot-magnet { font-size: 44px; line-height: 1; color: #f2c14e; animation: boot-pulse 1.1s ease-in-out infinite alternate; }
+      .boot .boot-slow { font-size: 16px; font-weight: 400; opacity: 0; animation: boot-show .3s 6s forwards; }
+      @keyframes boot-pulse { to { opacity: .45; } }
+      @keyframes boot-show { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .boot-magnet { animation: none; } }
+    </style>
   </head>
-  <body><div id="app"></div><script type="module" src="/src/main.ts"></script></body>
+  <body><div id="app"><div class="boot" role="status"><span class="boot-magnet" aria-hidden="true">∪</span><p>도시로 가는 길을 준비하고 있어…</p><p class="boot-slow">오래 걸리면 새로고침해 봐.</p></div></div><script type="module" src="/src/main.ts"></script></body>
 </html>

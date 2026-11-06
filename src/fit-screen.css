@@ -1,0 +1,38 @@
+/* One screen first. At normal sizes every page is laid out to the window and never scrolls.
+   When the window is smaller than the layout can take (browser zoom = 크게 보기, phone landscape),
+   the stage keeps 860x560 and the page gets scrollbars instead of squeezing or clipping.
+   Portrait keeps its own vertical-scroll layout (quest.css, max-width 759px and portrait). */
+@media (min-aspect-ratio: 1/1) {
+  :root { --stage-w: max(100vw, 860px); --stage-h: max(100dvh, 560px); }
+  body.quest-mode { overflow: auto; }
+  body.quest-mode #app { min-width: 860px; height: var(--stage-h); }
+  body.quest-mode #app > main.page { height: 100%; }
+  #app :is(.quest-activity, .quest-city, .quest-core, .restoration-operation, .restoration-plaza, .restoration-optional-lab) { height: var(--stage-h); }
+  #app :is(.quest-title, .quest-title-content, .expedition-viewport) { min-height: var(--stage-h); }
+  body.quest-mode #app .mission-board.play-board { width: min(100%, calc(var(--stage-h) * 1.777778)); height: min(var(--stage-h), calc(var(--stage-w) * .5625)); }
+  #app .quest-activity .inquiry-workbench .mission-feedback { top: calc(50% - var(--stage-h) / 2 + var(--head-bottom, 200px) + 10px); }
+}
+
+/* Foldables in landscape can keep the reading width without sideways scrolling. */
+@media (min-aspect-ratio: 1/1) and (min-width: 820px) and (max-width: 859px) {
+  :root { --stage-w: 100vw; }
+  body.quest-mode #app { min-width: 0; }
+}
+
+/* Whole-map view on short screens: the map shrinks below 0.48, so the building labels shrink with it a little
+   (name ≥ 16px, status line kept at 16px) instead of growing into each other. */
+#app .map-overview .expedition-building { scale: calc(1 / max(var(--map-scale), .48)); }
+#app .map-overview .expedition-building small { font-size: calc(16px * max(1, .48 / var(--map-scale))); }
+/* The whole-map view is for choosing buildings. Residents are available again
+   in the walking view, where their touch targets don't cover the building signs. */
+#app .map-overview .expedition-resident { visibility: hidden; }
+@media (max-width: 600px) and (orientation: portrait), (max-height: 620px) {
+  #app .map-overview .expedition-building {
+    min-height: calc(48px * max(1, .48 / var(--map-scale)));
+    word-break: keep-all;
+  }
+}
+@media (min-aspect-ratio: 1/1) and (min-width: 820px) and (max-height: 559px) {
+  body.quest-mode #app:has(.quest-city) { --stage-h: 100dvh; min-width: 0; height: 100dvh; }
+  #app .quest-city .expedition-viewport { min-height: 0; height: 100%; }
+}

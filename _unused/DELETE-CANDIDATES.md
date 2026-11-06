@@ -21,3 +21,9 @@
 | `assets/source/polish-20261025/logo-before-resize.webp` | 1.3 MB | 첫 화면 로고 축소 전 배포본(1774×887). 화질 비교용으로만 보관. |
 
 배포 용량에는 영향이 없다. 저장소 크기를 줄이려면 사용자가 보존할 쪽을 정한 뒤 이동한다.
+
+## 2026-11-01 인트로·엔딩 영상 정리
+
+| 후보 | 용량 | 근거 |
+|---|---|---|
+| `_unused/video-storyboards-zip-20261101/magnet-city-intro-outro-20261031-v3.zip` | 약 15 MB | `files/`에 있던 zip. 안의 8개 파일이 `assets/source/video/storyboards/v3-20261031/`와 SHA-256까지 같다. 중복이라 git에는 올리지 않고(.gitignore) 이 PC에만 둔다. |

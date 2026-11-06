@@ -1,5 +1,5 @@
 .game-settings,.game-settings-reset{--settings-ink:#173a46;--settings-muted:#506974;--settings-paper:#fff9e9;--settings-line:#d6c9a8;--settings-accent:#167c75;color:var(--settings-ink);font-family:inherit;background:var(--settings-paper);border:2px solid #736745;border-radius:25px;box-shadow:0 12px 0 #263e4920,0 26px 90px #1027316b;padding:0;max-width:calc(100vw - 32px);word-break:keep-all;overflow-wrap:break-word}
-.game-settings::backdrop,.game-settings-reset::backdrop{background:#0a293a99;backdrop-filter:blur(6px)}
+.game-settings::backdrop,.game-settings-reset::backdrop{background:#0a293abd;}
 .game-settings{width:760px;max-height:min(90dvh,920px);overflow:hidden}
 .game-settings[open]{display:flex;flex-direction:column}
 .game-settings button,.game-settings-reset button{font-family:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -11,12 +11,12 @@
 .settings-dialog-body p{margin:0 0 12px;color:var(--settings-muted);font-size:18px;line-height:1.6}
 .settings-sound{display:grid;gap:14px;margin-bottom:20px}
 .settings-sound-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;font-size:20px;font-weight:800}
-.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:112px;min-height:46px;padding:6px 9px 6px 14px;border:2px solid #a69e85;border-radius:25px;background:#e5dfce;color:#475b61;font-size:17px;font-weight:800;box-shadow:0 2px 0 #a69e85}
+.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:112px;min-height:48px;padding:6px 9px 6px 14px;border:2px solid #a69e85;border-radius:25px;background:#e5dfce;color:#475b61;font-size:17px;font-weight:800;box-shadow:0 2px 0 #a69e85}
 .settings-switch i{width:27px;height:27px;flex:none;border-radius:50%;background:#fffaf0;box-shadow:0 1px 3px #24383c33}
 .settings-switch[aria-pressed="true"]{background:#167c75;border-color:#0e5d58;color:#fff;box-shadow:0 2px 0 #0e5d58}
 .settings-volume{display:grid;grid-template-columns:1fr auto;gap:7px 16px;align-items:center;font-size:19px;font-weight:800}
 .settings-volume output{color:var(--settings-accent);font-variant-numeric:tabular-nums}
-.settings-volume input{grid-column:1/-1;width:100%;height:44px;margin:0;accent-color:var(--settings-accent);cursor:pointer;touch-action:pan-x}
+.settings-volume input{grid-column:1/-1;width:100%;height:48px;margin:0;accent-color:var(--settings-accent);cursor:pointer;touch-action:pan-x}
 .settings-volume input:disabled{opacity:.4;cursor:default}
 .settings-replays{display:grid;gap:12px;margin-bottom:20px}
 .settings-button{display:flex;align-items:center;justify-content:center;gap:12px;min-height:48px;padding:11px 17px;border:2px solid #bcae8c;border-radius:14px;background:#fffdf6;color:var(--settings-ink);font-size:18px;font-weight:800;line-height:1.4;box-shadow:0 3px 0 #bcae8c;transition:transform .12s,background .12s,box-shadow .12s}
@@ -40,6 +40,11 @@
 .settings-records{width:100%;justify-content:space-between;margin-bottom:10px}
 .settings-admin{width:100%;margin:8px 0 13px;background:#f0f7ec;border-color:#a6b88c;box-shadow:0 3px 0 #a6b88c}
 .settings-admin[aria-pressed="true"]{color:#fff;background:#167c75;border-color:#0e5d58;box-shadow:0 3px 0 #0e5d58}
+.settings-activities{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px}
+.settings-activities .settings-button{justify-content:flex-start;text-align:left}
+#app .quest-icon:has(.teacher-hud-label){align-content:center;gap:1px;padding:2px;background:#167c75;color:#fff;border-color:#0e5d58}
+#app .quest-icon:has(.teacher-hud-label) svg{width:21px;height:21px}
+.teacher-hud-label{font-size:13px;font-weight:700;line-height:1}
 .settings-dialog-body .settings-signature{margin:14px 0 0;padding-top:12px;border-top:1px solid #e3dbc5;font-size:16px}
 .settings-dialog-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 26px 20px;border-top:1px solid var(--settings-line);background:#fffcf3;flex:none}
 .settings-primary{min-width:120px;background:#167c75;border-color:#0e5d58;color:#fff;box-shadow:0 3px 0 #0e5d58}

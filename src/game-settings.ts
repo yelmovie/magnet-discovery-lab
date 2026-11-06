@@ -1,4 +1,5 @@
-import type { Save } from './domain';
+import { activityMeta } from './activity-meta';
+import { type Save } from './domain';
 import { normalizedAudioSettings, playEffect, syncAudioSettings, type AudioSettings } from './game-audio';
 import { settingsContent as copy } from './settings-content';
 import './game-settings.css';
@@ -27,8 +28,8 @@ const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12
 function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
   const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
-  const teacher = paragraphs(copy.teacherGuide)
-    + fold(copy.standards, `<p>${copy.standardsNotice}</p><dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
+  const teacher = fold(copy.standards, `<dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
+    + fold(copy.goals, `<dl class="settings-standards">${activityMeta.map(meta => `<div><dt>활동 ${meta.activity} · [${meta.standards.join(', ')}]</dt><dd>${meta.objective}${meta.needsReview ? ` <small>${copy.goalsDraft}</small>` : ''}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.tools, `<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
   const copyright = paragraphs(copy.copyrightGuide)
     + fold(copy.sources, `<p>${copy.sourcesIntroduction}</p><dl class="settings-sources">${copy.sourceGroups.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
@@ -49,7 +50,7 @@ function markup(options: GameSettingsOptions) {
       ${fold(copy.teacher, teacher)}
       ${fold(copy.copyright, copyright)}
     </div>
-    <footer class="settings-dialog-footer"><button type="button" class="settings-button settings-reset" data-settings-action="reset">${copy.reset}</button><button type="button" class="settings-button settings-primary" data-settings-action="close">${copy.close}</button></footer>`;
+    <footer class="settings-dialog-footer"><button type="button" class="settings-button settings-reset" data-settings-action="reset">${options.admin ? copy.teacherReset : copy.reset}</button><button type="button" class="settings-button settings-primary" data-settings-action="close">${copy.close}</button></footer>`;
 }
 
 /** Uses native modal focus handling and Escape. Returns an idempotent cleanup. */
@@ -80,7 +81,7 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
     confirmation = document.createElement('dialog'); confirmation.className = 'game-settings-reset';
     confirmation.setAttribute('aria-labelledby', 'settings-reset-title');
     confirmation.setAttribute('aria-describedby', 'settings-reset-description');
-    confirmation.innerHTML = `<h2 id="settings-reset-title">${options.admin?'시연 사본을 초기화할까?':copy.resetTitle}</h2><p id="settings-reset-description">${options.admin?'지금 시연 중인 사본만 비워져. 학생의 원래 진행과 기록은 그대로 보관돼.':copy.resetDescription}</p><div class="settings-reset-actions"><button type="button" class="settings-button" data-confirm="cancel" autofocus>${copy.resetCancel}</button><button type="button" class="settings-button settings-danger" data-confirm="reset">${options.admin?'시연 사본만 초기화':copy.resetConfirm}</button></div>`;
+    confirmation.innerHTML = `<h2 id="settings-reset-title">${options.admin?copy.teacherResetTitle:copy.resetTitle}</h2><p id="settings-reset-description">${options.admin?copy.teacherResetDescription:copy.resetDescription}</p><div class="settings-reset-actions"><button type="button" class="settings-button" data-confirm="cancel" autofocus>${copy.resetCancel}</button><button type="button" class="settings-button settings-danger" data-confirm="reset">${options.admin?copy.teacherReset:copy.resetConfirm}</button></div>`;
     document.body.append(confirmation);
     const dismiss = () => { confirmation?.remove(); confirmation = undefined; dialog.querySelector<HTMLButtonElement>('[data-settings-action="reset"]')?.focus(); };
     confirmation.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });

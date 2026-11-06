@@ -19,6 +19,7 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
   // A science model may snap, return, or animate a piece after a drop. Read its
   // visible position before the next input, including uncommitted arrow moves.
   const syncPosition = () => { const x=Number.parseFloat(el.style.left),y=Number.parseFloat(el.style.top);if(Number.isFinite(x)&&Number.isFinite(y)&&el.style.left.endsWith('%')&&el.style.top.endsWith('%'))p={x,y}; };
+  const releasePointer = () => { const captured=pointer;pointer=-1;if(captured>=0&&el.hasPointerCapture(captured))el.releasePointerCapture(captured); };
   const unavailable = () => (el as HTMLButtonElement).disabled || c.root.inert;
   const location = (e: PointerEvent) => { const r = board.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 }; };
   el.addEventListener('pointerdown', e => {
@@ -33,12 +34,12 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
   });
   el.addEventListener('pointerup', e => {
     if (!active || !(e instanceof PointerEvent) || e.pointerId !== pointer) return;
-    active = false; el.classList.remove('dragging'); if (el.hasPointerCapture(pointer)) el.releasePointerCapture(pointer);
+    active = false; el.classList.remove('dragging'); releasePointer();
     syncPosition();
     if (travelled) { c.a.points[id] = { ...p }; end({ ...p }); }
     else el.dispatchEvent(new CustomEvent('piece-select', {bubbles:true}));
   });
-  const cancel = () => { if (!active) return; active = false; el.classList.remove('dragging'); syncPosition();c.a.points[id] = { ...p }; c.touch(); };
+  const cancel = () => { if (!active) { releasePointer(); return; } active = false; el.classList.remove('dragging'); syncPosition();c.a.points[id] = { ...p }; c.touch();releasePointer(); };
   el.addEventListener('pointercancel', cancel); el.addEventListener('lostpointercapture', cancel);
   el.addEventListener('keydown', e => {
     if (unavailable() || document.querySelector('.modal-backdrop')) return;
@@ -47,7 +48,7 @@ export function bindDrag(c: Context, id: string, start: Point, end: (p: Point) =
     const dir: Record<string, Point> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: -step }, ArrowDown: { x: 0, y: step } };
     if (dir[e.key]) { e.preventDefault(); p = constrain({ x: clamp(p.x + dir[e.key].x), y: clamp(p.y + dir[e.key].y, 12, 89) }); draw(); move?.(p); }
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.a.points[id] = { ...p }; end({ ...p }); }
-    if (e.key === 'Escape') { e.preventDefault(); active = false; c.touch(); c.refresh(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); c.refresh(); }
   });
   el.addEventListener('piece-place', e => {
     if (unavailable() || document.querySelector('.modal-backdrop')) return;
@@ -69,10 +70,15 @@ export function bindPlacement(root: HTMLElement): () => void {
     const rect=board.getBoundingClientRect();selected.dispatchEvent(new CustomEvent('piece-place',{detail:{x:clamp((event.clientX-rect.left)/rect.width*100),y:clamp((event.clientY-rect.top)/rect.height*100,12,89)}}));
   };
   let press: {id:number;x:number;y:number}|null=null;
+  const cancelPress=()=>{press=null;};
   root.addEventListener('piece-select',event=>{const piece=(event.target as HTMLElement).closest<HTMLElement>('[data-drag]');if(piece)select(piece);},{signal:controller.signal});
-  root.addEventListener('pointerdown',event=>{const target=event.target as HTMLElement;press=selected&&event.button===0&&target.closest('.play-board')&&!target.closest('button')?{id:event.pointerId,x:event.clientX,y:event.clientY}:null;},{signal:controller.signal});
+  root.addEventListener('pointerdown',event=>{if(!event.isPrimary)return;const target=event.target as HTMLElement;press=selected&&event.button===0&&target.closest('.play-board')&&!target.closest('button')?{id:event.pointerId,x:event.clientX,y:event.clientY}:null;},{signal:controller.signal});
   root.addEventListener('pointerup',event=>{const start=press;press=null;if(start&&start.id===event.pointerId&&Math.hypot(event.clientX-start.x,event.clientY-start.y)<10)place(event);},{signal:controller.signal});
-  root.addEventListener('pointercancel',()=>{press=null;},{signal:controller.signal});
+  root.addEventListener('pointercancel',cancelPress,{signal:controller.signal});
+  root.addEventListener('lostpointercapture',cancelPress,{signal:controller.signal});
+  window.addEventListener('resize',cancelPress,{signal:controller.signal});
+  window.addEventListener('blur',cancelPress,{signal:controller.signal});
+  document.addEventListener('visibilitychange',cancelPress,{signal:controller.signal});
   root.addEventListener('click', e => {
     const target = e.target as HTMLElement, piece = target.closest<HTMLElement>('[data-drag]');
     if (piece) {

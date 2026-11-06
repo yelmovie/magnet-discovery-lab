@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { coreReady, emptyActivity, freshSave, migrateSave, ready, validSave, type Activity } from '../src/domain';
 import { addTrial, paperComparison, validTrial } from '../src/trial-records';
 import { initializeFinal } from '../src/final-mission';
+import { inventionTestView, inventionView } from '../src/tablet-activities';
 
 function distanceTrial(a: Activity, key: string, x: number, paper: boolean, outcome: string) {
   return addTrial(a, { key, activity: 4, conditions: { paper, material: 'iron' }, initialObjects: [{ id: 'magnet', x, y: 48 }, { id: 'clip', x: 73, y: 48 }], objects: [], input: [], outcome, pinned: true });
 }
 describe('tablet evidence', () => {
+  it('uses the selected remote partner in the legacy design and its restoration test',()=>{
+    const s=freshSave();s.design.template='remote';s.design.pair='magnet';s.design.pole='S';
+    expect(inventionView(emptyActivity(),s).html).toContain('통 안쪽 자석');
+    const pair=inventionTestView(emptyActivity(),s).html;
+    expect(pair).toContain('통 안쪽 · 자석');expect(pair).toContain('위 S극, 아래 N극');
+    s.design.pair='iron';expect(inventionTestView(emptyActivity(),s).html).toContain('통 안쪽 · 철판');
+  });
   it('compares paper only with the exact same initial objects and material', () => {
     const a = emptyActivity(); a.values.playVersion = 3;
     distanceTrial(a, 'far-clear', 15, false, 'none'); distanceTrial(a, 'near-clear', 47, false, 'attract');

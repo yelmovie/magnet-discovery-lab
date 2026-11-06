@@ -1,0 +1,27 @@
+{
+  "received": "2026-11-01",
+  "note": "사용자가 프로젝트 최상위에 넣어 준 인트로·파이널 영상 원본. 바이트 변경 없이 이동만 했다. 큰 파일이라 git에는 올리지 않는다(.gitignore).",
+  "storyboards": "assets/source/video/storyboards/v3-20261031 (컷별 그림 6장 + omni-prompts.txt)",
+  "files": [
+    {
+      "use": "intro",
+      "provided": "intro.mp4",
+      "file": "intro-original-20261101.mp4",
+      "bytes": 21020763,
+      "sha256": "2cb57adc69af648b8c7a2505cd89dd5c97ecf2a2c8cce4821f8e2f93046f94a2",
+      "video": "H.264 1912x1080 30fps 18.48s",
+      "audio": "AAC 트랙 있으나 무음(-91 dB)",
+      "shots": "0-5.2 우편국 골목 / 5.2-11.7 연구소 / 11.7- 공방, 15.5초부터 검은 화면으로 페이드"
+    },
+    {
+      "use": "final",
+      "provided": "final.mp4",
+      "file": "final-original-20261101.mp4",
+      "bytes": 18661653,
+      "sha256": "a27360ee42ee70c2a323d4a8332a26206ad6c47cfd1768de57be2cb1d7bf81e4",
+      "video": "H.264 1926x1080 30fps 15.19s",
+      "audio": "AAC 트랙 있으나 무음(-91 dB)",
+      "shots": "0-5.3 발명 수레 / 5.3-10.73 수조·배송 / 10.73- 축제 광장, 13.5초부터 검은 화면으로 페이드"
+    }
+  ]
+}

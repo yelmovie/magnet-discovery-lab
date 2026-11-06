@@ -8,12 +8,17 @@ export const icon = (name: string, size = 22): string => {
     reset: '<path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/>', spark: '<path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>',
     flask: '<path d="M9 3h6m-5 0v7L4 19q-1 2 2 2h12q3 0 2-2l-6-9V3M7 15h10"/>', print: '<path d="M7 8V3h10v5M7 17H3V8h18v9h-4M7 14h10v7H7z"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>', map: '<path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zm6-2v16m6-14v16"/>',
+    hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-7.5v-1a1.5 1.5 0 0 1 3 0V12m0-7a1.5 1.5 0 0 1 3 0v7m0-4.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.6 15a1.5 1.5 0 0 1 2.4-1.8L8 15.5"/>',
+    expand: '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
     light: '<path d="M8 15a7 7 0 1 1 8 0v3H8zM9 22h6m-3-11v7"/>', play: '<path d="m8 4 12 8-12 8z"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.spark}</svg>`;
 };
 export function mascot(type: 'mili' | 'dangi' = 'mili', size = 110, pose = 0): string {
-  return `<span class="mascot sprite-mascot ${type}" role="img" aria-label="${type === 'mili' ? '밀이' : '당이'}" style="--size:${size}px;--pose:${Math.max(0, Math.min(3, pose))};background-image:url('/assets/adventure/${type}-poses-tablet.webp')"></span>`;
+  return `<span class="mascot sprite-mascot ${type}" role="img" aria-label="${type === 'mili' ? '밀이' : '당이'}" style="--size:${size}px;--pose:${Math.max(0, Math.min(3, pose))};background-image:url('/assets/adventure/${type}-poses-pixel.webp')"></span>`;
+}
+export function walkingMascot(type: 'mili' | 'dangi', size = 104): string {
+  return `<span class="map-mascot ${type}" aria-hidden="true" data-facing="down" data-step="1" style="--size:${size}px;--facing:0;--step:1;background-image:url('/assets/adventure/${type}-walk-pixel.webp')"></span>`;
 }
 export function magnet(pole = 'N', cls = ''): string { return `<div class="bar-magnet ${pole === 'S' ? 'flipped' : ''} ${cls}"><span>N</span><span>S</span></div>`; }
 export function objectArt(id: string): string {
@@ -45,13 +50,8 @@ export function equipmentArt(kind: EquipmentKind, extraClass = ''): string {
 /** District scenes are shared by invitations, records, rewards, and the journey. */
 export function sceneArt(index: number, extraClass = ''): string {
   const safeIndex = Math.min(5, Math.max(0, Math.floor(index)));
-  const labels = ['자석과 철 걸쇠가 보이는 우편함', '여러 재료의 자석 반응을 살피는 실험', '같은 극이 마주 보아 떨어져 있는 고리자석', '수조 청소와 자석 택배 장치', '자석과 철 부품을 배치한 발명 장치', '복구된 자석 도시와 시민들의 도구'];
-  // The generated vignette's ring colors are not a valid axial magnet model.
-  // Assemble this scene from the separately verified N-top/S-top equipment.
-  const rings = safeIndex === 2 ? `<span class="scene-ring-equipment" aria-hidden="true">${equipmentArt('stand', 'scene-stand')}${equipmentArt('ringN', 'scene-ring-lower')}${equipmentArt('ringS', 'scene-ring-upper')}</span>` : '';
-  // The lower-left rail extends beyond a nominal 512px cell. Keep the whole
-  // rail in its own scene and exclude that fragment from the invention scene.
-  const [x,y,width,height] = safeIndex===3?[0,512,550,512]:safeIndex===4?[550,512,474,512]:[safeIndex%3*512,Math.floor(safeIndex/3)*512,512,512];
-  const crop = safeIndex===2?'':`background-size:${153600/width}% ${102400/height}%;background-position:${x/(1536-width)*100}% ${y/(1024-height)*100}%;aspect-ratio:${width}/${height};`;
-  return `<span class="mission-scene-art ${safeIndex === 2 ? 'scene-poles' : ''} ${extraClass}" role="img" aria-label="${labels[safeIndex]}" style="${crop}">${rings}</span>`;
+  const pictures=['mailbox','materials','rings','aquarium','invention'];
+  const pictureLabels=['자석과 철 걸쇠가 마주 보는 우편함','자석과 서로 다른 여섯 재료','마주 보는 같은 극 사이에 틈이 생긴 두 고리자석','유리 양쪽에 놓인 손잡이와 수조 청소 패드','몸체와 자석·철 부품을 펼친 발명대'];
+  if(safeIndex<5)return `<span class="mission-scene-art learning-scene-art ${extraClass}" role="img" aria-label="${pictureLabels[safeIndex]}"><img src="/assets/learning/${pictures[safeIndex]}.webp" alt="" width="1024" height="688" loading="lazy" decoding="async"></span>`;
+  return `<span class="mission-scene-art ${extraClass}" role="img" aria-label="복구된 자석 도시와 시민들의 도구" style="background-size:300% 200%;background-position:100% 100%;aspect-ratio:1"></span>`;
 }

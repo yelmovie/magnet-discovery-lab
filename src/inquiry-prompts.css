@@ -1,0 +1,52 @@
+/* One small thinking card on the experiment bench, and the short evidence list in the record views. */
+#app .inquiry-prompt-host { position: absolute; z-index: 6; left: 11%; top: 34%; width: 18%; min-width: 196px; }
+#app .inquiry-prompt-host:empty { display: none; }
+#app .mission-board.has-thinking-card > .mailbox-inspection { visibility: hidden; }
+#app .inquiry-prompt-host:has([data-prompt-kind=watch]) { left: 50%; top: 50%; width: min(560px,88%); transform: translate(-50%,-50%); }
+#app .thinking-card {
+  display: grid; gap: 8px; padding: 12px; max-height: 100%; overflow: auto;
+  border: 2px solid #548572; border-radius: 14px; background: #fffaeaf7; color: #224c45;
+  box-shadow: 0 3px 0 #54857240; font: 600 clamp(15px,1.3vw,18px)/1.35 var(--font-body); word-break: keep-all;
+}
+#app .thinking-card h2 { margin: 0; color: #174a4b; font: 700 clamp(17px,1.5vw,21px)/1.3 var(--font-body); }
+#app .thinking-options { display: grid; gap: 8px; }
+#app .thinking-option {
+  min-height: 48px; padding: 7px 10px; border: 2px solid #28685f; border-radius: 12px;
+  background: #fff; color: #174a4b; font: inherit; font-weight: 700; line-height: 1.25; touch-action: manipulation;
+  box-shadow: 0 3px 0 #54857266;
+}
+#app .thinking-option:active { transform: translateY(2px); box-shadow: 0 1px 0 #54857266; }
+#app .thinking-option:focus-visible { outline: 3px solid #c9531c; outline-offset: 2px; }
+#app .thinking-note { margin: 0; color: #47665d; font-size: .92em; }
+#app .thinking-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
+#app .thinking-pair > div { padding: 6px 7px; border-radius: 9px; background: #edf6e3; }
+#app .thinking-pair dt { color: #47665d; font-size: .82em; }
+#app .thinking-pair dd { margin: 2px 0 0; font-weight: 700; }
+/* Narrow portrait screens have room above the small bench; the tool row sits below it. */
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  #app .inquiry-prompt-host { top: auto; bottom: calc(100% + 6px); left: 50%; width: min(340px,92%); transform: translateX(-50%); }
+  #app .inquiry-prompt-host:has([data-prompt-kind=watch]) { bottom: auto; }
+  #app .thinking-card { gap: 5px; padding: 7px 9px; }
+  #app .thinking-card:not([data-prompt-kind=watch]) .thinking-options { grid-template-columns: 1fr 1fr; }
+}
+/* Short landscape windows: one-line result rows keep the card between the header and the tool row. */
+@media (max-height:640px) and (min-aspect-ratio:1/1) {
+  #app .inquiry-prompt-host { top: 30%; left: 4%; width: 240px; }
+  #app .thinking-card { gap: 4px; padding: 6px 8px; font-size: 14px; }
+  #app .thinking-card h2 { font-size: 15px; }
+  #app .thinking-options { gap: 4px; }
+}
+/* Below laptop width the card is narrow, so each result takes one row and the two rows still line up. */
+@media (max-width:1100px), (max-height:640px) {
+  #app .thinking-pair { grid-template-columns: 1fr; gap: 2px; }
+  #app .thinking-pair > div { display: grid; grid-template-columns: 4.6em 1fr; gap: 4px; padding: 3px 6px; }
+  #app .thinking-pair dd { margin: 0; }
+}
+
+.learning-notes { display: grid; gap: 4px; margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #edf6e3; color: #224c45; font-size: 16px; line-height: 1.35; word-break: keep-all; }
+.learning-notes > div { display: grid; grid-template-columns: 9.5em 1fr; gap: 8px; }
+.learning-notes dt { color: #47665d; }
+.learning-notes dd { margin: 0; font-weight: 650; }
+#app .page-report .evidence-card > div > .learning-notes { grid-column: 1 / -1; }
+
+#app .final-review-summary .final-changed { display: block; color: #6b5a2c; font-size: 14px; line-height: 1.3; word-break: keep-all; }

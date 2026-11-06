@@ -1,31 +1,82 @@
-import { emptyActivity, type Save } from './domain';
-import { initializeFinal, finalView as legacyFinalView } from './final-mission';
-import { missionView } from './mission-play';
+import { emptyActivity, finalRepairPassed, type Save } from './domain';
+import { initializeFinal } from './final-mission';
 import { currentInventionTrial } from './trial-records';
-import { bindDrag, draggable, placementControls } from './manipulation';
-import { icon, mascot, sceneArt } from './art';
-import { questCompanion } from './quest-ui';
+import { icon, mascot } from './art';
+import { experimentScenes } from './experiment-scenes';
+import { ideaCard } from './idea-content';
+import { finalQuestions, initializeReview, reviewPassed, reviewQuestion, type FinalReview } from './final-review';
+import { playEffect } from './game-audio';
+import './final-notebook.css';
 import type { View } from './activity-types';
 
-/** The final reward is the learner's working design, installed and operated in a new place. */
-export function restorationView(s:Save):View {
-  const r=initializeFinal(s);
-  if(r.operated&&(r.revision!==s.design.revision||r.template!==s.design.template)){r.operated=false;r.installed=false;r.attempt=emptyActivity();}
-  if(r.mode==='challenge'||r.repair!=='invention'){
-    const legacy=legacyFinalView(s);return {html:`<div class="restoration-optional-lab">${legacy.html}</div>`,bind:legacy.bind};
+/** Install the same design already tested by the learner without repeating its use test. */
+export function installRestoration(s:Save):void {
+  const r=initializeFinal(s), verified=s.activities[10];
+  r.installed=true;r.revision=s.design.revision;r.template=s.design.template;r.operated=false;r.attempt=emptyActivity();
+  if(r.mode==='basic'&&r.repair==='invention'&&s.completed.includes(10)&&verified?.values.paceVersion===1&&currentInventionTrial(verified,s.design.template,s.design.revision)){
+    // Preserve the original physical trial, including input path and design revision.
+    r.attempt=structuredClone(verified);
+    r.operated=finalRepairPassed(s);
+    if(r.operated&&!r.segments.includes('invention'))r.segments.push('invention');
   }
-  if(!r.installed)return{
-    html:`<div class="restoration-plaza"><h1 class="mission-question">내 설계도로 광장의 장치를 고쳐 볼까?</h1><div class="restoration-install play-board"><div class="restoration-mount"><img src="/assets/quest/prop-postal-box.webp" alt="내 설계를 기다리는 광장 장치"><span>여기에 내 설계 장착</span></div>${draggable('blueprint','내 발명 설계도',{x:25,y:56},'<img src="/assets/quest/prop-book.webp" alt=""><strong>내 발명 설계도</strong>')}</div>${questCompanion({message:'내가 직접 시험한 설계도야. 책을 광장 장치 쪽으로 옮겨 장착하고, 정말 작동하는지도 확인해 줘.'})}<details class="restoration-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,
-    bind(c){return bindDrag(c,'blueprint',{x:25,y:56},p=>{if(Math.hypot(p.x-53,(p.y-56)*.56)<17){r.installed=true;r.revision=s.design.revision;r.template=s.design.template;r.attempt=emptyActivity();c.touch();c.refresh();}else c.notify('설계도를 가운데 광장 장치까지 옮겨 줘.');});}
+}
+
+function recordPhotos(s:Save,stage:number) {
+  if(stage===4&&s.idea&&s.activities[10]?.values.ideaVersion===1)return ideaCard(s.idea);
+  const first=stage*2+1, evidence=s.evidence.find(e=>e.stage===stage);
+  const activities={...s.activities};
+  evidence?.activities.forEach((activity,index)=>{if(index<2)activities[first+index]=activity;});
+  return experimentScenes(first,{...s,activities});
+}
+
+/** A corrected answer stays visible as part of the learner's thinking, never as a mark against them. */
+function changedFrom(s:Save,review:FinalReview,index:number) {
+  const first=review.first?.[index]??-1,q=reviewQuestion(s,index);
+  return first>=0&&first!==q.answer&&q.choices[first]?`<small class="final-changed">처음 고른 답: ${q.choices[first]}</small>`:'';
+}
+
+/** The plaza is a short conclusion to the completed experiments, never another operation trial. */
+export function restorationView(s:Save,preview=false):View {
+  // Old certificates remain earned; opening this summary must not add unanswered new work to their save.
+  const legacyCompleted=s.final.complete&&!s.final.review;
+  const review=legacyCompleted?{version:1 as const,page:5,answers:finalQuestions.map(()=>-1)}:initializeReview(s), done=reviewPassed(review);
+  const firstPending=legacyCompleted?-1:finalQuestions.findIndex((q,index)=>review.answers[index]!==q.answer);
+  if(!preview&&review.page>(firstPending<0?finalQuestions.length:firstPending))review.page=firstPending;
+  const summary=review.page===finalQuestions.length, q=reviewQuestion(s,Math.min(review.page,4));
+  const workshop=review.page===4&&s.idea&&s.activities[10]?.values.ideaVersion===1;
+  const selected=review.answers[review.page], correct=selected===q.answer, answered=selected>=0;
+  const count=finalQuestions.filter((item,index)=>review.answers[index]===item.answer).length;
+  const tabs=finalQuestions.map((item,index)=>`<button type="button" class="final-bookmark" data-review-page="${index}" aria-current="${!summary&&review.page===index?'step':'false'}" ${!preview&&index>firstPending&&firstPending>=0?'disabled':''}><span aria-hidden="true">${review.answers[index]===item.answer?'✓':index+1}</span>${item.tab}</button>`).join('');
+  const feedback=correct?`<strong>맞아! 수첩에 적어 두자.</strong><span>${q.reason}</span>`:answered?`<strong>사진을 보고 한 번 더 골라 봐.</strong><span>${q.retry}</span>`:'<span>내가 본 움직임과 맞는 답을 찾아봐.</span>';
+  const sheet=summary?`
+    <div class="final-review-summary"><span class="final-note-tag">${legacyCompleted?'이전 탐험 수료 기록':done?'다섯 발견 완성':'교사용 미리보기'}</span><h1 tabindex="-1" data-review-heading>내 손으로 찾은 자석의 비밀</h1>
+    <ul>${finalQuestions.map((item,index)=>`<li><img src="/assets/quest/resident-${index+1}.webp" alt=""><div><b>${item.tab}</b><p>${reviewQuestion(s,index).discovery}</p>${changedFrom(s,review,index)}</div><span aria-label="${legacyCompleted?'이전 탐험의 발견':review.answers[index]===item.answer?'직접 정리 완료':'아직 선택하지 않음'}">${legacyCompleted?'★':review.answers[index]===item.answer?'✓':'·'}</span></li>`).join('')}</ul>
+    <footer>${legacyCompleted?'<button type="button" class="btn" data-action="city">도시로 돌아가기</button><button type="button" class="btn primary" data-action="certificate">내 수료증 보기</button>':`<button type="button" class="btn" data-review-page="0">수첩 다시 보기</button><button type="button" class="btn primary" data-restoration="finish" ${!done&&!preview?'disabled':''}>${preview?'축제 미리보기':'도시 축제 열기'} ${icon('spark',22)}</button>`}</footer></div>`:`
+    <div class="final-review-pages"><aside class="final-experiment-note" aria-label="내가 했던 실험 기록"><span class="final-note-tag">${workshop?'내 발명':`내 실험 ${review.page+1}`}</span><div class="final-note-photos">${recordPhotos(s,review.page)}</div>${workshop?'':`<p class="final-hand-note">${q.note}</p>`}<div class="final-pencil-rule" data-written="${correct}">${correct?q.discovery:review.page===4?'발명 카드에서 쓴 자석의 성질을 살펴봐.':'사진 속 움직임을 살펴봐.'}</div></aside>
+    <section class="final-question" aria-labelledby="final-question-title"><span class="final-question-label">정리 문제 ${review.page+1} / 5</span><h1 id="final-question-title" tabindex="-1" data-review-heading>${q.question}</h1>
+    <p class="final-answer-instruction">답 하나를 골라 줘</p><div class="final-answer-options" role="group" aria-label="정리 문제의 답">${q.choices.map((choice,index)=>`<button type="button" data-review-answer="${index}" aria-pressed="${selected===index}" class="final-answer${selected===index?correct?' is-correct':' is-retry':''}" ${correct?'disabled':''}><span>${selected===index&&correct?'✓':index+1}</span>${choice}</button>`).join('')}</div>
+    <div class="final-answer-feedback" role="status" aria-live="polite" data-result="${correct?'correct':answered?'retry':'waiting'}">${feedback}</div>
+    <footer><button type="button" class="btn" data-review-page="${Math.max(0,review.page-1)}" ${review.page===0?'disabled':''}>이전 기록</button><button type="button" class="btn primary" data-review-next ${!correct&&!preview?'disabled':''}>${review.page===4?'수첩 완성하기':'다음 기록'} ${icon('arrow',20)}</button></footer></section></div>`;
+  return {
+    html:`<section class="final-review"><div class="final-notebook"><div class="final-clipboard-clip" aria-hidden="true"></div><header class="final-notebook-heading"><div><span>중앙 광장 · 발견 정리</span><strong>나의 자석 탐험 수첩</strong></div><b>${legacyCompleted?'수료 완료':`${count} / 5`}</b></header>${legacyCompleted?'':`<nav class="final-bookmarks" aria-label="건물별 실험 기록">${tabs}</nav>`}${sheet}<div class="final-note-host" aria-hidden="true">${mascot('mili',142,2)}</div></div></section>`,
+    bind(c){
+      const events=new AbortController(),signal=events.signal;
+      const refresh=(focus?: string)=>{c.touch();c.refresh();if(focus&&typeof document!=='undefined')document.querySelector<HTMLElement>(`#final-root ${focus}`)?.focus({preventScroll:true});};
+      c.root.querySelectorAll<HTMLButtonElement>('[data-review-answer]').forEach(button=>button.addEventListener('click',()=>{
+        if(summary||review.answers[review.page]===q.answer)return;
+        const answer=Number(button.dataset.reviewAnswer);
+        if(!Number.isInteger(answer)||answer<0||answer>=q.choices.length)return;
+        const first=review.first||=finalQuestions.map(()=>-1);if(first[review.page]<0)first[review.page]=answer;
+        review.answers[review.page]=answer;playEffect(answer===q.answer?'success':'compare',s.settings);refresh(answer===q.answer?'[data-review-next]':`[data-review-answer="${answer}"]`);
+      },{signal}));
+      c.root.querySelectorAll<HTMLButtonElement>('[data-review-page]').forEach(button=>button.addEventListener('click',()=>{
+        const page=Number(button.dataset.reviewPage);
+        if(!Number.isInteger(page)||page<0||page>=5||!preview&&firstPending>=0&&page>firstPending)return;
+        review.page=page;refresh('[data-review-heading]');
+      },{signal}));
+      c.root.querySelector('[data-review-next]')?.addEventListener('click',()=>{if(preview||review.answers[review.page]===q.answer){review.page++;refresh('[data-review-heading]');}},{signal});
+      c.root.querySelector('[data-restoration="finish"]')?.addEventListener('click',()=>{if(preview||reviewPassed(review))c.root.dispatchEvent(new CustomEvent('activate-final',{bubbles:true}));},{signal});
+      return ()=>events.abort();
+    },
   };
-  if(r.operated)return{
-    html:`<div class="restoration-plaza restoration-success"><h1 class="mission-question">네 설계로 광장의 장치를 고쳤어!</h1><div class="restoration-team">${mascot('mili',190,3)}${sceneArt(5,'restoration-scene')}${mascot('dangi',180,3)}</div><p class="restoration-ability">자석의 위치와 거리를 조절해서<br>생활에 필요한 장치를 만들 수 있어!</p><button class="btn restoration-3d" data-restoration="view3d">내 발명품 3D로 작동해 보기</button>${questCompanion({message:'네가 확인한 다섯 발견이 모두 쓰였어. 다른 장치로도 도전하고 싶으면 축제 뒤에 다시 찾아와 줘.'})}<button class="quest-cta restoration-finish" data-restoration="finish">도시 축제 열기 ${icon('spark',26)}</button><details class="restoration-access"><summary>다른 복구도 해 보기</summary><button class="btn" data-restoration="challenge">배송·고리·발명 이어 고치기</button></details></div>`,
-    bind(c){c.root.querySelector('[data-restoration="finish"]')?.addEventListener('click',()=>c.root.dispatchEvent(new CustomEvent('activate-final',{bubbles:true})));c.root.querySelector('[data-restoration="view3d"]')?.addEventListener('click',()=>c.root.dispatchEvent(new CustomEvent('open-3d',{bubbles:true,detail:{kind:s.design.template==='box'?'box':'remote'}})));c.root.querySelector('[data-restoration="challenge"]')?.addEventListener('click',()=>{r.optionalBackup=JSON.stringify(r);r.mode='challenge';r.segments=[];r.operated=false;r.installed=false;r.attempt=emptyActivity();c.touch();c.refresh();});}
-  };
-  let a=r.attempt ||= emptyActivity();
-  if(a.values.playVersion!==4){a=r.attempt=emptyActivity();a.values.playVersion=4;for(const id of ['design-magnet','design-target']){const p=s.activities[10]?.points[id]||s.activities[9]?.points[id];if(p)a.points[id]={...p};}}
-  const view=missionView(10,a,s);
-  return{html:`<div class="restoration-operation"><h1 class="mission-question">내 장치를 광장에서도 작동시켜 줘!</h1><div class="restoration-lab">${view.html}</div>${questCompanion({message:s.design.template==='box'?'내가 고친 위치 그대로 장착했어. 덮개를 내려 닫은 뒤 사용 시험을 해 보자.':'내가 만든 원격 손잡이야. 유리 밖에서 안쪽 철 부품을 위 선반까지 움직이고 사용 시험을 해 줘.'})}</div>`,bind(c){
-    return view.bind({...c,screen:10,a,refresh:()=>{if(currentInventionTrial(a,s.design.template,s.design.revision)){r.revision=s.design.revision;r.template=s.design.template;r.operated=true;if(!r.segments.includes('invention'))r.segments.push('invention');}c.touch();c.refresh();}});
-  }};
 }

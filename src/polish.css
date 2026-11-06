@@ -2,11 +2,9 @@
    image-backed props instead of flat boxes, and finish pages that keep the
    city's brass-and-paper art direction. Layout of the canvas board is untouched. */
 body.quest-mode {
-  --polish-paper: #fffcf2;
   --polish-ink: #173f47;
   --polish-muted: #4f6a62;
   --polish-brass: #ab7b35;
-  --polish-brass-light: #ffe7a2;
   --polish-line: #c9c09c;
   --polish-shadow: 0 4px 0 #173f4718, 0 14px 32px #173f4726;
   --font-size-chip: clamp(16px, 1.3vw, 19px);
@@ -98,7 +96,7 @@ body.quest-mode {
 #app .field-chip-art :is(.material-art, .equipment-art) { width: 40px; height: 40px; filter: none; }
 #app .field-chip-art .equipment-art { height: auto; }
 body.quest-mode #app .field-chip-art .bar-magnet { width: 40px; height: 16px; font-size: 9px; }
-#app .field-paper { width: 22px; border: 0; background: url('/assets/quest/prop-paper.webp') center / contain no-repeat; color: transparent; }
+#app .field-paper { border: 0; background: url('/assets/quest/prop-paper-sheet.webp') center / 100% 100% no-repeat; color: transparent; }
 #app .route-track { border-bottom: 0; padding-bottom: 26px; background: url('/assets/quest/prop-rail.webp') center bottom / 100% 26px no-repeat; }
 
 /* ── Report: the city stays behind the research notebook ── */
@@ -184,7 +182,7 @@ body.quest-mode .view3d-slider { display: flex; align-items: center; gap: 14px; 
 body.quest-mode .view3d-toggle { min-height: 48px; font-size: 18px; }
 body.quest-mode .view3d-toggle[aria-pressed='true'] { background: #fff0bd; border-color: #a57a31; }
 body.quest-mode .view3d-slider span { flex: none; }
-body.quest-mode .view3d-slider input { flex: 1; min-height: 44px; accent-color: var(--polish-brass); }
+body.quest-mode .view3d-slider input { flex: 1; min-height: 48px; accent-color: var(--polish-brass); }
 body.quest-mode .view3d .view3d-note { min-height: 1.45em; margin: 10px 0 0; font-weight: 700; color: #2f5a3a; }
 @media (max-height: 640px) { body.quest-mode .view3d-stage { height: 46dvh; } body.quest-mode .view3d .view3d-guide { margin-bottom: 8px; } }
 #app .restoration-success .restoration-3d { position: absolute; z-index: var(--layer-controls); left: 50%; bottom: 20px; translate: -50% 0; margin: 0; min-height: 52px; white-space: nowrap; }
@@ -221,7 +219,7 @@ body.quest-mode .view3d .view3d-note { min-height: 1.45em; margin: 10px 0 0; fon
   #app .ability-picker { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   #app .ability-picker :is(legend, p) { grid-column: 1 / -1; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .mission-head { top: 76px; width: calc(100% - 24px); padding: 8px 12px 10px; }
   #app .mission-head .mission-question { font-size: 25px; }
   #app .certificate-border { padding: 10cqw 12cqw 9cqw; }

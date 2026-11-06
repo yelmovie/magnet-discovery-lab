@@ -20,7 +20,7 @@
 - 파이널 원본: `assets/source/audio/suno/finale-theme-original.mp3` (제공 파일명: `Final_Victory in the Town Square.mp3`).
 - 배포 음원: `public/audio/music/main-theme.mp3`, `finale-theme.mp3`. 바이트 변경 없이 보관했으며 `tracks.json`에 SHA-256·크기·길이를 기록했다.
 - 음악의 출처는 사용자 제공 Suno 생성물이다. 2026-10-25 사용자가 두 곡 모두 Suno **유료 요금제(사용자 표현: premium)** 구독 중에 생성했다고 확인했다. 유료 구독 중 생성한 곡은 상업적 이용 대상으로 본다. 요금제 결제 내역은 저장소에 보관하지 않으며, 필요하면 사용자 Suno 계정에서 확인한다. CC0 효과음 라이선스와 구분한다.
-- 배경음·효과음은 각각 켜고 끌 수 있다. 영상 재생과 백그라운드 전환 시 멈추고, 복귀 시 같은 위치에서 이어진다.
+- 배경음·효과음은 각각 켜고 끌 수 있다. 개념 영상 재생과 백그라운드 전환 시 멈추고, 복귀 시 같은 위치에서 이어진다. 인트로·엔딩 영상은 원본이 무음이라 배경음(인트로 메인, 엔딩 파이널)이 그대로 깔린다.
 - 클릭·집기·놓기·비교·성공·보상·가벼운 충돌·걷기 효과음 8종만 로컬 MP3로 재생한다. 출처와 CC0 라이선스는 아래 기록을 따른다.
 - 효과음 파일을 불러오지 못하면 Web Audio API로 짧은 대체 효과음을 합성한다. 특정 곡을 복제하지 않았다.
 - 효과음은 한 번에 하나만 재생하며 켜기·끄기를 제공한다. 문서가 숨겨지거나 영상 등에서 일시 중지를 요청하면 멈춘다.
@@ -44,6 +44,13 @@
 - 자석도시 지도 1장·활동실 5종·조작 소품 6종: 사용자 요청에 따라 OpenAI imagegen으로 생성. `public/assets/quest/`에 실제 적용. 원본·프롬프트·해시와 알파 검증은 `assets/source/quest/`와 `docs/ART-PROMPTS-20261021.md`에 보관.
 - 기존 밀이·당이 캐릭터와 로고는 이전 프로젝트 에셋을 재사용. 신규 배경에 캐릭터를 구워 넣지 않고 실제 조작 장면에서 별도로 표시.
 
+## 인트로·엔딩 영상 (2026-11-01)
+
+- **원본**: 사용자가 제공한 AI 생성 영상 2편(`intro.mp4` 18.5초, `final.mp4` 15.2초, 무음). 컷별 기준 그림 6장은 Codex image_gen으로 만든 프로젝트용 AI 생성 이미지이고, 영상 생성 지시문은 `assets/source/video/storyboards/v3-20261031/omni-prompts.txt`에 있다. 원본·해시: `assets/source/video/story/sources.json`(원본 mp4는 용량 때문에 git 제외). **영상 생성 도구·요금제는 사용자 확인 후 이 줄에 적는다.**
+- **편집**: `scripts/render-story-videos.mjs`. 원본 끝의 검은 화면 페이드를 잘라 내고 마지막 장면을 천천히 확대하며 멈춘다. 빛 줄기·먼지 입자·자석 단서 표시·전환 빛·거품·색종이·메달 광선은 프로젝트에서 직접 그린 SVG 프레임(sharp)으로 만들어 FFmpeg로 합성했다. Remotion은 쓰지 않았다. 영상 안에는 글자를 넣지 않았다.
+- **효과음**: 스크립트에서 직접 합성한 음과 Kenney CC0 효과음(아래 표)을 섞었다. 게임 효과음 설정이 꺼져 있으면 영상도 소리 없이 재생한다.
+- **자막·장소 태그·구역 도장·마지막 카드**: `src/story-video.ts`의 DOM 글자. 배포본: `public/video/story/` (MP4·시작 포스터·마지막 장면 WebP).
+
 ## 개념 영상·보조 캐릭터·효과음 (2026-10-22)
 
 - **개념 영상 5편**: 프로젝트에서 직접 설계·렌더링한 모션 그래픽. `scripts/render-concepts.py`의 Pillow 프레임을 FFmpeg / libx264로 인코딩. 각 12초, 1280×720, 24fps, H.264/AAC, faststart. `public/video/concepts/`에 MP4·WebP 포스터·한국어 VTT·해시 manifest를 제공한다. 영상의 짧은 음은 스크립트에서 직접 합성한다. Windows 맑은 고딕으로 텍스트를 래스터화했으며 폰트 파일은 배포하지 않는다.
@@ -60,6 +67,17 @@
 | reward.mp3 | confirmation_004.ogg | 도구 획득 |
 | bump.mp3 | error_003.ogg | 다시 관찰할 단서 |
 | step.mp3 | tick_001.ogg | 짧은 이동음 |
+
+### 장치 실험 효과음
+
+Kenney의 *Impact Sounds 1.0*에서 가져온 소리를 MP3로 변환했다. 배포본에 원본 라이선스 `public/audio/Impact-License.txt`와 음원별 대응표 `public/audio/sources.json`을 동봉한다. [공식 음원](https://kenney.nl/assets/impact-sounds) · [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
+
+| 배포 파일 | Kenney 원본 | 소리가 나는 장면 |
+|---|---|---|
+| snap.mp3 | impactMetal_light_001.ogg | 자석이 철판이나 다른 자석에 붙을 때 |
+| lid.mp3 | impactWood_light_002.ogg | 나무 덮개 손잡이를 잡을 때 |
+| pad.mp3 | impactSoft_medium_002.ogg | 수조 안쪽 패드로 얼룩을 닦았을 때 |
+| crate.mp3 | impactWood_medium_001.ogg | 짐을 실은 카트가 배달 장소에 멈출 때 |
 
 ## 폰트
 
@@ -103,3 +121,55 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 - 원본: `assets/source/3d-base-20261025/meshy/` (저장소 제외, 해시는 `originals.json`). 배포본: `public/assets/3d/`, 원본↔배포 대조표는 같은 폴더 `README.md`.
 - 가공: `scripts/pack-glb.mjs` (gltf-transform MIT · meshoptimizer MIT · sharp Apache-2.0). three.js MIT로 화면에 표시.
 - 쓰는 곳: 극성 복원 센터 고리 3D 보기, 광장 복구 발명품 작동 시연(자석 잠금 상자·유리 너머 운반기).
+
+## 우편함 재질과 손잡이
+
+원목 재질 `mailbox-wood.webp`와 나무·황동 손잡이 `mailbox-pull-handle.webp`는 이 프로젝트용으로 생성한 그림이다. 실험대는 원목 재질을 몸체와 뚜껑에 따로 입혀 경첩을 움직인다.
+
+## 힘 실험 연구소의 종이
+
+`public/assets/quest/prop-paper-sheet.webp`는 내장 imagegen으로 만든 낱장 종이다. 생성한 그림의 투명도를 유지해 게임용 WebP로 저장했다.
+
+> 투명 배경 게임 소품. 초등 과학 실험에서 쓰는 흰 공책 종이 딱 한 장을 정면에 가깝게 보여 줘. 따뜻한 옆빛에 보이는 무광 종이결, 성긴 연하늘색 가로줄 여섯 개, 살짝 앞으로 접힌 오른쪽 윗귀와 가볍게 휘는 아래 가장자리. 세로로 긴 전체 윤곽과 넓은 면이 한눈에 읽히는 세밀한 반실사 일러스트. 글씨, 구멍, 테두리 장식, 받침대, 그림자 배경 없이.
+
+## 지도에 돌아오는 주민
+
+우체부·재료 연구원·시계탑 지기·수조 관리인·발명가는 이 프로젝트용으로 내장 imagegen을 사용해 한 장의 그림으로 생성했다. 원본은 `assets/source/quest/restored-residents-20261102.png`에 보관하고, 투명 영역을 따라 나눈 다섯 WebP(`public/assets/quest/resident-1.webp` ~ `resident-5.webp`)를 지도와 대화창이 함께 사용한다.
+
+## 캐릭터 한국어 목소리
+
+모모 자비스에서 Qwen3-TTS 합성 프리셋과 Supertonic 3의 기본 F1로 대사를 만들었다. 마을과 발명 공방의 주민 10명, 밀이·당이 2명에게 역할에 맞춰 각각 음성을 배정했다. 실제 인물의 녹음을 사용하지 않았고, 생성 서버나 모델을 게임에 포함하지 않는다.
+
+- 적용 파일: `public/audio/voices/`의 MP3 36개.
+- 대사·음성 ID·SHA-256: `public/audio/voices/manifest.json`. 배정과 재생 방식: `docs/resident-voices.md`.
+- `model-license.txt`와 `source-license.txt`는 이전 Supertonic 2 버전의 제작 기록이다.
+
+## 실험에서 잡고 놓는 손
+
+클립·고리 실험의 `experiment-hand-held.webp`와 `experiment-hand-released.webp`는 내장 imagegen으로 만든 투명 배경 그림이다. 실제 손가락의 집는 지점을 물체에 맞추고, 놓는 손이 물러난 뒤 물체를 움직인다. 원본과 생성 프롬프트는 `assets/source/quest/experiment-hands.json`에 정리했다. `scripts/prepare-hand-images.cjs`로 투명도를 보존한 384px WebP를 만든다.
+
+## 힘 실험 연구소 · 철 너트 (2026-11-05)
+
+- `public/assets/quest/material-iron-nut.webp`: Codex 기본 이미지 생성 도구로 만든 투명 2.5D 철제 육각 너트. 실험대에서 끌어 옮기는 물건과 실험 기록의 재생 그림에 사용한다. 투명 WebP로 최적화했다.
+- 생성 프롬프트 요지: 가운데 나사산과 구멍이 보이는 은회색 철제 육각 너트 하나를 30도 위에서 바라본 동화풍 게임 소품. 나무와 황동 작업실에 어울리는 따뜻한 빛, 투명 배경, 그림자와 글자 없음.
+
+## 시민 발명 공방 · 주민 대화 그림 (2026-11-05)
+
+- `public/assets/quest/workshop-resident-{eraser,pins,bag,door,cup}.webp`: 담임 선생님, 사서, 할머니, 가게 주인, 급식실 조리사. 각각 Codex 기본 이미지 생성 도구로 단독 생성한 투명 픽셀 인물화로, 주민 선택 버튼과 말풍선 옆에 사용한다.
+- 공통 생성 프롬프트 요지: 정면 상반신의 가상 한국인 한 명, 16비트 게임 픽셀아트, 굵고 짙은 외곽선, 중성광과 청록·남색·보라색 계열, 황색과 세피아 색조 없음. 글자·말풍선 없이 투명 배경.
+
+## 시민 발명 공방 · 자석을 쓴 물건 예시 (2026-11-05)
+
+- `public/assets/quest/workshop-example-{eraser,pins,bag,door,cup}.webp`: 자석 지우개, 철 압정을 끌어오는 막대, 가방 잠금쇠, 문 고정대, 자석 쟁반. Codex 기본 이미지 생성 도구로 한 장에 장치 하나씩 만든 뒤 투명 WebP로 최적화했다.
+- 공통 생성 프롬프트 요지: 설치된 자석과 그 자석이 붙잡는 부분이 보이도록 장치를 살짝 비스듬히 보여 주는 16비트 픽셀아트. 남색 외곽선, 푸른 회색과 보라 계열, 중성광, 투명 배경, 글자와 누런 조명 없음.
+
+## 마을 시설 복구 그림 (2026-11-05)
+
+- Codex 기본 이미지 생성 도구로 한 장에 소품 하나씩 만들었다. 기존 마을 지도와 같은 동화풍 등각 시점, 청록·푸른 회색과 황동, 중성광, 투명 배경, 글자 없는 독립 소품을 요청했다.
+- `public/assets/quest/town-restored-{post,lab,tower,aqua,workshop}.webp`: 우편함 봉투 명판, 재료 선반, 극성탑 계기판, 수조 물고기 간판, 발명 공방 톱니바퀴 명판. 각 시설 복구가 끝나면 해당 그림이 지도에 설치된다.
+- `public/assets/quest/town-plaza-emblem.webp`: 다섯 시설을 모두 복구하면 나타나는 중앙 광장의 자석 문장. 여섯 게임용 파일은 투명 WebP로 최적화했고, 내장 드라이브의 생성 원본은 적용을 확인한 뒤 정리했다.
+
+## 우편함·수조관 장치 살펴보기 (2026-11-06)
+
+- [Colorfigures](https://april-zhu.com/colorfigures), April Zhu, MIT. 원본의 SVG 투영·채색·윤곽선 엔진을 게임에 맞춰 사용했다. 원래 저작권과 라이선스는 `public/licenses/colorfigures.txt`에 동봉했다.
+- 우편함 덮개와 철 걸쇠, 수조 유리 양쪽의 자석 손잡이와 청소 패드 모델 및 한글 조작 화면은 프로젝트에서 제작했다.

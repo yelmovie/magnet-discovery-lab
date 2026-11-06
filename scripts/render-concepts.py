@@ -4,26 +4,29 @@ Run: python scripts/render-concepts.py (imageio-ffmpeg in .tools/python).
 Only magnetic apparatus appears: no generated people or uncertain physics.
 """
 from pathlib import Path
-import math, subprocess, sys, wave, struct, json, hashlib
-from PIL import Image, ImageDraw, ImageFont
+import math, os, shutil, subprocess, sys, tempfile, wave, struct, json, hashlib
+from functools import lru_cache
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / '.tools/python'))
-import imageio_ffmpeg
 
 OUT = ROOT / 'public/video/concepts'
 OUT.mkdir(parents=True, exist_ok=True)
 W, H, FPS, SECONDS = 1280, 720, 24, 12
 INK, TEAL, RED, BLUE, GOLD, PAPER = '#173f47', '#397f7b', '#d95c50', '#357da5', '#e9ba53', '#fff9e9'
-FONT = Path('C:/Windows/Fonts/malgunbd.ttf')
+font_candidates = [os.environ.get('CONCEPT_FONT'), Path(os.environ.get('WINDIR', '.'))/'Fonts/malgunbd.ttf',
+                   '/System/Library/Fonts/AppleSDGothicNeo.ttc', '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc']
+FONT = next((Path(p) for p in font_candidates if p and Path(p).is_file()), None)
+if not FONT:
+    raise RuntimeError('Set CONCEPT_FONT to a font with Korean glyphs.')
 fonts = {n: ImageFont.truetype(str(FONT), n) for n in [22, 26, 28, 30, 32, 38, 44, 48]}
 TITLES = ['생활 속 자석', '닿지 않아도 작용하는 힘', '자석의 극과 움직임', '손대지 않는 원격 조종', '설계하고 시험하고 고치기']
 CAPTIONS = [
- ['덮개 안의 자석과 철판을 찾아보자.', '자석이 철판을 당겨 덮개를 붙잡아.', '자석을 빼면? 같은 흔들림에도 덮개가 열려.'],
- ['철은 붙지만, 모든 금속이 붙는 것은 아니야.', '자석을 가까이하면 닿기 전에도 철이 움직여.', '같은 거리에서 얇은 종이만 넣어도 힘이 작용해.'],
- ['같은 극이 마주 보면 서로 밀어내.', '다른 극이 마주 보면 서로 끌어당겨.', '고리의 윗면과 아랫면! 마주 보는 극을 살펴봐.'],
- ['유리 밖 자석을 따라 안쪽 철 패드가 움직여.', '가까이, 천천히! 멀어지면 패드가 따라오지 못해.', '앞에서 당기거나 뒤에서 밀어 택배를 옮겨.'],
- ['누구의 불편을 해결할까? 부품을 직접 배치해.', '멀리 떨어져 있으면 원하는 대로 작동하지 않아.', '가까이 마주 놓고, 다른 상황에서도 다시 시험해.'],
+ ['덮개를 열면 빨강·파랑 자석이 함께 올라가. 몸체의 철판은 제자리에 있어.', '덮개를 내리면 자석과 철판이 맞닿아 덮개를 붙잡아.', '같은 세기로 흔들어 보니, 이 우편함은 자석을 뺀 쪽만 열렸어.'],
+ ['철 클립과 철못은 자석에 붙었어. 알루미늄 포일과 나무는 그대로야.', '자석을 가까이 가져가자, 닿기 전부터 철 클립이 움직여.', '같은 자리에서 얇은 종이만 넣어 봐. 클립은 종이 앞까지 끌려와.'],
+ ['S극과 S극이 마주 봐. 두 자석이 서로 밀어내며 멀어져.', 'S극과 N극이 마주 봐. 두 자석이 서로 끌어당겨 붙어.', '막대에 끼운 윗고리를 놓아 봐. 마주 보는 면의 극에 따라 뜨거나 붙어.'],
+ ['손잡이를 내리면 물속 패드도 내려가. 두 자석이 유리 너머로 서로 당겨.', '앞에서 다른 극을 마주 대면 수레가 끌려와. 자석끼리 닿기 전에도 움직여.', '뒤에서 같은 극을 마주 대면 수레가 밀려나. 이번에도 오른쪽으로 가.'],
+ ['덮개를 닫고 흔드니 다시 열렸어. 자석이 철판에서 멀리 빗나가 있어.', '철판의 자리를 고쳐 봐. 이제 덮개를 닫으면 자석과 철판이 만나.', '편지를 넣고, 책을 넣고 다시 시험했어. 두 번 다 덮개가 잘 닫혀 있어.'],
 ]
 
 def ease(v):
@@ -50,15 +53,6 @@ def magnet(d, x, y, pole='N', scale=1):
     text(d,(x-w/4,y),'N' if pole=='N' else 'S',32,'white')
     text(d,(x+w/4,y),'S' if pole=='N' else 'N',32,'white')
 
-def iron(d,x,y,label='鉄',w=100):
-    rr(d,(x-w/2,y-33,x+w/2,y+33),'#afc2c4',12,INK)
-    text(d,(x,y),'철' if label=='鉄' else label,28)
-
-def waves(d,x,y,strength,t):
-    for i in range(3):
-        r=32+i*23+(t*14)%23
-        if strength>.1: d.arc((x-r,y-r,x+r,y+r),-65,65,fill='#6caaa0',width=3)
-
 def base(stage,t):
     im=Image.new('RGB',(W,H),PAPER);d=ImageDraw.Draw(im)
     for x in range(0,W,40):
@@ -77,98 +71,184 @@ def base(stage,t):
     rr(d,(62,698,62+1156*min(1,t/SECONDS),704),TEAL,3)
     return im,d,part,ease((t%4-.3)/2.7)
 
+def mailbox_diagram(d, origin, scale, angle, *, installed=True, plate=265, load='letter'):
+    """Side cutaway. The lid rotates about one real hinge; both mating faces coincide at angle 0."""
+    ox, oy = origin
+    def xy(x, y):
+        return (ox+x*scale, oy+y*scale)
+    def box(x1, y1, x2, y2, color, radius=5):
+        rr(d, (*xy(x1,y1), *xy(x2,y2)), color, max(1,round(radius*scale)), INK, max(1,round(2*scale)))
+    def lid_point(x,y):
+        return xy(x*math.cos(angle)+y*math.sin(angle), -x*math.sin(angle)+y*math.cos(angle))
+    def lid_box(x1,y1,x2,y2,color):
+        corners=[lid_point(x1,y1),lid_point(x2,y1),lid_point(x2,y2),lid_point(x1,y2)]
+        d.polygon(corners,fill=color)
+        d.line(corners+[corners[0]],fill=INK,width=max(1,round(2*scale)))
+    # The exposed side is cut away to reveal the load and the two front mounting faces.
+    box(-10,30,323,114,'#e2bd87',10)
+    if load=='letter':
+        box(37,55,160,94,'#fff5d9',3)
+        d.line([xy(38,56),xy(100,81),xy(159,56)],fill='#ad7249',width=max(1,round(scale*2)))
+    else:
+        box(33,59,159,91,'#648579',3);box(40,65,158,85,'#f8efda',2)
+    box(-11,0,9,112,'#bf814c');box(308,29,325,112,'#bf814c')
+    box(plate-31,18,plate+31,30,'#abc0c2',3)
+    lid_box(-9,-15,322,0,'#cb8e4d')
+    lid_box(226,-2,303,3,'#835b35')
+    if installed:
+        lid_box(237,2,266,18,RED);lid_box(266,2,294,18,BLUE)
+    lid_box(112,-24,162,-15,'#9a633c')
+    d.ellipse((*xy(-7,-7),*xy(7,7)),fill=GOLD,outline=INK,width=2)
+    return lid_point(266,10),xy(plate,24)
+
+def leader(d, label, xy, end):
+    text(d,xy,label,26)
+    d.line((xy[0],xy[1]+19,*end), fill='#6e8176',width=2)
+    x,y=end
+    d.ellipse((x-3,y-3,x+3,y+3),fill=INK)
+
+@lru_cache(maxsize=None)
+def material(index, width, angle=0):
+    with Image.open(ROOT/'public/assets/quest/material-kit.webp') as kit:
+        sw,sh=kit.width//3,kit.height//2
+        col,row=index%3,index//3
+        obj=kit.crop((col*sw,row*sh,(col+1)*sw,(row+1)*sh)).convert('RGBA')
+    if angle:
+        obj=obj.rotate(angle,Image.Resampling.BICUBIC,expand=True)
+    obj=obj.crop(obj.getchannel('A').point(lambda a: 255 if a>32 else 0).getbbox())
+    return ImageOps.contain(obj,(width,width),Image.Resampling.LANCZOS)
+
+def object_at(im, obj, x, y):
+    im.paste(obj,(round(x-obj.width/2),round(y-obj.height/2)),obj)
+
+def ring(d,x,y,top):
+    top_color,bottom_color=(RED,BLUE) if top=='N' else (BLUE,RED)
+    d.ellipse((x-97,y+2,x+97,y+34),fill=bottom_color,outline=INK,width=3)
+    d.rectangle((x-97,y-16,x+97,y+18),fill=bottom_color,outline=INK,width=2)
+    d.rectangle((x-95,y-16,x+95,y),fill=top_color)
+    d.ellipse((x-97,y-34,x+97,y),fill=top_color,outline=INK,width=3)
+    d.ellipse((x-24,y-25,x+24,y-10), fill='#664e38',outline=INK,width=2)
+    d.rectangle((x-6,y-27,x+6,y-13),fill='#b18a51')
+    text(d,(x+57,y-17),top,22,'white')
+    text(d,(x+57,y+13),'S' if top=='N' else 'N',22,'white')
+
+def stage_mail(d,p,u,t):
+    if p<2:
+        angle=.41*u if p==0 else .41*(1-u)
+        pin,strike=mailbox_diagram(d,(405,384),1.38,angle)
+        leader(d,'덮개 자석',(336,245),pin);leader(d,'몸체 철판',(990,328),strike)
+        text(d,(1020,493),'우편함 옆모습',26)
+    else:
+        text(d,(355,232),'자석을 뺀 우편함',32);text(d,(918,232),'자석이 있는 우편함',32)
+        shake=math.sin(24*t)*4*math.sin(math.pi*u)
+        for i,x in enumerate((158,721)):
+            mailbox_diagram(d,(x+shake,375),1.15,.32*u if i==0 else 0,installed=i==1)
+            text(d,(x+186,539),('덮개가 들려' if i==0 else '닫힌 채로 있어') if u>.52 else '똑같이 흔들기',26,TEAL)
+
+def stage_clip(im,d,p,u):
+    if p==0:
+        for i,name in enumerate(('철 클립','철못','알루미늄 포일','나무 조각')):
+            x=255+i*254
+            obj=material(i,85)
+            magnet(d,x,297,'N',.78)
+            y=423-u*(423-(324+obj.height/2)) if i<2 else 423
+            object_at(im,obj,x+(27*u if i<2 else 0),y)
+            text(d,(x,491),name,26);text(d,(x,529),('붙었어' if i<2 else '그대로') if u>.7 else '관찰 중',22,TEAL)
+        return
+    obj=material(0,112,-46)
+    move=ease((u-.42)/.58) if p==1 else ease((u-.23)/.77)
+    mx=425+205*ease(u/.48) if p==1 else 630
+    start,edge=842,720 if p==1 else 770
+    left=start+(edge-start)*move
+    if p==2:
+        rr(d,(756,267,770,461),'#fffdf8',3,'#a69676')
+        text(d,(763,496),'얇은 종이',26)
+    d.line((86,407,1170,407),fill='#b5a680',width=5)
+    # Put the lower edges of the two objects on this tabletop. The clip cannot cross the paper's right face.
+    magnet(d,mx,369,'N')
+    object_at(im,obj,left+obj.width/2,404-obj.height/2)
+    if move<.91:
+        arrow(d,left+71,329,left+4,329,TEAL,5)
+    if p==1:text(d,(640,502),'자석을 가까이 가져가기',28)
+    else:text(d,(411,496),'같은 자리의 자석',26)
+    text(d,(1040,375),'철 클립',26)
+
+def stage_poles(d,p,u):
+    if p<2:
+        left=525-94*u if p==0 else 446+104*u
+        right=755+94*u if p==0 else 834-104*u
+        magnet(d,left,384,'N');magnet(d,right,384,'S' if p==0 else 'N')
+        if p==0 or u<.98:
+            direction=-1 if p==0 else 1
+            arrow(d,left,302,left+90*direction,302);arrow(d,right,302,right-90*direction,302)
+        text(d,(640,488),'같은 극  S · S' if p==0 else '다른 극  S · N',32)
+        return
+    for i,x in enumerate((350,905)):
+        text(d,(x,217),'같은 극이 마주 봐' if i==0 else '다른 극이 마주 봐',28)
+        rr(d,(x-110,496,x+110,516),'#a87848',8,INK)
+        rr(d,(x-6,245,x+6,500),'#b48a54',5)
+        lower=496-34  # The bottom edge rests directly on the top of the wooden base.
+        upper=(351-29*u) if i==0 else (323+(lower-34-323)*u)
+        ring(d,x,lower,'N');ring(d,x,upper,'S' if i==0 else 'N')
+        if u<.96:
+            arrow(d,x-130,upper+10,x-130,upper+10+(-40 if i==0 else 40),TEAL,5)
+        text(d,(x,542),('N · N  →  윗고리가 떠' if i==0 else 'S · N  →  두 고리가 붙어'),26,TEAL)
+
+def stage_remote(d,p,u):
+    if p==0:
+        rr(d,(643,230,1090,476),'#c7e6e4',18,'#6ca9ac')
+        rr(d,(630,220,646,485),'#82bdc7',5,'#4c858d')
+        text(d,(422,228),'유리 밖',28);text(d,(848,277),'물속',28)
+        y=320+72*u
+        # Both protective housings slide on their own face of the glass.
+        rr(d,(486,y-36,630,y+36),'#cf896b',13,INK)
+        rr(d,(646,y-36,790,y+36),'#669ca7',13,INK)
+        magnet(d,559,y,'N',.72);magnet(d,718,y,'N',.72)
+        if u<.96:
+            arrow(d,462,y-16,462,y+38);arrow(d,817,y-16,817,y+38)
+        text(d,(440,514),'바깥 손잡이 자석',26);text(d,(843,514),'물속 패드 자석',26)
+        text(d,(637,207),'유리벽',22)
+        return
+    pull=p==1
+    cart=(368 if pull else 480)+215*ease((u-.1)/.9)
+    controller=cart+(196-22*ease(u/.2) if pull else -205+33*ease(u/.2))
+    d.line((169,445,1112,445),fill='#ab936c',width=8)
+    rr(d,(cart-83,368,cart+83,420),'#cc9c63',10,INK)
+    for wx in (cart-49,cart+49):d.ellipse((wx-15,414,wx+15,444),fill=INK,outline='#aabcb9',width=4)
+    magnet(d,cart,374,'N',.75)
+    magnet(d,controller,374,'N' if pull else 'S',.75)
+    arrow(d,cart-52,302,cart+54,302);text(d,(cart,264),'수레가 받는 힘',26)
+    text(d,(cart,492),'택배 수레',26);text(d,(controller,492),'조종 자석',26)
+    text(d,(640,536),'앞의 조종 자석이 당겨' if pull else '뒤의 조종 자석이 밀어',26,TEAL)
+
+def stage_design(d,p,u,t):
+    if p<2:
+        if p==0:
+            angle=.36*(1-ease(u/.38))+.28*ease((u-.50)/.47)
+            dx=math.sin(28*t)*3 if .42<u<.87 else 0
+            plate=140
+        else:
+            angle=.37*(1-ease((u-.5)/.5))
+            dx=0
+            plate=140+125*ease(u/.45)
+        pin,strike=mailbox_diagram(d,(421+dx,367),1.32,angle,plate=plate)
+        leader(d,'덮개 자석',(333,251),pin);leader(d,'몸체 철판',(973,307),strike)
+        text(d,(640,541),'첫 시험 · 철판이 빗나갔어' if p==0 else '고치기 · 두 자리를 맞춰',28,TEAL)
+    else:
+        for i,x in enumerate((163,721)):
+            progress=ease(u*2-i)
+            shake=math.sin(26*t)*3 if 0.62<progress<.96 else 0
+            mailbox_diagram(d,(x+shake,380),1.15,.31*(1-ease(progress/.6)),load='letter' if i==0 else 'book')
+            text(d,(x+183,224),'편지 한 장' if i==0 else '책 한 권',32)
+            text(d,(x+183,529),'확인 · 닫혀 있어' if progress>.95 else '사용 시험',26,TEAL)
+
 def scene(stage,t):
     im,d,p,u=base(stage,t)
-    if stage==0:
-        # One apparatus, then magnified mechanism, then a controlled removal.
-        rr(d,(352,310,928,510),'#cf9962',25,INK)
-        rr(d,(377,333,903,478),'#715d43',18)
-        opened = (1-u)*95 if p==0 else (u*95 if p==2 else 0)
-        rr(d,(342,262-opened,938,337-opened),'#edbf79',18,INK)
-        magnet(d,507 if p!=2 else 507-u*205,375,'N',.78)
-        iron(d,689,375,'철판',120)
-        if p==1:
-            arrow(d,627,375,582,375);waves(d,564,375,1,t)
-            text(d,(640,222),'당기는 힘',32)
-        elif p==0:
-            text(d,(640,220),'덮개 속을 확대해서 보자',28)
-        else:
-            arrow(d,960,355,960,270-opened,GOLD)
-            text(d,(640,221),'자석 유무만 바꾸어 비교',28)
-    elif stage==1:
-        if p==0:
-            labels=['철 클립','철못','알루미늄','나무']
-            for i,l in enumerate(labels):
-                x=270+i*245; y=374-(u*56 if i<2 else 0)
-                magnet(d,x,258,'N',.65)
-                rr(d,(x-73,y-28,x+73,y+28),'#adbdbe' if i<3 else '#cca66c',12,INK)
-                text(d,(x,y),l,26);text(d,(x,480),'붙었어' if i<2 else '따라오지 않아',26,TEAL if i<2 else INK)
-                if i<2:arrow(d,x,375,x,337,GOLD,5)
-        else:
-            mx=350+(u*120 if p==1 else 120)
-            cx=780-u*123 if p==1 else 657+math.sin(t)*9
-            magnet(d,mx,368,'N');iron(d,cx,368,'철 클립',130)
-            arrow(d,cx-85,368,mx+115,368)
-            if p==2:
-                rr(d,(568,263,587,478),'#fffefa',4,'#b7ad8d')
-                text(d,(577,508),'얇은 종이',28)
-            else:text(d,(640,489),'거리만 바꾸어 비교',30)
-            waves(d,mx+75,368,1,t)
-    elif stage==2:
-        if p<2:
-            gap=(150*u if p==0 else -150*u)
-            magnet(d,400-gap/2,363,'N')
-            magnet(d,880+gap/2,363,'S' if p==0 else 'N')
-            if p==0:
-                arrow(d,570,363,507,363,RED);arrow(d,710,363,773,363,RED)
-                text(d,(640,482),'S  ↔  S  ·  밀어내기',38,RED)
-            else:
-                arrow(d,520,363,594,363,TEAL);arrow(d,760,363,686,363,TEAL)
-                text(d,(640,482),'S  →  ←  N  ·  끌어당기기',38,TEAL)
-        else:
-            d.line((640,230,640,511),fill='#8f8a71',width=16)
-            for i in range(3):
-                cy=470-i*(54+u*38)
-                d.ellipse((550,cy-24,730,cy+24),fill=RED if i%2==0 else BLUE,outline=INK,width=3)
-                d.ellipse((626,cy-8,654,cy+8),fill='#e5d4a9',outline=INK,width=2)
-                text(d,(862,cy),f'위 {"N" if i%2==0 else "S"} / 아래 {"S" if i%2==0 else "N"}',26)
-            text(d,(354,352),'같은 극이\n마주 보게!',32)
-    elif stage==3:
-        if p<2:
-            rr(d,(638,217,658,520),'#89bfc9',8)
-            text(d,(650,202),'유리',26)
-            y=345+math.sin(t*1.25)*72
-            mx=470 if p==0 else 470-u*155
-            py=y if p==0 else 348+math.sin(5)*60
-            magnet(d,mx,y,'N',.85);iron(d,758,py,'패드',105)
-            if p==0:arrow(d,758,py+83,758,y+50)
-            text(d,(350,514),'바깥 자석',28);text(d,(880,514),'안쪽 철 패드',28)
-            if p==1:text(d,(640,252),'너무 멀어지면 따라오지 않아',28)
-        else:
-            for row,y in enumerate([298,456]):
-                x=450+u*330
-                d.line((210,y+47,1080,y+47),fill='#b8a679',width=7)
-                rr(d,(x-63,y-32,x+63,y+29),'#d1a666',12,INK)
-                d.ellipse((x-44,y+21,x-20,y+45),fill=INK);d.ellipse((x+20,y+21,x+44,y+45),fill=INK)
-                magnet(d,x,y-6,'N',.5)
-                magnet(d,x+(180 if row==0 else -180),y-6,'N' if row==0 else 'S',.65)
-                arrow(d,x-40,y-73,x+50,y-73,GOLD,6)
-                text(d,(1060,y-8),'당기기' if row==0 else '밀기',28)
-    else:
-        rr(d,(351,335,930,513),'#d4b787',22,INK)
-        text(d,(640,475),'나의 자석 장치',30)
-        gap=220 if p==0 else (220 if p==1 else 220-u*130)
-        magnet(d,470,353-(1-u)*100 if p==0 else 353,'N',.8)
-        iron(d,470+gap,353,'철판',105)
-        if p==0:
-            arrow(d,470,222,470,294,GOLD);arrow(d,690,222,690,294,GOLD)
-            text(d,(640,216),'배치하기',32)
-        elif p==1:
-            text(d,(640,230),'멀리 떨어진 부품 → 다시 고쳐 보자',30)
-        else:
-            arrow(d,605,353,580,353)
-            text(d,(640,224),'가까이 + 마주 보게',32,TEAL)
-            text(d,(640,543),'편지 한 장  ✓       책 한 권  ✓' if u>.7 else '다른 사용 상황도 시험 중…',28,TEAL)
+    if stage==0:stage_mail(d,p,u,t)
+    elif stage==1:stage_clip(im,d,p,u)
+    elif stage==2:stage_poles(d,p,u)
+    elif stage==3:stage_remote(d,p,u)
+    else:stage_design(d,p,u,t)
     return im
 
 def soundtrack(path):
@@ -184,22 +264,30 @@ def soundtrack(path):
             samples.append(struct.pack('<h',int(max(-1,min(1,v))*32767)))
         wav.writeframes(b''.join(samples))
 
-def render():
-    ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()
-    audio=ROOT/'.tools/concept-chimes.wav';audio.parent.mkdir(exist_ok=True);soundtrack(audio)
+def render(scratch):
+    ffmpeg=os.environ.get('FFMPEG') or shutil.which('ffmpeg')
+    if not ffmpeg:
+        sys.path.append(str(ROOT/'.tools/python'))
+        import imageio_ffmpeg
+        ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()
+    audio=scratch/'chimes.wav';soundtrack(audio)
     manifest=[]
     for stage in range(5):
-        target=OUT/f'stage-{stage+1}.mp4'
+        target=scratch/f'stage-{stage+1}.mp4'
         command=[ffmpeg,'-y','-loglevel','error','-f','rawvideo','-vcodec','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264','-preset','fast','-crf','23','-pix_fmt','yuv420p','-c:a','aac','-b:a','64k','-t',str(SECONDS),'-movflags','+faststart',str(target)]
         proc=subprocess.Popen(command,stdin=subprocess.PIPE)
         for frame in range(FPS*SECONDS):proc.stdin.write(scene(stage,frame/FPS).tobytes())
         proc.stdin.close()
         if proc.wait()!=0:raise RuntimeError(f'FFmpeg failed: {stage}')
-        scene(stage,10.9).save(OUT/f'stage-{stage+1}.webp',quality=90)
+        scene(stage,10.9).save(scratch/f'stage-{stage+1}.webp',quality=90)
         vtt='WEBVTT\n\n'+'\n\n'.join(f'00:0{i*4}.000 --> 00:{(i+1)*4:02}.000\n{caption}' for i,caption in enumerate(CAPTIONS[stage]))+'\n'
-        (OUT/f'stage-{stage+1}.vtt').write_text(vtt,encoding='utf-8')
+        (scratch/f'stage-{stage+1}.vtt').write_text(vtt,encoding='utf-8',newline='\n')
         manifest.append({'stage':stage+1,'title':TITLES[stage],'duration':SECONDS,'width':W,'height':H,'fps':FPS,'bytes':target.stat().st_size,'sha256':hashlib.sha256(target.read_bytes()).hexdigest()})
         print(f'{target.name}: {target.stat().st_size/1024:.0f} KB',flush=True)
-    (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+    (scratch/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
+    for item in [*scratch.glob('stage-*'),scratch/'manifest.json']:
+        item.replace(OUT/item.name)
 
-if __name__=='__main__':render()
+if __name__=='__main__':
+    with tempfile.TemporaryDirectory(prefix='.concept-render-',dir=OUT.parent) as scratch:
+        render(Path(scratch))

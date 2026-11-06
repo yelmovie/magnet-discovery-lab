@@ -1,0 +1,399 @@
+/* Activity screens 1-10 and the final restoration: one-screen fit fixes. Loaded last, overrides earlier files.
+   learning-visuals.css is injected after this file (imported from learning-visuals.ts), so rules here use
+   body.quest-mode #app ... specificity instead of relying on order. */
+
+#app .mailbox-inspection {
+  position: absolute; left: 12%; top: 43%; width: 16%; pointer-events: none;
+  color: #65471e; font: 600 clamp(14px,1.35vw,19px)/1.35 var(--font-body);
+}
+#app .inspection-note {
+  display: grid; justify-items: center; gap: 9px; padding: 13px 9px;
+  border: 2px dashed #c79945; border-radius: 14px; background: #fff7dfed;
+  box-shadow: 0 3px 0 #b5944a30;
+}
+#app .inspection-symbol {
+  display: grid; place-items: center; width: 48px; height: 48px;
+  border: 2px solid #bd9447; border-radius: 50%; background: #ffe5a1;
+  font: 700 30px/1 var(--font-body);
+}
+#app .inspection-note strong { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+#app .inspection-note small { font-size: .85em; }
+#app .inspection-note ol { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; font-size: .85em; }
+#app .inspection-note li { display: flex; align-items: center; gap: 5px; }
+#app .inspection-note li > span { display: grid; place-items: center; flex: none; width: 19px; height: 19px; border: 1px solid #b49a64; border-radius: 50%; }
+#app .inspection-note li[data-done="true"] { color: #246956; }
+#app .inspection-note li[data-done="true"] > span { background: #246956; border-color: #246956; color: #fff; }
+#app .inspection-note[data-inspection-step="2"] { color: #245848; background: #edf6e3ef; border-style: solid; border-color: #548572; }
+#app .inspection-note[data-inspection-step="2"] .inspection-symbol { color: #fff; background: #246956; border-color: #246956; }
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  #app .mailbox-inspection { top: calc(100% + 6px); left: 50%; width: min(340px,92%); transform: translateX(-50%); }
+  #app .inspection-note { grid-template-columns: 32px 1fr; justify-items: start; gap: 4px 10px; padding: 7px 10px; }
+  #app .inspection-symbol { grid-row: 1/3; width: 30px; height: 30px; font-size: 24px; align-self: center; }
+  #app .inspection-note ol { display: flex; gap: 8px; font-size: 12px; }
+}
+
+#app .mission-board:has(.workshop-requests) > .mission-actions {
+  top:56%; bottom:auto; left:50%; right:auto; width:78%; max-width:820px;
+  transform:translate(-50%,-50%); justify-content:center;
+}
+body.quest-mode #app .mission-board .workshop-requests {
+  display:grid; grid-template-columns:1fr 1fr; gap:clamp(8px,2vw,26px); width:100%;
+}
+body.quest-mode #app .workshop-requests > button {
+  order:0; display:grid; grid-template-rows:1fr auto; justify-items:center;
+  padding:7px; white-space:normal; text-align:center; font-size:clamp(13px,1.85vw,23px);
+}
+#app .workshop-requests img { display:block; width:100%; height:clamp(46px,11.5vw,138px); object-fit:contain; }
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  body.quest-mode #app .screen-9 .mission-board:has(.workshop-requests) > .mission-actions {
+    top:57%; bottom:auto; left:50%; right:auto; width:85%; transform:translate(-50%,-50%);
+  }
+  body.quest-mode #app .mission-board .workshop-requests > [data-mission='remote'] { order:0; }
+}
+
+#app .bench-view-toggle {
+  position:absolute; z-index:16; left:var(--hud-inset,16px);
+  top:calc(var(--hud-inset,16px) + var(--hud-icon-size,52px) + 10px);
+  min-height:48px; max-width:140px; padding:7px 12px; border:2px solid #658172;
+  box-shadow:0 3px 0 #536c5e; background:#fffaf0; color:#214c46; line-height:1.2;
+}
+body.quest-mode #app .quest-activity:has(.bench-wide) > .mission-head { display:none; }
+body.quest-mode #app .quest-activity:has(.bench-wide) :is(.coach-bubble:not([hidden]),.mission-access[open]) {
+  max-height: min(65dvh,340px);
+}
+#app .quest-activity:has(.screen-8 .mission-board) .mission-next-action { display:none; }
+body.quest-mode #app .screen-8 .mission-board > .delivery-state {
+  top:max(32%,calc(var(--head-bottom,180px) - var(--fit-board-y,0px) + 12px)); left:50%;
+  translate:-50% 0; margin:0; max-width:74%; width:max-content; text-align:center;
+  border:1px solid #749087; border-radius:12px; background:#fffcf1f5;
+  padding:8px 16px; font-weight:700; font-size:clamp(16px,1.7vw,23px);
+}
+body.quest-mode #app .screen-8 .bench-wide .delivery-state { top:24%; }
+body.quest-mode #app .screen-8 .mission-board > .mission-feedback { display:none; }
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  body.quest-mode #app .screen-8 .mission-board > .delivery-state { top:auto; bottom:calc(100% + 8px); max-width:94%; }
+  body.quest-mode #app .quest-activity:has(.screen-8 .mission-board) .mission-head { max-height:calc(50dvh - 34vw - 45px); overflow:auto; }
+}
+
+#app .aquarium-section {
+  position: absolute; left: 1.5%; top: 55%; transform: translateY(-50%); width: 19%;
+  box-sizing: border-box; padding: 12px 8px; border: 2px solid #6b9691; border-radius: 16px;
+  background: #fffcf0f5; color: #17494c; text-align: center; pointer-events: none;
+  font-size: clamp(14px, 1.45vw, 19px); line-height: 1.25; box-shadow: 0 3px 0 #4e696a66;
+}
+#app .aquarium-section > strong { display: block; margin-bottom: 8px; }
+#app .aquarium-slice {
+  display: grid; grid-template-columns: 1fr 6px 1fr; padding: 5px 3px;
+  background: linear-gradient(90deg, #fff5e4 49%, #d9f1f2 51%); border-radius: 8px;
+}
+#app .aquarium-slice > div { display: grid; justify-items: center; align-content: center; gap: 3px; }
+#app .aquarium-slice b { white-space: nowrap; }
+#app .aquarium-slice .aqua-glass { background: #a6d3df; border-inline: 1px solid #41818b; border-radius: 2px; }
+#app .aqua-grip, #app .aqua-pad {
+  display: block; width: clamp(30px, 3.7vw, 48px); height: clamp(27px, 3.3vw, 43px);
+  background: url('/assets/quest/aquarium-cleaner-parts.webp') center top / 100% 400% no-repeat;
+  justify-self: end; margin-right: 1px;
+}
+#app .aqua-pad { width: clamp(26px, 3vw, 39px); background-position: center 33.333%; justify-self: start; margin: 0 0 0 1px; }
+#app .aquarium-section[data-attached='false'] .aqua-grip { justify-self: start; }
+#app .aqua-coupling, #app .aqua-count { display: block; }
+#app .aqua-coupling { font-weight: 700; margin: 8px 0 4px; color: #116557; }
+#app .aquarium-section[data-attached='false'] .aqua-coupling { color: #92502f; }
+#app .aqua-count { font-size: .92em; }
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
+  #app .aquarium-section {
+    top: calc(100% + 4px); left: 50%; transform: translateX(-50%); width: min(320px, 92%);
+    padding: 6px 12px; display: grid; grid-template-columns: 1fr 1.15fr; align-items: center;
+  }
+  #app .aquarium-section > strong { margin: 0; }
+  #app .aquarium-slice { grid-row: 1 / 4; grid-column: 2; }
+  #app .aqua-coupling { margin: 3px 0; }
+}
+
+/* Landscape stage = fit-screen.css (--stage-w/--stage-h, 860x560 minimum). The board is a 16:9 box centred in it;
+   --fit-board-x/y are its letterbox gaps, so board-relative controls can be anchored to the screen edges. */
+@media (min-aspect-ratio: 1/1) {
+  #app :is(.quest-activity, .restoration-operation) {
+    --fit-board-x: calc((var(--stage-w, 100vw) - min(var(--stage-w, 100vw), var(--stage-h, 100dvh) * 1.777778)) / 2);
+    --fit-board-y: calc((var(--stage-h, 100dvh) - min(var(--stage-h, 100dvh), var(--stage-w, 100vw) * .5625)) / 2);
+    --fit-tool-row: 72px; /* bottom tool row (눌러서 이동 · 내 실험 다시 보기): 18px gap + 48px button + 6px */
+  }
+
+  /* Earned-tool pocket: at 16:9 and wider the board starts at the top edge, so top:6% put the pocket under the
+     HUD sound/settings icons; on short wide screens right:2% of a narrower board put it under the mission head.
+     Pin it to the screen corner just below the HUD and keep it inside the gutter beside the head. */
+  body.quest-mode #app .mission-board > .mission-pocket {
+    top: calc(var(--hud-inset) + var(--hud-icon-size) + 12px - var(--fit-board-y));
+    right: calc(var(--hud-inset) - var(--fit-board-x));
+    max-width: min(165px, calc((var(--stage-w, 100vw) - min(840px, var(--stage-w, 100vw) - 320px)) / 2 - var(--hud-inset) - 8px));
+  }
+
+  /* Bench buttons: shrink-to-fit width was capped at 50% by left:50%, so short labels wrapped onto two lines
+     (906x755) and grew into the pieces. One line where it fits; and never lower than the bottom tool row,
+     which they covered on short 16:9 screens (1280x570-720, "내 실험 다시 보기"). */
+  body.quest-mode #app .mission-actions { width: max-content; bottom: max(8%, calc(var(--fit-tool-row) - var(--fit-board-y))); }
+  /* Final restoration: 14% hid the canvas label "밀이의 우편함" under the test buttons; same rule as the activity. */
+  body.quest-mode #app .restoration-operation .mission-actions { bottom: max(8%, calc(var(--fit-tool-row) - var(--fit-board-y))); }
+
+  /* Act 6 ring flip buttons: 88% ran into the bottom tool row on short screens. Sit just under the rings
+     (ring pieces end at 80% of the board) instead. */
+  body.quest-mode #app .screen-6 .ring-flip { top: calc(80% + 25px) !important; }
+}
+@media (min-aspect-ratio: 1/1) and (max-width: 1100px) {
+  body.quest-mode #app .mission-board > .mission-pocket {
+    max-width: calc((var(--stage-w, 100vw) - min(760px, var(--stage-w, 100vw) - 280px)) / 2 - var(--hud-inset) - 8px);
+  }
+}
+/* Portrait phones (secondary): the 16:9 bench is only ~210px tall, so bench buttons sat on the pieces.
+   Move them into the free band under the bench, right-aligned so a second row stays clear of the coach robot. */
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
+  body.quest-mode #app .mission-board > .mission-actions {
+    top: calc(100% + 10px); bottom: auto; left: auto; right: 12px; transform: none;
+    width: max-content; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; row-gap: 8px;
+  }
+  /* The distance gauge already sits right under the bench here (production.css). */
+  body.quest-mode #app .mission-board:has(> .force-sensor) > .mission-actions { top: calc(100% + 70px); }
+  body.quest-mode #app .mission-board .mission-requests { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  body.quest-mode #app .mission-board .mission-requests > [data-mission='remote'] { order: -1; }
+  /* Act 6: the 3D button covered the ring tower and the two flip buttons overlapped each other and the rings.
+     3D goes left of the check button under the bench; the flips get the next row, right of the coach. */
+  body.quest-mode #app .mission-board > .mission-3d { top: calc(100% + 10px); left: 12px; right: auto; }
+  body.quest-mode #app .screen-6 .ring-flip { top: calc(100% + 98px) !important; white-space: nowrap; }
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='1번'] { left: 50% !important; }
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='2번'] { left: 80% !important; }
+  /* Hint bubble / move panel replace the mission head; 100vw - 320px left them ~55px wide on a phone. */
+  body.quest-mode #app :is(.coach-bubble:not([hidden]), .mission-access[open]) {
+    top: 76px; width: calc(100vw - 24px); max-height: calc(var(--head-bottom, 310px) - 76px);
+  }
+}
+/* On a small bench extend the two touch areas away from the gap between grip and socket. */
+@media (max-height:640px), (max-width:759px) {
+  #app .screen-2 .canvas-handle { transform:translate(-50%,-84%); }
+  #app .screen-2 [data-drag='repair-magnet'][data-seated='true'] { transform:translate(-50%,-16%); }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 640px) {
+  body.quest-mode #app :is(.screen-2,.screen-4) .mission-board > .mission-actions:not(:has(.mission-diagnosis)) { left:auto; right:3%; transform:none; }
+  #app :is(.quest-activity, .restoration-operation) { --fit-tool-row: 66px; } /* tools sit at bottom:12px here */
+  /* Restoration companion (당이) is 116px wide at every size; the 118px offset meant for the small coach overlapped it. */
+  body.quest-mode #app .restoration-operation .mission-access { left: 148px; }
+}
+
+/* Keep the apparatus visible. Observation and next action share a single live line. */
+body.quest-mode #app .quest-activity[data-shared-notice] .mission-board > .mission-feedback {display:none;}
+#app .mission-head .mission-next-action[data-result] {background:#e6f2e7;color:#204f45;box-shadow:inset 0 0 0 1px #93afa1;}
+#app .mission-study-tools .discovery-count {margin:0 0 0 3px;padding:2px 5px;border:0;font:700 .82em/1.3 var(--font-body);}
+#app .quest-activity .hint-next-target {outline:3px dashed #96580d;outline-offset:4px;}
+body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]):not(:has(.bench-wide)) .mission-head {
+  grid-template-columns:82px minmax(0,1fr) auto;
+  grid-template-areas:'art stage steps' 'art q q' 'next next next';
+  gap:2px 10px;padding:4px 12px 7px;border-top-width:3px;
+}
+body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]) .learning-visual-preview {
+  width:100%;min-height:52px;max-height:82px;padding:2px;
+}
+body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]) .learning-visual-preview img {height:43px;min-height:0;}
+body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]) .learning-visual-preview span {min-height:18px;font-size:13px;}
+#app .mission-head:has(.play-steps) .stage-label {justify-self:start;text-align:left;font-size:clamp(14px,1.25vw,18px);}
+#app .mission-head:has(.play-steps) .mission-question {justify-self:start;text-align:left;font-size:clamp(21px,2.1vw,31px);}
+#app .mission-head .play-steps {justify-self:end;background:none;border:0;padding:0;gap:4px;}
+#app .mission-head .play-steps > span {min-height:0;padding:3px 6px;font-size:clamp(13px,1.15vw,16px);}
+#app .mission-head .play-question summary {padding:3px 8px;font-weight:700;white-space:nowrap;}
+#app .quest-activity .mission-head .mission-next-action {padding:5px 12px;font-size:clamp(16px,1.55vw,21px);}
+/* The hint can replace a small heading; its actionable content still needs room. */
+body.quest-mode #app .lab-coach .coach-bubble:not([hidden]),body.quest-mode #app .quest-activity .mission-access[open] {
+  max-height:min(58dvh,320px);overflow-y:auto;
+}
+@media (max-width:1000px) {
+  /* The step text stays in the accessible nav. The stage number and prediction control remain visible. */
+  #app .quest-activity:has([data-phase="experiment"]) .play-steps > span:not(.active) {position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;padding:0;}
+}
+@media (max-width:759px) and (max-aspect-ratio:1/1) {
+  body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]):not(:has(.bench-wide)) .mission-head {
+    grid-template-columns:64px minmax(0,1fr) auto;gap:2px 5px;padding:5px 7px;
+  }
+  #app .quest-activity:has([data-phase="experiment"]) .play-steps > span {position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;padding:0;}
+  #app .quest-activity .mission-head .play-question-copy {top:calc(100% + 6px);bottom:auto;right:0;width:min(290px,calc(100vw - 44px));}
+  body.quest-mode #app .quest-activity:has(.play-inquiry) .mission-head .mission-question {font-size:20px;}
+  #app .quest-activity .mission-head .mission-next-action {padding:4px 8px;line-height:1.3;}
+
+  /* Put the two optional tool buttons in the band between the plaque and the bench. */
+  #app .quest-activity {--phone-command-top:max(68px,calc(var(--head-bottom,204px) + 7px));}
+  body.quest-mode #app .quest-activity:has(.mission-world) .mission-board > .mission-pocket {
+    top:calc(var(--phone-command-top) - max(52dvh,395.2px) + 28.125vw);
+    right:12px;margin-top:0;
+  }
+  body.quest-mode #app .quest-activity .bench-view-toggle {top:var(--phone-command-top);left:12px;min-height:48px;}
+  body.quest-mode #app .quest-activity:has(.coach-bubble:not([hidden]),.mission-access[open],.play-question[open]) :is(.bench-view-toggle,.mission-pocket) {visibility:hidden;}
+  /* Preserve both grips on a narrow board, even when the two rings are directly above one another. */
+  #app .screen-6 .canvas-hit[data-drag='ring0'] {translate:0 8px;}
+  #app .screen-6 .canvas-hit[data-drag='ring1'] {translate:0 -8px;}
+  #app .quest-activity .mission-study-tools .discovery-count {
+    position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;padding:0;margin:0;
+  }
+  #app .quest-activity .learning-visual-preview b {display:none;}
+  #app .quest-activity::after {content:none;}
+}
+
+/* A sideways phone has enough width for the bench if its toolbar uses one compact row. */
+@media (min-aspect-ratio:1/1) and (max-height:559px) and (min-width:820px) and (max-width:1000px) {
+  :root:has(#app .quest-activity) {--stage-w:100vw;--stage-h:100dvh;}
+  body.quest-mode #app:has(.quest-activity) {min-width:0;height:100dvh;}
+  body.quest-mode #app .quest-activity {--fit-tool-row:51px;min-height:0;}
+  body.quest-mode #app .quest-activity:has(.play-inquiry[data-phase="experiment"]):not(:has(.bench-wide)) .mission-head {
+    top:4px;width:calc(100% - 252px);grid-template-columns:82px minmax(0,1fr) auto;
+    grid-template-areas:'art q steps' 'art next next';gap:0 6px;padding:2px 6px 4px;
+  }
+  #app .quest-activity:has(.play-inquiry[data-phase="experiment"]) .mission-head .stage-label,
+  #app .quest-activity:has(.play-inquiry[data-phase="experiment"]) .mission-head .play-steps > span {
+    position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;padding:0;
+  }
+  body.quest-mode #app .quest-activity .mission-head .mission-question {font-size:19px;line-height:1.18;}
+  body.quest-mode #app .quest-activity .mission-head .mission-next-action {padding:3px 7px;font-size:16px;}
+  body.quest-mode #app .quest-activity .learning-visual-preview span {font-size:12px;}
+  body.quest-mode #app .quest-activity .learning-visual-preview img {height:32px;}
+  #app .quest-activity .lab-coach {left:6px;bottom:6px;}
+  #app .quest-activity .coach-toggle {display:flex;align-items:center;gap:2px;min-height:48px;}
+  #app .quest-activity .coach-toggle > .coach-body {width:30px;height:38px;}
+  #app .quest-activity .coach-toggle > span {min-height:48px;margin:0;padding:3px 6px;font-size:15px;}
+  #app .quest-activity .mission-access:not([open]) {left:126px;bottom:6px;}
+  #app .quest-activity .mission-study-tools {left:236px;bottom:6px;}
+  #app .quest-activity :is(.mission-access>summary,.mission-study-tools button,.mission-actions button,.mission-cta) {min-height:48px;padding:5px 8px;font-size:16px;}
+  #app .quest-activity > .mission-cta {bottom:6px;right:8px;}
+  body.quest-mode #app .quest-activity :is(.coach-bubble:not([hidden]),.mission-access[open]) {top:4px;max-height:calc(100dvh - 62px);}
+  #app .quest-activity .mission-head .play-question-copy {top:calc(100% + 2px);bottom:auto;}
+  body.quest-mode #app .quest-activity .play-discovery {max-height:calc(100% - var(--inquiry-card-top) - 58px);padding:8px 12px;}
+  body.quest-mode #app .screen-5 .mission-board > .mission-actions {left:auto;right:2%;transform:none;}
+  body.quest-mode #app .screen-6 .ring-flip {left:calc(6px - var(--fit-board-x)) !important;transform:none;min-height:48px;}
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='1번'] {top:40% !important;}
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='2번'] {top:54% !important;}
+  body.quest-mode #app .screen-6 .ring-flip[aria-label^='3번'] {top:68% !important;}
+  body.quest-mode #app .quest-activity .coach-bubble:not([hidden]) {
+    display:grid;grid-template-columns:minmax(0,1fr) auto auto 44px;align-items:center;
+    gap:2px 6px;width:calc(100% - 242px);padding:4px 10px 7px;
+  }
+  #app .quest-activity .coach-heading {display:contents;}
+  #app .quest-activity .coach-heading strong {grid-area:1/1;}
+  #app .quest-activity .coach-close {grid-area:1/4;}
+  #app .quest-activity .coach-more {grid-area:1/2;margin:0;padding:4px 8px;font-size:15px;}
+  #app .quest-activity .coach-more[data-concept] {grid-area:1/3;margin:0;}
+  #app .quest-activity .coach-bubble .coach-clue {grid-area:2/1/3/-1;margin:2px 0;font-size:16px;}
+  body.quest-mode #app .quest-activity .play-discovery {
+    display:grid;grid-template-columns:160px minmax(0,1fr);align-content:start;align-items:center;
+    grid-template-areas:'question question' 'scenes label' 'scenes answers' 'feedback feedback' 'tools tools';gap:3px 12px;
+  }
+  #app .play-discovery .quiz-question {grid-area:question;}
+  #app .play-discovery .quiz-evidence-strip {grid-area:scenes;display:grid;justify-items:center;gap:2px;padding:3px;}
+  #app .play-discovery .quiz-scenes figure {width:68px;}
+  #app .play-discovery .quiz-scenes img {height:34px;}
+  #app .play-discovery .quiz-scenes figcaption {font-size:11px;line-height:1.15;}
+  #app .play-discovery .quiz-video {margin:0;font-size:14px;}
+  #app .play-discovery .quiz-answer-label {grid-area:label;}
+  #app .play-discovery .play-discovery-options {grid-area:answers;}
+  #app .play-discovery .inquiry-feedback {grid-area:feedback;}
+  #app .play-discovery .quiz-tools {grid-area:tools;}
+}
+
+
+/* Leave the same breathing room above and below the question, between the stage plaque and navigation. */
+body.quest-mode #app .quest-activity .play-inquiry:is([data-phase="explain"],[data-phase="complete"]) {
+  display:flex; flex-direction:column; box-sizing:border-box;
+  padding-block:var(--inquiry-card-top) max(18px,calc(var(--hud-inset,16px) + 50px));
+}
+body.quest-mode #app .quest-activity .play-inquiry:is([data-phase="explain"],[data-phase="complete"]) > .play-discovery {
+  position:relative; inset:auto; translate:none; transform:none; margin:auto;
+  max-height:100%; flex:0 1 auto; min-height:0; overflow-y:auto;
+}
+@media (max-height:480px) and (min-aspect-ratio:1/1) {
+  body.quest-mode #app .quest-activity .play-inquiry:is([data-phase="explain"],[data-phase="complete"]) {padding-bottom:54px;}
+}
+
+/* A magnified shared starting line, with the two physical stops shown to scale. */
+#app .clip-comparison {
+  position:absolute; z-index:4; inset:35% 6.6% 17% 10.7%; display:flex; flex-direction:column;
+  justify-content:center; gap:clamp(4px,.8vh,10px); padding:clamp(5px,1.2vw,18px); box-sizing:border-box;
+  background:#fcf3e3; border-radius:18px; color:#204c48; text-align:center;
+}
+#app .clip-comparison > strong {font-size:clamp(15px,1.7vw,25px);line-height:1.15;}
+#app .clip-comparison > div {display:grid;grid-template-columns:1fr 1fr;gap:clamp(5px,1.2vw,18px);min-height:0;}
+#app .clip-comparison figure {margin:0;padding:clamp(3px,.7vw,10px);border:1px solid #c2b38c;border-radius:12px;background:#fffaf0;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;}
+#app .clip-comparison figcaption {font-weight:800;color:#75502c;font-size:clamp(14px,1.6vw,22px);line-height:1.2;}
+#app .clip-comparison svg {min-height:0;display:block;}
+#app .clip-comparison figure > svg {width:100%;max-height:16vh;}
+#app .clip-comparison p {margin:0;font-weight:750;font-size:clamp(13px,1.5vw,21px);line-height:1.25;}
+#app .mission-board:has(.clip-comparison) .canvas-hit {visibility:hidden;}
+@media (max-width:759px) and (orientation:portrait) {
+  #app .clip-comparison {inset:19% 2% 6%;padding:4px;gap:5px;}
+  #app .mission-board:has(.clip-comparison) .force-sensor {display:none;}
+}
+
+
+/* The town stays colourful outside the notebook. Only the reading surface needs opaque paper. */
+body.quest-mode #app .inquiry-shell:has(.inquiry-card) {
+  background:linear-gradient(180deg,#173c4119,#422a1924),var(--inquiry-scene,url('/assets/quest/stage-workshop.webp')) center/cover;
+}
+body.quest-mode #app .inquiry-shell:has(.inquiry-card)::before {content:none;}
+#app :is(.screen-1,.screen-2) {--note-ink:#825022;--note-tint:#f8eacb;}
+#app :is(.screen-3,.screen-4) {--note-ink:#21655e;--note-tint:#e2f0e3;}
+#app :is(.screen-5,.screen-6) {--note-ink:#66527d;--note-tint:#efe9f5;}
+#app :is(.screen-7,.screen-8) {--note-ink:#28677a;--note-tint:#e1f1f3;}
+#app :is(.screen-9,.screen-10) {--note-ink:#804c3b;--note-tint:#f7e7db;}
+body.quest-mode #app .quest-activity .play-discovery {
+  background:#fffaf0fa;border:1px solid #e7d6b3;border-top:4px solid var(--note-ink);border-radius:18px;
+  box-shadow:0 12px 38px #37281339,0 2px 5px #37281324;scrollbar-gutter:auto;
+}
+#app .play-discovery .quiz-question strong {background:var(--note-ink);font-size:16px;letter-spacing:.03em;}
+#app .play-discovery .quiz-evidence-strip {background:var(--note-tint);border-color:transparent;}
+body.quest-mode #app .play-discovery .quiz-tools .inquiry-evidence {background:transparent;border:0;padding:0;}
+body.quest-mode #app .play-discovery .quiz-tools {border-top:1px solid #dfd9c9;padding-top:4px;align-items:center;justify-content:space-between;}
+body.quest-mode #app .play-discovery .quiz-tools > button {background:transparent;text-decoration:underline;text-underline-offset:3px;}
+body.quest-mode #app .quest-activity .play-discovery .inquiry-option {border-width:1.5px;background:#fffdf7;box-shadow:0 2px 0 #b9c6b33d;}
+body.quest-mode #app .quest-activity .play-discovery .inquiry-option:is(:hover,:focus-visible):enabled {background:#f0f4e9;border-color:var(--note-ink);}
+body.quest-mode #app .quest-activity .play-discovery .inquiry-option.selected {border-color:var(--note-ink);background:var(--note-tint);}
+#app .play-discovery .inquiry-option.selected .quiz-choice-number {background:var(--note-ink);}
+@media (min-width:760px) and (min-height:540px) {
+  body.quest-mode #app .quest-activity .play-discovery {
+    display:grid;grid-template-columns:minmax(166px,.48fr) minmax(0,1fr);
+    grid-template-areas:'question question' 'scenes label' 'scenes answers' 'scenes feedback' 'tools tools';
+    grid-template-rows:auto auto 1fr auto auto;align-items:start;align-content:center;gap:6px clamp(16px,2vw,28px);
+    width:min(880px,calc(100% - 80px));padding:clamp(16px,2.2vw,28px);
+  }
+  body.quest-mode #app .play-discovery .quiz-question {grid-area:question;margin-bottom:6px;}
+  #app .play-discovery .quiz-evidence-strip {grid-area:scenes;display:grid;justify-items:center;gap:7px;padding:9px 12px 10px;border-radius:12px;}
+  #app .play-discovery .quiz-scenes {display:grid;gap:6px;width:100%;justify-items:center;}
+  #app .play-discovery .quiz-scenes figure {width:100%;max-width:186px;margin:0;}
+  #app .play-discovery .quiz-scenes img {height:clamp(48px,7.5vh,72px);width:100%;border:0;border-radius:6px;background:#fffaf0;object-fit:contain;}
+  #app .play-discovery .quiz-scenes figcaption {font-size:13px;margin:2px 0 0;line-height:1.25;}
+  #app .play-discovery .quiz-video {margin:0;padding:4px 10px;border-width:1px;font-size:15px;}
+  body.quest-mode #app .quest-activity .play-discovery .quiz-answer-label {grid-area:label;margin:0;text-align:left;}
+  body.quest-mode #app .quest-activity .play-discovery .play-discovery-options {grid-area:answers;grid-template-columns:1fr;margin:0;gap:7px;}
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-option {min-height:47px;padding:8px 12px;font-size:clamp(16px,1.35vw,20px);}
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-feedback {grid-area:feedback;margin:0;padding:7px 12px;font-size:16px;line-height:1.4;}
+  #app .play-discovery .quiz-tools {grid-area:tools;}
+  body.quest-mode #app .quest-activity .play-discovery:has(details[open]) {align-content:start;}
+}
+/* Earlier saved lessons have the two-part notebook. Keep its independent controls and fit it in the same safe area. */
+body.quest-mode #app .quest-activity .inquiry-shell:not(.play-inquiry):is([data-phase='predict'],[data-phase='explain'],[data-phase='complete']) {
+  display:flex;flex-direction:column;padding-block:var(--inquiry-card-top) max(18px,calc(var(--hud-inset,16px) + 55px));box-sizing:border-box;
+}
+body.quest-mode #app .quest-activity .inquiry-shell:not(.play-inquiry):is([data-phase='predict'],[data-phase='explain'],[data-phase='complete']) > .inquiry-card {
+  position:relative;inset:auto;translate:none;transform:none;margin:auto;max-height:100%;min-height:0;overflow:auto;
+}
+
+
+@media (min-aspect-ratio: 1/1) and (max-height: 640px) {
+  #app .quest-activity .mission-head .play-question-copy { top: calc(100% + 6px); bottom: auto; }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 559px) and (min-width: 820px) and (max-width: 1000px) {
+  body.quest-mode #app .screen-6 .mission-board > .mission-3d { top: 48%; right: 2%; }
+  body.quest-mode #app .screen-6 .mission-board > .mission-actions { left: 63%; right: auto; bottom: calc(5px - var(--fit-board-y)); transform: translateX(-50%); max-width: none; }
+  body.quest-mode #app .screen-1 .mission-board > .mission-actions:has([data-mission="fit-part"]) { left: 62%; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-width: 1100px) {
+  body.quest-mode #app .screen-5 .mission-board > .mission-actions { left: auto; right: 3%; transform: none; }
+}
+
+@media (min-width: 1500px) {
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-feedback,
+  #app .play-discovery .quiz-scenes figcaption { font-size: 18px; }
+}

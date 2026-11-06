@@ -1,11 +1,6 @@
 /* The expedition's shared finish: warm paper, dark teal ink, and brass hardware. */
 body.quest-mode {
   --production-ink: #183f43;
-  --production-muted: #496663;
-  --production-paper: #fffcf1;
-  --production-line: #b7c0a8;
-  --production-teal: #246c65;
-  --production-brass: #ab7b35;
   --font-size-caption: clamp(16px, 1.2vw, 18px);
   --font-size-body: clamp(18px, 1.5vw, 23px);
   --font-size-button: clamp(20px, 1.65vw, 26px);
@@ -17,71 +12,67 @@ body.quest-mode #app .quest-icon { border-color: #637a68; box-shadow: 0 3px 0 #6
 body.quest-mode #app .quest-cta { border-radius: 15px; }
 body.quest-mode #app .quest-text-button { font-family: var(--font-body); }
 
-/* Opening scene: a readable invitation set against the city the learner repairs. */
-#app .quest-title {
-  min-height: 100dvh;
-  background-position: 71% 50%;
-  background-size: cover;
-}
+/* Opening scene: one centered stage — big title, a quiet subtitle, then 밀이·당이 framing the two ways in. */
+#app .quest-title { min-height: 100dvh; background-position: 50% 58%; background-size: cover; }
 #app .quest-title::before {
   z-index: -1;
-  background: linear-gradient(90deg, #fff9e8fa 0%, #fff9e8ed 27%, #fff9e8ba 41%, #fff9e811 64%), linear-gradient(0deg, #173e455e, transparent 50%);
+  background:
+    radial-gradient(ellipse 62% 48% at 50% 30%, #fffaebf0 0%, #fffaebb8 42%, #fffaeb00 100%),
+    linear-gradient(0deg, #143c4499 0%, #143c4400 34%);
 }
-#app .quest-title-glow { inset: 0 40% 0 0; background: none; }
+#app .quest-title-glow { inset: auto 18% 3% 18%; height: 20%; background: radial-gradient(ellipse at 50% 70%, #0d303a59, #0d303a00 70%); }
 #app .quest-title-content {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: min(49%, 650px);
-  min-height: 0;
-  padding: clamp(42px, 7vh, 82px) 0 180px clamp(28px, 5vw, 80px);
+  position: relative; z-index: 3;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; min-height: 100dvh;
+  padding: clamp(64px, 11dvh, 120px) 24px clamp(16px, 4dvh, 40px);
 }
-#app .quest-title-brand { position: static; translate: none; width: min(100%, 460px); text-align: left; }
-#app .quest-title-kicker { margin: 0 0 9px; color: #476459; font-size: 16px; font-weight: 700; letter-spacing: .09em; }
-#app .quest-title-logo { width: 100%; height: auto; max-height: 185px; object-position: left center; filter: drop-shadow(0 3px 0 #163d4814); }
+#app .quest-title-brand { position: static; translate: none; width: min(78vw, 920px); text-align: center; }
+#app .quest-title-logo {
+  width: 100%; height: auto; max-height: 37dvh; margin-inline: auto; object-position: center;
+  filter: drop-shadow(0 6px 0 #163d4826) drop-shadow(0 10px 28px #fff6d2b3);
+}
 #app .quest-title-subtitle {
-  display: block; margin: 10px 0 14px; padding: 0; border: 0; border-radius: 0;
-  background: none; box-shadow: none; color: #183f43; text-align: left;
-  font: 400 clamp(32px, 3.3vw, 48px)/1.2 var(--font-display); letter-spacing: -.025em;
+  display: inline-block; margin: clamp(4px, 1.4dvh, 14px) 0 0; padding: 7px 22px;
+  border: 2px solid #c2b588; border-radius: 999px; background: #fffbedeb; box-shadow: 0 4px 14px #173f4724;
+  color: #1d4a4a; text-align: center; letter-spacing: -.01em;
+  font: 400 clamp(17px, 1.55vw, 23px)/1.3 var(--font-display);
 }
-#app .quest-title-intro { margin: 0; max-width: 29em; font-size: clamp(17px, 1.45vw, 21px); line-height: 1.65; color: #385b57; }
-#app .quest-title-method { display: flex; align-items: center; gap: 11px; margin: 18px 0 22px; color: #305f58; font-size: 16px; font-weight: 700; }
-#app .quest-title-method i { color: #a67e38; font-style: normal; }
-#app .quest-title-actions { position: static; translate: none; display: flex; flex-direction: row; align-items: center; gap: 12px; }
-#app .quest-start { min-width: 250px; min-height: 62px; padding: 14px 24px; font-size: clamp(23px, 2.1vw, 30px); }
-#app .quest-title-actions .quest-text-button { padding: 8px 10px; background: transparent; color: #43635b; text-decoration: underline; text-underline-offset: 5px; font-size: 16px; }
-#app .quest-title-save { display: flex; align-items: flex-start; gap: 7px; margin: 17px 0 0; font-size: 16px; line-height: 1.45; color: #49665e; }
-#app .quest-title-save svg { flex: 0 0 18px; margin-top: 2px; }
-#app .quest-title-world-label {
-  position: absolute; top: 18%; right: 7%; z-index: 2;
-  padding: 14px 20px; background: #fffbedeb; border: 1px solid #a69b6d; border-radius: 14px;
-  box-shadow: 0 5px 18px #173f4720; text-align: center; rotate: 2deg;
+#app .quest-title-subtitle br { display: none; }
+#app .quest-title-stage {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: clamp(8px, 2vw, 32px);
+  width: min(100%, 1200px); margin-top: auto;
 }
-#app .quest-title-world-label span { display: block; margin-bottom: 5px; color: #4b6556; font-size: 16px; }
-#app .quest-title-world-label strong { font: 400 clamp(21px, 1.9vw, 27px)/1.3 var(--font-display); color: #244e49; }
-#app .quest-title-friend { bottom: 24%; --companion-size: clamp(130px, 14vw, 205px); }
-#app .quest-title-friend-left { left: 61%; }
-#app .quest-title-friend-right { right: 5%; }
-#app .quest-title-friend .quest-speech { bottom: 100%; left: auto; right: 15px; width: min(350px, 35vw); font-size: 18px; }
-#app .quest-title-journey {
-  position: absolute; bottom: 24px; left: clamp(28px, 5vw, 80px); right: clamp(28px, 5vw, 80px); z-index: 4;
-  display: flex; align-items: center; gap: 22px; padding: 20px 24px;
-  background: #fffcf2f5; border: 1px solid #c2bd9e; border-radius: 18px;
-  box-shadow: 0 7px 26px #133d4329;
+#app .quest-title-friend { position: relative; inset: auto; bottom: auto; z-index: 2; --companion-size: clamp(200px, min(22vw, 30dvh), 260px); }
+#app .quest-title-friend .quest-character .sprite-mascot { width: var(--companion-size); height: calc(var(--companion-size) * 1.33333); }
+#app .quest-title-friend-left { justify-self: end; }
+#app .quest-title-friend-right { justify-self: start; }
+#app .quest-title-friend .quest-character { filter: drop-shadow(0 14px 10px #0d303a40); }
+#app .quest-title-friend .quest-talk-mark { scale: 1.25; top: 6%; }
+#app .quest-title-friend-left .quest-talk-mark { right: 8%; }
+#app .quest-title-friend-right .quest-talk-mark { right: auto; left: 8%; }
+/* Glassy speech: the city shows through, a tail reaches each character's outer head tip. */
+#app .quest-title-friend .quest-speech {
+  bottom: calc(82% + 34px); width: min(250px, 26vw); padding: 12px 18px 13px;
+  border: 0; border-radius: 20px; background: #fffdf2ee;
+  box-shadow: inset 0 0 0 2px #ffffffb3, 0 10px 26px #0d303a33;
+  color: #173f43; font: 400 clamp(18px, 1.45vw, 22px)/1.4 var(--font-display); text-shadow: 0 1px 0 #ffffffb3;
 }
-#app .quest-journey-heading { min-width: 140px; padding-right: 20px; border-right: 1px solid #d9d9bf; }
-#app .quest-journey-heading > span { display: block; font-size: 16px; color: #4a665b; margin-bottom: 7px; }
-#app .quest-journey-heading > strong { font: 400 30px/1.1 var(--font-display); color: #245a51; }
-#app .quest-journey-heading small { font: 400 16px/1.4 var(--font-body); color: #4a665b; }
-#app .quest-title-journey ol { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; flex: 1; padding: 0; margin: 0; list-style: none; }
-#app .quest-title-journey li { display: flex; align-items: center; gap: 9px; min-width: 0; }
-#app .quest-journey-marker { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 38px; border: 1px solid #b6c3b1; border-radius: 11px; color: #597466; background: #f0f2e5; }
-#app .quest-title-journey li strong { display: block; color: #2e554c; font-size: 16px; line-height: 1.35; }
-#app .quest-title-journey li div > span { display: block; margin-top: 4px; color: #526b5f; font-size: 16px; line-height: 1.3; }
-#app .quest-title-journey .is-current .quest-journey-marker { color: #775a27; background: #ffe6a2; border-color: #bb9348; box-shadow: 0 0 0 3px #ffe6a244; }
-#app .quest-title-journey .is-complete .quest-journey-marker { color: #fffdf1; background: #38745d; border-color: #38745d; }
+#app .quest-title-friend .quest-speech strong { margin-bottom: 2px; font-size: .78em; color: #2c6d63; }
+#app .quest-title-friend .quest-speech::after {
+  content: ''; position: absolute; top: calc(100% - 1px); width: 64px; height: 34px; background: #fffdf2d0; filter: drop-shadow(0 3px 3px #0d303a2e);
+}
+#app .quest-title-friend-left .quest-speech { left: auto; right: 32%; }
+#app .quest-title-friend-left .quest-speech::after { right: 12%; clip-path: polygon(40% 0, 100% 0, 0 100%); }
+#app .quest-title-friend-right .quest-speech { left: 32%; right: auto; }
+#app .quest-title-friend-right .quest-speech::after { left: 12%; clip-path: polygon(0 0, 60% 0, 100% 100%); }
+#app .quest-title-actions {
+  position: static; translate: none; align-self: center;
+  display: flex; flex-direction: column; align-items: stretch; gap: 14px;
+  margin-bottom: clamp(24px, 9dvh, 110px);
+}
+#app .quest-title-actions .quest-cta { min-width: clamp(220px, 20vw, 290px); min-height: 64px; padding: 12px 24px; font-size: clamp(23px, 2vw, 30px); }
+#app .quest-title-actions .quest-cta-secondary:not(:disabled) { background: #fffbed; border-color: #a69b6d; color: #244e49; box-shadow: 0 5px 0 #a69b6d, 0 8px 12px #173f4726; }
 
 /* All inquiry stages share the same position and typography. The experiment
    keeps its existing canvas coordinates and hit areas inside the workbench. */
@@ -153,13 +144,13 @@ body.quest-mode #app .quest-text-button { font-family: var(--font-body); }
 #app .inquiry-options.compact .inquiry-option { width: auto; min-width: 70px; min-height: 52px; justify-content: center; padding: 6px 12px; }
 #app .field-pair { position: relative; }
 /* The paper is laid into the gap; inserting it must not move either object. */
-#app .field-pair > .field-paper { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 18px; height: 86px; z-index: 2; font-size: 16px; pointer-events: none; }
+#app .field-pair > .field-paper { position: absolute; left: 50%; top: 50%; translate: -50% -50%; transform: skewY(-8deg); width: clamp(16px, var(--field-gap, 30px), 40px); height: 78px; z-index: 2; pointer-events: none; }
 #app .field-material { width: 120px; height: 80px; flex: 0 0 120px; }
 #app .field-material > .material-art { width: 80px; height: 80px; max-width: 100%; }
-body.quest-mode #app .field-pair .bar-magnet { width: 120px; height: 44px; flex: none; }
+body.quest-mode #app .field-pair .bar-magnet { width: 120px; height: 48px; flex: none; }
 #app .field-model-note { font-size: 16px !important; }
 #app .fixed-magnet small, #app .route-tile > span { font-size: 16px; }
-#app .field-pair .fixed-magnet { position: relative; transform: none; height: 44px; flex: 0 0 120px; }
+#app .field-pair .fixed-magnet { position: relative; transform: none; height: 48px; flex: 0 0 120px; }
 #app .field-pair .fixed-magnet small { position: absolute; top: calc(100% + 8px); white-space: nowrap; }
 #app .inquiry-workbench { position: absolute; inset: 0; }
 #app .inquiry-workbench > .mission-world { height: 100%; min-height: 0; }
@@ -195,67 +186,17 @@ body.quest-mode #app .bar-magnet.flipped::before { transform: scaleX(-1); }
 body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span + span { position: relative; background: transparent; box-shadow: none; color: #fffef0; text-shadow: 0 1px 2px #173f47a6; }
 
 @media (max-width: 1100px) and (min-width: 760px) {
-  #app .quest-title-content { width: 51%; padding-left: 32px; padding-top: 60px; }
-  #app .quest-title-logo { max-height: 156px; }
-  #app .quest-title-subtitle { font-size: 35px; }
-  #app .quest-title-intro { font-size: 18px; }
-  #app .quest-title-journey { left: 28px; right: 28px; gap: 14px; padding: 16px; }
-  #app .quest-journey-heading { min-width: 115px; padding-right: 12px; }
-  #app .quest-title-journey ol { gap: 10px; }
-  #app .quest-title-journey li { align-items: flex-start; gap: 6px; }
-  #app .quest-journey-marker { width: 28px; height: 32px; flex-basis: 28px; }
-  #app .quest-journey-marker svg { width: 18px; height: 18px; }
-  #app .quest-title-journey li div > span { display: none; }
-  #app .quest-title-world-label { right: 5%; top: 20%; }
-  #app .quest-title-friend-left { left: 59%; }
   #app .inquiry-card { width: calc(100% - 80px); padding: 22px 26px; }
   #app .inquiry-steps > :is(span, li, button, a) { padding-inline: 12px; }
 }
 @media (max-height: 720px) and (min-width: 760px) {
-  #app .quest-title-content { padding-top: 20px; padding-bottom: 120px; }
-  #app .quest-title-logo { max-height: 125px; }
-  #app .quest-title-subtitle { font-size: 32px; margin-block: 4px 8px; }
-  #app .quest-title-subtitle br { display: none; }
-  #app .quest-title-intro { font-size: 17px; line-height: 1.5; }
-  #app .quest-title-method { margin-block: 10px 14px; }
-  #app .quest-title-save { margin-top: 12px; }
-  #app .quest-start { min-height: 56px; font-size: 24px; }
-  #app .quest-title-journey { bottom: 16px; padding-block: 14px; }
-  #app .quest-title-journey li div > span { display: none; }
-  #app .quest-title-friend { bottom: 22%; --companion-size: 135px; }
   #app .inquiry-shell { --inquiry-nav-top: 148px; --inquiry-card-top: 204px; }
   #app .inquiry-card { max-height: calc(100% - var(--inquiry-card-top) - 90px); padding: 18px 24px; }
   #app .inquiry-card h2 { font-size: 27px; }
   #app .inquiry-options { margin-top: 12px; gap: 10px; }
   #app .inquiry-option { min-height: 58px; padding: 10px 14px; }
 }
-@media (max-width: 759px) {
-  #app .quest-title { min-height: max(940px, 100dvh); height: auto; background-position: 62% top; }
-  #app .quest-title::before { background: linear-gradient(#fff9e8ed 0%, #fff9e8e8 42%, #fff9e844 68%, #173f4744 100%); }
-  #app .quest-title-content { width: 100%; max-width: 580px; padding: 78px 28px 410px; }
-  #app .quest-title-brand { width: min(90%, 390px); }
-  #app .quest-title-logo { max-height: 160px; }
-  #app .quest-title-subtitle { font-size: clamp(32px, 6vw, 42px); }
-  #app .quest-title-subtitle br { display: none; }
-  #app .quest-title-intro { max-width: 25em; font-size: 18px; }
-  #app .quest-title-actions { gap: 8px; flex-wrap: wrap; }
-  #app .quest-start { min-height: 60px; min-width: 240px; font-size: 25px; }
-  #app .quest-title-save { max-width: 30em; }
-  #app .quest-title-world-label { display: none; }
-  #app .quest-title-friend { bottom: 225px; --companion-size: 102px; }
-  #app .quest-title-friend-left { left: auto; right: 145px; }
-  #app .quest-title-friend-right { right: 30px; }
-  #app .quest-title-friend .quest-speech { bottom: 100%; right: 0; left: auto; width: min(300px, 78vw); }
-  #app .quest-title-journey { bottom: 20px; left: 20px; right: 20px; display: block; padding: 16px; }
-  #app .quest-journey-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-right: 0; border-bottom: 1px solid #d9d9bf; padding: 0 0 12px; margin-bottom: 12px; }
-  #app .quest-journey-heading > span { margin: 0; }
-  #app .quest-journey-heading > strong { font-size: 26px; }
-  #app .quest-title-journey ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
-  #app .quest-title-journey li { gap: 7px; }
-  #app .quest-journey-marker { width: 29px; height: 33px; flex-basis: 29px; }
-  #app .quest-journey-marker svg { width: 19px; height: 19px; }
-  #app .quest-title-journey li strong { font-size: 16px; }
-  #app .quest-title-journey li div > span { display: none; }
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .inquiry-shell { --inquiry-nav-top: 254px; --inquiry-card-top: 310px; }
   #app .inquiry-steps { gap: 3px; max-width: calc(100% - 20px); padding: 4px; border-radius: 12px; }
   #app .inquiry-steps > :is(span, li, button, a) { padding: 7px 9px; gap: 4px; font-size: 16px; }
@@ -268,15 +209,34 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
   #app .mission-brief { max-width: 180px; font-size: 16px; top: 25%; }
 }
 @media (max-width: 440px) {
-  #app .quest-title-content { padding-inline: 22px; padding-bottom: 420px; }
-  #app .quest-title-logo { max-height: 140px; }
-  #app .quest-title-subtitle { font-size: 32px; }
-  #app .quest-title-intro { font-size: 17px; }
-  #app .quest-title-method { gap: 8px; }
-  #app .quest-title-journey ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #app .quest-title-friend { bottom: 265px; --companion-size: 94px; }
-  #app .quest-title-friend-left { right: 135px; }
   #app .inquiry-steps > :is(span, li, button, a) { padding-inline: 6px; }
+}
+@media (max-width: 1100px) and (min-width: 760px) {
+  #app .quest-title-friend .quest-speech { width: min(230px, 30vw); }
+  #app .quest-title-friend-left .quest-speech { right: 0; }
+  #app .quest-title-friend-left .quest-speech::after { right: 40%; }
+  #app .quest-title-friend-right .quest-speech { left: 0; }
+  #app .quest-title-friend-right .quest-speech::after { left: 40%; }
+}
+@media (max-height: 620px) and (min-width: 760px) {
+  #app .quest-title-content { padding-top: 56px; }
+  #app .quest-title-logo { max-height: 33dvh; }
+  #app .quest-title-actions .quest-cta { min-height: 54px; font-size: 22px; }
+}
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
+  #app .quest-title-content { padding: 84px 16px 28px; }
+  #app .quest-title-brand { width: min(94vw, 560px); }
+  #app .quest-title-logo { max-height: 30dvh; }
+  #app .quest-title-stage { grid-template-columns: 1fr 1fr; grid-template-areas: "mili dangi" "actions actions"; row-gap: 18px; }
+  #app .quest-title-friend { --companion-size: min(42vw, 23dvh); }
+  #app .quest-title-friend-left { grid-area: mili; }
+  #app .quest-title-friend-right { grid-area: dangi; }
+  #app .quest-title-actions { grid-area: actions; justify-self: center; width: min(100%, 340px); margin-bottom: 0; }
+  #app .quest-title-friend .quest-speech { width: 44vw; padding: 9px 12px 10px; font-size: 16px; }
+  #app .quest-title-friend-left .quest-speech { right: 0; }
+  #app .quest-title-friend-left .quest-speech::after { right: 48%; }
+  #app .quest-title-friend-right .quest-speech { left: 0; }
+  #app .quest-title-friend-right .quest-speech::after { left: 48%; }
 }
 @media (max-width: 700px) {
   #app .comparison-benches { grid-template-columns: 1fr; }
@@ -289,6 +249,9 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
 #app .inquiry-shell:not([data-phase='experiment']) { --inquiry-nav-top: 128px; --inquiry-card-top: 184px; }
 #app .inquiry-shell:not([data-phase='experiment']):not([data-phase='complete']) .inquiry-card { max-height: calc(100% - var(--inquiry-card-top) - 24px); }
 #app .quest-activity:has(.inquiry-shell:is([data-phase='predict'], [data-phase='explain'], [data-phase='apply'])) > .mission-cta { display: none; }
+#app .report-empty { margin: 0; padding: 28px 24px; border: 2px dashed #c2b588; border-radius: 18px; background: #fffbedd9; color: #2c5650; text-align: center; font-size: 19px; line-height: 1.5; }
+/* Teacher preview always keeps the way forward visible. */
+#app .quest-activity.is-preview:has(.inquiry-shell) > .mission-cta { display: inline-flex; }
 #app .inquiry-shell[data-phase='experiment'] { --inquiry-nav-top: 180px; }
 #app .inquiry-workbench .mission-feedback { top: calc(50% - 50dvh + var(--inquiry-nav-top) + 56px); bottom: auto; }
 #app .inquiry-shell[data-phase='predict'] .inquiry-card { padding: 20px 24px; }
@@ -309,7 +272,7 @@ body.quest-mode #app .bar-magnet > span, body.quest-mode #app .bar-magnet > span
   #app .inquiry-shell[data-phase='predict'] .inquiry-card h2 { margin-bottom: 6px; }
   #app .inquiry-shell[data-phase='predict'] .inquiry-card p { margin-block: 6px 10px; }
 }
-@media (max-width: 759px) {
+@media (max-width: 759px) and (max-aspect-ratio: 1/1) {
   #app .inquiry-shell:not([data-phase='experiment']) { --inquiry-nav-top: 208px; --inquiry-card-top: 264px; }
   #app .inquiry-shell[data-phase='experiment'] { --inquiry-nav-top: 272px; }
   #app .inquiry-shell[data-phase='predict'] .inquiry-options { grid-template-columns: 1fr; }
@@ -429,6 +392,53 @@ body.quest-mode .scene-ring-equipment .scene-ring-upper { bottom: 58%; }
    movable ring visible, and separate its test button from the page action. */
 #app .screen-6 .inquiry-workbench .mission-feedback { left: 31%; max-width: 48%; }
 #app .screen-6 .inquiry-workbench .mission-actions { bottom: 16%; }
+/* The entire pictured prop can be grabbed. Informational overlays never trap a touch. */
+#app .canvas-magnet-hit { z-index: calc(var(--layer-props) + 1); }
+#app .canvas-hit[disabled], #app .force-sensor { pointer-events: none; }
+#app .canvas-handle-grip {
+  display: inline-grid; place-items: center; min-width: 78px; min-height: 48px;
+  padding: 4px 10px; border: 2px solid #80613a; border-radius: 12px;
+  background: linear-gradient(#ffe5a7, #eabd72); color: #493d29;
+  box-shadow: 0 3px 0 #80613a66; font: 700 16px/1.2 var(--font-body); white-space: nowrap;
+  pointer-events: none;
+}
+#app .canvas-pole-sticker {
+  display: inline-grid; place-items: center; width: 48px; height: 48px; border: 3px solid #fff7dc;
+  border-radius: 50%; color: #fff; background: #bf443c; box-shadow: 0 2px 0 #593f32, 0 0 0 1px #bda675;
+  font: 800 27px/1 var(--font-body); pointer-events: none;
+}
+#app .canvas-pole-sticker.pole-S { background: #346f9e; }
 @media (max-height: 640px) and (min-width: 760px) {
   #app .screen-6 .inquiry-shell[data-phase='experiment'] { --inquiry-nav-top: 154px; }
+}
+
+/* The distance gauge rides on the mat's top edge, clear of the pieces students drag. */
+#app .force-sensor { top: 31%; left: 50%; translate: -50% -50%; width: auto; display: flex; align-items: center; gap: 12px; padding: 7px 16px; border-radius: 999px; z-index: 3; }
+#app .force-sensor span { white-space: nowrap; }
+#app .force-sensor i { width: 120px; margin-top: 0; flex: 0 0 120px; }
+/* Delivery status sits just under the gauge so it never covers the cart's guide label. */
+#app .mission-board .delivery-state { top: 37%; }
+@media (max-aspect-ratio: 1/1) {
+  #app .force-sensor { top: calc(100% + 18px); translate: -50% 0; }
+}
+/* Phones: the rotate tip sits under the bench instead of over the bottom controls. */
+@media (max-aspect-ratio: 1/1) and (max-width: 759px) {
+  body.quest-mode #app .quest-activity::after { top: auto; bottom: 0; left: 0; right: 0; padding: 5px 10px; border-radius: 10px 10px 0 0; font-size: 14px; }
+  #app .force-sensor { gap: 8px; padding: 6px 12px; }
+  #app .force-sensor span { font-size: 15px; }
+  #app .force-sensor i { width: 80px; flex-basis: 80px; }
+}
+/* Large boards use bigger HUD icons; the earned-tool chip starts below them. */
+@media (min-width: 1500px) and (min-height: 850px) {
+  body.quest-mode #app .mission-pocket { top: calc(var(--hud-inset) + var(--hud-icon-size) + 14px); }
+}
+/* Choose a hypothesis in one tap; release remains a separate observation. */
+#app .distance-choices { position:absolute; left:17%; top:37%; width:30%; display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+#app .distance-choices > span { flex-basis:100%; text-align:center; color:#244e52; font-weight:800; font-size:clamp(15px,1.4vw,21px); }
+#app .distance-choices .mission-action { position:static; transform:none; min-width:52px; min-height:48px; padding:7px 12px; font-size:clamp(16px,1.4vw,21px); }
+#app .distance-choices .mission-action[aria-pressed='true'] { color:#fff; background:#2b7068; border-color:#245f59; box-shadow:0 3px 0 #194e48; }
+#app .release-hand-icon { width:42px; height:42px; object-fit:contain; vertical-align:middle; margin:-8px 4px -8px -8px; pointer-events:none; }
+@media(max-width:700px) {
+  #app .distance-choices { left:15%; top:36%; width:36%; gap:4px; }
+  #app .distance-choices .mission-action { min-width:48px; padding:5px; }
 }
