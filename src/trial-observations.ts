@@ -1,4 +1,5 @@
 import { paperGapMiddle } from './mission-model';
+import { materialCatalog } from './material-sorting';
 import type { Trial, TrialObject } from './trial-records';
 
 /** Recover only apparatus that the recorded conditions placed at a known point. */
@@ -22,7 +23,7 @@ function pictureObjects(t:Trial,source:TrialObject[]):TrialObject[] {
 export const replayObjects=(t:Trial):TrialObject[]=>pictureObjects(t,t.objects);
 export const replayInitialObjects=(t:Trial):TrialObject[]=>pictureObjects(t,t.initialObjects);
 
-const materials:Record<string,string>={clip:'철 클립',nail:'철못',aluminum:'알루미늄 포일',wood:'나무 조각',plastic:'플라스틱 조각',rubber:'고무 지우개'};
+
 function clipResult(t:Trial):string {
   const ironKey=t.key==='rescue'||t.objects.some(o=>o.id==='key'),name=ironKey?'철 열쇠':'철 클립';
   const clip=t.objects.find(o=>o.id==='clip'||o.id==='key'),start=t.initialObjects.find(o=>o.id===clip?.id);
@@ -54,7 +55,7 @@ export function trialResultSentence(t:Trial):string {
         if(/^repair\d+$/.test(t.key))return t.key==='repair2'?'철판의 자리를 고치니 자석이 덮개를 붙잡았어.':'똑같이 흔들었을 때 자석이 있는 덮개는 닫혀 있고, 자석을 뺀 덮개는 열렸어.';
         break;
       case 3:{
-        const name=materials[String(c.material)];
+        const name=materialCatalog.find(m=>m.id===c.material)?.name;
         if(name&&typeof c.magnetic==='boolean')return c.magnetic?`자석을 가까이 대니 ${name}에 자석이 붙었어.`:`자석을 가까이 대도 ${name}의 위치는 그대로였어.`;
         if(t.key==='materials')return '물체를 자석에 가까이 대 보고, 붙는 것과 붙지 않는 것으로 나누었어.';
         break;

@@ -39,7 +39,7 @@ describe('optional experiment demonstrations', () => {
   it('finishes material sorting but leaves pole-sticker answers for the learner', () => {
     const save=freshSave();
     const moves=(n:number)=>demonstrationSteps(n,save).flatMap(step=>step.kind==='move'?[step.id]:[]);
-    expect(new Set(moves(3))).toEqual(new Set(['sweep-magnet','material-2','material-3']));
+    expect(new Set(moves(3))).toEqual(new Set(['sweep-magnet','material-2','material-3','material-4']));
     expect(demonstrationSteps(5,save).map(step=>step.kind==='move'?step.id:step.kind)).toEqual(['probe','press','probe']);
     expect(demonstrationSteps(5,save).filter(step=>step.kind==='press').map(step=>step.selector))
       .toEqual(['[data-mission="flip"]']);

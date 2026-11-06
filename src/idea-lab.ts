@@ -1,26 +1,22 @@
 import './idea-lab.css';
 import { icon, mascot } from './art';
 import { record, stageNames, type Activity, type Point, type Save } from './domain';
-import { playEffect, playNarration, setAudioPaused } from './game-audio';
+import { playEffect, playNarration, type NarrationState } from './game-audio';
 import { update, type Context, type View } from './activity-types';
 import { boardLayers, feedbackStickers, ideaCard, ideaProblems, ideaProperties, ideaStickers, paletteIcon, pitchPrompts, problemText, propertyTitles } from './idea-content';
-import { boardSize, buddyFeedback, emptyIdea, ideaChecks, ideaReady, pitchReady, problemChosen, type Idea, type IdeaFeedback } from './idea-model';
-import { loadRecording, saveRecording } from './storage';
-import { canRecord, recordingLimit, startRecording, type Recording } from './voice-recorder';
+import { boardSize, buddyFeedback, emptyIdea, hasIdeaSketch, ideaReady, pitchReady, problemChosen, type Idea, type IdeaFeedback } from './idea-model';
 
 const esc = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const steps: Record<number, { name: string; title: string; buddy: string }[]> = {
   9: [
-    { name: '불편 찾기', title: '누구의 불편을 해결해 볼까?', buddy: '정답은 없어! 네가 도와주고 싶은 사람을 골라 봐.' },
+    { name: '불편 찾기', title: '누구의 불편을 해결해 볼까?', buddy: '주민을 눌러 어떤 불편이 있는지 살펴봐.' },
     { name: '자석 성질', title: '어떤 자석의 성질을 쓸까?', buddy: '앞에서 찾은 발견이야. 한두 개만 골라 봐.' },
-    { name: '설계 스케치', title: '내 발명을 그려 봐!', buddy: '그림을 못 그려도 괜찮아. 스티커만 붙여도 설계가 돼.' },
-    { name: '원리 점검', title: '정말 자석으로 될까?', buddy: '자석의 힘이 닿는지만 같이 볼게.' },
+    { name: '설계 스케치', title: '내 발명을 설명해 봐!', buddy: '어디에 자석을 쓰고, 어떤 힘으로 움직이는지 친구들에게 알려 줘.' },
   ],
   10: [
-    { name: '이름과 소개', title: '내 발명을 내 목소리로 소개해 봐!', buddy: '틀린 말은 없어. 아래 세 질문에 답하듯 말해 봐.' },
+    { name: '이름과 소개', title: '내 발명을 소개해 봐!', buddy: '아래 질문을 보면서 친구들에게 소개할 글을 적어 봐.' },
     { name: '전시하기', title: '공방 전시관에 걸어 볼까?', buddy: '전자칠판에 띄우면 모두가 함께 볼 수 있어.' },
-    { name: '친구 의견', title: '친구의 의견을 들어 보자', buddy: '태블릿을 친구에게 건네 봐. 점수가 아니라 생각을 나누는 거야.' },
-    { name: '고치기', title: '의견을 듣고 고쳐 보자', buddy: '좋은 발명가는 다른 사람의 말을 듣고 고쳐.' },
+    { name: '친구 의견', title: '친구 의견을 남길까?', buddy: '같은 기기에서 의견을 남길 수 있어. 바로 공방을 완성해도 돼.' },
   ],
 };
 const stepOf = (screen: number, i: Idea) => screen === 9 ? i.step9 : i.step10;
@@ -31,158 +27,264 @@ export function ideaGate(screen: number, step: number, i: Idea): string {
   if (screen === 9) {
     if (step === 0) return problemChosen(i) ? '' : i.problem === 'custom' ? '불편을 네 글자 이상 적어 줘.' : '해결할 불편을 하나 골라 줘.';
     if (step === 1) return i.properties.length ? '' : '쓸 성질을 하나 이상 골라 줘.';
-    if (step === 2) return i.stickers.length ? '' : '판에 스티커를 하나 이상 붙여 줘.';
-    return ideaChecks(i).length ? '앞으로 돌아가서 고칠 곳을 고쳐 줘.' : '';
+    if (!problemChosen(i)) return '첫 단계에서 해결할 불편을 골라 줘.';
+    if (!i.properties.length) return '쓸 자석의 성질을 골라 줘.';
+    return '';
   }
-  if (step === 0) return !i.name.trim() ? '발명품 이름을 지어 줘.' : pitchReady(i) ? '' : '소개를 녹음하거나 열 글자 이상 적어 줘.';
-  if (step === 1) return i.shown ? '' : '전시관에 걸어 줘.';
-  if (step === 2) return i.feedback.length ? '' : '의견을 하나 이상 받아 줘.';
-  if (i.chosen < 0) return '반영할 의견을 하나 골라 줘.';
-  if (i.change.trim().length < 4) return '무엇을 바꿨는지 네 글자 이상 적어 줘.';
-  return ideaChecks(i)[0] ?? '';
+  if (!i.name.trim()) return '발명품 이름을 지어 줘.';
+  if (!pitchReady(i)) return '소개를 열 글자 이상 적어 줘.';
+  return step > 0 && !i.shown ? '전시관에 걸어 줘.' : '';
 }
 
+type WorkshopResident = typeof ideaProblems[number];
+const residentPortrait = (id: string, size: number) =>
+  `<img src="/assets/quest/workshop-resident-${id}.webp" alt="" width="${size}" height="${size}" draggable="false">`;
+const startingResident = (i: Idea) => ideaProblems.find(p => p.id === i.problem) ?? ideaProblems[0];
+function residentDialogue(p: WorkshopResident, chosen: boolean) {
+  return `<div class="idea-resident-portrait">${residentPortrait(p.id, 200)}</div>
+    <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><span>${p.who}</span><h2>${p.text}</h2><p>${chosen ? '도와준다니 고마워요! 어떤 자석의 성질을 쓸지 생각해 봐요.' : p.detail}</p></div>
+      <div class="idea-resident-actions">
+        ${chosen ? `<button type="button" class="btn idea-resident-chosen" data-resident-example aria-haspopup="dialog">${icon('check', 18)} 도와주기로 했어 <small>예시 다시 보기</small></button>` : `<button type="button" class="btn idea-resident-accept" data-problem="${p.id}" aria-haspopup="dialog">이 불편을 해결할래 ${icon('arrow', 18)}</button>`}
+        <button type="button" class="btn idea-workshop-voice" data-workshop-voice aria-pressed="false">${chosen ? '불편 다시 듣기' : '목소리 듣기'}</button>
+        <small data-workshop-voice-status role="status"></small>
+      </div>
+    </div>`;
+}
 function problemStep(i: Idea) {
-  return `<div class="idea-choices" role="group" aria-label="해결할 불편">${ideaProblems.map(p => `<button type="button" class="idea-choice" data-problem="${p.id}" aria-pressed="${i.problem === p.id}"><small>${p.who}</small><strong>${p.text}</strong></button>`).join('')}
-    <div class="idea-choice idea-custom" data-selected="${i.problem === 'custom'}"><label for="idea-custom"><small>내가 찾은 불편</small></label><input id="idea-custom" maxlength="40" placeholder="우리 주변의 불편을 적어 봐" value="${esc(i.custom)}"></div></div>`;
+  const active = startingResident(i);
+  return `<div class="idea-conversations">
+    <section class="idea-resident-scene" aria-label="주민 이야기" aria-live="polite">${residentDialogue(active, i.problem === active.id)}</section>
+    <div class="idea-resident-list" role="group" aria-label="이야기를 볼 주민">${ideaProblems.map(p => `<button type="button" class="idea-resident-tab" data-resident="${p.id}" data-chosen="${i.problem === p.id}" aria-pressed="${active.id === p.id}">${residentPortrait(p.id, 64)}<span>${p.who}</span></button>`).join('')}</div>
+    <div class="idea-custom idea-custom-conversation" data-selected="${i.problem === 'custom'}"><label for="idea-custom">내가 찾은 불편</label><input id="idea-custom" maxlength="40" placeholder="우리 주변의 불편을 적어 봐" value="${esc(i.custom)}"></div>
+    <dialog class="idea-example" aria-labelledby="idea-example-title" aria-describedby="idea-example-how"><div data-example-card></div><form method="dialog"><button class="btn primary" autofocus>공방으로 돌아가기</button></form></dialog>
+  </div>`;
 }
 function propertyStep(i: Idea) {
   return `<div class="idea-choices" role="group" aria-label="쓸 자석의 성질">${ideaProperties.map(p => `<button type="button" class="idea-choice" data-property="${p.id}" aria-pressed="${i.properties.includes(p.id)}"><small>${p.from}</small><strong>${p.title}</strong></button>`).join('')}</div><p class="idea-problem-line">해결할 불편 · ${esc(problemText(i))}</p>`;
 }
 function editor(i: Idea) {
-  return `<div class="idea-editor"><div class="idea-palette" role="group" aria-label="부품 스티커">${ideaStickers.map(s => `<button type="button" class="idea-stick" data-sticker="${s.id}" aria-pressed="false">${paletteIcon(s.id)}<span>${s.label}</span></button>`).join('')}</div>
-    <div class="idea-board"><svg id="idea-canvas" viewBox="0 0 ${boardSize.w} ${boardSize.h}" tabindex="0" role="application" aria-label="설계 판. 스티커를 고른 뒤 판을 눌러 붙여 줘.">${boardLayers(i)}</svg></div>
+  return `<div class="idea-editor"><div class="idea-palette" role="group" aria-label="부품 스티커">${ideaStickers.map((s, index) => `<button type="button" class="idea-stick" data-sticker="${index}" aria-pressed="false">${paletteIcon(s)}<span>${s.label}</span></button>`).join('')}</div>
+    <div class="idea-board"><svg id="idea-canvas" viewBox="0 0 ${boardSize.w} ${boardSize.h}" tabindex="0" role="application" aria-label="설계 판. 방향키로 위치를 옮기고 Enter로 스티커를 붙이거나 붙인 스티커를 선택할 수 있어.">${boardLayers(i)}</svg></div>
     <div class="idea-tools" role="group" aria-label="그리기 도구"><button type="button" data-tool="pen" aria-pressed="true">펜</button><button type="button" data-tool="arrow" aria-pressed="false">힘 화살표</button><button type="button" data-tool="move" aria-pressed="false">옮기기</button><button type="button" data-edit="flip" disabled>극 뒤집기</button><button type="button" data-edit="remove" disabled>빼기</button><button type="button" data-edit="undo">되돌리기</button></div></div>`;
 }
-function checkStep(i: Idea) {
-  const issues = ideaChecks(i);
-  return `<div class="idea-check"><div class="idea-check-board">${ideaCard(i)}</div><div class="idea-check-result" role="status">${issues.length
-    ? `<h2>조금만 고쳐 보자</h2><ul>${issues.map(text => `<li>${icon('light', 20)}<span>${text}</span></li>`).join('')}</ul><button type="button" class="btn primary" data-act="back">설계 고치러 가기</button>`
-    : `<h2>${icon('check', 24)} 자석의 힘이 닿아!</h2><p>내가 쓴 성질 · ${propertyTitles(i).map(esc).join(', ')}</p><p>이제 발표회에서 친구들에게 소개해 보자.</p>`}</div></div>`;
+function sketchStep(i: Idea) {
+  return `<div class="idea-sketch"><div class="idea-sketch-notes">
+    <div><label for="idea-name">발명품 이름</label><input id="idea-name" maxlength="16" placeholder="예: 착착 지우개 집" value="${esc(i.name)}"></div>
+    <div><label for="idea-pitch">내 발명 설명</label><textarea id="idea-pitch" maxlength="120" rows="2" placeholder="어디에 자석을 놓고, 어떻게 움직이는지 적어 봐.">${esc(i.pitch)}</textarea></div>
+    <button type="button" class="btn" data-act="export">그림으로 다운로드</button>
+  </div>
+  <p class="idea-sketch-hint">그림이 필요하면 직접 그리거나 옆의 아이콘을 골라 붙여 봐.</p>
+  ${editor(i)}</div>`;
 }
 function pitchStep(i: Idea) {
-  const voice = canRecord()
-    ? `<div class="idea-voice"><button type="button" class="btn primary" data-act="record">${icon('sound', 22)} ${i.voice ? '다시 녹음하기' : '내 목소리 녹음'}</button>${i.voice ? `<button type="button" class="btn" data-act="listen">${icon('play', 20)} 들어 보기</button><button type="button" class="btn" data-act="forget">녹음 지우기</button>` : ''}<small data-voice-status role="status">${i.voice ? '내 목소리를 저장했어.' : `최대 ${recordingLimit}초. 녹음은 이 기기에만 남아.`}</small></div><p class="idea-safe-note">이름이나 학교는 말하지 않아도 돼.</p>`
-    : '<p class="idea-safe-note">이 기기에서는 녹음을 쓸 수 없어. 글로 소개해 줘.</p>';
-  return `<div class="idea-pitch"><div><label for="idea-name">발명품 이름</label><input id="idea-name" maxlength="16" placeholder="예: 착착 지우개 집" value="${esc(i.name)}"><ol class="idea-prompts">${pitchPrompts.map(text => `<li>${text}</li>`).join('')}</ol></div><div>${voice}<label for="idea-pitch">글로 소개하기</label><textarea id="idea-pitch" maxlength="120" rows="3" placeholder="말하기 어려우면 글로 적어도 돼">${esc(i.pitch)}</textarea></div></div>`;
+  return `<div class="idea-pitch"><div><label for="idea-name">발명품 이름</label><input id="idea-name" maxlength="16" placeholder="예: 착착 지우개 집" value="${esc(i.name)}"><ol class="idea-prompts">${pitchPrompts.map(text => `<li>${text}</li>`).join('')}</ol></div><div><label for="idea-pitch">발명 소개</label><textarea id="idea-pitch" maxlength="120" rows="3" placeholder="친구들에게 소개할 글을 적어 봐">${esc(i.pitch)}</textarea></div></div>`;
 }
 function showStep(i: Idea) {
-  return `<div class="idea-show"><div class="idea-frame${i.shown ? ' is-hung' : ''}">${ideaCard(i)}</div><div class="idea-show-actions"><button type="button" class="btn primary" data-act="hang" ${i.shown ? 'disabled' : ''}>${i.shown ? `${icon('check', 20)} 전시 중` : '전시관에 걸기'}</button><button type="button" class="btn" data-act="present">크게 띄워 발표하기</button>${i.voice ? `<button type="button" class="btn" data-act="listen">${icon('play', 20)} 내 목소리 듣기</button>` : ''}<button type="button" class="btn" data-act="export">카드 이미지 저장</button><small data-voice-status role="status"></small></div></div>`;
+  return `<div class="idea-show"><div class="idea-frame${i.shown ? ' is-hung' : ''}">${ideaCard(i)}</div><div class="idea-show-actions"><button type="button" class="btn primary" data-act="hang" ${i.shown ? 'disabled' : ''}>${i.shown ? `${icon('check', 20)} 전시 중` : '전시관에 걸기'}</button><button type="button" class="btn" data-act="present">크게 띄워 발표하기</button><button type="button" class="btn" data-act="export">그림으로 다운로드</button></div></div>`;
 }
 const feedbackLine = (f: IdeaFeedback) => `<b>${esc(f.from)} · ${feedbackStickers.find(k => k.id === f.sticker)?.label ?? ''}</b><span>${esc(f.question) || '좋았어!'}</span>`;
 function feedbackStep(i: Idea) {
   return `<div class="idea-feedback"><form data-feedback-form><fieldset><legend>어떤 느낌이야?</legend>${feedbackStickers.map((k, n) => `<label><input type="radio" name="idea-sticker" value="${k.id}" ${n ? '' : 'checked'}><span>${k.label}</span></label>`).join('')}</fieldset><label for="idea-question">궁금한 점이나 고칠 생각</label><input id="idea-question" maxlength="40" placeholder="예: 자석이 떨어지면 어떡해?"><button type="submit" class="btn primary">의견 남기기</button></form>
-    <div><ul class="idea-feedback-list">${i.feedback.map(f => `<li>${feedbackLine(f)}</li>`).join('') || '<li class="idea-empty">아직 받은 의견이 없어.</li>'}</ul><button type="button" class="btn" data-act="buddy">혼자 하고 있어 · 밀이·당이 의견 받기</button></div></div>`;
+    <div><ul class="idea-feedback-list">${i.feedback.map(f => `<li>${feedbackLine(f)}</li>`).join('') || '<li class="idea-empty">이 기기에 남긴 의견이 여기에 보여.</li>'}</ul><button type="button" class="btn" data-act="buddy">밀이·당이 의견 보기</button></div></div>`;
 }
-function reviseStep(i: Idea) {
-  return `<div class="idea-revise"><div class="idea-revise-side"><div role="group" aria-label="반영할 의견">${i.feedback.map((f, n) => `<button type="button" class="idea-choice" data-feedback="${n}" aria-pressed="${i.chosen === n}">${feedbackLine(f)}</button>`).join('')}</div><label for="idea-change">무엇을 바꿨어?</label><textarea id="idea-change" maxlength="60" rows="2" placeholder="예: 자석을 더 가까이 옮겼어">${esc(i.change)}</textarea></div>${editor(i)}</div>`;
-}
-const bodies: Record<number, ((i: Idea) => string)[]> = { 9: [problemStep, propertyStep, editor, checkStep], 10: [pitchStep, showStep, feedbackStep, reviseStep] };
+const bodies: Record<number, ((i: Idea) => string)[]> = { 9: [problemStep, propertyStep, sketchStep], 10: [pitchStep, showStep, feedbackStep] };
 
 function bindEditor(c: Context, i: Idea, changed: () => void) {
   const svg = c.root.querySelector<SVGSVGElement>('#idea-canvas');
   if (!svg) return;
-  let tool: 'pen' | 'arrow' | 'move' = 'pen', placing = '', selected = -1, drawing: 'stroke' | 'arrow' | 'drag' | '' = '';
-  const history: ('stroke' | 'arrow' | 'sticker')[] = [];
+  let tool: 'pen' | 'arrow' | 'move' = 'pen', placing = '', selected = -1;
+  let drawing: 'stroke' | 'arrow' | 'drag' | 'place' | '' = '', activePointer: number | null = null;
+  let origin: Point | undefined, dragged: Idea['stickers'][number] | undefined, cursor: Point = { x: boardSize.w / 2, y: boardSize.h / 2 };
+  const history: (() => void)[] = [];
   const buttons = <T extends HTMLElement>(selector: string) => c.root.querySelectorAll<T>(selector);
   const edit = (name: string) => c.root.querySelector<HTMLButtonElement>(`[data-edit="${name}"]`)!;
   const target = () => i.stickers.find(s => s.uid === selected);
+  const inside = (p: Point, pad = 4, bottom = pad): Point => ({
+    x: Math.max(pad, Math.min(boardSize.w - pad, p.x)),
+    y: Math.max(pad, Math.min(boardSize.h - bottom, p.y)),
+  });
   const paint = () => {
-    svg.innerHTML = boardLayers(i, selected);
+    svg.innerHTML = boardLayers(i, selected) + (placing
+      ? `<circle cx="${cursor.x}" cy="${cursor.y}" r="9" fill="none" stroke="#c9531c" stroke-width="1.2" stroke-dasharray="3 2" pointer-events="none"/>`
+      : '');
     buttons<HTMLButtonElement>('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(!placing && b.dataset.tool === tool)));
     buttons<HTMLButtonElement>('[data-sticker]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sticker === placing)));
     edit('flip').disabled = target()?.id !== 'magnet'; edit('remove').disabled = !target(); edit('undo').disabled = !history.length;
   };
-  const commit = () => { i.checked = false; paint(); changed(); };
+  const commit = () => { paint(); changed(); };
   const at = (e: PointerEvent): Point => {
-    const box = svg.getBoundingClientRect(), round = (n: number) => Math.round(n * 10) / 10;
-    return { x: round(Math.max(4, Math.min(boardSize.w - 4, (e.clientX - box.left) / box.width * boardSize.w))), y: round(Math.max(4, Math.min(boardSize.h - 4, (e.clientY - box.top) / box.height * boardSize.h))) };
+    const matrix = svg.getScreenCTM();
+    return matrix ? inside(new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse())) : cursor;
+  };
+  const place = (point: Point) => {
+    const uid = i.stickers.reduce((max, s) => Math.max(max, s.uid), 0) + 1;
+    const { id, pole } = ideaStickers[Number(placing)];
+    i.stickers.push({ uid, id, ...inside(point, 15, 20), ...(pole ? { pole } : {}) });
+    history.push(() => { i.stickers = i.stickers.filter(s => s.uid !== uid); });
+    selected = uid; placing = ''; tool = 'move';
+    c.root.querySelector('.idea-buddy p')!.textContent = steps[c.screen][stepOf(c.screen, i)].buddy;
+    playEffect('snap', c.s.settings); commit();
   };
   svg.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') svg.setPointerCapture(e.pointerId);
-    const p = at(e), hit = (e.target as Element).closest?.<SVGGElement>('[data-uid]');
-    if (placing) {
-      const uid = i.stickers.reduce((max, s) => Math.max(max, s.uid), 0) + 1;
-      i.stickers.push({ uid, id: placing, ...p, ...(placing === 'magnet' ? { pole: 'N' as const } : {}) });
-      history.push('sticker'); selected = uid; placing = ''; tool = 'move'; c.root.querySelector('.idea-buddy p')!.textContent = steps[c.screen][stepOf(c.screen, i)].buddy; playEffect('snap'); commit(); return;
-    }
-    if (tool === 'move') { selected = hit ? Number(hit.dataset.uid) : -1; if (hit) drawing = 'drag'; paint(); return; }
-    if (tool === 'pen') { i.strokes.push([p]); drawing = 'stroke'; }
+    if (activePointer !== null || !e.isPrimary || e.button !== 0) return;
+    const p = at(e), hit = (e.target as Element).closest<SVGGElement>('[data-uid]');
+    if (placing) { drawing = 'place'; cursor = inside(p, 15, 20); }
+    else if (tool === 'move') {
+      selected = hit ? Number(hit.dataset.uid) : -1;
+      const sticker = target();
+      if (!sticker) { paint(); return; }
+      drawing = 'drag'; dragged = sticker; origin = { x: sticker.x, y: sticker.y };
+    } else if (tool === 'pen') { i.strokes.push([p]); drawing = 'stroke'; }
     else { i.arrows.push([p, p]); drawing = 'arrow'; }
+    activePointer = e.pointerId;
+    svg.setPointerCapture(e.pointerId);
     paint();
   });
   svg.addEventListener('pointermove', e => {
-    if (!drawing) return;
+    if (e.pointerId !== activePointer) return;
     const p = at(e);
-    if (drawing === 'drag') Object.assign(target()!, p);
+    if (drawing === 'place') cursor = inside(p, 15, 20);
+    else if (drawing === 'drag' && dragged) Object.assign(dragged, inside(p, 15, 20));
     else if (drawing === 'arrow') i.arrows.at(-1)![1] = p;
-    else { const line = i.strokes.at(-1)!, last = line.at(-1)!; if (Math.hypot(p.x - last.x, p.y - last.y) >= 1.2 && i.strokes.flat().length < 1500) line.push(p); }
+    else if (drawing === 'stroke') {
+      const line = i.strokes.at(-1)!, last = line.at(-1)!;
+      if (Math.hypot(p.x - last.x, p.y - last.y) >= 1.2 && i.strokes.flat().length < 1500) line.push(p);
+    }
     paint();
   });
-  const finish = () => {
-    if (!drawing) return;
-    if (drawing === 'arrow') { const [a, b] = i.arrows.at(-1)!; if (Math.hypot(a.x - b.x, a.y - b.y) < 8) i.arrows.pop(); else history.push('arrow'); }
-    if (drawing === 'stroke') history.push('stroke');
-    drawing = ''; commit();
+  const finish = (e: PointerEvent) => {
+    if (e.pointerId !== activePointer) return;
+    const gesture = drawing, cancelled = e.type !== 'pointerup';
+    drawing = ''; activePointer = null;
+    if (gesture === 'place' && !cancelled) { place(at(e)); return; }
+    if (gesture === 'arrow') {
+      const [a, b] = i.arrows.at(-1)!;
+      if (cancelled || Math.hypot(a.x - b.x, a.y - b.y) < 8) i.arrows.pop();
+      else history.push(() => { i.arrows.pop(); });
+    } else if (gesture === 'stroke') {
+      if (cancelled || i.strokes.at(-1)!.length < 2) i.strokes.pop();
+      else history.push(() => { i.strokes.pop(); });
+    } else if (gesture === 'drag' && origin && dragged) {
+      const sticker = dragged, start = origin;
+      if (cancelled) Object.assign(sticker, start);
+      else if (sticker.x !== start.x || sticker.y !== start.y) history.push(() => { Object.assign(sticker, start); });
+    }
+    origin = undefined; dragged = undefined; commit();
   };
-  svg.addEventListener('pointerup', finish); svg.addEventListener('pointercancel', finish);
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) svg.addEventListener(event, finish);
   svg.addEventListener('keydown', e => {
-    const move: Record<string, Point> = { ArrowLeft: { x: -3, y: 0 }, ArrowRight: { x: 3, y: 0 }, ArrowUp: { x: 0, y: -3 }, ArrowDown: { x: 0, y: 3 } }, step = move[e.key], s = target();
-    if (!step || !s) return;
-    e.preventDefault(); s.x = Math.max(4, Math.min(boardSize.w - 4, s.x + step.x)); s.y = Math.max(4, Math.min(boardSize.h - 4, s.y + step.y)); commit();
+    if (activePointer !== null) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (placing) place(cursor);
+      else if (i.stickers.length) { selected = i.stickers[(i.stickers.findIndex(s => s.uid === selected) + 1) % i.stickers.length].uid; tool = 'move'; paint(); }
+      return;
+    }
+    const move: Record<string, Point> = { ArrowLeft: { x: -3, y: 0 }, ArrowRight: { x: 3, y: 0 }, ArrowUp: { x: 0, y: -3 }, ArrowDown: { x: 0, y: 3 } }, step = move[e.key], sticker = target();
+    if (!step || (!placing && !sticker)) return;
+    e.preventDefault();
+    if (placing) { cursor = inside({ x: cursor.x + step.x, y: cursor.y + step.y }, 15, 20); paint(); }
+    else if (sticker) {
+      const previous = { x: sticker.x, y: sticker.y };
+      Object.assign(sticker, inside({ x: sticker.x + step.x, y: sticker.y + step.y }, 15, 20));
+      history.push(() => { Object.assign(sticker, previous); }); commit();
+    }
   });
-  buttons<HTMLButtonElement>('[data-sticker]').forEach(b => b.addEventListener('click', () => { placing = placing === b.dataset.sticker ? '' : b.dataset.sticker!; c.root.querySelector('.idea-buddy p')!.textContent = placing ? '판에서 붙일 곳을 눌러 줘.' : steps[c.screen][stepOf(c.screen, i)].buddy; paint(); }));
+  buttons<HTMLButtonElement>('[data-sticker]').forEach(b => b.addEventListener('click', e => {
+    placing = placing === b.dataset.sticker ? '' : b.dataset.sticker!;
+    c.root.querySelector('.idea-buddy p')!.textContent = placing ? '판을 누르거나 방향키로 옮긴 뒤 Enter를 눌러 붙여 봐.' : steps[c.screen][stepOf(c.screen, i)].buddy;
+    if (placing && e.detail === 0) svg.focus({ preventScroll: true });
+    paint();
+  }));
   buttons<HTMLButtonElement>('[data-tool]').forEach(b => b.addEventListener('click', () => { tool = b.dataset.tool as typeof tool; placing = ''; if (tool !== 'move') selected = -1; paint(); }));
-  edit('flip').addEventListener('click', () => { const s = target(); if (s) { s.pole = s.pole === 'S' ? 'N' : 'S'; commit(); } });
-  edit('remove').addEventListener('click', () => { i.stickers = i.stickers.filter(s => s.uid !== selected); selected = -1; commit(); });
-  edit('undo').addEventListener('click', () => { const last = history.pop(); if (last === 'stroke') i.strokes.pop(); else if (last === 'arrow') i.arrows.pop(); else if (last === 'sticker') i.stickers.pop(); selected = -1; commit(); });
+  edit('flip').addEventListener('click', () => { const sticker = target(); if (sticker) { const pole = sticker.pole; sticker.pole = pole === 'S' ? 'N' : 'S'; history.push(() => { sticker.pole = pole; }); commit(); } });
+  edit('remove').addEventListener('click', () => { const index = i.stickers.findIndex(s => s.uid === selected); if (index < 0) return; const [sticker] = i.stickers.splice(index, 1); history.push(() => { i.stickers.splice(index, 0, sticker); }); selected = -1; commit(); });
+  edit('undo').addEventListener('click', () => { history.pop()?.(); selected = -1; commit(); });
   paint();
 }
 
 function wrapped(context: CanvasRenderingContext2D, text: string, width: number) {
+  const fits = (value: string) => context.measureText(value).width <= width;
   const lines: string[] = []; let line = '';
-  for (const letter of text) { if (context.measureText(line + letter).width > width) { lines.push(line); line = ''; } line += letter; }
-  return line ? [...lines, line] : lines;
+  for (const word of text.trim().split(/\s+/)) {
+    const joined = line ? `${line} ${word}` : word;
+    if (fits(joined)) { line = joined; continue; }
+    if (line) lines.push(line);
+    line = '';
+    for (const letter of word) {
+      if (line && !fits(line + letter)) { lines.push(line); line = ''; }
+      line += letter;
+    }
+  }
+  return [...lines, line];
 }
-/** The card leaves the app only as a picture the learner chooses to save; the voice never does. */
+/** Export a single image sized for a classroom display. */
 async function exportCard(i: Idea, notify: (text: string) => void) {
-  const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 800;
-  const g = canvas.getContext('2d')!, svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${boardSize.w} ${boardSize.h}" width="800" height="450"><rect width="100%" height="100%" fill="#fffdf4"/>${boardLayers(i)}</svg>`;
-  const image = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-  await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error('card')); image.src = url; }).catch(() => undefined);
-  URL.revokeObjectURL(url);
-  g.fillStyle = '#fff4d6'; g.fillRect(0, 0, 1280, 800); g.fillStyle = '#24424a'; g.font = '700 54px "Noto Sans KR", sans-serif'; g.fillText(i.name.trim() || '내 발명', 48, 84);
-  if (image.complete && image.naturalWidth) g.drawImage(image, 48, 120, 800, 450);
-  g.font = '500 28px "Noto Sans KR", sans-serif'; let y = 160;
-  for (const line of [['해결할 불편', problemText(i)], ['쓴 자석의 성질', propertyTitles(i).join(' · ')]].flatMap(([head, body]) => [head, ...wrapped(g, body, 340), ''])) { g.fillText(line, 888, y); y += 40; }
-  y = 620; for (const line of wrapped(g, i.pitch.trim(), 1180).slice(0, 4)) { g.fillText(line, 48, y); y += 40; }
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-  if (!blob) return notify('카드를 만들지 못했어. 다시 눌러 봐.');
-  const file = new File([blob], 'my-magnet-idea.png', { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] }).catch(() => undefined); return; }
-  const link = document.createElement('a'), href = URL.createObjectURL(blob); link.href = href; link.download = file.name; link.click(); URL.revokeObjectURL(href);
-  notify('카드 이미지를 저장했어.');
+  const { name, pitch } = i;
+  const sketch = hasIdeaSketch(i);
+  if (!pitch.trim() && !sketch) return notify('발명 설명을 적거나 설계 그림을 만들어 줘.');
+  try {
+    await document.fonts.ready;
+    const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
+    const g = canvas.getContext('2d')!;
+    const font = '"Magnet Quest Sans", "Noto Sans KR", sans-serif';
+    g.fillStyle = '#eaf3f5'; g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = '#1e4755'; g.font = `700 26px ${font}`; g.fillText('시민 발명 공방 · 내 발명 발표', 60, 57);
+    g.font = `700 62px ${font}`; g.fillText(name.trim() || '내 발명', 60, 132, 1480);
+    if (sketch) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${boardSize.w} ${boardSize.h}" width="896" height="504"><rect width="100%" height="100%" fill="#fff"/>${boardLayers(i)}</svg>`;
+      const image = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      try { image.src = url; await image.decode(); g.drawImage(image, 60, 205, 896, 504); }
+      finally { URL.revokeObjectURL(url); }
+      g.strokeStyle = '#9abac3'; g.lineWidth = 2; g.strokeRect(60, 205, 896, 504);
+    }
+    const x = sketch ? 992 : 84, width = sketch ? 548 : 1432;
+    const sections = [['해결할 불편', problemText(i)], ['쓴 자석의 성질', propertyTitles(i).join(' · ')], ['내 발명 설명', pitch.trim()]];
+    const lineSize = sketch ? 31 : 40;
+    g.font = `500 ${lineSize}px ${font}`;
+    const groups = sections.filter(([, value]) => value).map(([heading, value]) => [heading, wrapped(g, value, width - 48)] as const);
+    const lineCount = groups.reduce((n, [, lines]) => n + lines.length, 0);
+    const step = Math.min(lineSize + 11, Math.floor((650 - groups.length * 62) / Math.max(lineCount, 1)));
+    g.fillStyle = '#fff'; g.fillRect(x, 180, width, 654);
+    let y = 231;
+    for (const [heading, lines] of groups) {
+      g.fillStyle = '#286779'; g.font = `700 25px ${font}`; g.fillText(heading, x + 24, y);
+      g.fillStyle = '#1e4755'; g.font = `500 ${Math.min(lineSize, step - 5)}px ${font}`;
+      for (const line of lines) { y += step; g.fillText(line, x + 24, y); }
+      y += 62;
+    }
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('card');
+    const link = document.createElement('a'), href = URL.createObjectURL(blob);
+    link.href = href; link.download = 'my-magnet-idea.png';
+    document.body.append(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 1000);
+    notify('발표용 PNG를 다운로드했어.');
+  } catch {
+    notify('카드를 만들지 못했어. 다시 눌러 봐.');
+  }
 }
 
 /** Stage five, used by every learner who is not partway through the earlier device tests. */
 export function ideaView(screen: number, a: Activity, s: Save, preview = false): View {
   const i = s.idea ||= emptyIdea();
-  const step = Math.min(3, Math.max(0, stepOf(screen, i))), info = steps[screen][step], last = step === 3;
-  const gate = preview ? '' : ideaGate(screen, step, i), label = last ? screen === 9 ? '발표회로 가기' : '공방 완성하기' : '다음';
-  if (screen === 9 && step === 3 && !ideaChecks(i).length) i.checked = true;
+  const lastStep = steps[screen].length - 1;
+  const step = Math.min(lastStep, Math.max(0, stepOf(screen, i))), info = steps[screen][step], last = step === lastStep;
+  if (step !== stepOf(screen, i)) setStep(screen, i, step);
+  const gate = preview ? '' : ideaGate(screen, step, i);
+  const label = last ? screen === 9 ? '발표회로 가기' : '공방 완성하기' : screen === 9 ? ['자석의 성질 고르기', '설계 시작하기'][step] : ['발명 카드 보기', '친구 의견 보기'][step];
   const remember = () => {
-    if (screen === 9 && i.checked) record(a, { key: 'idea', label: '내 발명 아이디어', result: `${problemText(i)} · ${propertyTitles(i).join(', ')}` });
-    if (screen === 10 && ideaReady(10, i)) record(a, { key: 'share', label: '친구 의견으로 고친 점', result: `${i.name.trim()} · ${i.change.trim()}` });
+    if (screen === 9 && last && ideaReady(9, i)) record(a, { key: 'idea', label: '내 발명 아이디어', result: i.pitch.trim() || `${problemText(i)} · ${propertyTitles(i).join(', ')}` });
+    if (screen === 10 && ideaReady(10, i)) record(a, { key: 'share', label: '내 발명 발표', result: i.name.trim() });
   };
   remember();
   const html = `<div id="experiment-root" class="idea-lab screen-${screen}" data-idea-step="${step}">
-    <header class="idea-head"><span class="stage-label">${stageNames[4]} · ${screen === 9 ? '아이디어 공방' : '발표회'}</span><h1>${info.title}</h1><ol class="idea-steps">${steps[screen].map((item, n) => `<li aria-current="${n === step ? 'step' : 'false'}" data-done="${n < step}">${n < step ? icon('check', 16) : n + 1}<span>${item.name}</span></li>`).join('')}</ol></header>
+    <header class="idea-head"><span class="stage-label">구역 5 · ${stageNames[4]} · ${screen === 9 ? '아이디어 공방' : '발표회'}</span><h1 tabindex="-1">${info.title}</h1><ol class="idea-steps">${steps[screen].map((item, n) => `<li aria-current="${n === step ? 'step' : 'false'}" data-done="${n < step}">${n < step ? icon('check', 16) : n + 1}<span>${item.name}</span></li>`).join('')}</ol></header>
     <div class="idea-body">${bodies[screen][step](i)}</div>
     <footer class="idea-foot"><div class="idea-buddy">${mascot(step % 2 ? 'dangi' : 'mili', 72, 1)}<p>${info.buddy}</p></div><p class="idea-gate" role="status">${gate}</p><div class="idea-nav"><button type="button" class="btn" data-act="back" ${step ? '' : 'disabled'}>이전</button><button type="button" class="quest-cta idea-next" ${last ? 'data-action="complete"' : 'data-act="next"'} ${gate ? 'disabled' : ''}>${label} ${icon('arrow', 22)}</button></div></footer>
-    <div class="idea-present" role="dialog" aria-modal="true" aria-label="내 발명 발표" hidden>${ideaCard(i)}<div>${i.voice ? `<button type="button" class="btn primary" data-act="listen">${icon('play', 22)} 내 목소리 듣기</button>` : ''}<button type="button" class="btn" data-act="present-close">닫기</button></div></div></div>`;
+    <dialog class="idea-present" aria-label="내 발명 발표">${ideaCard(i)}<div><button type="button" class="btn" data-act="present-close" autofocus>닫기</button></div></dialog></div>`;
   return { html, bind(c) {
     const events = new AbortController(), signal = events.signal, root = c.root;
-    let recording: Recording | null = null, stopVoice = () => {}, disposed = false;
     const refreshGate = () => {
       remember();
       const text = preview ? '' : ideaGate(screen, step, i);
@@ -191,61 +293,93 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     };
     const act = (name: string, fn: () => void) => root.querySelectorAll<HTMLElement>(`[data-act="${name}"]`).forEach(b => b.addEventListener('click', fn, { signal }));
     const typed = (selector: string, fn: (value: string) => void) => root.querySelector<HTMLInputElement>(selector)?.addEventListener('input', e => { fn((e.target as HTMLInputElement).value); c.touch(); refreshGate(); }, { signal });
-    const status = (text: string) => root.querySelectorAll('[data-voice-status]').forEach(el => { el.textContent = text; });
-    const move = (n: number) => { setStep(screen, i, n); update(c); };
+    const move = (n: number) => { setStep(screen, i, n); update(c); document.querySelector<HTMLElement>('.idea-head h1')?.focus({ preventScroll: true }); };
 
     act('next', () => { if (preview || !ideaGate(screen, step, i)) { playEffect('click'); move(step + 1); } });
     act('back', () => { if (step) move(step - 1); });
-    root.querySelectorAll<HTMLButtonElement>('[data-problem]').forEach(b => b.addEventListener('click', () => { i.problem = b.dataset.problem!; update(c); }, { signal }));
-    root.querySelector('#idea-custom')?.addEventListener('focus', () => { if (i.problem !== 'custom') { i.problem = 'custom'; root.querySelectorAll('[data-problem]').forEach(b => b.setAttribute('aria-pressed', 'false')); root.querySelector<HTMLElement>('.idea-custom')!.dataset.selected = 'true'; refreshGate(); } }, { signal });
-    typed('#idea-custom', value => { i.custom = value; });
+    const scene = root.querySelector<HTMLElement>('.idea-resident-scene');
+    const tabs = root.querySelectorAll<HTMLButtonElement>('[data-resident]');
+    const custom = root.querySelector<HTMLElement>('.idea-custom');
+    const example = root.querySelector<HTMLDialogElement>('.idea-example');
+    let speaker = startingResident(i);
+    let voiceState: NarrationState = 'stopped', stopVoice = () => {};
+    const voiceChanged = (state: NarrationState) => {
+      voiceState = state;
+      const button = scene?.querySelector<HTMLButtonElement>('[data-workshop-voice]');
+      const status = scene?.querySelector<HTMLElement>('[data-workshop-voice-status]');
+      if (!button || !status) return;
+      const playing = state === 'loading' || state === 'playing';
+      button.setAttribute('aria-pressed', String(playing));
+      button.textContent = playing ? '그만 듣기' : i.problem === speaker.id ? '불편 다시 듣기' : '목소리 듣기';
+      status.textContent = state === 'muted' ? '설정에서 효과음을 켜 줘.' : state === 'blocked' || state === 'unavailable' ? '목소리 듣기를 다시 눌러 줘.' : '';
+    };
+    const speak = () => {
+      stopVoice();
+      stopVoice = playNarration(`/audio/voices/workshop-${speaker.id}.mp3`, s.settings, voiceChanged);
+    };
+    const showResident = () => {
+      if (!scene) return;
+      scene.innerHTML = residentDialogue(speaker, i.problem === speaker.id);
+      tabs.forEach(b => {
+        b.setAttribute('aria-pressed', String(b.dataset.resident === speaker.id));
+        b.dataset.chosen = String(b.dataset.resident === i.problem);
+      });
+      if (custom) custom.dataset.selected = String(i.problem === 'custom');
+    };
+    const openExample = () => {
+      if (!example || example.open) return;
+      stopVoice();
+      const { title, how } = speaker.example;
+      const card = example.querySelector<HTMLElement>('[data-example-card]')!;
+      card.innerHTML = `<p class="idea-example-tag">자석을 쓴 물건 · 예시</p><h2 id="idea-example-title">${title}</h2>
+        <figure><img src="/assets/quest/workshop-example-${speaker.id}.webp" alt="${title}" width="448" height="448"><p class="idea-example-missing" hidden>그림을 불러오지 못했어.</p></figure>
+        <p id="idea-example-how">${how}</p><p class="idea-example-note">자석이 어디에 달렸는지 찾아봐. 너만의 방법을 생각해도 좋아.</p>`;
+      const picture = card.querySelector('img')!;
+      picture.addEventListener('error', () => { picture.hidden = true; card.querySelector<HTMLElement>('.idea-example-missing')!.hidden = false; }, { once: true, signal });
+      example.showModal();
+    };
+    example?.addEventListener('click', e => { if (e.target === example) example.close(); }, { signal });
+    example?.addEventListener('close', () => scene?.querySelector<HTMLButtonElement>('[data-resident-example]')?.focus({ preventScroll: true }), { signal });
+    tabs.forEach(b => b.addEventListener('click', () => {
+      const resident = ideaProblems.find(p => p.id === b.dataset.resident);
+      if (!resident) return;
+      if (resident !== speaker) { stopVoice(); speaker = resident; playEffect('click', s.settings); showResident(); }
+      speak();
+    }, { signal }));
+    scene?.addEventListener('click', e => {
+      const target = e.target as Element;
+      if (target.closest('[data-workshop-voice]')) {
+        if (voiceState === 'playing' || voiceState === 'loading') stopVoice();
+        else speak();
+        return;
+      }
+      if (target.closest('[data-resident-example]')) { openExample(); return; }
+      if (!target.closest('[data-problem]')) return;
+      i.problem = speaker.id;
+      playEffect('click', s.settings); c.touch(); showResident(); refreshGate();
+      openExample();
+    }, { signal });
+    typed('#idea-custom', value => {
+      i.custom = value;
+      if (i.problem !== 'custom') { stopVoice(); i.problem = 'custom'; showResident(); }
+    });
     root.querySelectorAll<HTMLButtonElement>('[data-property]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.property!;
       if (i.properties.includes(id)) i.properties = i.properties.filter(p => p !== id);
       else if (i.properties.length >= 2) return c.notify('성질은 두 개까지 고를 수 있어.');
       else i.properties.push(id);
-      i.checked = false; update(c);
+      b.setAttribute('aria-pressed', String(i.properties.includes(id)));
+      playEffect('click', s.settings); c.touch(); refreshGate();
     }, { signal }));
     typed('#idea-name', value => { i.name = value; });
     typed('#idea-pitch', value => { i.pitch = value; });
-    typed('#idea-change', value => { i.change = value; });
     bindEditor(c, i, () => { c.touch(); refreshGate(); });
 
-    const stopRecording = () => { recording?.stop(); };
-    act('record', async () => {
-      if (recording) return stopRecording();
-      stopVoice(); setAudioPaused(true);
-      const button = root.querySelector<HTMLButtonElement>('[data-act="record"]')!;
-      const started = await startRecording({
-        onTick: left => { button.textContent = `■ 그만 녹음하기 (${left}초)`; },
-        onError: message => { recording = null; setAudioPaused(false); status(message); button.textContent = '내 목소리 녹음'; },
-        onDone: async blob => {
-          recording = null; setAudioPaused(false);
-          if (disposed) return;
-          try { await saveRecording(blob, preview); i.voice = true; c.touch(); playEffect('success'); update(c); }
-          catch { status('녹음을 저장하지 못했어. 글로 소개해 줘.'); }
-        },
-      });
-      if (disposed) started?.cancel(); else recording = started;
-    });
-    act('forget', () => { i.voice = false; update(c); });
-    act('listen', async () => {
-      stopVoice();
-      const blob = await loadRecording(preview).catch(() => undefined);
-      if (disposed) return;
-      if (!blob) return status('녹음을 찾지 못했어. 다시 녹음해 줘.');
-      const url = URL.createObjectURL(blob);
-      const stop = playNarration(url, s.settings, state => {
-        if (state === 'muted') status('소리 설정에서 효과음을 켜 줘.');
-        if (state !== 'loading' && state !== 'playing') URL.revokeObjectURL(url);
-      });
-      stopVoice = stop;
-    });
     act('hang', () => { i.shown = true; playEffect('reward'); update(c); });
-    const present = root.querySelector<HTMLElement>('.idea-present')!;
-    act('present', () => { present.hidden = false; present.querySelector<HTMLButtonElement>('button')?.focus(); });
-    act('present-close', () => { stopVoice(); present.hidden = true; root.querySelector<HTMLButtonElement>('[data-act="present"]')?.focus(); });
-    present.addEventListener('keydown', e => { if (e.key === 'Escape') { stopVoice(); present.hidden = true; } }, { signal });
+    const present = root.querySelector<HTMLDialogElement>('.idea-present')!;
+    act('present', () => { if (!present.open) present.showModal(); });
+    act('present-close', () => present.close());
+    present.addEventListener('close', () => root.querySelector<HTMLButtonElement>('[data-act="present"]')?.focus({ preventScroll: true }), { signal });
     act('export', () => { void exportCard(i, c.notify); });
 
     root.querySelector<HTMLFormElement>('[data-feedback-form]')?.addEventListener('submit', e => {
@@ -255,11 +389,6 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
       playEffect('success'); update(c);
     }, { signal });
     act('buddy', () => { for (const f of buddyFeedback(i)) if (!i.feedback.some(item => item.question === f.question)) i.feedback.push(f); update(c); });
-    root.querySelectorAll<HTMLButtonElement>('[data-feedback]').forEach(b => b.addEventListener('click', () => {
-      i.chosen = Number(b.dataset.feedback); c.touch();
-      root.querySelectorAll('[data-feedback]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
-      refreshGate();
-    }, { signal }));
-    return () => { disposed = true; events.abort(); stopVoice(); if (recording) { recording.cancel(); recording = null; setAudioPaused(false); } };
+    return () => { stopVoice(); events.abort(); };
   } };
 }

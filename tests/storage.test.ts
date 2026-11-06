@@ -23,12 +23,14 @@ describe('storage failures', () => {
 // Minimal transactional IndexedDB double: writes become visible only on commit.
 function databaseWith(legacy: ReturnType<typeof freshSave>, failMigration = false) {
   const data = new Map<string, unknown>([['main', structuredClone(legacy)]]);
+  const recordings = new Map<string, unknown>();
   const database = { close: vi.fn(), transaction() {
     let pending = 0, aborted = false;
+    const clears = new Set<Map<string, unknown>>();
     const writes = new Map<string, unknown>();
     const tx = { oncomplete: undefined as (() => void) | undefined, onabort: undefined as (() => void) | undefined, onerror: undefined as (() => void) | undefined,
       abort() { aborted = true; queueMicrotask(() => tx.onabort?.()); },
-      objectStore() { return {
+      objectStore(name: string) { return {
         get(key: string) {
           pending++; const request = { result: undefined as unknown, onsuccess: undefined as (() => void) | undefined };
           queueMicrotask(() => {
@@ -36,15 +38,16 @@ function databaseWith(legacy: ReturnType<typeof freshSave>, failMigration = fals
             request.result = data.get(key);
             try { request.onsuccess?.(); } catch { tx.abort(); }
             pending--;
-            if (!pending) queueMicrotask(() => { if (!aborted) { for (const [k, v] of writes) data.set(k, v); tx.oncomplete?.(); } });
+            if (!pending) queueMicrotask(() => { if (!aborted) { for (const store of clears) store.clear(); for (const [k, v] of writes) data.set(k, v); tx.oncomplete?.(); } });
           }); return request;
         },
-        put(value: unknown, key: string) { if (failMigration && key === 'main') throw new Error('quota'); writes.set(key, structuredClone(value)); }
+        put(value: unknown, key: string) { if (failMigration && key === 'main') throw new Error('quota'); writes.set(key, structuredClone(value)); },
+        clear() { clears.add(name === 'recordings' ? recordings : data); },
       }; }
     }; return tx;
   } };
   vi.stubGlobal('indexedDB', { open() { const request = { result: database, onsuccess: undefined as (() => void) | undefined }; queueMicrotask(() => request.onsuccess?.()); return request; } });
-  return data;
+  return Object.assign(data, { recordings });
 }
 describe('atomic v1 migration', () => {
   it('backs up the exact original before replacing main with v2', async () => {
@@ -77,6 +80,8 @@ describe('progress reset', () => {
     original.started = true;
     original.revision = 1;
     const data = databaseWith(original);
+    data.set('v1-backup', { ...original, version: 1 });
+    data.recordings.set('legacy-voice', new Blob(['sample']));
     const staleTab = await import('../src/storage');
     const staleCopy = await staleTab.load();
     vi.resetModules();
@@ -89,6 +94,8 @@ describe('progress reset', () => {
     expect(next.revision).toBe(3);
     await expect(staleTab.persist(staleCopy)).rejects.toThrow('다른 탭');
     expect(data.get('main')).toMatchObject({ revision: 3, started: false, settings: { effects: false } });
+    expect(data.has('v1-backup')).toBe(false);
+    expect(data.recordings.size).toBe(0);
     next.started = true;
     await currentTab.persist(next);
     expect(next.revision).toBe(4);
@@ -97,10 +104,14 @@ describe('progress reset', () => {
     const original = freshSave();
     original.started = true;
     const data = databaseWith(original, true);
+    data.set('v1-backup', original);
+    data.recordings.set('legacy-voice', new Blob(['sample']));
     const storage = await import('../src/storage');
     await storage.load();
     await expect(storage.resetSave(freshSave())).rejects.toThrow();
     expect(data.get('main')).toEqual(original);
+    expect(data.get('v1-backup')).toEqual(original);
+    expect(data.recordings.size).toBe(1);
   });
   it('allows an explicit reset to replace an unreadable record', async () => {
     const data = databaseWith(freshSave());

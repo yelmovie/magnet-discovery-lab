@@ -11,7 +11,7 @@ fs.mkdirSync(out,{recursive:true});
 const results=[],errors=[];
 let browser;
 const save=page=>page.evaluate(()=>new Promise((resolve,reject)=>{
-  const request=indexedDB.open('push-pull-city',1);request.onerror=()=>reject(request.error);
+  const request=indexedDB.open('push-pull-city');request.onerror=()=>reject(request.error);
   request.onsuccess=()=>{const db=request.result,r=db.transaction('saves').objectStore('saves').get('main');r.onsuccess=()=>{db.close();resolve(r.result);};r.onerror=()=>reject(r.error);};
 }));
 const check=(name,detail)=>{results.push({name,status:'pass',...detail});console.log('PASS '+name);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({results,errors},null,2));};
@@ -25,7 +25,7 @@ async function fresh(n,viewport={width:1280,height:800}){
   state.final.complete=false;
   Object.assign(state.settings,{sound:false,music:false,effects:false,motion:true});
   state.activities[n]={values:{playVersion:4,paceVersion:1,mechanicsVersion:1,inquiryVersion:2,inquiryActivity:n,inquiryPhase:'experiment'},points:{},records:[],mask:[],trials:[]};
-  await page.evaluate(state=>new Promise((resolve,reject)=>{const request=indexedDB.open('push-pull-city',1);request.onsuccess=()=>{const db=request.result,tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(state,'main');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);}),state);
+  await page.evaluate(state=>new Promise((resolve,reject)=>{const request=indexedDB.open('push-pull-city');request.onsuccess=()=>{const db=request.result,tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(state,'main');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);}),state);
   await page.reload();await page.locator('[data-action="start"]').click();
   await page.locator('#experiment-root canvas').waitFor();
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);
@@ -55,7 +55,7 @@ async function autoplay(){
     await page.reload();await page.locator('[data-action="start"]').click();
     const done=await finishAuto(page,3);
     for(const id of observed)assert.ok(done.activities[3].trials.some(t=>t.id===id));
-    for(const id of ['clip','aluminum','wood'])assert.equal(done.activities[3].values['sorted-'+id],true);
+    for(const id of ['clip','nail','nut','aluminum','wood','plastic'])assert.equal(done.activities[3].values['sorted-'+id],true);
     assert.deepEqual(done.evidence,state.evidence);assert.deepEqual(done.completed,state.completed);
     check('autoplay 3 sorts all materials, preserves stopped/reloaded observations, submits no answer');await context.close();
   }

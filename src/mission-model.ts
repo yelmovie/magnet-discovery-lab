@@ -1,6 +1,7 @@
 import type { Activity, Point, Pole, Save } from './domain';
 import { validTrial } from './trial-records';
 import { mailboxAssembled } from './mailbox-assembly';
+import { materialCatalog, materialClassified, sortingSpecimens } from './material-sorting';
 
 export const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, (a.y - b.y) * .5625);
 // The facing edges touch at six world units; one division on this experiment's ruler is six units wide.
@@ -38,13 +39,20 @@ export function missionReady(screen: number, a: Activity, s: Save): boolean {
   if(a.values.mechanicsVersion===1){
     if(screen===1&&!(compact?[0]:[0,1]).every(i=>f(`latch${i}`)))return false;
     if(screen===2&&!compact&&!f('diagnosis2'))return false;
-    if(screen===3&&!(compact?['clip','aluminum','wood']:['clip','nail','aluminum','wood','plastic','rubber']).every(id=>f(`sorted-${id}`)))return false;
     if(screen===9&&!a.trials?.some(t=>t.key==='prototype'&&validTrial(t)&&t.designRevision===s.design.revision&&t.template===s.design.template))return false;
   }
   switch (screen) {
     case 1: return (compact?[0]:[0,1]).every(i => f(`found${i}`) && proof(`inspect${i}`));
     case 2: return (compact?[0]:[0,1]).every(i => f(`with${i}`) && f(`without${i}`) && proof(`repair${i}`)) && (compact || f('with2') && proof('repair2'));
-    case 3: return (compact?['clip','aluminum','wood']:['clip','nail','aluminum','wood','plastic','rubber']).every(id => f(`tested-${id}`)) && (compact?['clip']:['clip','nail']).every(id => f(`sorted-${id}`)||f(`delivered-${id}`));
+    case 3: {
+      const legacy = compact ? ['clip','aluminum','wood'] : materialCatalog.slice(0,6).map(m=>m.id);
+      if(sortingSpecimens.every(m=>materialClassified(a,m.id)))return true;
+      if(a.values.mechanicsVersion===1){
+        return s.completed.includes(3) && legacy.every(id=>materialClassified(a,id));
+      }
+      return legacy.every(id=>f(`tested-${id}`)) &&
+        (compact?['clip']:['clip','nail']).every(id=>f(`sorted-${id}`)||f(`delivered-${id}`));
+    }
     case 4: {
       const trial=(key:string)=>a.trials?.find(t=>t.key===key&&validTrial(t)&&t.outcome==='success');
       const far=trial('far'),near=trial('near'),paper=trial('paper'),rescue=trial('rescue');

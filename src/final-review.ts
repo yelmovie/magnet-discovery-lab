@@ -35,7 +35,7 @@ export const finalQuestions = [
     retry:'손잡이와 패드 안에 들어 있는 부품을 생각해 봐. 유리 양쪽에 자석이 하나씩 있었어.',
   },
   {
-    tab:'내 발명', note:'내 설계를 친구에게 소개하고, 의견을 듣고 고쳐 다시 확인했어.',
+    tab:'내 발명', note:'어떤 불편을 해결할지 정하고, 자석을 쓰는 방법을 친구에게 소개했어.',
     question:'장치의 부품 배치를 고친 뒤 꼭 할 일은?',
     choices:['고치기 전 성공 기록을 그대로 사용해','고친 배치로 다시 움직여 시험해','장치 이름만 멋지게 바꿔'], answer:1,
     discovery:'장치를 고쳤다면 새 배치로 다시 시험해.',
@@ -43,6 +43,20 @@ export const finalQuestions = [
     retry:'전에 성공했어도 부품의 자리가 달라졌지? 지금 배치가 작동하는지 확인할 방법을 골라 봐.',
   },
 ] as const;
+
+// Keep the answer index stable so a saved answer is still valid after an upgrade.
+const workshopQuestion = {
+  ...finalQuestions[4],
+  question: '발명 카드에서 자석이 하는 일을 어떻게 설명하면 좋을까?',
+  choices: ['발명품의 이름과 색깔만 말해', '자석을 놓은 자리와 그곳에서 생기는 움직임을 말해', '자석이 붙지 않는 물건에도 언제나 붙는다고 말해'],
+  discovery: '자석을 어디에 쓰고 어떤 힘이 작용하는지 설명할 수 있어.',
+  reason: '자석이 어디에 있는지, 무엇을 당기거나 밀어내는지 설명하면 친구도 작동 방법을 떠올릴 수 있어.',
+  retry: '발명 카드에 적은 자석의 성질을 봐. 그 힘이 어디에서 무엇을 움직이는지 생각해 봐.',
+} as const;
+
+export function reviewQuestion(s: Save, index: number) {
+  return index === 4 && s.idea && s.activities[10]?.values.ideaVersion === 1 ? workshopQuestion : finalQuestions[index];
+}
 
 export function initializeReview(s:Save):FinalReview {
   return s.final.review ||= {version:1,page:0,answers:finalQuestions.map(()=>-1)};

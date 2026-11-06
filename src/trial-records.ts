@@ -1,4 +1,5 @@
 import type { Activity, Point, Value } from './domain';
+import { ironNutArt, materialCatalog } from './material-sorting';
 import { replayInitialObjects, replayObjects, trialResultSentence } from './trial-observations';
 export { replayInitialObjects, replayObjects, trialResultSentence };
 export interface TrialObject extends Point { id: string; pole?: 'N' | 'S'; topPole?: 'N' | 'S'; bottomPole?: 'N' | 'S' }
@@ -58,7 +59,7 @@ export function trialObjectName(id:string):string {
     'fixed-magnet':'덮개의 자석','fixed-plate':'몸체의 철판','repair-plate':'철판','repair-magnet':'수리 자석','hidden-magnet':'숨은 자석',base:'장치 몸체','design-target':'마주 보는 부품','operating-target':'물속 패드','operating-magnet':'바깥 손잡이','use-handle':'손잡이','force-arrow':'힘 화살표',stickerN:'N극 스티커',stickerS:'S극 스티커'};
   if(names[id])return names[id];
   if(/^ring\d+$/.test(id))return `${Number(id.slice(4))+1}번 고리`;
-  if(/^material-[0-5]$/.test(id))return ['철 클립','철못','알루미늄','나무 조각','플라스틱','고무 지우개'][Number(id.slice(-1))];
+  if(/^material-[0-6]$/.test(id))return materialCatalog[Number(id.slice(-1))].name;
   return /magnet/.test(id)?'자석':/plate/.test(id)?'철판':/target/.test(id)?'대상 부품':'실험 물체';
 }
 export function trialPoleLabel(o:TrialObject):string {
@@ -87,7 +88,7 @@ export function trialObjectArt(o:TrialObject,t:Trial,x:number,y:number,scale=1):
   const frame=(file:string,box:string,w:number,h:number,atlasW=1536,atlasH=1024)=>
     `<svg x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" viewBox="${box}" preserveAspectRatio="none" overflow="hidden"><image href="/assets/quest/${file}.webp" width="${atlasW}" height="${atlasH}"/></svg>`;
   const row=(file:string,i:number,w:number,h:number)=>frame(file,`2 ${i*112+2} 316 108`,w,h,320,448);
-  const material=(i:number)=>frame('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`,62,62);
+  const material=(i:number)=>materialCatalog[i].id==='nut'?`<image href="${ironNutArt}" x="-31" y="-31" width="62" height="62"/>`:frame('material-kit',`${i%3*512} ${Math.floor(i/3)*512} 512 512`,62,62);
   const bar=(pole=o.pole)=>{
     if(o.topPole&&o.bottomPole)return `<g transform="translate(-17 -23)">${uprightMagnet(o.topPole,o.bottomPole,34,46)}</g>`;
     const shape=frame('magnet-bar','60 370 1420 285',70,24);
@@ -97,10 +98,10 @@ export function trialObjectArt(o:TrialObject,t:Trial,x:number,y:number,scale=1):
   const coupled=(inside:boolean)=>row('aquarium-cleaner-parts',inside?1:0,inside?42:56,48);
   function glyph():string {
     const id=o.id;
-    const index=/^material-([0-5])$/.exec(id);
+    const index=/^material-([0-6])$/.exec(id);
     if(index)return material(Number(index[1]));
     if((id==='clip'&&t.key==='rescue')||id==='key')return frame('science-equipment','544 512 465 430',52,48);
-    const knownMaterial=['clip','nail','aluminum','wood','plastic','rubber'].indexOf(id);
+    const knownMaterial=materialCatalog.findIndex(m=>m.id===id);
     if(knownMaterial>=0)return material(knownMaterial);
     if(id==='paper')return image('prop-paper-sheet',29,54);
     if(id==='cart-magnet'||id==='cart'||id==='car')return image('prop-cart',72,60);

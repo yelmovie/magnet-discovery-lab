@@ -1,4 +1,5 @@
-import { emptyActivity, materials, opposite, record, type Activity, type Point, type Pole, type Save } from './domain';
+import { emptyActivity, opposite, record, type Activity, type Point, type Pole, type Save } from './domain';
+import { ironNutArt, materialBins, materialCatalog, materialClassified, sortedMaterialPosition, sortingSpecimens } from './material-sorting';
 import type { Context, View } from './activity-types';
 import { bindDrag, placementControls } from './manipulation';
 import { addTrial, trialOutcome, type TrialObject } from './trial-records';
@@ -109,7 +110,7 @@ class Surface {
     const sensor=this.c.root.querySelector<HTMLElement>('.force-sensor');
     if(sensor&&this.n!==4){
       let d=100;
-      if(this.n===3){const m=this.a.points['sweep-magnet']||pt(20,39);d=Math.min(...materialPositions.map((p,i)=>!materialVisible(this.a,materials[i].id)||this.has(`sorted-${materials[i].id}`)?100:distance(m,this.a.points[`material-${i}`]||p)));}
+      if(this.n===3){const m=this.a.points['sweep-magnet']||pt(20,39);d=Math.min(...sortingSpecimens.map(item=>this.has(`sorted-${item.id}`)?100:distance(m,this.a.points[`material-${item.index}`]||item)));}
       if(this.n===7)d=distance(this.a.points.cleaner||pt(27,47),this.a.points['inner-pad']||pt(29,48));
       const level=Math.max(0,Math.min(100,(22-d)/22*100));
       sensor.style.setProperty('--sensor-level',`${level}%`);const text=sensor.querySelector('span');if(text)text.textContent=d<15?'가까운 배치':d<23?'조금 더 가까이':'멀리 떨어진 배치';
@@ -145,10 +146,13 @@ class Surface {
     return true;
   }
   material(index:number,p:Point,size=92,showName=true) {
-    const img=this.asset('material-kit','/assets/quest/material-kit.webp');
-    if(img.complete&&img.naturalWidth){const cw=img.naturalWidth/3,ch=img.naturalHeight/2;this.ctx.drawImage(img,(index%3)*cw,Math.floor(index/3)*ch,cw,ch,p.x*W/100-size/2,p.y*H/100-size/2,size,size);}
-    else this.iron(p,'',size*.65);
-    if(showName)this.label(materials[index].name,pt(p.x,p.y+8),true);
+    const specimen=materialCatalog[index],nut=specimen.id==='nut';
+    const img=nut?this.asset('iron-nut',ironNutArt):this.asset('material-kit','/assets/quest/material-kit.webp');
+    if(img.complete&&img.naturalWidth){
+      const cw=img.naturalWidth/(nut?1:3),ch=img.naturalHeight/(nut?1:2);
+      this.ctx.drawImage(img,nut?0:(index%3)*cw,nut?0:Math.floor(index/3)*ch,cw,ch,p.x*W/100-size/2,p.y*H/100-size/2,size,size);
+    }else this.iron(p,'',size*.65);
+    if(showName)this.label(specimen.name,pt(p.x,p.y+8),true);
   }
   label(text: string, p: Point, small = false, color = '#203e40') {
     // The inquiry header already gives this instruction and progress count.
@@ -275,7 +279,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
   }
   if(n===2){hits.push({id:'repair-magnet',p:p('repair-magnet',mailbox.looseMagnet),label:'넣고 뺄 수 있는 자석'},{id:'lid',p:p('lid',mailbox.handleOpen),label:'덮개 손잡이'});if(round===2)hits.push({id:'repair-plate',p:p('repair-plate',pt(75,47)),label:'자리가 어긋난 철판'});actions=action('shake','흔들어 열리는지 보기');if(!compact&&a.values.with0&&a.values.without0&&round===0)actions=action('next','책 보관함도 고쳐 주기 →');if(a.values.with1&&a.values.without1&&round===1)actions=action('next','새 우편함의 철판도 맞춰 줘 →');}
   if(n===2&&round===2&&!a.values.diagnosis2)actions+=`<div class="mission-diagnosis">${action('fault-distance','철판 위치를 고칠래')}${action('fault-color','자석 색을 바꿀래')}</div>`;
-  if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});materials.forEach((m,i)=>{if(materialVisible(a,m.id)&&!a.values[`sorted-${m.id}`])hits.push({id:`material-${i}`,p:p(`material-${i}`,materialPositions[i]),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});if(compact&&!a.values.extraMaterials)actions=action('more-materials','다른 재료도 살펴보기');}
+  if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});sortingSpecimens.forEach(m=>{if(!a.values[`sorted-${m.id}`])hits.push({id:`material-${m.index}`,p:p(`material-${m.index}`,m),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});}
   if(n===4){
     hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:'눈금 위에서 좌우로 움직이는 조사 자석'});
     if(round===2){
@@ -290,7 +294,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
     const stops=clipStops(a.trials);
     if(stops){comparison=clipCompareView(stops);actions=action('replay-pull','▶ 두 실험 다시 보기')+(compact?'':actions);}
   }
-  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,72)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,72)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&a.values.test0N&&a.values.test0S&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
+  if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,78)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,78)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&a.values.test0N&&a.values.test0S&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
   if(n===6){for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);if(a.values[`done${round}`]&&round<2)actions=action('next',compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
   if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('detach','자석 떼기');}
@@ -398,6 +402,7 @@ function inspect(v: Surface){
   v.button('next',()=>{v.a.values.round=1;v.a.points={};v.refresh();});
 }
 function assembleMailbox(v:Surface){
+  const narrowTray=typeof matchMedia==='function'?matchMedia('(max-width: 520px) and (orientation: portrait)'):undefined;
   const wood=v.asset('mailbox-wood','/assets/quest/mailbox-wood.webp');
   const anchor={body:pt(49,63),cover:pt(50.5,46)};
   function drawPart(part:MailboxPart){
@@ -417,7 +422,7 @@ function assembleMailbox(v:Surface){
     g.beginPath();g.roundRect(937,249,200,342,20);g.fill();g.stroke();g.restore();
     for(const part of mailboxParts){
       const el=v.c.root.querySelector<HTMLButtonElement>(`[data-drag="${partKey(part)}"]`)!;
-      el.disabled=v.animating||partInstalled(v.a,part);
+      el.disabled=v.animating||partInstalled(v.a,part)||(narrowTray?.matches===true&&part!==next);
     }
     for(const part of mailboxParts.filter(part=>partInstalled(v.a,part)))drawPart(part);
     if(next){
@@ -523,40 +528,70 @@ function repair(v: Surface){
   });
   v.button('next',()=>{v.a.values.round=i+1;v.a.values.repairClosed=false;v.a.points={};v.refresh();});
 }
-const materialPositions=[pt(36,42),pt(52,42),pt(66,43),pt(36,65),pt(52,65),pt(66,65)];
-const coreMaterials=['clip','aluminum','wood'];
-const materialVisible=(a:Activity,id:string)=>a.values.paceVersion!==1||a.values.extraMaterials===true||coreMaterials.includes(id)||a.values[`tested-${id}`]===true;
 function salvage(v: Surface){
-  let held=-1, heldSide=1;const magnet=v.p('sweep-magnet',pt(20,39)),bins=[pt(86,44),pt(86,70)];
+  let held=-1, heldSide=1;
+  const magnet=v.p('sweep-magnet',pt(20,39)),bins=materialBins;
   const atPole=(p:Point)=>pt(p.x+heldSide*5,p.y+3.3);
-  const required=v.compact?coreMaterials:materials.map(m=>m.id);
-  const sorted=()=>required.filter(id=>v.has(`sorted-${id}`)).length;
-  const sort=(i:number,p:Point,byMagnet=false)=>{
-    const m=materials[i],bin=bins.findIndex(q=>distance(p,q)<10);
+  const sorted=()=>sortingSpecimens.filter(m=>materialClassified(v.a,m.id)).length;
+  for(const m of sortingSpecimens)if(v.has(`sorted-${m.id}`))v.set(`material-${m.index}`,sortedMaterialPosition(m));
+  const sort=(m:typeof sortingSpecimens[number],p:Point,byMagnet=false)=>{
+    const i=m.index,bin=bins.findIndex(q=>distance(p,q)<10);
     if(bin<0)return false;
-    if(!v.has(`tested-${m.id}`)){v.set(`material-${i}`,materialPositions[i]);v.tell(`${m.name}의 반응을 먼저 자석으로 확인해 줘. 겉모습만으로는 알 수 없어.`);return false;}
-    if((bin===0)!==m.magnetic){v.set(`material-${i}`,materialPositions[i]);held=-1;v.tell(m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':`${m.name}이 자석을 따라왔는지 떠올려 봐. 관찰한 반응과 분류가 달라.`);playEffect('bump',v.s.settings);return false;}
+    if(!v.has(`tested-${m.id}`)){v.set(`material-${i}`,pt(m.x,m.y));v.tell(`${m.name}: 먼저 자석을 가까이 대고 반응을 확인해 줘.`);return false;}
+    if((bin===0)!==m.magnetic){v.set(`material-${i}`,pt(m.x,m.y));held=-1;v.tell(m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':'자석을 따라왔는지 떠올리고 알맞은 분류함에 옮겨 줘.');playEffect('bump',v.s.settings);return false;}
     v.mark(`sorted-${m.id}`,`${m.name} 분류`,bin===0?'붙는 재료로 분류했어.':'붙지 않는 재료로 분류했어.');
     if(m.magnetic&&byMagnet)v.mark(`delivered-${m.id}`,`${m.name} 운반`,'자석에 붙은 철 부품을 수리함으로 옮겼어.');
-    v.set(`material-${i}`,pt(82+(i%3)*4,bin===0?43:69));held=-1;
+    v.set(`material-${i}`,sortedMaterialPosition(m));held=-1;
     const el=v.c.root.querySelector<HTMLButtonElement>(`[data-drag="material-${i}"]`);if(el){el.disabled=true;el.style.pointerEvents='none';}
     v.proof(`sort-${m.id}`,`${m.name} 관찰 후 분류`,'success',{material:m.id,magnetic:m.magnetic,byMagnet});
-    v.tell(sorted()===required.length?'재료의 반응을 비교했어! 금속이라고 모두 자석에 붙지는 않아. 남은 재료도 자유롭게 살펴봐.':`${m.name} 분류 완료! 핵심 재료 ${sorted()}/${required.length}개를 비교했어.`,true);
-    if(sorted()===required.length)v.proof('materials','자석에 붙는 재료와 붙지 않는 재료를 관찰하고 분류');
+    const done=sorted(),total=sortingSpecimens.length;
+    v.tell(done===total?'여섯 물건을 모두 분류했어! 금속이라고 모두 자석에 붙지는 않아.':`${m.name} 분류 완료! ${done}/${total}개를 분류했어.`,true);
+    if(done===total)v.proof('materials','자석에 붙는 재료와 붙지 않는 재료를 관찰하고 분류');
     return true;
   };
   const scan=(p:Point)=>{
-    if(held>=0){const end=atPole(p);v.set(`material-${held}`,end);sort(held,end,true);return;}
-    materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id)||v.has(`sorted-${m.id}`)||held>=0)return;const q=v.p(`material-${i}`,materialPositions[i]);if(magneticReach(p,q,true)&&distance(p,q)<10){
-      if(!v.has(`tested-${m.id}`)){v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');v.tell(m.magnetic?`${m.name}이 붙었어! 자석으로 오른쪽 위 수리함까지 옮겨 줘.`:`${m.name}은 따라오지 않아. 이제 ${m.name}을 손으로 잡아 오른쪽 아래 분류함에 넣어 줘.`);}
-      if(m.magnetic&&held<0){held=i;heldSide=q.x>=p.x?1:-1;v.set(`material-${i}`,atPole(p));}
-    }});
+    if(held>=0){
+      const m=sortingSpecimens.find(item=>item.index===held)!;
+      const end=atPole(p);v.set(`material-${held}`,end);sort(m,end,true);return;
+    }
+    let nearest:typeof sortingSpecimens[number]|undefined,range=10;
+    for(const m of sortingSpecimens){
+      if(v.has(`sorted-${m.id}`))continue;
+      const gap=distance(p,v.p(`material-${m.index}`,pt(m.x,m.y)));
+      if(gap<range){nearest=m;range=gap;}
+    }
+    if(!nearest)return;
+    const m=nearest,i=m.index,q=v.p(`material-${i}`,pt(m.x,m.y));
+    if(!v.has(`tested-${m.id}`)){
+      v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');
+      v.tell(m.magnetic?'자석에 붙었어! 자석으로 오른쪽 위 수리함까지 옮겨 줘.':`${m.name}: 자석을 따라오지 않았어. 물건을 손으로 잡아 오른쪽 아래 분류함에 넣어 줘.`);
+    }
+    if(m.magnetic){held=i;heldSide=q.x>=p.x?1:-1;v.set(`material-${i}`,atPole(p));}
   };
-  v.draw=()=>{v.base();v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id))return;const p=v.p(`material-${i}`,materialPositions[i]);
-    if(v.has(`sorted-${m.id}`)){v.material(i,p,54,false);return;}v.material(i,p);if(v.compact&&!required.includes(m.id))v.label('더 탐구',pt(p.x,p.y+14),true);if(v.has(`tested-${m.id}`))v.label(m.magnetic?'자석에 착!':'손으로 옮기기',pt(p.x,p.y-9),true);});v.magnet(v.p('sweep-magnet',magnet),'N',.9);v.label(`자석으로 조사하고 분류하기  ${sorted()}/${required.length}`,pt(50,29),true);};
-  v.drag('sweep-magnet',magnet,p=>{scan(p);if(held<0){const beside=materials.findIndex((m,i)=>materialVisible(v.a,m.id)&&!m.magnetic&&!v.has(`sorted-${m.id}`)&&v.has(`tested-${m.id}`)&&distance(p,v.p(`material-${i}`,materialPositions[i]))<10);if(beside>=0){const q=v.p(`material-${beside}`,materialPositions[beside]);v.set('sweep-magnet',pt(q.x-12,q.y));}}v.draw();},scan);
-  materials.forEach((m,i)=>{if(!materialVisible(v.a,m.id)||v.has(`sorted-${m.id}`))return;v.drag(`material-${i}`,materialPositions[i],p=>{if(held===i)held=-1;sort(i,p);v.draw();});});
-  v.button('more-materials',()=>{v.a.values.extraMaterials=true;v.refresh();});
+  v.draw=()=>{
+    v.base();v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);
+    sortingSpecimens.forEach(m=>{
+      const p=v.p(`material-${m.index}`,pt(m.x,m.y));
+      if(v.has(`sorted-${m.id}`)){v.material(m.index,p,54,false);return;}
+      v.material(m.index,p);
+      if(v.has(`tested-${m.id}`))v.label(m.magnetic?'자석에 착!':'손으로 옮기기',pt(p.x,p.y-9),true);
+    });
+    v.magnet(v.p('sweep-magnet',magnet),'N',.9);
+    v.label(`자석으로 조사하고 분류하기  ${sorted()}/${sortingSpecimens.length}`,pt(50,29),true);
+  };
+  v.drag('sweep-magnet',magnet,p=>{
+    scan(p);
+    if(held<0){
+      const beside=sortingSpecimens.filter(m=>!m.magnetic&&!v.has(`sorted-${m.id}`)&&v.has(`tested-${m.id}`))
+        .map(m=>v.p(`material-${m.index}`,pt(m.x,m.y))).sort((a,b)=>distance(p,a)-distance(p,b))[0];
+      if(beside&&distance(p,beside)<10)v.set('sweep-magnet',pt(beside.x-12,beside.y));
+    }
+    v.draw();
+  },scan);
+  sortingSpecimens.forEach(m=>{
+    const i=m.index;if(v.has(`sorted-${m.id}`))return;
+    v.drag(`material-${i}`,pt(m.x,m.y),p=>{if(held===i)held=-1;sort(m,p);v.draw();});
+  });
 }
 function distanceLab(v: Surface){
   const r=Number(v.a.values.round||0),target=r===3?pt(69,42):pt(61,55);
@@ -739,7 +774,7 @@ function poles(v: Surface){
     }
     v.a.values.poleLayout=1;
   }
-  const stickerHome=(side:Pole)=>pt(side==='N'?33:47,72);
+  const stickerHome=(side:Pole)=>pt(side==='N'?33:47,78);
   let probe=(v.a.values.probePole||'N') as Pole,probeStart={...v.p('probe',probeHome)};
   let reaction=String(v.a.values.reaction||'');
   const covered=()=>v.p('unknown-magnet',rest);

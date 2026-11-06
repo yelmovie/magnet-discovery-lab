@@ -1,4 +1,5 @@
 import './learning-visuals.css';
+import { apparatusFigure } from './apparatus-figures';
 
 interface LearningVisual {
   image: string; title: string; alt: string; parts: string[];
@@ -26,7 +27,8 @@ function visual(n: number, template: string): LearningVisual {
 
 export function visualPreview(n: number, template: string): string {
   const v=visual(n,template);
-  return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="${v.title} · 장치 그림 크게 보기"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치 살펴보기 <b aria-hidden="true">＋</b></span></button>`;
+  const interactive=apparatusFigure(n);
+  return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="${v.title} · ${interactive ? '장치 움직여 보기' : '장치 그림 크게 보기'}"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치 살펴보기 <b aria-hidden="true">${interactive ? '▸' : '＋'}</b></span></button>`;
 }
 
 export function apparatusThumbnail(n:number,template:string) {

@@ -4,6 +4,7 @@ import { mailbox } from './mailbox';
 import { mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { glassStains } from './aquarium-glass';
 import { missionReady, paperGapMiddle } from './mission-model';
+import { materialBins, sortingSpecimens } from './material-sorting';
 import './experiment-autoplay.css';
 
 export const canDemonstrate = (stage: number, a: Activity) =>
@@ -32,11 +33,12 @@ export function demonstrationSteps(stage: number, save: Save): Step[] {
       ...(!f('with0')?[lid(true),move('repair-magnet',mailbox.socket.x,mailbox.socket.y,'덮개의 홈에 자석 끼우기'),lid(false),press('shake','자석을 넣고 똑같이 흔들면 덮개가 열릴까?')]:[])];
     case 3: {
       const steps:Step[]=[];
-      for(const [id,index,x,y] of [['clip',0,36,42],['aluminum',2,66,43],['wood',3,36,65]] as const){
-        if(f(`sorted-${id}`))continue;
-        const p=a.points[`material-${index}`]||{x,y};
-        steps.push(move('sweep-magnet',p.x,p.y,'같은 자석을 가까이 대고 반응 보기'));
-        steps.push(id==='clip'?move('sweep-magnet',86,38,'자석에 붙은 철 클립을 수리함으로 옮기기'):move(`material-${index}`,86,70,'붙지 않은 재료를 아래 분류함에 넣기'));
+      const order=[...sortingSpecimens.filter(m=>m.magnetic),...sortingSpecimens.filter(m=>!m.magnetic)];
+      for(const m of order){
+        if(f(`sorted-${m.id}`))continue;
+        const id=`material-${m.index}`,p=a.points[id]||m,bin=materialBins[m.magnetic?0:1];
+        steps.push(move('sweep-magnet',p.x,p.y,`${m.name}: 같은 자석을 가까이 대고 반응 보기`));
+        steps.push(m.magnetic?move('sweep-magnet',bin.x,bin.y-6,`${m.name}: 자석으로 수리함에 옮기기`):move(id,bin.x,bin.y,`${m.name}: 손으로 아래 분류함에 옮기기`));
       }
       return steps;
     }

@@ -80,10 +80,9 @@ describe('짧은 탐구 흐름의 안내',()=>{
     delete a.values.paceVersion;expect(coaching(8,a,freshSave()).action).not.toContain('점검소');
     a.values.car=27;expect(coaching(8,a,freshSave()).action).toContain('밀어도 당겨도');
   });
-  it('새 재료 활동은 핵심 세 재료만 세고 기존 여섯 재료 목표는 유지한다',()=>{
-    const a=paced();a.values['sorted-clip']=true;a.values['sorted-nail']=true;
-    expect(coaching(3,a,freshSave())).toMatchObject({done:1,total:3});
-    delete a.values.paceVersion;expect(coaching(3,a,freshSave())).toMatchObject({done:2,total:6});
+  it('재료 활동은 검사와 분류가 끝난 물건을 여섯 개까지 센다',()=>{
+    const a=paced();a.values['tested-clip']=true;a.values['sorted-clip']=true;a.values['tested-nail']=true;
+    expect(coaching(3,a,freshSave())).toMatchObject({done:1,total:6});
   });
   it('새 발명은 현재 설계의 한 번 성공을 안내하고 낡은 성공은 인정하지 않는다',()=>{
     const a=paced(),s=freshSave();a.values.use0=true;
@@ -108,7 +107,7 @@ describe('짧은 탐구 흐름의 안내',()=>{
   it('붙지 않는 재료를 검사했으면 자석 대신 그 재료를 직접 집도록 안내한다',()=>{
     const a=paced(),s=freshSave();a.values['sorted-clip']=true;a.values['tested-clip']=true;a.values['tested-aluminum']=true;
     expect(coaching(3,a,s)).toMatchObject({focus:'material-2'});expect(coaching(3,a,s).action).toContain('손으로 오른쪽 아래');
-    a.values['sorted-aluminum']=true;expect(coaching(3,a,s).focus).toBe('sweep-magnet');expect(coaching(3,a,s).action).toContain('나무');
+    a.values['sorted-aluminum']=true;expect(coaching(3,a,s).focus).toBe('sweep-magnet');expect(coaching(3,a,s).action).toContain('철못');
     a.values['tested-wood']=true;expect(coaching(3,a,s).focus).toBe('material-3');
   });
   it('거리나 종이 배치가 준비되면 옮기기를 반복하지 않고 관찰 버튼을 안내한다',()=>{

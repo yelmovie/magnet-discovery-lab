@@ -13,7 +13,7 @@ const base=(argv[0]||'http://127.0.0.1:4197').replace(/\/?$/,'/');
 const SIZES=[[1920,1080],[1440,900],[1366,768],[1280,800],[1024,768],[906,755],[873,580],[812,375],[375,812],[1024,640,'125%'],[853,533,'150%'],[640,400,'200%']]
  .map(([w,h,z])=>({w,h,id:`${w}x${h}`+(z?`@${z}`:'')})).filter(()=>!sizesArg).concat((sizesArg||"").split(",").filter(Boolean).map(x=>{const [w,h]=x.split("x").map(Number);return {w,h,id:x};}));
 const SHOT=['1280x800','1024x768','853x533@150%'];
-const CTA='.quest-cta, .mission-cta, .primary, [data-story=finish], .expedition-next';
+const CTA='.quest-cta, .mission-cta, .primary, [data-story=finish], .expedition-next, [data-act=next], [data-review-next], [data-restoration=finish]';
 const REQUIRED=`${CTA}, [data-drag], [data-mission], [data-inquiry], [data-inquiry-group], [data-story], .modal-close, [data-settings-action=close], [role=tab], [data-place], .quest-hud button`;
 
 // ---- page hook: expose module-scope state and functions of main.ts ----
@@ -33,7 +33,6 @@ const reflection=n=>({values:{inquiryPhase:'explain',with0:true,without0:true,se
  trials:{2:['repair0'],4:['far','near','paper'],6:['float2','join2'],8:['stop0','stop1','delivery0','delivery1'],10:['use0']}[n].map(k=>trial(n,k))});
 const click=sel=>async p=>{await p.locator(sel).first().evaluate(e=>e.click(),null,{timeout:4000});};
 const call=(fn,...args)=>async p=>{await p.evaluate(([fn,args])=>window.__lab.fn[fn](...args),[fn,args]);};
-const place=(id,x,y)=>async p=>{await p.locator(`[data-drag="${id}"]`).evaluate((e,d)=>e.dispatchEvent(new CustomEvent('piece-place',{detail:d})),{x,y});};
 const film=t=>async p=>{
  // Let autoplay actually start first: pausing a pending play() rejects it and the film shows its play button.
  await p.waitForFunction(()=>{const v=document.querySelector('.story-layer video');return v&&(v.currentTime>0.1&&!v.paused||v.error);},null,{timeout:8000}).catch(()=>{});
@@ -43,7 +42,10 @@ const film=t=>async p=>{
 };
 const intro=async p=>{await p.evaluate(()=>window.__lab.fn.openFilm('intro',()=>{}));};
 const notebook=async p=>{const b=p.locator('[data-action=notebook]');if(await b.count())await b.first().evaluate(e=>e.click());else await call('notebook')(p);};
+const invention={problem:'pins',properties:['iron'],name:'철 압정 구조대',pitch:'막대 끝의 자석이 책장 아래 떨어진 철 압정을 끌어당겨.',
+ stickers:[{uid:0,id:'magnet',pole:'N',x:55,y:45},{uid:1,id:'iron',x:90,y:45}],shown:true};
 const done5={evidence:5,completed:10};
+const core={name:'core',page:'core',...done5,idea:invention,final:{report:true}};
 const act=(n,extra={})=>({page:'activity',n,completed:10,...extra});
 const STATES=[
  {name:'title',page:'title',started:false},
@@ -53,7 +55,7 @@ const STATES=[
  {name:'city',page:'city',evidence:2},
  {name:'city-overview',page:'city',evidence:2,map:true,after:[click('[data-map-overview]')]},
  {name:'city-entrance',page:'city',evidence:2,after:[call('showPlace',2)]},
- {name:'city-reward',page:'city',...done5,after:[call('showReward',4)]},
+ {name:'city-reward',page:'city',...done5,after:[call('showReward',4,true)]},
  {name:'city-notebook',page:'city',...done5,after:[notebook]},
  {name:'city-concept',page:'city',evidence:2,after:[call('openConcept',1)]},
  {name:'city-settings',page:'city',evidence:2,after:[click('[data-action=settings]'),click('.settings-fold > summary')]},
@@ -69,13 +71,16 @@ const STATES=[
  {name:'act6-placed',...act(6,{points:{ring0:{x:68,y:71},ring1:{x:68,y:56}}})},
  {name:'act6-reflection',...act(6,reflection(6))},
  {name:'act8-end',...act(8,{values:{car:73,controlled0:46},points:{controller:{x:82,y:59}}})},
- {name:'act9-box',...act(9,{values:{chosen:true}})},
- {name:'act9-remote',...act(9,{values:{chosen:true},template:'remote'})},
- {name:'act10-remote',...act(10,{template:'remote'})},
- {name:'act10-reflection',...act(10,reflection(10))},
+ {name:'act9-example',...act(9,{idea:{problem:'pins'}}),after:[click('[data-resident-example]')]},
+ {name:'act9-properties',...act(9,{idea:{problem:'pins',step9:1}})},
+ {name:'act9-sketch',...act(9,{idea:{...invention,step9:2}})},
+ {name:'act10-showcase',...act(10,{idea:{...invention,step10:1}})},
+ {name:'act10-present',...act(10,{idea:{...invention,step10:1}}),after:[click('[data-act=present]')]},
+ {name:'act10-feedback',...act(10,{idea:{...invention,step10:2}})},
  {name:'report',page:'report',...done5},
- {name:'core',page:'core',...done5,final:{report:true}},
- {name:'core-installed',page:'core',...done5,final:{report:true},after:[place('blueprint',53,56)]},
+ core,
+ { ...core,name:'core-invention',final:{report:true,review:{version:1,page:4,answers:[1,0,2,0,-1]}}},
+ { ...core,name:'core-summary',final:{report:true,review:{version:1,page:5,answers:[1,0,2,0,1]}}},
  {name:'ending-film-mid',page:'ending',...done5,final:{report:true,complete:true,date:'2026-11-01T00:00:00.000Z'},after:[film(8.7)]},
  {name:'ending-card',page:'ending',...done5,final:{report:true,complete:true,date:'2026-11-01T00:00:00.000Z'},after:[film(8.7),click('[data-story=skip]')]},
  {name:'certificate',page:'certificate',...done5,final:{report:true,complete:true,date:'2026-11-01T00:00:00.000Z'},settings:{nickname:'김하늘 탐험가',ability:0}},
@@ -91,6 +96,8 @@ async function setState(p,st){
   s.completed=Array.from({length:st.completed??(st.evidence||0)*2},(_,i)=>i+1);
   s.design={template:st.template||'box',pair:'iron',pole:'N',gap:28,aligned:true,revision:0};
   s.activities[9]={...d.emptyActivity(),points:{'design-magnet':{x:43,y:55},'design-target':{x:57,y:55}}};
+  if(st.idea){const {emptyIdea}=await import('/src/idea-model.ts');s.idea={...emptyIdea(),...st.idea};}
+  if(st.idea&&st.page==='core')s.activities[10]={...d.emptyActivity(),values:{ideaVersion:1}};
   Object.assign(s.final,st.final||{});
   if(st.n){const a=s.activities[st.n]=d.emptyActivity();a.values={playVersion:4,mechanicsVersion:1,paceVersion:1,inquiryVersion:2,inquiryActivity:st.n,inquiryPhase:'experiment',...st.values};a.points=st.points||{};a.trials=st.trials||[];}
   L.save=s;L.show(st.page,st.n);L.quiet();scrollTo(0,0);
@@ -121,7 +128,7 @@ function measure({map,CTA,REQUIRED}){
   .map(e=>({sel:sel(e),over:e.scrollHeight-e.clientHeight,overX:e.scrollWidth-e.clientWidth}));
  // Active layer: top-most open dialog / film / modal backdrop, else the page.
  const top=[...document.querySelectorAll('dialog[open], .story-layer, .modal-backdrop')].filter(e=>e.checkVisibility()).at(-1),scope=top||body;
- const skip=e=>e.closest('[inert]')||(!map&&e.closest('.expedition-world'))||e.closest('.sr-only');
+ const skip=e=>e.closest('[inert]')||(!map&&e.closest('.expedition-world'))||e.closest('.sr-only, .canvas-hit:disabled');
  const visible=e=>e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
  // Reachability: walk the containing chain; overflow hidden/clip clips, auto/scroll lets it scroll into view,
  // absolute/fixed boxes escape non-positioned / all ancestors. Then compare with the viewport.
@@ -156,7 +163,7 @@ function measure({map,CTA,REQUIRED}){
   const r=e.getBoundingClientRect(),q=reach(e,r,false),info={sel:sel(e),label:label(e),cta:e.matches(CTA),req:e.matches(REQUIRED),disabled:!!e.disabled,box:box(r)};
   if(q.s==='clipped'||q.s==='offscreen')res.unreach.push({...info,how:q.s,by:q.by,cut:q.cut});
   else if(q.s==='scroll')res.scrollNeeded.push(info);
-  if(r.width<44||r.height<44)res.small.push({sel:info.sel,label:info.label,w:Math.round(r.width),h:Math.round(r.height)});
+  if(!e.disabled&&(r.width<44||r.height<44))res.small.push({sel:info.sel,label:info.label,w:Math.round(r.width),h:Math.round(r.height)});
   const v=vis(e);
   if(q.s==='ok'&&v.width>4&&v.height>4){let blocked=0,by='';for(const [fx,fy] of [[.5,.5],[.2,.5],[.8,.5],[.5,.2],[.5,.8]]){const t=document.elementFromPoint(v.left+v.width*fx,v.top+v.height*fy);if(t&&t!==e&&!e.contains(t)&&!t.contains(e)&&!(t.tagName==='CANVAS'&&e.matches('.canvas-hit'))&&sticky(t)===sticky(e)){blocked++;by=sel(t.closest('button,summary,[data-drag]')||t);}}
    if(blocked>=3)res.covered.push({...info,by});}
@@ -168,7 +175,7 @@ function measure({map,CTA,REQUIRED}){
  }
  const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.textContent.trim()&&n.parentElement&&!skip(n.parentElement)?1:2});
  for(let n;(n=walker.nextNode());){
-  const pe=n.parentElement;if(!visible(pe))continue;const rg=document.createRange();rg.selectNodeContents(n);const r=rg.getBoundingClientRect();if(!r.width||!r.height)continue;
+  const pe=n.parentElement;if(!visible(pe)||cs(pe).clipPath==='inset(50%)')continue;const rg=document.createRange();rg.selectNodeContents(n);const r=rg.getBoundingClientRect();if(!r.width||!r.height)continue;
   const q=reach(pe,r,true),t=n.textContent.trim().replace(/\s+/g,' ').slice(0,24);
   if(q.s==='clipped'&&q.cut>2)res.textClip.push({sel:sel(pe),by:q.by,cut:q.cut,text:t});
   if(q.s==='offscreen')res.textOff.push({sel:sel(pe),cut:q.cut,text:t});
@@ -178,6 +185,11 @@ function measure({map,CTA,REQUIRED}){
   const backdropScroll=top!==m&&SCR(cs(top).overflowY)&&top.scrollHeight>top.clientHeight+1;
   res.modal={sel:sel(m),box:box(r),outside:Math.round(Math.max(r.bottom-H,-r.top,r.right-W,-r.left)),scroller:scroller?sel(scroller):backdropScroll?sel(top):null};}
  const v=document.querySelector('.story-layer video');if(v)res.film={t:+v.currentTime.toFixed(1),ready:v.readyState,error:!!v.error,card:!document.querySelector('.story-card')?.hidden,playButton:!document.querySelector('[data-story=play]')?.hidden};
+ res.dragMin=els.filter(e=>e.matches('[data-drag]:not(:disabled)')).reduce((min,e)=>{
+  const r=e.getBoundingClientRect();return Math.min(min,r.width,r.height);
+ },Infinity);
+ const reading='h1, .quiz-question h2, .play-discovery .inquiry-option, .inquiry-feedback, .final-answer, .final-answer-feedback, .town-news p, .idea-buddy p, .idea-choice strong, .idea-resident-bubble p';
+ res.reading=[...scope.querySelectorAll(reading)].filter(e=>!skip(e)&&visible(e)).map(e=>({sel:sel(e),px:Number.parseFloat(cs(e).fontSize)}));
  res.small.sort((a,b)=>Math.min(a.w,a.h)-Math.min(b.w,b.h));res.smallCount=res.small.length;res.small=res.small.slice(0,5);
  return res;
 }
@@ -212,7 +224,8 @@ function classify(m,vp,errors){
   await Promise.all(Array.from({length:Number(process.env.AUDIT_JOBS||4)},async()=>{for(let vp;(vp=queue.shift());){
    const context=await browser.newContext({viewport:{width:vp.w,height:vp.h},hasTouch:true});
    const p=await context.newPage();let errors=[];
-   p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});p.on('pageerror',e=>errors.push('pageerror: '+e.message));
+   await p.routeWebSocket('**',socket=>socket.close());
+   p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});p.on('pageerror',e=>errors.push('pageerror: '+e.message));p.on('response',r=>{if(r.status()>=400)errors.push('HTTP '+r.status()+' '+r.url());});
    await p.route('**/src/main.ts*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text())+HOOK});});
    await p.goto(base);await p.waitForFunction(()=>window.__lab&&document.querySelector('[data-action="start"]'),null,{timeout:30000});
    for(const st of STATES){

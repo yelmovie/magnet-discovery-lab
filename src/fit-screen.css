@@ -13,7 +13,26 @@
   #app .quest-activity .inquiry-workbench .mission-feedback { top: calc(50% - var(--stage-h) / 2 + var(--head-bottom, 200px) + 10px); }
 }
 
+/* Foldables in landscape can keep the reading width without sideways scrolling. */
+@media (min-aspect-ratio: 1/1) and (min-width: 820px) and (max-width: 859px) {
+  :root { --stage-w: 100vw; }
+  body.quest-mode #app { min-width: 0; }
+}
+
 /* Whole-map view on short screens: the map shrinks below 0.48, so the building labels shrink with it a little
    (name ≥ 16px, status line kept at 16px) instead of growing into each other. */
 #app .map-overview .expedition-building { scale: calc(1 / max(var(--map-scale), .48)); }
 #app .map-overview .expedition-building small { font-size: calc(16px * max(1, .48 / var(--map-scale))); }
+/* The whole-map view is for choosing buildings. Residents are available again
+   in the walking view, where their touch targets don't cover the building signs. */
+#app .map-overview .expedition-resident { visibility: hidden; }
+@media (max-width: 600px) and (orientation: portrait), (max-height: 620px) {
+  #app .map-overview .expedition-building {
+    min-height: calc(48px * max(1, .48 / var(--map-scale)));
+    word-break: keep-all;
+  }
+}
+@media (min-aspect-ratio: 1/1) and (min-width: 820px) and (max-height: 559px) {
+  body.quest-mode #app:has(.quest-city) { --stage-h: 100dvh; min-width: 0; height: 100dvh; }
+  #app .quest-city .expedition-viewport { min-height: 0; height: 100%; }
+}

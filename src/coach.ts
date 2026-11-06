@@ -1,4 +1,5 @@
-import { materials, ready, type Activity, type Save } from './domain';
+import { ready, type Activity, type Save } from './domain';
+import { materialClassified, sortingSpecimens } from './material-sorting';
 import { shakePrompt } from './mission-content';
 import { inquiryPhase } from './inquiry-model';
 import { distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
@@ -50,15 +51,18 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       }
       clues = ['자석이 덮개를 붙잡는지 보려면 자석만 넣거나 빼고, 상자는 같은 세기로 흔들어 봐.', '자석과 철판이 가까이 마주 보는지 살펴봐.']; break;
     case 3:
-      total = 8; done = materials.filter(m => f(`tested-${m.id}`)).length + ['clip', 'nail'].filter(id => f(`delivered-${id}`)).length;
-      if(a.values.mechanicsVersion===1){total=6;done=materials.filter(m=>f(`sorted-${m.id}`)).length;}
-      if(paced){total=3;done=['clip','aluminum','wood'].filter(id=>f(`sorted-${id}`)).length;}
-      action = paced?'철 클립·알루미늄·나무를 검사하고 나눠 담아 줘':'각 재료를 자석으로 검사하고, 결과에 맞게 분류해'; focus = 'sweep-magnet';
-      if(paced){
-        const pending=materials.map((m,i)=>({...m,index:i})).filter(m=>f(`tested-${m.id}`)&&!f(`sorted-${m.id}`));
+      total=sortingSpecimens.length;done=sortingSpecimens.filter(m=>materialClassified(a,m.id)).length;
+      action='자석을 물건에 가까이 대고, 반응에 따라 여섯 물건을 나눠 담아 줘';focus='sweep-magnet';
+      {
+        const pending=sortingSpecimens.filter(m=>f(`tested-${m.id}`)&&!f(`sorted-${m.id}`));
         const awaiting=pending.find(m=>!m.magnetic)||pending[0];
-        if(awaiting){action=awaiting.magnetic?`${awaiting.name}이 붙었어. 오른쪽 위 수리함에 담아 줘`:`${awaiting.name}은 붙지 않았어. 재료를 손으로 오른쪽 아래 분류함에 넣어 줘`;focus=awaiting.magnetic?'sweep-magnet':`material-${awaiting.index}`;}
-        else {const next=materials.find(m=>['clip','aluminum','wood'].includes(m.id)&&!f(`tested-${m.id}`));if(next)action=`자석을 ${next.name} 가까이 대어 반응을 살펴봐`;}
+        if(awaiting){
+          action=awaiting.magnetic?`${awaiting.name}: 붙었어! 오른쪽 위 수리함에 담아 줘`:`${awaiting.name}: 붙지 않았어. 물건을 손으로 오른쪽 아래 분류함에 넣어 줘`;
+          focus=awaiting.magnetic?'sweep-magnet':`material-${awaiting.index}`;
+        }else{
+          const next=sortingSpecimens.find(m=>!f(`tested-${m.id}`));
+          if(next)action=`자석을 가까이 대고 ${next.name}의 반응을 살펴봐`;
+        }
       }
       clues = ['붙지 않는 재료도 가까이 대서 검사해야 해.', '겉모습이 반짝인다고 모두 자석에 붙을까? 직접 비교해 봐.']; break;
     case 4:

@@ -80,8 +80,15 @@ describe('예측-실험-근거-전이 완료 경계',()=>{
   });
   it('새 재료 검사에서는 여섯 재료 직접 분류까지 해야 한다',()=>{
     const a=emptyActivity(),s=freshSave();a.values={playVersion:4,mechanicsVersion:1,'delivered-clip':true,'delivered-nail':true};
-    const ids=['clip','nail','aluminum','wood','plastic','rubber'];ids.forEach(id=>a.values[`tested-${id}`]=true);
+    const ids=['clip','nail','aluminum','wood','plastic','nut'];ids.forEach(id=>a.values[`tested-${id}`]=true);
     expect(missionReady(3,a,s)).toBe(false);ids.forEach(id=>a.values[`sorted-${id}`]=true);expect(missionReady(3,a,s)).toBe(true);
+  });
+  it('이전에 끝낸 세 재료 탐구의 진행 기록을 유지한다',()=>{
+    const a=emptyActivity(),s=freshSave();a.values={playVersion:4,mechanicsVersion:1,paceVersion:1};
+    for(const id of ['clip','aluminum','wood']){a.values[`tested-${id}`]=true;a.values[`sorted-${id}`]=true;}
+    expect(missionReady(3,a,s)).toBe(false);
+    s.completed.push(3);
+    expect(missionReady(3,a,s)).toBe(true);
   });
   it('첫 설계의 실패도 기록되지만 수정한 설계는 다시 시험한다',()=>{
     const a=emptyActivity(),s=freshSave();a.values={playVersion:4,mechanicsVersion:1,base:true,magnet:true,target:true};

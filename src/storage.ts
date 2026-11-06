@@ -48,26 +48,6 @@ export async function load(): Promise<Save> {
     return migrateSave(raw)!;
   } catch { persistenceError = '이 환경에서는 진행이 저장되지 않아. 현재 창에서 계속 플레이할 수 있어.'; return freshSave(); }
 }
-// The learner's voice stays on this device, in its own store so autosaves never copy it.
-let previewRecording: Blob | undefined;
-function recordings<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  return (db ? Promise.resolve(db) : openDatabase()).then(connection => new Promise<T>((resolve, reject) => {
-    const request = run(connection.transaction('recordings', mode).objectStore('recordings'));
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  }));
-}
-export async function saveRecording(blob: Blob, preview = false): Promise<void> {
-  if (preview) { previewRecording = blob; return; }
-  await recordings('readwrite', store => store.put(blob, 'idea'));
-}
-export function loadRecording(preview = false): Promise<Blob | undefined> {
-  return preview ? Promise.resolve(previewRecording) : recordings<Blob | undefined>('readonly', store => store.get('idea'));
-}
-export async function clearRecordings(): Promise<void> {
-  previewRecording = undefined;
-  await recordings('readwrite', store => store.clear());
-}
 export function persist(s: Save): Promise<void> {
   if (!db) return Promise.reject(new Error(persistenceError || '저장소에 연결할 수 없어.'));
   return writeSave(s, false);
@@ -81,7 +61,8 @@ function writeSave(s: Save, resetting: boolean): Promise<void> {
     const connection = db ?? await openDatabase();
     try {
       await new Promise<void>((resolve, reject) => {
-        const tx = connection.transaction('saves', 'readwrite'), store = tx.objectStore('saves'), read = store.get('main');
+        const tx = connection.transaction(resetting ? ['saves', 'recordings'] : 'saves', 'readwrite');
+        const store = tx.objectStore('saves'), read = store.get('main');
         let failure = '저장 공간을 확인하고 다시 시도해줘.';
         read.onsuccess = () => {
           const revision = read.result?.revision ?? 0;
@@ -93,6 +74,11 @@ function writeSave(s: Save, resetting: boolean): Promise<void> {
           // A reset also advances the stored revision so older tabs cannot restore their copies.
           snapshot.revision = Math.max(expectedRevision, Number.isSafeInteger(revision) ? revision : 0) + 1;
           snapshot.updated = new Date().toISOString();
+          if (resetting) {
+            // Clear migrated backups and old audio with the same commit as the fresh save.
+            store.clear();
+            tx.objectStore('recordings').clear();
+          }
           store.put(snapshot, 'main');
         };
         tx.oncomplete = () => resolve();

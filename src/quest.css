@@ -501,7 +501,7 @@ body.quest-mode #app .mission-board.play-board { position: absolute; inset: 0; w
 #app .expedition-tool-display { position: absolute; left: 50%; bottom: 18px; translate: -50% 0; display: flex; gap: 10px; pointer-events: none; }
 #app .expedition-tool-display > span { display: grid; place-items: center; width: 48px; height: 48px; background: #fff8e7ed; border: 2px solid #788366; border-radius: 14px; }
 #app .expedition-tool-display small { display: none; }
-#app .expedition-festival { position: absolute; left: 45%; top: 46%; font-size: 70px; color: #ffd36c; animation: quest-character-idle 1.8s ease-in-out infinite; }
+
 #app .quest-title-brand { top: 5%; width: min(58vw, 900px); }
 #app .quest-title-logo { max-height: 48dvh; }
 #app .quest-title-subtitle { margin-top: 2px; font-size: clamp(20px, 1.8vw, 28px); }

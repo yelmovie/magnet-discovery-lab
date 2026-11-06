@@ -136,16 +136,40 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 
 우체부·재료 연구원·시계탑 지기·수조 관리인·발명가는 이 프로젝트용으로 내장 imagegen을 사용해 한 장의 그림으로 생성했다. 원본은 `assets/source/quest/restored-residents-20261102.png`에 보관하고, 투명 영역을 따라 나눈 다섯 WebP(`public/assets/quest/resident-1.webp` ~ `resident-5.webp`)를 지도와 대화창이 함께 사용한다.
 
-## 지도 주민의 한국어 목소리
+## 캐릭터 한국어 목소리
 
-`public/audio/voices/resident-*.mp3` 20개는 공개 모델 [Supertone Supertonic 2](https://huggingface.co/Supertone/supertonic-2)의 기본 목소리로 이 프로젝트의 대사를 로컬에서 합성한 음성이다. 인물의 목소리를 복제하지 않았다. 유료 API나 체험 크레딧을 사용하지 않았다.
+모모 자비스에서 Qwen3-TTS 합성 프리셋과 Supertonic 3의 기본 F1로 대사를 만들었다. 마을과 발명 공방의 주민 10명, 밀이·당이 2명에게 역할에 맞춰 각각 음성을 배정했다. 실제 인물의 녹음을 사용하지 않았고, 생성 서버나 모델을 게임에 포함하지 않는다.
 
-- 모델·기본 목소리: OpenRAIL-M. [고정 버전 라이선스 원문](https://huggingface.co/Supertone/supertonic-2/blob/75e6727618a02f323c720cba9478152d4bc16ca4/LICENSE), 사본 `public/audio/voices/model-license.txt`.
-- 생성 코드: Supertone Inc., MIT. [공식 코드](https://github.com/supertone-oss-archive/supertonic), 사본 `public/audio/voices/source-license.txt`.
-- OpenRAIL-M은 상업적 사용을 금지하지 않으며, 6항에 따라 모델 제공자는 생성 결과에 권리를 주장하지 않는다. 라이선스의 사용 조건은 적용된다.
-- 대사·음성 ID·SHA-256: `public/audio/voices/manifest.json`. 제작·재생성·검증 설명: `docs/resident-voices.md`.
-- 모델과 생성 런타임은 게임 배포에 포함하지 않는다.
+- 적용 파일: `public/audio/voices/`의 MP3 36개.
+- 대사·음성 ID·SHA-256: `public/audio/voices/manifest.json`. 배정과 재생 방식: `docs/resident-voices.md`.
+- `model-license.txt`와 `source-license.txt`는 이전 Supertonic 2 버전의 제작 기록이다.
 
 ## 실험에서 잡고 놓는 손
 
 클립·고리 실험의 `experiment-hand-held.webp`와 `experiment-hand-released.webp`는 내장 imagegen으로 만든 투명 배경 그림이다. 실제 손가락의 집는 지점을 물체에 맞추고, 놓는 손이 물러난 뒤 물체를 움직인다. 원본과 생성 프롬프트는 `assets/source/quest/experiment-hands.json`에 정리했다. `scripts/prepare-hand-images.cjs`로 투명도를 보존한 384px WebP를 만든다.
+
+## 힘 실험 연구소 · 철 너트 (2026-11-05)
+
+- `public/assets/quest/material-iron-nut.webp`: Codex 기본 이미지 생성 도구로 만든 투명 2.5D 철제 육각 너트. 실험대에서 끌어 옮기는 물건과 실험 기록의 재생 그림에 사용한다. 투명 WebP로 최적화했다.
+- 생성 프롬프트 요지: 가운데 나사산과 구멍이 보이는 은회색 철제 육각 너트 하나를 30도 위에서 바라본 동화풍 게임 소품. 나무와 황동 작업실에 어울리는 따뜻한 빛, 투명 배경, 그림자와 글자 없음.
+
+## 시민 발명 공방 · 주민 대화 그림 (2026-11-05)
+
+- `public/assets/quest/workshop-resident-{eraser,pins,bag,door,cup}.webp`: 담임 선생님, 사서, 할머니, 가게 주인, 급식실 조리사. 각각 Codex 기본 이미지 생성 도구로 단독 생성한 투명 픽셀 인물화로, 주민 선택 버튼과 말풍선 옆에 사용한다.
+- 공통 생성 프롬프트 요지: 정면 상반신의 가상 한국인 한 명, 16비트 게임 픽셀아트, 굵고 짙은 외곽선, 중성광과 청록·남색·보라색 계열, 황색과 세피아 색조 없음. 글자·말풍선 없이 투명 배경.
+
+## 시민 발명 공방 · 자석을 쓴 물건 예시 (2026-11-05)
+
+- `public/assets/quest/workshop-example-{eraser,pins,bag,door,cup}.webp`: 자석 지우개, 철 압정을 끌어오는 막대, 가방 잠금쇠, 문 고정대, 자석 쟁반. Codex 기본 이미지 생성 도구로 한 장에 장치 하나씩 만든 뒤 투명 WebP로 최적화했다.
+- 공통 생성 프롬프트 요지: 설치된 자석과 그 자석이 붙잡는 부분이 보이도록 장치를 살짝 비스듬히 보여 주는 16비트 픽셀아트. 남색 외곽선, 푸른 회색과 보라 계열, 중성광, 투명 배경, 글자와 누런 조명 없음.
+
+## 마을 시설 복구 그림 (2026-11-05)
+
+- Codex 기본 이미지 생성 도구로 한 장에 소품 하나씩 만들었다. 기존 마을 지도와 같은 동화풍 등각 시점, 청록·푸른 회색과 황동, 중성광, 투명 배경, 글자 없는 독립 소품을 요청했다.
+- `public/assets/quest/town-restored-{post,lab,tower,aqua,workshop}.webp`: 우편함 봉투 명판, 재료 선반, 극성탑 계기판, 수조 물고기 간판, 발명 공방 톱니바퀴 명판. 각 시설 복구가 끝나면 해당 그림이 지도에 설치된다.
+- `public/assets/quest/town-plaza-emblem.webp`: 다섯 시설을 모두 복구하면 나타나는 중앙 광장의 자석 문장. 여섯 게임용 파일은 투명 WebP로 최적화했고, 내장 드라이브의 생성 원본은 적용을 확인한 뒤 정리했다.
+
+## 우편함·수조관 장치 살펴보기 (2026-11-06)
+
+- [Colorfigures](https://april-zhu.com/colorfigures), April Zhu, MIT. 원본의 SVG 투영·채색·윤곽선 엔진을 게임에 맞춰 사용했다. 원래 저작권과 라이선스는 `public/licenses/colorfigures.txt`에 동봉했다.
+- 우편함 덮개와 철 걸쇠, 수조 유리 양쪽의 자석 손잡이와 청소 패드 모델 및 한글 조작 화면은 프로젝트에서 제작했다.

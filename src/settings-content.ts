@@ -5,7 +5,7 @@ export const settingsContent = {
   title: '탐험 설정',
   close: '닫기',
   music: '배경음',
-  effects: '효과음',
+  effects: '효과음·캐릭터 목소리',
   on: '켜짐',
   off: '꺼짐',
   story: '이 탐험을 하는 이유 다시 보기',

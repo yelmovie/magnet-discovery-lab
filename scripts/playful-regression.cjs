@@ -38,7 +38,7 @@ async function reload() {
 async function seed(state) {
   await page.evaluate(()=>window.__lab.flush());
   await page.evaluate(state=>new Promise((resolve,reject)=>{
-    const req=indexedDB.open('push-pull-city',1);req.onerror=reject;
+    const req=indexedDB.open('push-pull-city');req.onerror=reject;
     req.onsuccess=()=>{const db=req.result,tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(state,'main');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};
   }),state);
   await page.reload();await page.waitForFunction(()=>!!window.__lab);await action('start');
@@ -60,7 +60,19 @@ async function experiments(n) {
   await bounds(n);
   if(n===1){await assembleMailbox(page);await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);}
   if(n===2){await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));}
-  if(n===3){await put('sweep-magnet',36,42);await put('sweep-magnet',86,38);for(const [i,x,y] of [[2,66,43],[3,36,65]]){await put('sweep-magnet',x,y);await put('material-'+i,86,70);}}
+  if(n===3){
+    for(const [index,x,y,magnetic] of [[0,36,42,true],[1,52,42,true],[6,66,65,true],[2,66,43,false],[3,36,65,false],[4,52,65,false]]){
+      await put('sweep-magnet',x,y);
+      if(magnetic)await put('sweep-magnet',86,42);
+      else {
+        if(index===2){
+          await put('material-2',86,44);
+          assert.equal((await save()).activities[3].values['sorted-aluminum'],undefined,'shiny aluminum cannot go in the magnetic bin');
+        }
+        await put('material-'+index,86,70);
+      }
+    }
+  }
   if(n===4){await mission('release');await mission('next');await put('distance-magnet',52,55);await mission('release');await reload();assert.equal((await save()).activities[4].values.done1,true);await mission('next');await put('paper',56.5,55);await mission('release');check('controlled distance/paper comparison survives reload');}
   if(n===5){
     await put('probe',48,53);await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
@@ -90,8 +102,6 @@ async function experiments(n) {
     await page.waitForFunction(round=>window.__lab.save.activities[8].values['segment'+round]===true,r,{timeout:3000});
     assert.equal((await save()).activities[8].values.cartSpeed,0);
   }}
-  if(n===9){await mission('box');await put('base',50,61);await put('design-magnet',43,55);await put('design-target',57,55);await mission('prototype');}
-  if(n===10){await mission('test');assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await put('use-handle',50,65);await mission('test');}
   await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(),true,'activity '+n+' actual evidence unlocks continuation');
 }
@@ -114,29 +124,98 @@ async function finish(n) {
   assert.equal((await save()).completed.includes(n),true);check('activity '+n+' complete with real evidence');
 }
 // The final notebook only opens the next page after the right answer, then restoration can finish.
-async function reviewNotebook(){
+async function reviewNotebook(start=0){
   const questions=await page.evaluate(async()=>(await import('/src/final-review.ts')).finalQuestions.map(q=>q.answer));
   for(const [i,answer] of questions.entries()){
+    if(i<start)continue;
     await page.locator(`[data-review-answer="${(answer+1)%3}"]`).click();
     assert.equal(await page.locator('[data-review-next]').isEnabled(),false,'wrong notebook answer '+i+' cannot continue');
     await page.locator(`[data-review-answer="${answer}"]`).click();
     await page.locator('[data-review-next]').click();
   }
 }
+async function workshop() {
+  const step = () => page.locator('[data-idea-step]');
+  const next = () => page.locator('[data-act="next"]');
+  await step().waitFor();
+  assert.equal(await next().isEnabled(),false);
+  await page.locator('.idea-resident-tab[data-resident="pins"]').click();
+  await page.locator('[data-problem="pins"]').click();
+  await page.locator('.idea-example[open] img').waitFor();
+  await page.waitForFunction(()=>document.querySelector('.idea-example img')?.naturalWidth>0);
+  await page.keyboard.press('Escape');
+  await page.locator('.idea-example').waitFor({state:'hidden'});
+  await page.locator('#idea-custom').focus();
+  assert.equal((await save()).idea.problem,'pins','tabbing through the custom field preserves the chosen resident');
+  await next().click();
+  await page.locator('[data-property="iron"]').click();
+  await next().click();
+  await page.locator('#idea-name').fill('철 압정 구조대');
+  await page.locator('#idea-pitch').fill('막대 끝의 자석이 책장 아래 떨어진 철 압정을 끌어당겨.');
+  await page.locator('[data-sticker="0"]').click();
+  await page.locator('#idea-canvas').press('ArrowRight');
+  await page.locator('#idea-canvas').press('Enter');
+  const sticker=(await save()).idea.stickers[0];
+  assert.equal(sticker.pole,'N');
+  await page.locator('[data-edit="flip"]').click();
+  assert.equal((await save()).idea.stickers[0].pole,'S');
+  await page.locator('[data-edit="undo"]').click();
+  assert.deepEqual((await save()).idea.stickers,[sticker]);
+  await page.screenshot({path:out+'/activity-9.png'});
+  await reload();
+  assert.equal(await step().getAttribute('data-idea-step'),'2','continue restores the workshop draft at its actual step');
+  assert.equal(await page.locator('#idea-name').inputValue(),'철 압정 구조대');
+  assert.deepEqual((await save()).idea.stickers,[sticker]);
+  await finish(9);
+  await next().click();
+  assert.equal(await next().isEnabled(),false,'the invention needs to be hung before completing the workshop');
+  await page.locator('[data-act="hang"]').click();
+  await page.locator('[data-act="present"]').click();
+  await page.locator('.idea-present[open]').waitFor();
+  await page.keyboard.press('Tab');
+  assert.equal(await page.locator('.idea-present').evaluate(el=>el.contains(document.activeElement)||document.activeElement===document.body),true,'presentation never tabs into the underlying game');
+  await page.keyboard.press('Escape');
+  await page.locator('.idea-present').waitFor({state:'hidden'});
+  assert.equal(await page.locator('[data-act="present"]').evaluate(el=>el===document.activeElement),true);
+  const download=page.waitForEvent('download');
+  await page.locator('[data-act="export"]').click();
+  const card=await download;
+  assert.equal(card.suggestedFilename().endsWith('.png'),true);
+  await card.saveAs(out+'/invention-card.png');
+  await next().click();
+  await page.locator('[data-act="buddy"]').click();
+  assert.equal((await save()).idea.feedback.length,2);
+  await page.screenshot({path:out+'/activity-10.png'});
+  await action('complete');
+  await page.locator('[data-action="next-zone"]').waitFor();
+  assert.equal((await save()).evidence.length,5);
+  assert.equal((await save()).completed.includes(10),true);
+  check('activities 9 and 10: resident, draft reload, presentation, PNG and workshop completion');
+  await action('next-zone');
+}
 async function student() {
   const context=await fresh({width:1024,height:768});
-  for(let n=1;n<=10;n++){if(n===1)await begin(n);else assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);}
-  assert.equal((await save()).evidence.length,5);
-  await reviewNotebook();
-  assert.equal(await page.locator('[data-mission="test"]').count(),0,'validated design does not repeat use test after installation');
-  await page.locator('[data-restoration="finish"]').click();assert.equal((await save()).final.complete,true);
+  const began=Date.now();
+  await action('walk-next');await action('enter');
+  for(let n=1;n<=8;n++){assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);}
+  await workshop();
+  await page.locator('[data-review-answer="1"]').click();
+  await page.locator('[data-review-next]').click();
+  await reload();
+  assert.equal(await page.locator('[data-review-page="1"]').getAttribute('aria-current'),'step','continue restores the current notebook page');
+  await page.locator('.final-bookmarks [data-review-page="0"]').click();
+  await page.locator('[data-review-next]').click();
+  await reviewNotebook(1);
+  assert.match(await page.locator('.final-review-summary').textContent(),/어디에 쓰고 어떤 힘/);
+  await page.locator('[data-restoration="finish"]').click();
+  await page.waitForFunction(()=>window.__lab.save.final.complete);
   await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();await page.screenshot({path:out+'/certificate.png'});await reload();assert.equal((await save()).final.complete,true);
-  check('five districts, final restoration, certificate and reload');
+  check('five districts, final notebook reload, festival and certificate ('+Math.round((Date.now()-began)/1000)+'s scripted)');
   const original=await save();fs.writeFileSync(out+'/student.json',JSON.stringify(original,null,2));
   await context.close();return original;
 }
 async function touchMatrix(){
-  for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:768,height:1024}]){
+  for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:768,height:1024},{width:915,height:412},{width:830,height:515},{width:375,height:812}]){
     const context=await fresh(viewport);await begin(1);await bounds(1);await assembleMailbox(page);
     const piece=page.locator('[data-drag="lid"]'),board=page.locator('.mission-board');
     await piece.tap();const b=await board.boundingBox();await board.tap({position:{x:b.width*.5,y:b.height*.60}});
@@ -185,20 +264,21 @@ async function alternateAndReplay(original){
   await action('complete');const q=await page.evaluate(async()=>(await import('/src/inquiry-content.ts')).discoveries[0]);
   await page.locator(`[data-inquiry-group="reflection"][data-value="${q.answer}"]`).click();await action('complete');await page.locator('.quest-city').waitFor();
   assert.equal(JSON.stringify((await save()).evidence),evidence);check('re-exploration keeps original evidence');
-  const fixture=structuredClone(original);fixture.activities[9]={values:{},points:{},records:[],mask:[]};fixture.activities[10]={values:{},points:{},records:[],mask:[]};fixture.resume=9;fixture.final={report:false,latch:'N',ring:'N',plate:60,complete:false,date:''};await seed(fixture);
-  await mission('remote');await put('base',50,61);await put('design-magnet',43,55);await put('design-target',57,55);await mission('prototype');await finish(9);
-  // A bad revision must be corrected and used again; an old prototype cannot supply usage evidence.
-  await mission('adjust');await put('design-target',70,70);await mission('adjust');await mission('test');
-  assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);
-  await mission('adjust');await put('design-target',57,55);await mission('adjust');
-  for(const y of [51,47,43,42])await put('use-handle',43,y);await mission('test');await finish(10);
-  await reviewNotebook();
-  assert.equal(await page.locator('[data-mission="test"]').count(),0,'validated remote design installs without duplicate use test');
-  await page.locator('[data-restoration="finish"]').click();await page.waitForFunction(()=>window.__lab.save.final.complete);
-  check('alternative remote invention: failed placement, revision, real use and final restoration');await context.close();
+  const firstIdea=structuredClone((await save()).idea);
+  await page.evaluate(()=>window.__lab.startActivity(9,true));
+  await page.locator('#idea-custom').fill('연습에서만 만든 발명');
+  assert.equal((await save()).idea.custom,'연습에서만 만든 발명');
+  await reload();
+  assert.deepEqual((await save()).idea,firstIdea,'practice draft is never saved over the original invention');
+  await page.evaluate(()=>window.__lab.startActivity(9,true));
+  await page.locator('#idea-custom').fill('두 번째 연습 발명');
+  await action('home');
+  assert.deepEqual((await save()).idea,firstIdea,'leaving practice restores the first invention card');
+  assert.equal(JSON.stringify((await save()).evidence),evidence);
+  check('workshop re-exploration preserves the original invention and five district records');await context.close();
 }
 (async()=>{try{
-  browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  browser=await chromium.launch({...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {channel:'chrome'}),headless:true});
   await teacherUnlock();const original=await student();await touchMatrix();await alternateAndReplay(original);assert.equal(results.some(r=>r.status==='fail'),false);
 }catch(error){console.error(error);results.push({name:'regression',status:'fail',message:error.stack});if(page&&!page.isClosed())await page.screenshot({path:out+'/failure.png'}).catch(()=>{});process.exitCode=1;
 }finally{fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));await browser?.close();}})();

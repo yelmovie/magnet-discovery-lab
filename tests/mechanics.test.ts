@@ -428,23 +428,22 @@ describe('반복을 줄인 새 탐구 흐름', () => {
     expect(missionReady(2,m.a,m.s)).toBe(true);
     expect(missionView(2,m.a,m.s).html).not.toContain('책 보관함도 고쳐');
   });
-  it('철과 비철금속·나무를 실제 검사하고 분류해야 진행된다',()=>{
+  it('처음부터 보이는 여섯 물건을 모두 검사하고 세 개씩 분류해야 진행된다',()=>{
     const m=short(3);
-    m.place('sweep-magnet',{x:36,y:42});m.place('sweep-magnet',{x:86,y:38});
-    m.place('sweep-magnet',{x:66,y:43});m.place('material-2',{x:86,y:70});
+    for(const i of [0,1,2,3,4,6])expect(m.c.root.querySelector(`[data-drag="material-${i}"]`)).not.toBeNull();
+    expect(m.c.root.querySelector('[data-drag="material-5"]')).toBeNull();
+    for(const x of [36,52]){
+      m.place('sweep-magnet',{x,y:42});m.place('sweep-magnet',{x:86,y:38});
+    }
+    for(const [i,x,y] of [[2,66,43],[3,36,65],[4,52,65]]){
+      m.place('sweep-magnet',{x,y});m.place(`material-${i}`,{x:86,y:70});
+    }
     expect(missionReady(3,m.a,m.s)).toBe(false);
-    m.place('sweep-magnet',{x:36,y:65});m.place('material-3',{x:86,y:70});
+    m.place('sweep-magnet',{x:66,y:65});m.place('sweep-magnet',{x:86,y:38});
     expect(missionReady(3,m.a,m.s)).toBe(true);
-    expect(m.a.values['tested-plastic']).not.toBe(true);
-  });
-  it('선택 재료는 따로 펼치기 전 이동 경로에서 붙지 않는다',()=>{
-    let m=short(3);
-    expect(m.c.root.querySelector('[data-drag="material-1"]')).toBeNull();
-    m.place('sweep-magnet',{x:52,y:42});
-    expect(m.a.values['tested-nail']).not.toBe(true);
-    m.click('more-materials');m=reopen(3,m);
-    expect(m.c.root.querySelector('[data-drag="material-1"]')).not.toBeNull();
-    m.place('sweep-magnet',{x:52,y:42});expect(m.a.values['tested-nail']).toBe(true);
+    expect(m.a.trials?.find(t=>t.key==='sort-nut')?.conditions).toMatchObject({material:'nut',magnetic:true,byMagnet:true});
+    expect(new Set([0,1,6].map(i=>m.a.points[`material-${i}`].x)).size).toBe(3);
+    expect(new Set([2,3,4].map(i=>m.a.points[`material-${i}`].x)).size).toBe(3);
   });
   it('비자성 검사를 마치면 손으로 분류할 재료를 자석이 가리지 않는다',()=>{
     const m=short(3);m.place('sweep-magnet',{x:66,y:43});

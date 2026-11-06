@@ -1,14 +1,14 @@
-import { boardSize, type Idea, type IdeaSticker } from './idea-model';
+import { boardSize, hasIdeaSketch, type Idea, type IdeaSticker } from './idea-model';
 
 const esc = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 /** None of these repeat a device already repaired in the first four districts. */
 export const ideaProblems = [
-  { id: 'eraser', who: '담임 선생님', text: '칠판 지우개가 자꾸 바닥에 떨어져요.' },
-  { id: 'pins', who: '도서관 사서', text: '쏟아진 압정을 찔리지 않고 줍고 싶어요.' },
-  { id: 'bag', who: '옆집 할머니', text: '손이 아파서 가방을 닫기가 힘들어요.' },
-  { id: 'door', who: '1층 가게 주인', text: '바람이 불면 문이 쾅 닫혀서 깜짝 놀라요.' },
-  { id: 'cup', who: '급식실 조리사', text: '쟁반이 흔들리면 컵이 미끄러져 떨어져요.' },
+  { id: 'eraser', who: '담임 선생님', text: '칠판 지우개가 자꾸 바닥에 떨어져요.', detail: '수업 중에 떨어질 때마다 주워야 해서 불편해요.', example: { title: '철판에 붙는 지우개', how: '지우개 뒤에 자석을 달면 철판으로 된 칠판에 붙여 둘 수 있어.' } },
+  { id: 'pins', who: '도서관 사서', text: '쏟아진 압정을 찔리지 않고 줍고 싶어요.', detail: '책장 아래에 들어간 압정은 손이 잘 닿지도 않아요.', example: { title: '자석 압정 집게', how: '막대 끝에 자석을 달면 손을 대기 어려운 곳의 철 압정을 끌어올릴 수 있어.' } },
+  { id: 'bag', who: '옆집 할머니', text: '손이 아파서 가방을 닫기가 힘들어요.', detail: '한 손으로도 쉽게 닫을 수 있으면 좋겠어요.', example: { title: '착 붙는 가방 잠금쇠', how: '덮개 아래 자석이 가방 몸체의 철판을 당겨서 덮개를 닫아 줘.' } },
+  { id: 'door', who: '1층 가게 주인', text: '바람이 불면 문이 쾅 닫혀서 깜짝 놀라요.', detail: '물건을 옮길 때만이라도 문을 열어 두고 싶어요.', example: { title: '자석 문 고정대', how: '벽에 붙인 고정대의 자석이 문 아래 철판을 당겨서 문을 열린 채로 잡아 줘.' } },
+  { id: 'cup', who: '급식실 조리사', text: '쟁반이 흔들리면 컵이 미끄러져 떨어져요.', detail: '쟁반을 들고 걸어갈 때도 컵이 제자리에 있으면 좋겠어요.', example: { title: '컵을 잡아 주는 자석 쟁반', how: '컵을 놓는 홈에 자석을 넣고, 바닥에 자석이 붙는 철판이 달린 컵을 올려 두면 덜 미끄러져.' } },
 ];
 export const ideaProperties = [
   { id: 'iron', title: '철을 끌어당겨', from: '재료 연구소에서 찾은 발견' },
@@ -18,10 +18,11 @@ export const ideaProperties = [
   { id: 'distance', title: '가까울수록 힘이 세져', from: '재료 연구소에서 찾은 발견' },
 ];
 export const ideaStickers = [
-  { id: 'magnet', label: '자석' }, { id: 'iron', label: '철' }, { id: 'plate', label: '얇은 판' },
+  { id: 'magnet', label: 'N극', pole: 'N' }, { id: 'magnet', label: 'S극', pole: 'S' },
+  { id: 'iron', label: '철' }, { id: 'plate', label: '얇은 판' },
   { id: 'box', label: '상자' }, { id: 'string', label: '끈' }, { id: 'wheel', label: '바퀴' },
   { id: 'spring', label: '용수철' }, { id: 'handle', label: '손잡이' },
-];
+] satisfies { id: string; label: string; pole?: IdeaSticker['pole'] }[];
 export const feedbackStickers = [
   { id: 'useful', label: '쓸모 있어' }, { id: 'clever', label: '기발해' }, { id: 'curious', label: '궁금해' },
 ] as const;
@@ -42,7 +43,7 @@ export function stickerArt(s: Pick<IdeaSticker, 'id' | 'pole'>): string {
   const north = s.pole !== 'S';
   return `<rect x="-11" y="-7" width="22" height="14" rx="2" fill="${north ? '#d8452f' : '#2f6fbd'}" stroke="#20323a" stroke-width="1"/><text y="3.6" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">${north ? 'N' : 'S'}</text>`;
 }
-export const paletteIcon = (id: string) => `<svg viewBox="-14 -14 28 28" width="44" height="44" aria-hidden="true">${stickerArt({ id, pole: 'N' })}</svg>`;
+export const paletteIcon = (s: Pick<IdeaSticker, 'id' | 'pole'>) => `<svg viewBox="-14 -14 28 28" width="44" height="44" aria-hidden="true">${stickerArt(s)}</svg>`;
 
 export function boardLayers(i: Idea, selected = -1): string {
   const lines = i.strokes.map(line => `<polyline points="${line.map(p => `${p.x},${p.y}`).join(' ')}" fill="none" stroke="#24424a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
@@ -50,7 +51,7 @@ export function boardLayers(i: Idea, selected = -1): string {
     const angle = Math.atan2(b.y - a.y, b.x - a.x), head = (turn: number) => `${b.x - 5 * Math.cos(angle + turn)},${b.y - 5 * Math.sin(angle + turn)}`;
     return `<path d="M${a.x} ${a.y}L${b.x} ${b.y}M${head(.5)}L${b.x} ${b.y}L${head(-.5)}" fill="none" stroke="#c9531c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
   }).join('');
-  const stickers = i.stickers.map(s => `<g class="idea-sticker" data-uid="${s.uid}" transform="translate(${s.x} ${s.y})">${s.uid === selected ? '<circle r="15" fill="none" stroke="#f0a020" stroke-width="1.4" stroke-dasharray="3 2"/>' : ''}<rect x="-14" y="-14" width="28" height="28" fill="transparent"/>${stickerArt(s)}<text y="17" text-anchor="middle" font-size="5" fill="#24424a">${label(s.id)}</text></g>`).join('');
+  const stickers = i.stickers.map(s => `<g class="idea-sticker" data-uid="${s.uid}" transform="translate(${s.x} ${s.y})">${s.uid === selected ? '<circle r="15" fill="none" stroke="#f0a020" stroke-width="1.4" stroke-dasharray="3 2"/>' : ''}<rect x="-14" y="-14" width="28" height="28" fill="transparent"/>${stickerArt(s)}<text y="17" text-anchor="middle" font-size="5" fill="#24424a">${s.id === 'magnet' ? `${s.pole === 'S' ? 'S' : 'N'}극` : label(s.id)}</text></g>`).join('');
   return lines + arrows + stickers;
 }
 export const boardSvg = (i: Idea, label = '내 설계 스케치') => `<svg class="idea-board-view" viewBox="0 0 ${boardSize.w} ${boardSize.h}" role="img" aria-label="${esc(label)}">${boardLayers(i)}</svg>`;
@@ -59,5 +60,5 @@ export const propertyTitles = (i: Idea) => ideaProperties.filter(p => i.properti
 
 /** The invention card shown at the showcase, on the plaza notebook and in the saved image. */
 export function ideaCard(i: Idea): string {
-  return `<article class="idea-card"><header><small>내 발명 카드</small><h2>${esc(i.name.trim() || '이름을 지어 줘')}</h2></header><div class="idea-card-board">${boardSvg(i)}</div><dl><dt>해결할 불편</dt><dd>${esc(problemText(i))}</dd><dt>쓴 자석의 성질</dt><dd>${propertyTitles(i).map(esc).join(' · ')}</dd>${i.pitch.trim() ? `<dt>소개</dt><dd>${esc(i.pitch.trim())}</dd>` : ''}</dl></article>`;
+  return `<article class="idea-card"><header><small>내 발명 카드</small><h2>${esc(i.name.trim() || '이름을 지어 줘')}</h2></header>${hasIdeaSketch(i) ? `<div class="idea-card-board">${boardSvg(i)}</div>` : ''}<dl><dt>해결할 불편</dt><dd>${esc(problemText(i))}</dd><dt>쓴 자석의 성질</dt><dd>${propertyTitles(i).map(esc).join(' · ')}</dd>${i.pitch.trim() ? `<dt>소개</dt><dd>${esc(i.pitch.trim())}</dd>` : ''}</dl></article>`;
 }

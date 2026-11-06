@@ -225,10 +225,8 @@ body.quest-mode #app .lab-coach .coach-bubble:not([hidden]),body.quest-mode #app
   body.quest-mode #app .quest-activity .bench-view-toggle {top:var(--phone-command-top);left:12px;min-height:48px;}
   body.quest-mode #app .quest-activity:has(.coach-bubble:not([hidden]),.mission-access[open],.play-question[open]) :is(.bench-view-toggle,.mission-pocket) {visibility:hidden;}
   /* Preserve both grips on a narrow board, even when the two rings are directly above one another. */
-  #app .screen-5 .canvas-hit:is([data-drag='probe'],[data-drag^='sticker']),
-  #app .screen-6 .canvas-hit[data-drag^='ring'] {min-height:44px;}
-  #app .screen-6 .canvas-hit[data-drag='ring0'] {translate:0 5px;}
-  #app .screen-6 .canvas-hit[data-drag='ring1'] {translate:0 -5px;}
+  #app .screen-6 .canvas-hit[data-drag='ring0'] {translate:0 8px;}
+  #app .screen-6 .canvas-hit[data-drag='ring1'] {translate:0 -8px;}
   #app .quest-activity .mission-study-tools .discovery-count {
     position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;padding:0;margin:0;
   }
@@ -237,7 +235,7 @@ body.quest-mode #app .lab-coach .coach-bubble:not([hidden]),body.quest-mode #app
 }
 
 /* A sideways phone has enough width for the bench if its toolbar uses one compact row. */
-@media (min-aspect-ratio:1/1) and (max-height:480px) and (max-width:1000px) {
+@media (min-aspect-ratio:1/1) and (max-height:559px) and (min-width:820px) and (max-width:1000px) {
   :root:has(#app .quest-activity) {--stage-w:100vw;--stage-h:100dvh;}
   body.quest-mode #app:has(.quest-activity) {min-width:0;height:100dvh;}
   body.quest-mode #app .quest-activity {--fit-tool-row:51px;min-height:0;}
@@ -379,4 +377,23 @@ body.quest-mode #app .quest-activity .inquiry-shell:not(.play-inquiry):is([data-
 }
 body.quest-mode #app .quest-activity .inquiry-shell:not(.play-inquiry):is([data-phase='predict'],[data-phase='explain'],[data-phase='complete']) > .inquiry-card {
   position:relative;inset:auto;translate:none;transform:none;margin:auto;max-height:100%;min-height:0;overflow:auto;
+}
+
+
+@media (min-aspect-ratio: 1/1) and (max-height: 640px) {
+  #app .quest-activity .mission-head .play-question-copy { top: calc(100% + 6px); bottom: auto; }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 559px) and (min-width: 820px) and (max-width: 1000px) {
+  body.quest-mode #app .screen-6 .mission-board > .mission-3d { top: 48%; right: 2%; }
+  body.quest-mode #app .screen-6 .mission-board > .mission-actions { left: 63%; right: auto; bottom: calc(5px - var(--fit-board-y)); transform: translateX(-50%); max-width: none; }
+  body.quest-mode #app .screen-1 .mission-board > .mission-actions:has([data-mission="fit-part"]) { left: 62%; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-width: 1100px) {
+  body.quest-mode #app .screen-5 .mission-board > .mission-actions { left: auto; right: 3%; transform: none; }
+}
+
+@media (min-width: 1500px) {
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-feedback,
+  #app .play-discovery .quiz-scenes figcaption { font-size: 18px; }
 }
