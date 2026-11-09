@@ -154,8 +154,26 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   // Dragging the map frees the camera; walking again hands it back to the explorer.
   const panButton=root.querySelector<HTMLButtonElement>('[data-map-pan]');let free=false,cam={x:0,y:0},drag:{id:number;x:number;y:number;camX:number;camY:number;moved:boolean}|null=null,swallowClick=false;
   const setFree=(value:boolean)=>{free=value;panButton?.setAttribute('aria-pressed',String(value));root.classList.toggle('map-free',value);};
-  panButton?.addEventListener('click',()=>{if(free){setFree(false);return;}if(overview)root.querySelector<HTMLButtonElement>('[data-map-overview]')?.click();const m=new DOMMatrix(getComputedStyle(world).transform);cam={x:m.e,y:m.f};setFree(true);},{signal});
-  root.querySelector('[data-map-overview]')?.addEventListener('click',e=>{overview=!overview;const button=e.currentTarget as HTMLButtonElement,label=overview?'탐험가 따라 보기':'지도 전체 보기';button.setAttribute('aria-label',label);button.title=label;button.setAttribute('aria-pressed',String(overview));setFree(false);root.classList.toggle('map-overview',overview);},{signal});
+  let returnView={free:false,cam:{x:0,y:0}};
+  const setOverview=(value:boolean)=>{
+    if(value===overview)return;
+    if(value){returnView={free,cam:{...cam}};route=[];releaseDirections();}
+    overview=value;
+    const button=root.querySelector<HTMLButtonElement>('[data-map-overview]')!;
+    const label=value?'이전 지도 보기':'지도 전체 보기';
+    button.setAttribute('aria-label',label);button.title=label;button.setAttribute('aria-pressed',String(value));
+    if(!value)cam={...returnView.cam};
+    setFree(!value&&returnView.free);root.classList.toggle('map-overview',value);
+    draw();
+  };
+  panButton?.addEventListener('click',()=>{
+    if(paused)return;
+    if(overview)setOverview(false);
+    else if(free){setFree(false);draw();return;}
+    draw();const m=new DOMMatrix(getComputedStyle(world).transform);cam={x:m.e,y:m.f};
+    route=[];releaseDirections();setFree(true);draw();
+  },{signal});
+  root.querySelector('[data-map-overview]')?.addEventListener('click',()=>{if(!paused)setOverview(!overview);},{signal});
   const draw=()=>{
     if(!viewWidth||!viewHeight)return;
     const shortLandscape=viewWidth>viewHeight&&viewHeight<=559;
@@ -225,12 +243,12 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   const keyDirs:Record<string,Point>={ArrowUp:{x:0,y:-1},KeyW:{x:0,y:-1},ArrowDown:{x:0,y:1},KeyS:{x:0,y:1},ArrowLeft:{x:-1,y:0},KeyA:{x:-1,y:0},ArrowRight:{x:1,y:0},KeyD:{x:1,y:0}};
   window.addEventListener('keydown',e=>{if(paused||!keyDirs[e.code]||e.ctrlKey||e.metaKey||e.altKey||(e.target instanceof HTMLElement&&(e.target.isContentEditable||e.target.closest('dialog,[role="dialog"],input,textarea,select'))))return;e.preventDefault();if(!e.repeat)pressDirection(e.code,keyDirs[e.code]);},{signal});
   window.addEventListener('keyup',e=>{if(held.delete(e.code))readDirection();},{signal});window.addEventListener('blur',releaseDirections,{signal});
-  viewport.addEventListener('pointerdown',e=>{if(drag||!e.isPrimary||e.button!==0)return;swallowClick=false;if(overview)return;const m=new DOMMatrix(getComputedStyle(world).transform);drag={id:e.pointerId,x:e.clientX,y:e.clientY,camX:m.e,camY:m.f,moved:false};},{signal});
-  viewport.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};},{signal});
+  viewport.addEventListener('pointerdown',e=>{if(paused||drag||!e.isPrimary||e.button!==0)return;swallowClick=false;if(overview)return;const m=new DOMMatrix(getComputedStyle(world).transform);drag={id:e.pointerId,x:e.clientX,y:e.clientY,camX:m.e,camY:m.f,moved:false};},{signal});
+  viewport.addEventListener('pointermove',e=>{if(paused||!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;route=[];releaseDirections();viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};},{signal});
   for(const event of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(event,e=>{if(!drag||drag.id!==(e as PointerEvent).pointerId)return;swallowClick=event==='pointerup'&&drag.moved;drag=null;viewport.classList.remove('is-dragging');},{signal});
   // A drag that ends over a building must not also walk there.
   viewport.addEventListener('click',e=>{if(swallowClick){swallowClick=false;e.stopPropagation();e.preventDefault();}},{signal,capture:true});
-  viewport.addEventListener('click',e=>{if((e.target as HTMLElement).closest('button'))return;setFree(false);releaseDirections();const r=world.getBoundingClientRect(),q={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};route=roadRoute(p,q);},{signal});
+  viewport.addEventListener('click',e=>{if(paused||free||(e.target as HTMLElement).closest('button'))return;setFree(false);releaseDirections();const r=world.getBoundingClientRect(),q={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};route=roadRoute(p,q);},{signal});
   const tick=(now:number)=>{const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;if(!paused&&!document.hidden){
     if(route.length){const q=route[0],d=dist(q,p),step=dt*12;if(d<=step){p=q;route.shift();}else{p={x:p.x+(q.x-p.x)*step/d,y:p.y+(q.y-p.y)*step/d};}}
     else if(dir.x||dir.y)p=walkRoad(p,dir,dt*12);
@@ -241,5 +259,5 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(doorLatch>=0&&dist(p,roads[doors[doorLatch]])>5)doorLatch=-1;
     if(!route.length)for(let i=0;i<doors.length;i++)if(dist(p,roads[doors[i]])<1.5&&doorLatch!==i){doorLatch=i;options.onPosition(p);options.onArrive(i);break;}
   }draw();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
-  return{goTo,welcomeResident,direction(x,y){setFree(false);route=[];releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
+  return{goTo,welcomeResident,direction(x,y){setFree(false);route=[];releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
 }
