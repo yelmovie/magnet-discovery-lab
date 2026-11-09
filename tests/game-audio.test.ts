@@ -241,3 +241,11 @@ describe('resident dialogue voices',()=>{
     expect(music.volume).toBeCloseTo(.35);
   });
 });
+
+ it('ducks magnetic effects during speech and restores them on stop', () => {
+   const doc = environment(); ensureAudio({music:false,effects:true}); doc.dispatchEvent(new Event('pointerdown'));
+   playEffect('snap'); const bus=AudioDouble.instances[0].gains[0]; expect(bus.gain.value).toBe(.16);
+   const stop=playNarration('/audio/voices/test.mp3'); expect(bus.gain.value).toBeCloseTo(.048);
+   playEffect('pick'); expect(bus.gain.value).toBeCloseTo(.048);
+   stop(); expect(bus.gain.value).toBe(.16);
+ });

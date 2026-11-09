@@ -121,6 +121,7 @@ function apply() {
   }
   applyMusic();
   if (!context || !effectBus) return;
+  effectBus.gain.value = EFFECT_GAIN * (narration ? 0.3 : 1);
   const settings = normalizedAudioSettings(current);
   if (!settings.effects || paused()) { silence(effectVoices); stopSamples(); }
 }
@@ -175,12 +176,12 @@ export function playNarration(src: string, settings: AudioSettings = current, on
     audio.onended = null; audio.onerror = null;
     audio.pause(); audio.removeAttribute('src'); audio.load(); audio.remove();
     if (narration?.audio === audio) narration = undefined;
-    applyMusic(); onState?.(state);
+    apply(); onState?.(state);
   };
   narration = { audio, stop: finish };
   audio.onended = () => finish('ended');
   audio.onerror = () => finish('unavailable');
-  applyMusic(); onState?.('loading');
+  apply(); onState?.('loading');
   try {
     void audio.play().then(() => {
       if (finished) { audio.pause(); return; }
