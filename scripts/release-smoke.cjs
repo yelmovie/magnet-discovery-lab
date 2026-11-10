@@ -59,7 +59,7 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
               broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).map(i=>i.src)}));
             assert.deepEqual(initial.broken,[]);
             await page.screenshot({path:`${out}/${width}-title.png`});
-            await action(page,'start').click();await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();
+            await action(page,'start').click();await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').press('Enter');
             await page.evaluate(()=>localStorage.setItem('unlockedStages',JSON.stringify([true,true,true,true,true])));
             await page.locator('[data-map-overview]').click();
             assert.match(await page.locator('[data-place="4"]').getAttribute('class'),/locked/);
@@ -105,7 +105,7 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
               await page.locator('[data-review-answer="1"]').click();await page.locator('[data-review-next]').click();
               await page.screenshot({path:`${out}/${width}-notebook.png`});
               await page.locator('[data-restoration="finish"]').click();
-              await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').click();
+              await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').press('Enter');
               await page.locator('#nickname').fill('과학 탐험가');
               assert.equal(await page.locator('#certificate-name').textContent(),'과학 탐험가');
               await page.pdf({path:`${out}/${width}-certificate.pdf`,format:'A4',landscape:true,printBackground:true,preferCSSPageSize:true});
