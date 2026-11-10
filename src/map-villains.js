@@ -35,6 +35,8 @@ export function mountMapVillains(world, options) {
 const STYLES=`
 .mv-target{position:absolute;z-index:15;transform:translate(-50%,-50%);width:94px;min-height:98px;padding:4px;background:transparent;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;touch-action:manipulation;pointer-events:auto;color:#fff;font:700 12px/1.2 var(--font-body, sans-serif);isolation:isolate}
 .map-overview .mv-target{scale:max(1,calc(.52 / var(--map-scale,1)));transform-origin:0 0}
+/* Keep overview captions readable where signs have room; compact maps retain their collision-safe layout. */
+@media(min-width:1000px){.map-overview .mv-label{font-size:max(1em,calc(13px / max(var(--map-scale,1),.52)))}}
 .mv-sprite .mv-creature{height:58px;border:0;border-radius:0;box-shadow:none;background:transparent url('/assets/quest/scrap-goblin-sheet.webp') 0 0/232px 116px no-repeat}
 .mv-sprite .mv-creature:before,.mv-sprite .mv-creature:after,.mv-sprite .mv-creature>*{display:none}
 .mv-sprite.mv-hit .mv-creature{animation:mv-bump .3s ease-out,mv-sprite-hit .3s steps(1,end)}
