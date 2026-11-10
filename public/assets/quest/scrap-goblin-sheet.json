@@ -1,0 +1,68 @@
+{
+  "columns": 4,
+  "rows": 2,
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "baseline": 240,
+  "source": {
+    "format": "raw",
+    "width": 1774,
+    "height": 887,
+    "channels": 4,
+    "depth": "uchar",
+    "premultiplied": false,
+    "hasAlpha": true,
+    "size": 6294152
+  },
+  "sourceFrames": [
+    {
+      "left": 87,
+      "top": 15,
+      "width": 305,
+      "height": 387
+    },
+    {
+      "left": 532,
+      "top": 15,
+      "width": 304,
+      "height": 387
+    },
+    {
+      "left": 973,
+      "top": 14,
+      "width": 299,
+      "height": 389
+    },
+    {
+      "left": 1381,
+      "top": 47,
+      "width": 336,
+      "height": 356
+    },
+    {
+      "left": 62,
+      "top": 463,
+      "width": 371,
+      "height": 383
+    },
+    {
+      "left": 508,
+      "top": 454,
+      "width": 330,
+      "height": 394
+    },
+    {
+      "left": 922,
+      "top": 467,
+      "width": 338,
+      "height": 373
+    },
+    {
+      "left": 1352,
+      "top": 472,
+      "width": 371,
+      "height": 379
+    }
+  ],
+  "scale": 0.5583756345177665
+}
