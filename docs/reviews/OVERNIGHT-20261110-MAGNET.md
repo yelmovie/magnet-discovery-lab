@@ -46,3 +46,7 @@
 ## 적용 스킬
 
 edu-design, edu-final-check/score-rules/verdict-rules, game-common-design 원문, yelsam-design 고도화 절차와 Impeccable context/polish/craft-floor를 확인했다. 기존 범위 보존과 가독성·터치·상태 검증에 사용했다. 영상 신규 제작이 없어 HyperFrames를 쓰지 않았고, 기존 시트로 충분하여 imagegen을 사용하지 않았다.
+
+## 최종 커밋 번들 재확인
+
+수정 커밋 `36fc586`의 최종 소스로264개 시험과 빌드를 다시 통과했다. `test-results/overnight-release-final/smoke.json`에서 두 해상도 정상/저장/고리3D/수첩/축제/인증서/초기화 smoke가 모두 통과했다. 최종 시작 버튼 표시는 469ms, 460ms이고 전송량은 각각1,330,089바이트와3,440,823바이트다. 최초 측정과 같은 캐시 비활성12Mbps/80ms 조건이며 부하 변동을 포함한다. 외부 요청0, 오프라인 재방문은 여전히 불가다. 원본 저장소의 추적 파일 변경은 없음을 마지막으로 확인했다.
