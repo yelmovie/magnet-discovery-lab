@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'NanumSquare Neo'; font-style: normal; font-weight: 400;
+  font-display: swap; src: url('/fonts/NanumSquareNeoTTF-bRg.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'NanumSquare Neo'; font-style: normal; font-weight: 700 900;
+  font-display: swap; src: url('/fonts/NanumSquareNeoTTF-cBd.woff2') format('woff2');
+}
 /* Magnet Quest: illustrated worlds, exact learning graphics and a small DOM HUD. */
 @font-face {
   font-family: 'Magnet Quest Display'; font-style: normal; font-weight: 400;
@@ -46,8 +54,8 @@
   --color-surface-glass: #fff8e7ed;
   --color-text-main: var(--quest-deep-teal);
   --color-text-sub: #43636a;
-  --font-display: 'Magnet Quest Display', 'Magnet Quest Sans', sans-serif;
-  --font-body: 'Magnet Quest Sans', 'Malgun Gothic', sans-serif;
+  --font-display: 'NanumSquare Neo', sans-serif;
+  --font-body: 'NanumSquare Neo', 'Malgun Gothic', sans-serif;
   --font-size-caption: clamp(16px, 1.3vw, 20px);
   --font-size-body: clamp(20px, 1.65vw, 25px);
   --font-size-button: clamp(20px, 1.8vw, 28px);

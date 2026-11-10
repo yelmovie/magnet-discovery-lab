@@ -15,3 +15,7 @@ preserved. Glyph outlines, glyph coverage and metrics were not changed here.
 The original copyright notices and the complete SIL Open Font License 1.1 are
 bundled alongside the font files. These fonts may be bundled in commercial
 software under that license; they may not be sold by themselves.
+
+## NanumSquare Neo (2026-11-10)
+
+Titles, body text, and map-villain labels use the unmodified official Naver NanumSquare Neo regular/bold WOFF2 files. Source: https://hangeul.naver.com/font (NaverNanumSquareNeo.zip). The original SIL OFL and copyright notice are included in NanumSquareNeo-OFL.txt. Existing fonts remain preserved for compatibility.
