@@ -117,7 +117,7 @@ export function expeditionMarkup(s:Save,admin=false){
 export interface ExpeditionHandle {goTo(i:number):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
 export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onArrive:(i:number)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
   const viewport=root.querySelector<HTMLElement>('.expedition-viewport')!,world=root.querySelector<HTMLElement>('.expedition-world')!,player=root.querySelector<HTMLElement>('.expedition-player')!,npc=root.querySelector<HTMLElement>('.expedition-npc')!;
-  const removeVillains=mountMapVillains(world,{key:'magnet-city:map-villains:v1',power:'자석 파동',reduced:!options.save.settings.motion,preview:options.admin,stages:residents.map((r,i)=>({name:stageNames[i],x:i===1?62:r.feet.x+6,y:i===1?24:r.feet.y+6,ready:districtRestored(options.save,i),token:options.save.evidence.find(e=>e.stage===i)?.date||'pending'})),sound:()=>playEffect('bump',options.save.settings)});
+  const removeVillains=mountMapVillains(world,{key:'magnet-city:map-villains:v1',power:'자석 파동',reduced:!options.save.settings.motion,preview:options.admin,stages:residents.map((r,i)=>({name:stageNames[i],x:i===0?7:i===1?62:r.feet.x+6,y:i===0?50:i===1?32:r.feet.y+6,ready:districtRestored(options.save,i),token:options.save.evidence.find(e=>e.stage===i)?.date||'pending'})),sound:()=>playEffect('bump',options.save.settings)});
   const courier=root.querySelector<HTMLElement>('.expedition-courier');let courierPhase=0;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   const drawCourier=(position:Point)=>{

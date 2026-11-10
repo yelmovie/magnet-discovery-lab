@@ -12,7 +12,7 @@ const out=opt('--out')||'test-results/layout-audit',only=opt('--only'),sizesArg=
 const base=(argv[0]||'http://127.0.0.1:4197').replace(/\/?$/,'/');
 const SIZES=[[1920,1080],[1440,900],[1366,768],[1280,800],[1024,768],[906,755],[873,580],[812,375],[375,812],[1024,640,'125%'],[853,533,'150%'],[640,400,'200%']]
  .map(([w,h,z])=>({w,h,id:`${w}x${h}`+(z?`@${z}`:'')})).filter(()=>!sizesArg).concat((sizesArg||"").split(",").filter(Boolean).map(x=>{const [w,h]=x.split("x").map(Number);return {w,h,id:x};}));
-const SHOT=['1280x800','1024x768','853x533@150%'];
+const SHOT=process.env.AUDIT_ALL_SHOTS==='1'?SIZES.map(size=>size.id):['1280x800','1024x768','853x533@150%'];
 const CTA='.quest-cta, .mission-cta, .primary, [data-story=finish], .expedition-next, [data-act=next], [data-review-next], [data-restoration=finish]';
 const REQUIRED=`${CTA}, [data-drag], [data-mission], [data-inquiry], [data-inquiry-group], [data-story], .modal-close, [data-settings-action=close], [role=tab], [data-place], .quest-hud button`;
 

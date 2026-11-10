@@ -83,3 +83,7 @@ HUD `data-action`: `home`, `back`, `sound`, `settings`.
 캐릭터 `data-action="companion"`을 누르면 가장 가까운 `.quest-companion` 안의
 `.quest-speech` hidden과 버튼 aria-expanded를 함께 바꾼다.
 지도 이동·미션 판정·완료 버튼 표시·말풍선 바깥 클릭 닫기는 루트 로직이 담당한다.
+
+
+## 지도 보상 캐릭터 보강 · 2026-11-10
+기존 `scrap-goblin-sheet.webp`의 정규화된 4×2 프레임을 지도 악당에 재사용한다. 기본은 정지, 타격은 놀람→피격, 퇴장은 마지막 프레임으로 표현하며 상시 반복 모션을 추가하지 않는다. 로드 실패 시 기존 CSS 캐릭터를 유지한다. 학습 극 판정·관찰 증거·보상 조건·저장 키·폰트는 바꾸지 않는다.
