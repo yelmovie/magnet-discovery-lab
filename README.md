@@ -4,7 +4,7 @@
 
 ## 납품 검토
 
-전체 리뉴얼과 자동재생 1배/2배·교사 제어를 반영했다. 최종 검증과 확인 조건은 [납품 검토](docs/reviews/RELEASE-REVIEW-20261111-DELIVERY.md), [성적표](docs/reviews/SCORE-20261111-DELIVERY.md)를 참고한다.
+전체 리뉴얼과 자동재생 1배/2배·교사 제어를 반영했다. 최종 검증과 확인 조건은 [납품 검토](docs/reviews/RELEASE-REVIEW-20261111-DELIVERY.md), [성적표](docs/reviews/SCORE-20261111-DELIVERY.md)를 참고한다. 후속 [작업 기록·커밋·공개 배포 대조](docs/reviews/RECONCILIATION-20261112.md)에서 검사 스크립트 복구와 재현 빌드 검증을 확인할 수 있다.
 
 ## 실행
 

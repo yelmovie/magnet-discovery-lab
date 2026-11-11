@@ -38,7 +38,16 @@
 
 별도 export는 `/Volumes/T7 Shield/DevCaches/tmp/magnet-reconcile-20261112-871e2c9`에 있다. 원래 프로젝트의 테스트 검색 범위와 겹치지 않도록 외부에 보관했다. 검사 준비 중 export까지 수집한 590개 실행은 고유 시험 수로 사용하지 않고, 분리 후 원본 295개를 다시 실행했다.
 
-초기 비교는 184/187 바이트 일치였고 세 차이의 원인을 위에서 확인했다. 정규화 후 로컬과 export는 `_headers`를 포함해 188/188 일치한다. 공개 반영 후 정적 파일 187개를 다시 비교한다.
+초기 비교는 184/187 바이트 일치였고 세 차이의 원인을 위에서 확인했다. 정규화 후 로컬과 export는 `_headers`를 포함해 188/188 일치한다. 정규화 빌드를 공개 주소에 반영한 뒤 정적 파일 187/187의 SHA-256 일치를 확인했다.
+
+## 공개 배포 반영
+
+- 복구 커밋 `2857ff4c2ae4b6ec41d5470a872d931cea8a72ba`를 원격 작업 브랜치에 푸시하고 SHA 일치를 확인했다.
+- 공개 배포 ID는 `52861083-55fe-462b-9fd6-a78c122c83ae`, 버전 주소는 `https://52861083.magnet-city.pages.dev/`다. 운영 주소 `https://magnet-city.pages.dev/`의 canonical과 production 성공 상태를 확인했다.
+- 커밋에는 검사 스크립트 두 개와 대조·인계 문서가 포함됐다. 게임 TypeScript/CSS의 실행 내용은 이전 검증 소스와 동일하다. 배포 산출물의 차이는 JSON 두 개의 줄바꿈과 그에 따른 서비스 워커 BUILD 값이다.
+- 배포 전 공개 퍼즐 회귀 23개를 재실행해 전부 통과했고 JS 오류는 0건이었다. 공개 기본 경로 8개와 설정 3개도 통과했다. 재배포 후에도 smoke 8개·설정 3개가 전부 통과했다. 설정 검사에는 보이는 이미지의 로딩 완료·정상 크기 확인을 추가하고 최종 캡처를 직접 확인했다.
+- 운영 파일은 187/187 일치, 새 manifest의 macOS 메타파일은 0개다. 기존 업로드 186개를 재사용하고 1개를 업로드했다.
+- 되돌리기 기준은 직전 배포 `bd7a753b-bdf5-4346-8623-9c5b681976fd`다.
 
 ## 재실행 방법
 
@@ -65,6 +74,9 @@ UI 검사의 fixture는 `scripts/playful-regression.cjs`의 완주 저장 산출
 - `test-results/reconcile-20261111/ui-feedback/results.json` 9개 검사 묶음.
 - `test-results/reconcile-20261111/settings/results.json` 공개 교사 설정 3개.
 - `test-results/reconcile-20261111/smoke/smoke.json` 공개 기본 경로·출력·오프라인 8개.
+- `test-results/reconcile-20261111/puzzles/results.json` 공개 퍼즐 23개.
+- `test-results/reconcile-20261111/final-hashes.json` 최종 운영 정적 파일 187개.
+- `test-results/reconcile-20261111/final-smoke/smoke.json`, `final-settings/results.json` 재배포 후 검사.
 - `.tmp/reconcile-20261111/unit-final.log`, `normalized-build.log`, `graph-update.log` 단위 시험·빌드·지식 그래프.
 
 실제 학교 기기·학생 수업·iOS 출력·기존 음원 권리 자료 확인 조건과 8.8/10 성적은 기존 최종 검토를 따른다.

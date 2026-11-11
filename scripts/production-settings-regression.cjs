@@ -32,6 +32,9 @@ fs.mkdirSync(out,{recursive:true});
   await page.waitForTimeout(500);await page.reload();await page.locator('[data-action="start"]').click();
   assert.equal(await page.locator('[data-autoplay-speed]').inputValue(),'2');
   assert.equal(await page.locator('[data-action="sound"]').count(),0);
+  await page.waitForFunction(()=>[...document.images]
+    .filter(image=>image.getClientRects().length>0)
+    .every(image=>image.complete&&image.naturalWidth>0));
   await page.screenshot({path:`${out}/playback-${viewport.width}.png`});
   results.push({viewport,status:'pass',teacherOffReload:true,speed2Reload:true});
   console.log('PASS production settings '+viewport.width);await context.close();
