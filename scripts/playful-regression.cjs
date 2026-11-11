@@ -58,8 +58,19 @@ async function bounds(n) {
 }
 async function experiments(n) {
   await bounds(n);
+  // Puzzle courses open with an emergency card that the learner dismisses once.
+  if(n>=2&&n<=8){await page.locator('[data-mission="crisis-go"]').click();assert.equal(await page.locator('.puzzle-crisis').count(),0,'emergency card closes');}
   if(n===1){await assembleMailbox(page);await page.locator('[data-prompt-choice="stick"]').click();await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);await page.locator('[data-prompt-choice="same"]').click();}
-  if(n===2){await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));}
+  if(n===2){
+    // Puzzle course: the magnet alone does not hold while the strike plate is out of place.
+    const settled=()=>page.waitForFunction(()=>!document.querySelector('#experiment-root[inert]'));
+    await put('lid',50,65);await mission('shake');await settled();assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);
+    await put('repair-magnet',50,44);await put('lid',50,65);await mission('shake');await settled();
+    const fault=(await save()).activities[2].values;
+    assert.equal(fault.faultObserved0,true,'magnet alone still opens');assert.equal(fault.puzzleMisses,1);assert.notEqual(fault.with0,true);
+    await put('repair-plate',46.5,63);await put('lid',50,65);await mission('shake');await settled();
+    assert.equal((await save()).activities[2].values.with0,true,'aligned plate holds the lid');
+  }
   if(n===3){
     for(const [index,x,y,magnetic] of [[0,36,42,true],[1,52,42,true],[6,66,65,true],[2,66,43,false],[3,36,65,false],[4,52,65,false]]){
       await put('sweep-magnet',x,y);
@@ -81,6 +92,14 @@ async function experiments(n) {
     await put('probe',48,53);await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
     const bar=(await save()).activities[5].points['unknown-magnet'];
     await put('stickerS',bar.x-5.5,bar.y);await put('stickerN',bar.x+5.5,bar.y);
+    // Puzzle course: the restored magnet is the door bolt. The attracting pole leaves the door shut; the like pole opens it.
+    const idle=()=>page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
+    await page.waitForFunction(()=>window.__lab.save.activities[5].values.doorReady===true);
+    assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false,'labels alone do not open the door');
+    await put('probe',48,53);await idle();
+    assert.equal((await save()).activities[5].values.puzzleMisses,1,'the attracting pole is a visible miss');
+    await mission('flip');await idle();await put('probe',48,53);
+    await page.waitForFunction(()=>window.__lab.save.activities[5].values.doorOpen===true);await idle();
   }
   if(n===6){for(let i=0;i<2;i++)await put('ring'+i,68,71-i*15);await mission('check');await wait(750);assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);await mission('next');await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);}
   if(n===7){
@@ -94,9 +113,17 @@ async function experiments(n) {
     }
   }
   if(n===8){for(let r=0;r<1;r++){
-    if(r===1)await mission('flip');
-    for(let j=0;j<210;j++){const a=(await save()).activities[8],car=Number(a.values.car??27);if(Math.abs(car-73)<2)break;await put('controller',car+(r===0?7:-7),59);await wait(90);}
-    assert.ok(Math.abs(Number((await save()).activities[8].values.car)-73)<3,'cart reaches destination');
+    // Puzzle course: the controller stops at the glass partition (x 47.5), the flag is beyond it (x 60).
+    assert.equal((await save()).activities[8].values.puzzleVersion,1,'new delivery starts as the puzzle course');
+    for(let j=0;j<120;j++){const car=Number((await save()).activities[8].values.car??27);if(car>41)break;await put('controller',car+7,59);await wait(90);}
+    await put('controller',70,59);await wait(1700);
+    const stuck=(await save()).activities[8];
+    assert.ok(stuck.points.controller.x<=47.6,'controller cannot pass the glass');
+    assert.ok(Number(stuck.values.car)<45,'pulling alone stops the cart before the glass');
+    assert.equal(stuck.values.puzzleMisses,1,'the blocked pull is the first visible miss');
+    await mission('detach');await mission('flip');
+    for(let j=0;j<210;j++){const car=Number((await save()).activities[8].values.car??27);if(Math.abs(car-60)<1.5)break;await put('controller',Math.min(47.5,car-7),59);await wait(90);}
+    assert.ok(Math.abs(Number((await save()).activities[8].values.car)-60)<3,'cart reaches destination');
     assert.notEqual((await save()).activities[8].values['segment'+r],true,'must stop to deliver');
     await mission('detach');
     await page.waitForFunction(round=>window.__lab.save.activities[8].values['segment'+round]===true,r,{timeout:3000});

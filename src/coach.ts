@@ -2,7 +2,7 @@ import { ready, type Activity, type Save } from './domain';
 import { materialClassified, sortingSpecimens } from './material-sorting';
 import { shakePrompt } from './mission-content';
 import { inquiryPhase } from './inquiry-model';
-import { distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
+import { deliveryCourse, distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
 import { magnetInstalled, mailbox } from './mailbox';
 import { nextMailboxPart, mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { currentPrompt } from './inquiry-prompts';
@@ -48,6 +48,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
         const installed=magnetInstalled(a.points['repair-magnet']||mailbox.looseMagnet);
         const closed=typeof a.values.repairClosed==='boolean'?f('repairClosed'):(a.points.lid?.y||38)>55;
         if(f('without0')&&!installed){action='이번엔 자석을 덮개 안쪽 홈에 끼워 봐';focus='repair-magnet';}
+        else if(a.values.puzzleVersion===1&&f('faultObserved0')&&!f('with0')&&distance(a.points['repair-plate']||{x:75,y:47},mailbox.plate)>=7){action='어긋난 철판을 자석 맞은편 점선 자리로 옮겨 봐';focus='repair-plate';}
         else if(f('with0')&&installed){action=closed?'덮개 손잡이를 위로 열고 안쪽 자석을 꺼내 보자':'이번엔 자석을 바깥으로 빼고 같은 물건을 비교해 봐';focus=closed?'lid':'repair-magnet';}
         else if(!closed){action='덮개 손잡이를 아래로 내려 닫아 봐';focus='lid';}
         else{action=shakePrompt(f(installed?'without0':'with0'));focus='shake';}
@@ -90,7 +91,13 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       if(paced){total=3;done=Number(f('test0N'))+Number(f('test0S'))+Number(f('solved0'));}
       const facing=a.values.probePole==='S'?'N':'S';
       const both=f(`test${r}N`)&&f(`test${r}S`),labelled=f(`label${r}N`)&&f(`label${r}S`);
+      const door=a.values.puzzleVersion===1&&r===0&&both&&f('solved0');
+      if(door&&paced){total=4;done+=Number(f('doorOpen'));}
       if(f('poleReturning')){action='다시 비교하려고 두 자석을 처음 자리에 놓을게.';focus='';}
+      else if(door&&!f('doorOpen')){
+        const tried=typeof a.values.reaction==='string'&&a.values.reaction!=='';
+        action=tried?'빗장이 당겨졌어. 기준 자석 뒤집기를 눌러 같은 극을 대 봐':'빗장을 밀어낼 극이 빗장을 향하게 해서 점선 자리에 대 봐';focus=tried?'flip':'probe';
+      }
       else if((f(`test${r}N`)||f(`test${r}S`))&&!labelled){action=both?'두 반응을 근거로 종이 양끝의 물음표에 극 스티커를 붙여 봐':'지금 본 움직임으로 양끝에 극 스티커를 붙여 봐';focus=f(`label${r}N`)?'stickerS':'stickerN';}
       else if(f(`test${r}${facing}`)){action='기준 자석 뒤집기를 눌러 반대 극도 시험해 봐';focus='flip';}
       else{action=`기준 자석의 ${facing}극을 오른쪽 점선에 대 봐`;focus='probe';}
@@ -115,7 +122,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       clues = ['두 자석은 유리벽 양쪽에서 서로 당겨. 손으로 잡는 것은 밖의 빨간 손잡이야.', '물속 패드가 유리 안쪽을 문지르면 초록 이끼와 뿌연 물때가 지워져.']; break;
     case 8:
       total = 1; done = Number(missionReady(n,a,s));
-      {const atGoal=Math.abs(Number(a.values.car??(r===2?74:27))-(r===2?30:73))<3;action=atGoal?'목적지야! 자석을 떼어 카트가 멈추는지 봐':'밀어도 당겨도 좋아. 카트를 깃발까지 배달해 줘';focus=atGoal?'detach':'controller';}
+      {const course=a.values.puzzleVersion===1&&r===0,atGoal=Math.abs(Number(a.values.car??(r===2?74:27))-(course?deliveryCourse.goal:r===2?30:73))<3;action=atGoal?'목적지야! 자석을 떼어 카트가 멈추는지 봐':course?'손은 유리벽을 못 넘어. 자석의 힘으로 카트를 깃발까지 보내 줘':'밀어도 당겨도 좋아. 카트를 깃발까지 배달해 줘';focus=atGoal?'detach':'controller';}
       clues = [
         '서로 다른 극은 당기고, 같은 극은 밀어내. 자석을 놓는 쪽과 극을 바꿔 원하는 방향으로 보내 봐.',
         '깃발 아래에서 자석을 멀리해 봐. 움직이던 카트는 조금 더 구르다가 이 레일의 마찰 때문에 멈춰.',

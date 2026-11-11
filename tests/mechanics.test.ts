@@ -3,7 +3,7 @@ import { mailboxParts, partKey, partInstalled } from '../src/mailbox-assembly';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyActivity, freshSave, validSave, type Activity, type Point, type Save } from '../src/domain';
 import { missionView } from '../src/mission-play';
-import { missionReady } from '../src/mission-model';
+import { deliveryCourse, missionReady, puzzleHint, puzzleSolved, puzzleStars } from '../src/mission-model';
 import type { Context } from '../src/activity-types';
 import { bindPlacement } from '../src/manipulation';
 import { glassStains } from '../src/aquarium-glass';
@@ -693,5 +693,162 @@ describe('아무렇게나 조작해도 깨지지 않는 실험대',()=>{
       sound(m);tick(2);sound(m);
       cleanups.forEach(fn=>fn());cleanups=[];
     }
+  });
+});
+
+describe('택배 퍼즐 코스 · 유리벽 보관실',()=>{
+  const puzzle = () => mount(8,{paceVersion:1,mechanicsVersion:1,puzzleVersion:1});
+  const car = (m:ReturnType<typeof mount>) => Number(m.a.values.car??deliveryCourse.start);
+  it('새로 시작한 활동 2~8만 퍼즐 코스가 되고, 진행 중이던 활동은 그대로다',()=>{
+    const fresh=emptyActivity(), s=freshSave();
+    missionView(8,fresh,s);expect(fresh.values.puzzleVersion).toBe(1);
+    for(const n of [2,3,4,5,6,7]){const a=emptyActivity();expect(missionView(n,a,s).html).toContain('puzzle-crisis');expect(a.values.puzzleVersion).toBe(1);}
+    const other=emptyActivity();expect(missionView(1,other,s).html).not.toContain('puzzle-');expect(other.values.puzzleVersion).toBeUndefined();
+    const saved=emptyActivity();saved.values={playVersion:4,mechanicsVersion:1,paceVersion:1};
+    missionView(8,saved,s);expect(saved.values.puzzleVersion).toBeUndefined();
+  });
+  it('조종 자석은 유리벽을 넘지 못하고, 당기기만으로는 카트가 벽 앞에서 멈춘다',()=>{
+    const m=puzzle();m.place('controller',{x:70,y:59});
+    expect(m.a.points.controller.x).toBeLessThanOrEqual(deliveryCourse.reach);
+    for(let i=0;i<60;i++){m.place('controller',{x:car(m)+8,y:59});tick(.1);}
+    expect(m.a.points.controller.x).toBeLessThanOrEqual(deliveryCourse.reach);
+    tick(3);
+    expect(car(m)).toBeCloseTo(deliveryCourse.reach-6,1);
+    expect(car(m)).toBeLessThan(deliveryCourse.goal-deliveryCourse.tolerance);
+    expect(m.a.values.puzzleMisses).toBe(1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('유리벽');
+    tick(4);expect(m.a.values.puzzleMisses).toBe(1);
+    m.click('detach');tick(1);
+    expect(m.a.values.segment0).not.toBe(true);expect(missionReady(8,m.a,m.s)).toBe(false);
+  });
+  it('뒤집어 뒤에서 밀면 보관실 안으로 들어가고, 깃발에서 떼면 배달이 끝난다',()=>{
+    const m=puzzle();m.click('flip');
+    for(let i=0;i<200&&car(m)<deliveryCourse.goal-1;i++){m.place('controller',{x:car(m)-8,y:59});tick(.1);}
+    expect(car(m)).toBeGreaterThan(deliveryCourse.wall);
+    expect(m.a.points.controller.x).toBeLessThanOrEqual(deliveryCourse.reach);
+    expect(m.a.values.segment0).not.toBe(true);
+    m.click('detach');tick(1.5);
+    expect(m.a.values.segment0).toBe(true);expect(missionReady(8,m.a,m.s)).toBe(true);
+    const delivered=m.a.trials!.find(t=>t.key==='delivery0')!;
+    expect(delivered.conditions).toMatchObject({method:'push',course:'glass-room',manual:true});
+    expect(Math.abs(Number(delivered.conditions.car)-deliveryCourse.goal)).toBeLessThan(deliveryCourse.tolerance);
+    expect(puzzleStars(m.a)).toBe(3);
+  });
+  it('깃발을 지나치면 한 번 빗나간 것으로 세고, 다른 극으로 당겨 되돌릴 수 있다',()=>{
+    const m=puzzle();m.click('flip');
+    for(let i=0;i<400&&car(m)<deliveryCourse.goal+deliveryCourse.tolerance+.5;i++){m.place('controller',{x:Math.min(car(m)-8,deliveryCourse.reach),y:59});tick(.1);}
+    m.click('detach');tick(1.5);
+    expect(car(m)).toBeGreaterThan(deliveryCourse.goal+deliveryCourse.tolerance);
+    expect(m.a.values.segment0).not.toBe(true);expect(m.a.values.puzzleMisses).toBe(1);
+    expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('지나쳤어');
+    m.click('flip');m.place('controller',{x:deliveryCourse.reach,y:59});
+    const before=car(m);tick(1);expect(car(m)).toBeLessThan(before);
+    for(let i=0;i<300&&car(m)>deliveryCourse.goal+1;i++)tick(.1);
+    m.click('detach');tick(1.5);
+    expect(m.a.values.segment0).toBe(true);expect(m.a.values.puzzleMisses).toBe(1);
+    expect(puzzleStars(m.a)).toBe(2);
+  });
+  it('별은 직접 풀었을 때만 받고, 빗나간 횟수에 따라 줄어든다',()=>{
+    const a=emptyActivity();a.values={puzzleVersion:1};
+    expect(puzzleStars(a)).toBe(0);
+    a.values.segment0=true;a.trials=[{id:'8:delivery0',key:'delivery0',activity:8,modelVersion:1,conditions:{manual:true},initialObjects:[],objects:[],input:[],outcome:'success',pinned:true}];
+    expect(puzzleStars(a)).toBe(3);
+    a.values.puzzleMisses=1;expect(puzzleStars(a)).toBe(2);
+    a.values.puzzleMisses=2;expect(puzzleStars(a)).toBe(1);
+    a.values.puzzleMisses=9;expect(puzzleStars(a)).toBe(1);
+    a.trials[0].conditions={autoplay:true};expect(puzzleStars(a)).toBe(0);
+    // Each course ends on its own stored proof; other trials never count as solving it.
+    for(const [activity,key] of [[2,'repair0'],[3,'materials'],[4,'paper'],[5,'door0'],[6,'join2'],[7,'clean'],[8,'delivery0']] as const){
+      const b=emptyActivity();b.values={puzzleVersion:1,puzzleMisses:1};
+      b.trials=[{id:`${activity}:near`,key:'near',activity,modelVersion:1,conditions:{manual:true},initialObjects:[],objects:[],input:[],outcome:'success',pinned:true}];
+      expect(puzzleSolved(b)).toBe(false);expect(puzzleStars(b)).toBe(0);
+      b.trials.push({...b.trials[0],id:`${activity}:${key}`,key});
+      expect(puzzleSolved(b)).toBe(true);expect(puzzleStars(b)).toBe(2);
+      delete b.values.puzzleVersion;expect(puzzleSolved(b)).toBe(false);
+    }
+    expect(puzzleHint(0)).toBe(0);expect(puzzleHint(1)).toBe(0);expect(puzzleHint(2)).toBe(1);expect(puzzleHint(3)).toBe(2);expect(puzzleHint(7)).toBe(3);
+  });
+});
+
+describe('우편함 퍼즐 코스 · 어긋난 철판',()=>{
+  const puzzle = () => mount(2,{paceVersion:1,mechanicsVersion:1,puzzleVersion:1});
+  const shake = (m:ReturnType<typeof mount>) => {m.place('lid',{x:50,y:65});m.click('shake');tick(1);};
+  const feedback = (m:ReturnType<typeof mount>) => m.c.root.querySelector('.mission-feedback')!.textContent;
+  it('새로 시작한 덮개 활동은 철판까지 옮길 수 있는 퍼즐이 된다',()=>{
+    const fresh=emptyActivity(), s=freshSave(), html=missionView(2,fresh,s).html;
+    expect(fresh.values.puzzleVersion).toBe(1);expect(html).toContain('data-drag="repair-plate"');
+    expect(html).not.toContain('data-mission="fault-distance"');
+    const saved=emptyActivity();saved.values={playVersion:4,mechanicsVersion:1,paceVersion:1};
+    expect(missionView(2,saved,s).html).not.toContain('data-drag="repair-plate"');
+  });
+  it('지금 상태로 먼저 흔들어 보기 전에는 부품을 끼우거나 옮길 수 없다',()=>{
+    const m=puzzle();
+    m.place('repair-magnet',mailbox.socket);expect(m.a.points['repair-magnet']).toEqual(mailbox.looseMagnet);
+    expect(feedback(m)).toContain('먼저');
+    m.place('repair-plate',mailbox.plate);expect(m.a.points['repair-plate']).toEqual({x:75,y:47});
+    shake(m);expect(m.a.values.without0).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();
+  });
+  it('자석을 끼워도 철판이 어긋나 있으면 덮개가 열리고, 철판을 맞추면 닫혀 있다',()=>{
+    const m=puzzle();shake(m);
+    m.place('repair-magnet',mailbox.socket);shake(m);
+    expect(m.a.values.with0).not.toBe(true);expect(missionReady(2,m.a,m.s)).toBe(false);
+    expect(m.a.values.faultObserved0).toBe(true);expect(m.a.values.puzzleMisses).toBe(1);
+    expect(feedback(m)).toContain('철판');
+    expect(m.a.records.find(r=>r.key==='without0')!.label).toContain('자석 없이');
+    m.place('repair-plate',{x:mailbox.plate.x+3,y:mailbox.plate.y-2});
+    expect(m.a.points['repair-plate']).toEqual(mailbox.plate);
+    shake(m);
+    expect(m.a.values.with0).toBe(true);expect(missionReady(2,m.a,m.s)).toBe(true);
+    expect(m.a.trials!.find(t=>t.key==='repair0')!.conditions).toMatchObject({manual:true,course:'loose-plate'});
+    expect(puzzleSolved(m.a)).toBe(true);expect(puzzleStars(m.a)).toBe(2);
+  });
+  it('철판이 어긋난 것을 먼저 알아채고 고치면 한 번에 풀린다',()=>{
+    const m=puzzle();shake(m);
+    m.place('repair-plate',mailbox.plate);m.place('repair-magnet',mailbox.socket);shake(m);
+    expect(missionReady(2,m.a,m.s)).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();expect(puzzleStars(m.a)).toBe(3);
+  });
+});
+
+describe('극 퍼즐 코스 · 같은 극으로 여는 문',()=>{
+  const puzzle = () => mount(5,{paceVersion:1,mechanicsVersion:1,puzzleVersion:1});
+  const dock = {x:48,y:53};
+  // Test S (repelled), flip, test N (attracted), then restore both pole stickers and reopen as the app re-renders.
+  const restoreLabels = (m:ReturnType<typeof mount>) => {
+    m.place('probe',dock);tick(1);m.click('flip');tick(1);m.place('probe',dock);tick(1);
+    const t=m.a.points['unknown-magnet'];m.place('stickerS',{x:t.x-5.5,y:t.y});m.place('stickerN',{x:t.x+5.5,y:t.y});
+    expect(m.a.values.solved0).toBe(true);
+    return mount(5,{},m);
+  };
+  const feedback = (m:ReturnType<typeof mount>) => m.c.root.querySelector('.mission-feedback')!.textContent;
+  it('극 표시를 되찾아도 문을 열기 전에는 끝나지 않고, 두 자석은 처음 자리로 돌아온다',()=>{
+    const m=restoreLabels(puzzle());
+    expect(missionReady(5,m.a,m.s)).toBe(false);expect(puzzleSolved(m.a)).toBe(false);
+    expect(m.a.points.probe).toEqual({x:29,y:54});expect(m.a.points['unknown-magnet']).toEqual({x:68,y:53});
+    expect(m.a.values.doorReady).toBe(true);expect(feedback(m)).toContain('문');
+  });
+  it('다른 극을 대면 빗장이 당겨져 문이 그대로이고, 뒤집어 같은 극을 대면 열린다',()=>{
+    const m=restoreLabels(puzzle());
+    m.place('probe',dock);tick(1);
+    expect(m.a.values.doorOpen).not.toBe(true);expect(m.a.values.puzzleMisses).toBe(1);expect(feedback(m)).toContain('당겨져');
+    m.place('probe',{x:30,y:54});m.place('probe',dock);tick(1);expect(m.a.values.puzzleMisses).toBe(1);
+    m.click('flip');tick(1);m.place('probe',dock);tick(1);
+    expect(m.a.values.doorOpen).toBe(true);expect(m.a.points['unknown-magnet'].x).toBe(77);
+    expect(missionReady(5,m.a,m.s)).toBe(true);
+    expect(m.a.trials!.find(t=>t.key==='door0')!.conditions).toMatchObject({facing:'S',hidden:'S',course:'pole-door',manual:true});
+    expect(puzzleStars(m.a)).toBe(2);
+  });
+  it('스티커를 보고 먼저 뒤집어 같은 극을 대면 한 번에 열린다',()=>{
+    const m=restoreLabels(puzzle());
+    m.click('flip');tick(1);m.place('probe',dock);tick(1);
+    expect(m.a.values.doorOpen).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();expect(puzzleStars(m.a)).toBe(3);
+  });
+  it('스티커를 먼저 붙이고 반대 극을 확인한 경우에도 반응을 본 뒤 문 단계가 시작된다',()=>{
+    const m=puzzle();m.place('probe',dock);tick(1);
+    const t=m.a.points['unknown-magnet'];m.place('stickerS',{x:t.x-5.5,y:t.y});m.place('stickerN',{x:t.x+5.5,y:t.y});
+    m.click('flip');tick(1);m.place('probe',dock);tick(1);
+    expect(m.a.values.test0N).toBe(true);expect(m.a.values.doorReady).not.toBe(true);
+    tick(3);
+    expect(m.a.values.doorReady).toBe(true);expect(m.a.points.probe).toEqual({x:29,y:54});
+    expect(missionReady(5,m.a,m.s)).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import { distance, ringFloating } from './mission-model';
 import { playEffect } from './game-audio';
 import { handRelease, afterHandRelease } from './experiment-hand';
 
+import { doorHints, poleHints, ringHints } from './mission-content';
 import { Surface, W, H, pt } from './mission-surface';
 
 const polarityParts = {
@@ -51,6 +52,36 @@ export function poles(v: Surface){
   }
   const end=(left:boolean)=>pt(covered().x+(left?-1:1)*5.5,covered().y);
   const atDock=(p:Point)=>Math.abs(p.x-dock.x)<=5&&Math.abs(p.y-dock.y)<=6;
+  // Puzzle course: once the pole labels are restored, the same magnet is the bolt of a door
+  // that only opens when a like pole pushes it away.
+  const puzzle=v.a.values.puzzleVersion===1&&r===0;
+  const doorPhase=()=>puzzle&&v.has('solved0')&&tested('N')&&tested('S');
+  const doorOpen=()=>v.has('doorOpen');
+  const startDoor=(afterReaction:boolean)=>{
+    const ready=()=>{
+      resetTrial();v.a.values.doorReady=true;
+      v.tell('극 표시를 되찾았어! 이제 빗장 자석을 오른쪽으로 밀어내 문을 열어 줘.');v.draw();v.c.touch();v.c.meta();
+    };
+    if(!afterReaction){v.set('probe',probeHome);v.set('unknown-magnet',rest);ready();return;}
+    // Leave the last reaction on the bench for a moment before the mechanism resets.
+    v.settle({probe:probeHome,'unknown-magnet':rest},ready,t=>{const k=Math.max(0,(t-.55)/.45);return k*k*(3-2*k);},2200);
+  };
+  const tryDoor=(p:Point)=>{
+    if(v.animating||!atDock(p))return;
+    if(reaction||doorOpen()){v.set('probe',dock);v.draw();return;}
+    const facing=opposite(probe),repel=facing===hidden,initial={...covered()},from={...probeStart};
+    v.a.points['initial:unknown-magnet']={...initial};v.set('probe',dock);
+    v.settle({'unknown-magnet':repel?repelled:contact},()=>{
+      reaction=repel?'밀려났어':'당겨졌어';v.a.values.reaction=reaction;probeStart={...dock};
+      if(!repel){playEffect('snap',v.s.settings);v.miss(`${facing}극을 대니 빗장이 당겨져서 문은 그대로야.`,doorHints);v.draw();return;}
+      v.mark('doorOpen','같은 극으로 문 열기',`빗장의 ${hidden}극에 같은 ${facing}극을 대서 밀어내 문을 열었어.`);
+      const trial=v.proof('door0','같은 극끼리 밀어내는 힘으로 빗장을 밀어 문 열기','success',{facing,hidden,course:'pole-door'});
+      trial.initialObjects=[{id:'probe',...from,pole:probe},{id:'unknown-magnet',...initial,pole:hidden}];
+      trial.objects=[{id:'probe',...dock,pole:probe},{id:'unknown-magnet',...repelled,pole:hidden}];
+      playEffect('reward',v.s.settings);v.tell('같은 극끼리 밀어내서 빗장이 밀려났어. 문이 열렸다!',true);v.refresh();
+    });
+  };
+  if(doorPhase()&&!doorOpen()&&!v.has('doorReady'))startDoor(false);
   const stickerButtons=(['N','S'] as Pole[]).map(pole=>({pole,button:v.c.root.querySelector<HTMLButtonElement>(`[data-drag="sticker${pole}"]`)!}));
   const test=(p:Point)=>{
     if(v.animating||!atDock(p))return;
@@ -70,6 +101,7 @@ export function poles(v: Surface){
       playEffect(repel?'compare':'snap',v.s.settings);
       const labelled=v.has(`label${r}N`)&&v.has(`label${r}S`);
       v.tell(`${facing}극을 가까이 대니 ${reaction}. ${labelled?'붙인 스티커와 움직임이 맞는지 확인해 봐.':v.has(`test${r}N`)&&v.has(`test${r}S`)?'두 반응을 비교했어! 이제 종이 위 양끝에 스티커를 붙여 줘.':'지금 본 반응으로 스티커를 붙여 봐. 반대 극으로도 확인할 거야.'}`);v.draw();
+      if(doorPhase()&&!v.has('doorReady'))startDoor(true);
     });
   };
   v.draw=()=>{
@@ -88,7 +120,21 @@ export function poles(v: Surface){
     if(!polarityPart(v,'covered',q,coveredWidth,48)){
       g.fillStyle='#cda873';g.strokeStyle='#85663d';g.lineWidth=3;g.beginPath();g.roundRect(q.x*W/100-coveredWidth/2,q.y*H/100-25,coveredWidth,50,6);g.fill();g.stroke();
     }
-    v.label('종이로 가린 자석',pt(q.x,q.y-10),true);
+    if(puzzle){
+      // The bolt's right end reaches the release at the door only when it is pushed away.
+      const open=doorOpen(),phase=doorPhase(),x=1104,y=292,w=74,h=182,cy=dock.y*H/100;
+      g.save();
+      g.fillStyle=open?'#ffeab0':'#3b2f25';g.beginPath();g.roundRect(x,y,w,h,8);g.fill();
+      g.fillStyle='#2f8f8a';g.strokeStyle='#b8892f';g.lineWidth=5;
+      g.beginPath();if(open)g.roundRect(x+w-20,y,20,h,6);else g.roundRect(x,y,w,h,8);g.fill();g.stroke();
+      g.strokeStyle='#8a6a2c';g.lineWidth=6;g.strokeRect(x-6,y-6,w+12,h+12);
+      g.fillStyle=open?'#58b368':phase?'#f4c35c':'#9a8f80';g.strokeStyle='#5d4a22';g.lineWidth=3;
+      g.beginPath();g.arc(x-8,cy,11,0,2*Math.PI);g.fill();g.stroke();
+      g.restore();
+      v.label(open?'문이 열렸어':phase?'빗장을 밀면 열려':'잠긴 문',pt((x+w/2)*100/W,36),true,open?'#20765e':'#203e40');
+      if(phase&&!open&&!reaction&&!v.animating)v.arrow(pt(q.x+3,43),pt(q.x+11,43),'#b8892f');
+    }
+    v.label(puzzle&&doorPhase()?'문 빗장 자석':'종이로 가린 자석',pt(q.x,q.y-10),true);
     v.magnet(ref,probe,probeWidth/150);
     v.label('기준 자석',pt(ref.x,ref.y+10),true);
     for(const {pole,button} of stickerButtons){
@@ -107,7 +153,7 @@ export function poles(v: Surface){
       v.label(reaction,pt(q.x,73),true);
     }
   };
-  v.drag('probe',probeHome,test);
+  v.drag('probe',probeHome,p=>doorPhase()&&v.has('doorReady')?tryDoor(p):test(p));
   for(const {pole} of stickerButtons)v.drag(`sticker${pole}`,stickerHome(pole),p=>{
     const left=Math.abs(p.x-end(true).x)<=4.8,right=Math.abs(p.x-end(false).x)<=4.8;
     const attached=(left||right)&&Math.abs(p.y-covered().y)<=6;
@@ -117,7 +163,8 @@ export function poles(v: Surface){
       v.set(`sticker${pole}`,stickerHome(pole));
       const trial=v.a.trials?.filter(t=>t.key===`pole${r}N`||t.key===`pole${r}S`).at(-1);
       const clue=trial?`${trial.conditions.facing}극을 대니 ${trial.outcome==='repel'?'밀려났어. 같은 극끼리 밀어내':'당겨졌어. 다른 극끼리 당겨'}. `:'';
-      v.tell(!observed?'기준 자석을 한 번 가까이 대고 움직임을 먼저 봐.':!attached?'종이로 가린 자석의 물음표 위에 놓아 봐.':`${clue}어느 끝인지 살펴보고 다시 붙여 봐.`);
+      if(observed&&attached&&v.a.values.puzzleVersion===1)v.miss(`${clue}어느 끝인지 살펴보고 다시 붙여 봐.`,poleHints);
+      else v.tell(!observed?'기준 자석을 한 번 가까이 대고 움직임을 먼저 봐.':!attached?'종이로 가린 자석의 물음표 위에 놓아 봐.':`${clue}어느 끝인지 살펴보고 다시 붙여 봐.`);
       v.draw();return;
     }
     v.set(`sticker${pole}`,end(left));v.mark(`label${r}${pole}`,'자석 끝의 극 복원',`${left?'왼쪽':'오른쪽'} 끝을 ${pole}극으로 표시했어.`);
@@ -226,7 +273,8 @@ export function rings(v: Surface){
       trial.initialObjects=initial;trial.objects=snapshot();
       playEffect(allFloat?'compare':'snap',v.s.settings);
       if(!correct){
-        v.tell(r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.');v.draw();return;
+        const wrong=r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.';
+        if(v.a.values.puzzleVersion===1)v.miss(wrong,ringHints);else v.tell(wrong);v.draw();return;
       }
       v.mark(`done${r}`,'고리 배치 문제 해결',r<2?'같은 극이 마주 보자 고리가 밀려 떠올랐어.':'다른 극이 마주 보자 두 면이 맞닿았어.');v.refresh();
     },t=>{release=handRelease(t);const motion=afterHandRelease(t);return allFloat?1-Math.exp(-5*motion)*Math.cos(6*motion)*(1-motion):Math.min(1,(motion/.78)**2);},900);

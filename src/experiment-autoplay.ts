@@ -3,7 +3,7 @@ import { inquiryPhase } from './inquiry-model';
 import { mailbox } from './mailbox';
 import { mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { glassStains } from './aquarium-glass';
-import { missionReady, paperGapMiddle } from './mission-model';
+import { deliveryCourse, missionReady, paperGapMiddle } from './mission-model';
 import { materialBins, sortingSpecimens } from './material-sorting';
 import { promptPending } from './inquiry-prompts';
 import './experiment-autoplay.css';
@@ -20,6 +20,11 @@ const move = (id: string, x: number, y: number, label: string): Step => ({kind:'
 const press = (id: string, label: string): Step => ({kind:'press',selector:`[data-mission="${id}"]`,label});
 
 export function demonstrationSteps(stage: number, save: Save): Step[] {
+  const a=save.activities[stage], steps=experimentSteps(stage,save);
+  // A puzzle course opens with its emergency card; the demonstration acknowledges it first.
+  return steps.length&&a?.values.puzzleVersion===1&&a.values.crisisSeen!==true&&stage>=2&&stage<=8?[press('crisis-go','긴급 의뢰 확인하기'),...steps]:steps;
+}
+function experimentSteps(stage: number, save: Save): Step[] {
   const a=save.activities[stage]||emptyActivity(), f=(key:string)=>a.values[key]===true;
   const round=Number(a.values.round||0);
   if(missionReady(stage,a,save))return [];
@@ -31,7 +36,7 @@ export function demonstrationSteps(stage: number, save: Save): Step[] {
     case 1: return f('latch0')?[]:[...mailboxParts.filter(part=>!partInstalled(a,part)).map(part=>move(partKey(part),part.target.x,part.target.y,part.action)),lid(false)];
     case 2: return [
       ...(!f('without0')?[lid(true),move('repair-magnet',mailbox.looseMagnet.x,mailbox.looseMagnet.y,'자석만 빼고 비교하기'),lid(false),press('shake','자석 없이 흔들면 덮개가 열릴까?')]:[]),
-      ...(!f('with0')?[lid(true),move('repair-magnet',mailbox.socket.x,mailbox.socket.y,'덮개의 홈에 자석 끼우기'),lid(false),press('shake','자석을 넣고 똑같이 흔들면 덮개가 열릴까?')]:[])];
+      ...(!f('with0')?[lid(true),move('repair-magnet',mailbox.socket.x,mailbox.socket.y,'덮개의 홈에 자석 끼우기'),...(a.values.puzzleVersion===1&&Math.hypot((a.points['repair-plate']?.x??75)-mailbox.plate.x,(a.points['repair-plate']?.y??47)-mailbox.plate.y)>=4?[move('repair-plate',mailbox.plate.x,mailbox.plate.y,'어긋난 철판을 자석 맞은편에 맞추기')]:[]),lid(false),press('shake','자석을 넣고 똑같이 흔들면 덮개가 열릴까?')]:[])];
     case 3: {
       const steps:Step[]=[];
       const order=[...sortingSpecimens.filter(m=>m.magnetic),...sortingSpecimens.filter(m=>!m.magnetic)];
@@ -66,6 +71,12 @@ export function demonstrationSteps(stage: number, save: Save): Step[] {
         if(facing!==pole){steps.push(press('flip','기준 자석을 뒤집고 처음 자리에서 다시 비교하기'));facing=pole;}
         steps.push(move('probe',48,53,`${pole}극을 가까이 대고 움직임 보기`));
       }
+      // Puzzle course: with the labels restored by the learner, a like pole pushes the bolt and opens the door.
+      if(!steps.length&&a.values.puzzleVersion===1&&round===0&&f('solved0')&&f('doorReady')&&!f('doorOpen')){
+        if(facing!=='S'||a.values.reaction)steps.push(press('flip',facing==='S'?'처음 자리에서 다시 시작하기':'같은 극이 마주 보도록 기준 자석 뒤집기'));
+        if(facing==='S'&&a.values.reaction)steps.push(press('flip','같은 극이 마주 보도록 기준 자석 뒤집기'));
+        steps.push(move('probe',48,53,'빗장과 같은 S극을 대서 밀어내기'));
+      }
       return steps;
     }
     case 6: {
@@ -88,7 +99,9 @@ export function demonstrationSteps(stage: number, save: Save): Step[] {
       return steps;
     }
     case 8: {
-      return [{kind:'drive',label:'자석으로 카트를 배달하고 목적지에서 멈추기'}];
+      if(a.values.puzzleVersion!==1)return [{kind:'drive',label:'자석으로 카트를 배달하고 목적지에서 멈추기'}];
+      const drive:Step={kind:'drive',label:'유리벽 앞까지 당기고, 뒤집어 뒤에서 밀어 깃발에 세우기'};
+      return [drive];
     }
     case 9: {
       if(!a.values.chosen)return [];
@@ -230,11 +243,17 @@ export class ExperimentAutoplay {
         }
       }
       else if(step.kind==='drive'){
-        const activity=run.save.activities[a.stage],round=Number(activity.values.round||0),goal=round===2?30:73;
+        const activity=run.save.activities[a.stage],round=Number(activity.values.round||0),course=activity.values.puzzleVersion===1&&round===0,goal=course?deliveryCourse.goal:round===2?30:73;
         const car=Number(activity.values.car??(round===2?74:27)),pull=activity.values.controllerPole!=='S';
         if(!run.released && Math.abs(car-goal)<=1.5){
           run.released=true;run.label='자석을 떼고 카트가 조금 더 굴러 멈추는 모습 보기';this.update();
           a.root.querySelector<HTMLButtonElement>('[data-mission="detach"]')?.click();
+        }else if(!run.released&&course){
+          // The hand cannot follow past the glass: pull up to it, lift away, then flip and push from behind.
+          const y=Number.parseFloat(el.style.top),lifted=y<46,atWall=car>=deliveryCourse.reach-7;
+          if(!pull||!atWall)this.move(el,{x:Math.min(deliveryCourse.reach,car+(pull?10:-10)),y:59},false);
+          else if(!lifted)a.root.querySelector<HTMLButtonElement>('[data-mission="detach"]')?.click();
+          else if(this.move(el,{x:car-10,y},false))a.root.querySelector<HTMLButtonElement>('[data-mission="flip"]')?.click();
         }else if(!run.released)this.move(el,{x:car+Math.sign(goal-car)*(pull?10:-10),y:59},false);
         finished=missionReady(a.stage,activity,run.save);
         if(!finished && run.elapsed>30000){run.mode='paused';run.label='잠시 멈췄어. 중지를 눌러 직접 움직여 봐.';this.update();return;}

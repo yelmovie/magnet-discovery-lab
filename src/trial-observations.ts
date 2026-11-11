@@ -60,7 +60,7 @@ export function trialResultSentence(t:Trial):string {
         if(t.key==='materials')return '물체를 자석에 가까이 대 보고, 붙는 것과 붙지 않는 것으로 나누었어.';
         break;
       }
-      case 5:if(/^gate\d+$/.test(t.key))return '두 극을 가까이 댄 결과로 가려진 자석의 양쪽 극을 찾아냈어.';break;
+      case 5:if(/^gate\d+$/.test(t.key))return '두 극을 가까이 댄 결과로 가려진 자석의 양쪽 극을 찾아냈어.';if(t.key==='door0')return '빗장과 같은 극을 마주 대니 빗장이 밀려나서 문이 열렸어.';break;
       case 6:
         if(/^float[23]$/.test(t.key))return '같은 극이 마주 보자 윗고리가 밀려 올라가 고리 사이에 틈이 생겼어.';
         if(/^join[23]$/.test(t.key))return '다른 극이 마주 보자 윗고리가 끌려 내려와 아랫고리에 붙었어.';

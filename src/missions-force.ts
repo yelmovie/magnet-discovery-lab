@@ -2,6 +2,7 @@ import { type Point } from './domain';
 import { materialBins, materialClassified, sortedMaterialPosition, sortingSpecimens } from './material-sorting';
 import { distance, cellLabel, clearanceCells, nearRulerMark, distanceRuler, magneticReach, paperGapMiddle } from './mission-model';
 import { playEffect } from './game-audio';
+import { reachHints, sortHints } from './mission-content';
 import { pullEase } from './clip-comparison';
 import { handRelease, afterHandRelease } from './experiment-hand';
 
@@ -17,7 +18,7 @@ export function salvage(v: Surface){
     const i=m.index,bin=bins.findIndex(q=>distance(p,q)<10);
     if(bin<0)return false;
     if(!v.has(`tested-${m.id}`)){v.set(`material-${i}`,pt(m.x,m.y));v.tell(`${m.name}: 먼저 자석을 가까이 대고 반응을 확인해 줘.`);return false;}
-    if((bin===0)!==m.magnetic){v.set(`material-${i}`,pt(m.x,m.y));held=-1;v.tell(m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':'자석을 따라왔는지 떠올리고 알맞은 분류함에 옮겨 줘.');playEffect('bump',v.s.settings);return false;}
+    if((bin===0)!==m.magnetic){v.set(`material-${i}`,pt(m.x,m.y));held=-1;const wrong=m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':'자석을 따라왔는지 떠올리고 알맞은 분류함에 옮겨 줘.';if(v.a.values.puzzleVersion===1)v.miss(wrong,sortHints);else{v.tell(wrong);playEffect('bump',v.s.settings);}return false;}
     v.mark(`sorted-${m.id}`,`${m.name} 분류`,bin===0?'붙는 재료로 분류했어.':'붙지 않는 재료로 분류했어.');
     if(m.magnetic&&byMagnet)v.mark(`delivered-${m.id}`,`${m.name} 운반`,'자석에 붙은 철 부품을 수리함으로 옮겼어.');
     v.set(`material-${i}`,sortedMaterialPosition(m));held=-1;
@@ -181,7 +182,7 @@ export function distanceLab(v: Surface){
       observed=true;v.a.values.distanceObserved=true;
       const trial=v.proof(`distance-choice-${Number(gap.toFixed(1))}`,`${measure}에서 관찰`,'none',{paper:false,clearanceCells:Number(gap.toFixed(1)),material:'iron'});
       trial.initialObjects=[{id:'magnet',...m},{id:'clip',...target}];trial.objects=structuredClone(trial.initialObjects);
-      v.settle({},()=>{released=1;v.tell(`${measure}에서는 클립이 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
+      v.settle({},()=>{released=1;const still=`${measure}에서는 클립이 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
       return;
     }
     if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${r===3?'열쇠':'클립'}를 살펴봐.`);

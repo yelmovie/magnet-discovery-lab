@@ -1,5 +1,7 @@
 import { opposite, type Point, type Pole } from './domain';
-import { distance } from './mission-model';
+import { deliveryCourse, distance, puzzleHint } from './mission-model';
+import { deliveryHints, padHints } from './mission-content';
+import { playEffect } from './game-audio';
 import { clearedGlass, drawGlassStain, glassStains, wipeGlass } from './aquarium-glass';
 
 import { Surface, W, H, pt, clamp } from './mission-surface';
@@ -84,7 +86,8 @@ export function aquarium(v: Surface){
       const next=gap<(connected?18:8);
       if(connected!==next){
         connected=next;v.a.values.padDetached=!connected;
-        v.tell(connected?'안쪽 패드와 다시 연결됐어. 얼룩 위를 쓸어 봐.':'손잡이가 너무 멀어졌어. 물속 패드 앞으로 돌아와 붙여 줘.');
+        if(!connected&&v.a.values.puzzleVersion===1)v.miss('손잡이가 너무 멀어져서 패드가 떨어졌어. 물속 패드 앞으로 돌아와 붙여 줘.',padHints);
+        else v.tell(connected?'안쪽 패드와 다시 연결됐어. 얼룩 위를 쓸어 봐.':'손잡이가 너무 멀어졌어. 물속 패드 앞으로 돌아와 붙여 줘.');
         updateSection();v.c.touch();v.c.meta();
       }
       if(!connected)return;
@@ -100,8 +103,10 @@ export function aquarium(v: Surface){
   v.drag('cleaner',handleStart,moveHandle,moveHandle,p=>pt(clamp(p.x,26,77),clamp(p.y,35,74)));
   v.cleanups.push(()=>cancelAnimationFrame(raf));
 }
+/** Solving re-renders the bench; only that next render plays the goblin's exit. */
+let justSolved:object|null=null;
 export function delivery(v: Surface){
-  const r=Number(v.a.values.round||0),start=r===2?74:27,goal=r===2?30:73;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
+  const r=Number(v.a.values.round||0),puzzle=v.a.values.puzzleVersion===1&&r===0,start=r===2?74:27,goal=puzzle?deliveryCourse.goal:r===2?30:73;const solvedAt=justSolved===v.a?performance.now():-1e9;justSolved=null;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
   const carPoint=()=>pt(car,59);
   const forceOn=()=>{const q=v.p('controller',pt(20,40));return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
   let speed=Number(v.a.values.cartSpeed||0);
@@ -109,7 +114,7 @@ export function delivery(v: Surface){
   const setSpeed=(value:number)=>{speed=value;v.a.values.cartSpeed=value;};
   let driveMethod=String(v.a.values[`cartMethod${r}`]||'');
   const stopProof=(key:string,label:string)=>{
-    const trial=v.proof(key,label,'success',{car,goal,pole,method:driveMethod,controllerY:v.p('controller',pt(20,40)).y,controlledDistance:Math.round(controlled)});
+    const trial=v.proof(key,label,'success',{car,goal,pole,method:driveMethod,controllerY:v.p('controller',pt(20,40)).y,controlledDistance:Math.round(controlled),...(puzzle?{course:'glass-room'}:{})});
     const startPole=v.a.values.startControllerPole;
     trial.initialObjects.forEach(o=>{if(o.id==='cart-magnet')o.pole='N';if(o.id==='controller'&&(startPole==='N'||startPole==='S'))o.pole=startPole;});
     trial.objects.forEach(o=>{if(o.id==='cart-magnet')o.pole='N';if(o.id==='controller')o.pole=pole;});
@@ -129,8 +134,13 @@ export function delivery(v: Surface){
     const path=v.path;
     stopProof(`stop${r}`,'배달 장소에서 카트가 멈춘 뒤 확인');v.path=path;
     stopProof(`delivery${r}`,'극의 힘으로 운반하고 정차');
-    v.tell('배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
+    if(puzzle){justSolved=v.a;playEffect('reward',v.s.settings);}
+    v.tell(puzzle?'배달 완료! 유리벽 너머 깃발에 딱 멈췄어. 도깨비가 달아난다!':'배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
   };
+  // Puzzle course: a miss is a visible result plus the next clue, never a penalty screen.
+  let blocked=0,bumpAt=-1e9;
+  const miss=(kind:'wall'|'over',text:string)=>v.miss(text,deliveryHints[kind]);
+  const goblin=puzzle?v.asset('villain-goblin','/assets/quest/villain-scrap-goblin.png'):null;
   const state=document.createElement('p');state.className='delivery-state';state.setAttribute('role','status');v.c.root.querySelector('.mission-board')!.append(state);
   const safePosition=(p:Point):Point=>{
     const bounds=board.getBoundingClientRect(),piece=controller.getBoundingClientRect();
@@ -142,7 +152,9 @@ export function delivery(v: Surface){
       else bottom=Math.min(bottom,rect.top-bounds.top);
     }
     const halfX=Math.max(piece.width/2,54*bounds.width/W)+6,halfY=Math.max(piece.height/2,42*bounds.height/H)+5;
-    return pt(clamp(p.x,halfX/bounds.width*100,100-halfX/bounds.width*100),clamp(p.y,(top+halfY)/bounds.height*100,(bottom-halfY)/bounds.height*100));
+    const right=100-halfX/bounds.width*100;
+    if(puzzle&&p.x>deliveryCourse.reach+2&&performance.now()-bumpAt>600){bumpAt=performance.now();if(moved)v.tell('조종 자석은 유리벽을 넘어갈 수 없어.');}
+    return pt(clamp(p.x,halfX/bounds.width*100,puzzle?Math.min(right,deliveryCourse.reach):right),clamp(p.y,(top+halfY)/bounds.height*100,(bottom-halfY)/bounds.height*100));
   };
   const board=v.c.root.querySelector<HTMLElement>('.mission-board')!;
   const controller=v.c.root.querySelector<HTMLElement>('[data-drag="controller"]')!;
@@ -164,13 +176,15 @@ export function delivery(v: Surface){
     const connected=forceOn(),done=v.has(`segment${r}`),atGoal=Math.abs(car-goal)<3;
     const direction=side*(attract?1:-1);
     if(v.feedback!==shownFeedback){shownFeedback=v.feedback;feedbackUntil=performance.now()+2200;}
-    let status='밀어도 당겨도 좋아. 자석으로 카트를 깃발까지 보내 줘.';
+    let status=puzzle?'손은 유리벽을 넘지 못해. 자석의 힘으로 카트를 깃발까지 보내 줘.':'밀어도 당겨도 좋아. 자석으로 카트를 깃발까지 보내 줘.';
     if(moved&&!connected)status='카트가 멈췄어. 자석을 가까이 대서 다시 움직여 봐.';
     if(connected&&moved)status=cartMoving
       ? `${attract?'다른 극이 당겨':'같은 극이 밀어'} 카트가 ${direction>0?'오른쪽':'왼쪽'}으로 움직여.`
       : '카트가 멈췄어. 조종 자석을 조금씩 움직여 봐.';
     if(shownFeedback&&performance.now()<feedbackUntil)status=shownFeedback;
     if(moved&&!connected&&speed!==0)status='조금 더 굴러가네. 마찰 때문에 점점 느려져.';
+    if(puzzle&&blocked>.4&&!done)status='당기는 자석이 유리벽에 막혔어. 다른 방법을 찾아봐.';
+    if(puzzle&&!done&&!cartMoving&&!connected&&moved&&speed===0&&car>deliveryCourse.wall&&car<goal-deliveryCourse.tolerance)status='조금 모자라. 깃발까지 한 번 더 보내 봐.';
     if(atGoal&&connected&&!done)status='배달 장소야. 자석을 떼고 카트가 멈추는지 봐.';
     if(done)status='배달 완료 · 카트가 목적지에 멈췄어.';
     if(state.textContent!==status)state.textContent=status;
@@ -180,6 +194,21 @@ export function delivery(v: Surface){
       g.fillStyle='#84725d';g.fillRect(140,478,1000,8);g.fillRect(140,516,1000,8);
     }
     const gx=goal*W/100,cx=car*W/100,cy=59*H/100;
+    if(puzzle){
+      // The glass partition stops the hand-held magnet; the cart rolls through the door at rail height.
+      const wx=deliveryCourse.wall*W/100,hit=performance.now()-bumpAt<380;
+      g.save();g.fillStyle=done?'#ffe9a870':'#a9dcea5c';g.beginPath();g.roundRect(wx,236,1140-wx,226,[0,18,0,0]);g.fill();
+      g.fillStyle=hit?'#c9f1fbd9':'#dff4f8b3';g.strokeStyle=hit?'#1d7fa0':'#5f9fb2';g.lineWidth=hit?7:4;
+      g.beginPath();g.roundRect(wx-8,236,16,226,7);g.fill();g.stroke();
+      g.strokeStyle='#ffffffcc';g.lineWidth=3;g.beginPath();g.moveTo(wx-2,252);g.lineTo(wx-2,330);g.stroke();
+      g.fillStyle='#5f9fb2';g.fillRect(wx-12,456,24,10);g.restore();
+      v.label('유리벽',pt(deliveryCourse.wall-6,35),true);
+      if(goblin?.complete&&goblin.naturalWidth){
+        // The goblin guards the storeroom until the parcel arrives, then runs off.
+        const t=done?Math.min(1,(performance.now()-solvedAt)/900):0;
+        if(t<1){g.save();g.globalAlpha=1-t;g.drawImage(goblin,1010+t*150,300-Math.sin(t*Math.PI)*70,128,128);g.restore();}
+      }
+    }
     g.save();g.fillStyle=(atGoal||done)?'#89bd8480':'#ffe19788';g.strokeStyle=done?'#20765e':'#956515';
     g.lineWidth=4;g.setLineDash([9,7]);g.beginPath();g.roundRect(gx-3*W/100,416,6*W/100,102,10);g.fill();g.stroke();
     g.setLineDash([]);g.fillStyle='#86552d';g.fillRect(gx-3,285,6,122);
@@ -192,7 +221,7 @@ export function delivery(v: Surface){
     v.magnet(carPoint(),'N',.51);
     if(!done){
       const guide=pt(car+Math.sign(goal-car)*(pole==='N'?12:-12),59);
-      if(!connected||!moved)v.target(guide,'',128,64);
+      if((!connected||!moved)&&(!puzzle||guide.x<=deliveryCourse.reach&&(pole==='S'?puzzleHint(Number(v.a.values.puzzleMisses||0))>=2:car<deliveryCourse.reach-8)))v.target(guide,'',128,64);
       if(connected&&cartMoving)v.arrow(pt(car-direction*3,42),pt(car+direction*5,42),attract?'#167d76':'#ac642c');
     }
     // A handle above the bar keeps the movable magnet distinguishable from the cart-mounted one.
@@ -227,7 +256,16 @@ export function delivery(v: Surface){
         const next=car+(speed+nextSpeed)*rollTime/2;
         car=clamp(next,24,79);setSpeed(car===next?nextSpeed:0);
         v.a.values.car=car;v.set('cart-magnet',carPoint());
-      }if(now-lastSave>1000){v.c.touch();lastSave=now;}
+      }
+      if(puzzle){
+        const q=v.p('controller',pt(20,40)),pulling=forceOn()&&q.x>=car&&facing(q).attract;
+        blocked=pulling&&!cartMoving&&q.x>=deliveryCourse.reach-.6&&car<deliveryCourse.wall?blocked+dt:0;
+        if(blocked>1.2&&!v.has('puzzleWallHit')){v.a.values.puzzleWallHit=true;miss('wall','당기는 자석이 유리벽에 막혀서 카트가 멈췄어.');}
+        const past=car>goal+deliveryCourse.tolerance;
+        if(past&&Math.abs(speed)<.25&&!v.has('puzzleOver')){v.a.values.puzzleOver=true;miss('over','깃발을 지나쳤어! 다른 극이 마주 보게 해서 당겨 오자.');}
+        if(!past&&v.has('puzzleOver'))v.a.values.puzzleOver=false;
+      }
+      if(now-lastSave>1000){v.c.touch();lastSave=now;}
     }if(finishStopped())return;v.draw();raf=requestAnimationFrame(frame);
   };raf=requestAnimationFrame(frame);v.cleanups.push(()=>cancelAnimationFrame(raf));
   const fitController=()=>v.set('controller',safePosition(v.p('controller',pt(20,40))));

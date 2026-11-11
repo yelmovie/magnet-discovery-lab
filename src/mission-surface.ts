@@ -3,7 +3,8 @@ import { ironNutArt, materialCatalog, sortingSpecimens } from './material-sortin
 import type { Context } from './activity-types';
 import { bindDrag } from './manipulation';
 import { addTrial, trialOutcome } from './trial-records';
-import { distance } from './mission-model';
+import { distance, puzzleHint } from './mission-model';
+import { puzzleAutoHint } from './mission-content';
 import { playEffect, type EffectKind } from './game-audio';
 import { mailbox, lidPosition, mountedMagnet } from './mailbox';
 import { drawMailbox } from './mailbox-art';
@@ -61,6 +62,12 @@ export class Surface {
     const watched=this.c.root.dataset.demoRun!==undefined;if(watched)this.a.values.autoObserved=true;
     const trial=addTrial(this.a, { key, activity: this.n, conditions: { label, ...extra, ...(watched?{autoplay:true}:{manual:true}) }, initialObjects: Object.entries(this.a.points).filter(([id]) => id.startsWith('initial:')&&!id.startsWith('initial:assembly-')).map(([id, p]) => ({ id: id.slice(8), ...p })), objects, input: this.path, outcome, designRevision: this.s.design.revision, template: this.s.design.template, pinned: true });
     record(this.a, { key, label, result: trialOutcome(outcome) }); this.c.touch(); this.c.meta(); this.path = [];return trial;
+  }
+  /** Puzzle courses: a miss is a visible result plus the next clue, never a penalty screen. */
+  miss(text: string, clues: readonly string[]) {
+    const count=Number(this.a.values.puzzleMisses||0)+1,level=puzzleHint(count);this.a.values.puzzleMisses=count;
+    this.tell([text,level===3?puzzleAutoHint:level?clues[level-1]:''].filter(Boolean).join(' '));
+    playEffect('bump',this.s.settings);this.c.touch();this.c.meta();
   }
   button(id: string, fn: () => void) { this.c.root.querySelector(`[data-mission="${id}"]`)?.addEventListener('click', fn); }
   drag(id: string, fallback: Point, end: (p: Point) => void, move?: (p: Point) => void, constrain?: (p: Point) => Point) {

@@ -22,7 +22,8 @@ import { inquiryPhase } from './inquiry-model';
 import { missionReady } from './mission-model';
 import { canDemonstrate, ExperimentAutoplay } from './experiment-autoplay';
 import { rememberExperiment } from './experiment-scenes';
-import { missionQuestions, missionGuides, questRewards, abilityStatements } from './mission-content';
+import { missionQuestion, missionGuides, questRewards, abilityStatements } from './mission-content';
+import { puzzleStarsMarkup } from './puzzle-hud';
 import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
 import { bindResidentChat, chatMarkup, reunionTitle } from './resident-chat';
 import { restoredTownMessage } from './town-lights';
@@ -174,7 +175,7 @@ function activityPage() {
   if(usesIdeaLab(model,screen)){a.values.ideaVersion=1;currentView=ideaView(screen,a,model,adminOn());return currentView.html;}
   currentView=inquiryView(screen,a,model,adminOn());
   const next=nextStep(a);
-  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestions[screen-1]}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
+  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
 }
 function openRecords() {
   const a = s.activities[screen];
@@ -271,10 +272,12 @@ async function finishActivityOnce() {
 function showReward(stage: number,newResident: boolean) {
   playEffect('reward',s.settings);
   const kit = questRewards[stage];
-  const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '광장에서 발견 정리 →', 'primary')}${newResident ? button('meet-resident', `${residents[stage].name} 만나기`) : button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
+  // Stars come from the stored puzzle evidence of this zone, when it has a puzzle course.
+  const stars=(s.evidence.find(e=>e.stage===stage)?.activities||[]).filter(x=>x.values.puzzleVersion===1).map(x=>`<p class="reward-stars"><span>퍼즐 별</span>${puzzleStarsMarkup(x)}</p>`).join('');
+  const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p>${stars}<div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '광장에서 발견 정리 →', 'primary')}${newResident ? button('meet-resident', `${residents[stage].name} 만나기`) : button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
   const reunion = `<div class="town-news"><img src="/assets/quest/resident-${stage+1}.webp" alt=""><div><small>마을 소식 · ${stage + 1} / 5 구역 복구</small><h2>${reunionTitle(stage)}</h2><p>${restoredTownMessage(stage)}</p></div></div>
     <div class="town-news-earned"><span>${icon(kit.icon,24)}<b>${kit.name}</b><small>연구 가방에 저장</small></span><div><strong>도시 복구 ${progress(s)}%</strong><progress aria-label="도시 복구율" max="100" value="${progress(s)}"></progress></div></div>
-    <div class="town-news-actions">${button('next-zone',stage<4?'다음 구역으로 →':'광장에서 발견 정리 →','primary')}${button('meet-resident',`${residents[stage].name} 만나기`)}<button class="quest-text-button" data-concept="${stage}">개념 영상</button></div>`;
+    ${stars}<div class="town-news-actions">${button('next-zone',stage<4?'다음 구역으로 →':'광장에서 발견 정리 →','primary')}${button('meet-resident',`${residents[stage].name} 만나기`)}<button class="quest-text-button" data-concept="${stage}">개념 영상</button></div>`;
   const modal=showModal(newResident?reunion:classic,newResident?reunionTitle(stage):'연구 기록 완성');
   if(newResident){modal.dialog.classList.add('town-reunion');modal.dialog.parentElement!.classList.add('town-reunion-backdrop');}
   modal.dialog.querySelector('[data-action="meet-resident"]')?.addEventListener('click', () => {
