@@ -34,3 +34,8 @@ body.quest-mode #app :is(.mission-action,.learning-visual-preview){background:#f
  #app .map-overview .mv-target[data-stage="3"]{left:70%!important;}
  #app .map-overview .mv-target[data-stage="4"]{left:90%!important;}
 }
+
+:root{--scenic-card-radius:20px;--scenic-card-gap:12px;}
+body.quest-mode #app :is(.inquiry-card,.field-card,.idea-card,.mission-card,.evidence-card,.guide-card,.thinking-card,.task-card,.concept-card){border-radius:var(--scenic-card-radius);background-color:#fffdf0d9;}
+body.quest-mode #app :is(.play-discovery-options,.inquiry-options,.thinking-options,.final-answer-options){gap:var(--scenic-card-gap);}
+body.quest-mode #app :is(.inquiry-option,.play-discovery-options button,.final-answer-options button){border-radius:var(--scenic-card-radius);}
