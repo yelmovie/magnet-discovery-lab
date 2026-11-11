@@ -1,4 +1,5 @@
 import './idea-lab.css';
+import { emphasizeScience, scienceNoteMarkup } from './science-guidance';
 import { icon, mascot } from './art';
 import { record, stageNames, type Activity, type Point, type Save } from './domain';
 import { playEffect, playNarration } from './game-audio';
@@ -10,7 +11,7 @@ const esc = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '
 const steps: Record<number, { name: string; title: string; buddy: string }[]> = {
   9: [
     { name: '불편 찾기', title: '누구의 불편을 해결해 볼까?', buddy: '주민을 눌러 어떤 불편이 있는지 살펴봐.' },
-    { name: '자석 성질', title: '어떤 자석의 성질을 쓸까?', buddy: '앞에서 찾은 발견이야. 한두 개만 골라 봐.' },
+    { name: '자석 성질', title: '어떤 자석의 성질을 쓸까?', buddy: '해결할 불편을 떠올리며, 쓸 자석의 성질을 골라 봐.' },
     { name: '설계 스케치', title: '내 발명을 설명해 봐!', buddy: '어디에 자석을 쓰고, 어떤 힘으로 움직이는지 친구들에게 알려 줘.' },
   ],
   10: [
@@ -58,7 +59,7 @@ function problemStep(i: Idea) {
   </div>`;
 }
 function propertyStep(i: Idea) {
-  return `<div class="idea-choices" role="group" aria-label="쓸 자석의 성질">${ideaProperties.map(p => `<button type="button" class="idea-choice" data-property="${p.id}" aria-pressed="${i.properties.includes(p.id)}"><small>${p.from}</small><strong>${p.title}</strong></button>`).join('')}</div><p class="idea-problem-line">해결할 불편 · ${esc(problemText(i))}</p>`;
+  return `<div class="idea-choices" role="group" aria-label="쓸 자석의 성질">${ideaProperties.map(p => `<button type="button" class="idea-choice" data-property="${p.id}" aria-pressed="${i.properties.includes(p.id)}"><small>${p.from}</small><strong>${p.title}</strong></button>`).join('')}</div><p class="idea-problem-line">해결할 불편 · ${esc(problemText(i))}</p>${scienceNoteMarkup(9)}`;
 }
 function editor(i: Idea) {
   return `<div class="idea-editor"><div class="idea-palette" role="group" aria-label="부품 스티커">${ideaStickers.map((s, index) => `<button type="button" class="idea-stick" data-sticker="${index}" aria-pressed="false">${paletteIcon(s)}<span>${s.label}</span></button>`).join('')}</div>
@@ -71,11 +72,11 @@ function sketchStep(i: Idea) {
     <div><label for="idea-pitch">내 발명 설명</label><textarea id="idea-pitch" maxlength="120" rows="2" placeholder="어디에 자석을 놓고, 어떻게 움직이는지 적어 봐.">${esc(i.pitch)}</textarea></div>
     <button type="button" class="btn" data-act="export">그림으로 다운로드</button>
   </div>
-  <p class="idea-sketch-hint">그림이 필요하면 직접 그리거나 옆의 아이콘을 골라 붙여 봐.</p>
+  <p class="idea-sketch-hint">부품을 고르고 그림판을 눌러 붙여 봐. 힘 화살표로 움직일 방향도 표시해 줘.</p>
   ${editor(i)}</div>`;
 }
 function pitchStep(i: Idea) {
-  return `<div class="idea-pitch"><div><label for="idea-name">발명품 이름</label><input id="idea-name" maxlength="16" placeholder="예: 착착 지우개 집" value="${esc(i.name)}"><ol class="idea-prompts">${pitchPrompts.map(text => `<li>${text}</li>`).join('')}</ol></div><div><label for="idea-pitch">발명 소개</label><textarea id="idea-pitch" maxlength="120" rows="3" placeholder="친구들에게 소개할 글을 적어 봐">${esc(i.pitch)}</textarea></div></div>`;
+  return `<div class="idea-pitch"><div><label for="idea-name">발명품 이름</label><input id="idea-name" maxlength="16" placeholder="예: 착착 지우개 집" value="${esc(i.name)}"><ol class="idea-prompts">${pitchPrompts.map(text => `<li>${emphasizeScience(text)}</li>`).join('')}</ol></div><div><label for="idea-pitch">발명 소개</label><textarea id="idea-pitch" maxlength="120" rows="3" placeholder="친구들에게 소개할 글을 적어 봐">${esc(i.pitch)}</textarea></div></div>`;
 }
 function showStep(i: Idea) {
   return `<div class="idea-show"><div class="idea-frame${i.shown ? ' is-hung' : ''}">${ideaCard(i)}</div><div class="idea-show-actions"><button type="button" class="btn primary" data-act="hang" ${i.shown ? 'disabled' : ''}>${i.shown ? `${icon('check', 20)} 전시 중` : '전시관에 걸기'}</button><button type="button" class="btn" data-act="present">크게 띄워 발표하기</button><button type="button" class="btn" data-act="export">그림으로 다운로드</button></div></div>`;
@@ -279,7 +280,7 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
   const html = `<div id="experiment-root" class="idea-lab screen-${screen}" data-idea-step="${step}">
     <header class="idea-head"><span class="stage-label">구역 5 · ${stageNames[4]} · ${screen === 9 ? '아이디어 공방' : '발표회'}</span><h1 tabindex="-1">${info.title}</h1><ol class="idea-steps">${steps[screen].map((item, n) => `<li aria-current="${n === step ? 'step' : 'false'}" data-done="${n < step}">${n < step ? icon('check', 16) : n + 1}<span>${item.name}</span></li>`).join('')}</ol></header>
     <div class="idea-body">${bodies[screen][step](i)}</div>
-    <footer class="idea-foot"><div class="idea-buddy">${mascot(step % 2 ? 'dangi' : 'mili', 72, 1)}<p>${info.buddy}</p></div><p class="idea-gate" role="status">${gate}</p><div class="idea-nav"><button type="button" class="btn" data-act="back" ${step ? '' : 'disabled'}>이전</button><button type="button" class="quest-cta idea-next" ${last ? 'data-action="complete"' : 'data-act="next"'} ${gate ? 'disabled' : ''}>${label} ${icon('arrow', 22)}</button></div></footer>
+    <footer class="idea-foot"><div class="idea-buddy">${mascot(step % 2 ? 'dangi' : 'mili', 72, 1)}<p>${emphasizeScience(info.buddy)}</p></div><p class="idea-gate" role="status">${gate}</p><div class="idea-nav"><button type="button" class="btn" data-act="back" ${step ? '' : 'disabled'}>이전</button><button type="button" class="quest-cta idea-next" ${last ? 'data-action="complete"' : 'data-act="next"'} ${gate ? 'disabled' : ''}>${label} ${icon('arrow', 22)}</button></div></footer>
     <dialog class="idea-present" aria-label="내 발명 발표">${ideaCard(i)}<div><button type="button" class="btn" data-act="present-close" autofocus>닫기</button></div></dialog></div>`;
   return { html, bind(c) {
     const events = new AbortController(), signal = events.signal, root = c.root;

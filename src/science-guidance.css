@@ -1,0 +1,15 @@
+.science-note { margin-block: 16px; padding: 14px 18px; border: 1px solid #94b7b0; border-radius: 12px; background: #eff7f3; color: #19483f; }
+.science-note h3 { margin: 0 0 6px; font: 800 18px/1.4 var(--font-body); }
+.science-note p { margin: 4px 0; font: 400 19px/1.55 var(--font-body); max-width: 64ch; }
+.science-note .science-check { font-size: 16px; }
+.science-emphasis { font-weight: 850; color: #164e46; text-decoration: underline; text-decoration-color: #cb9a32; text-decoration-thickness: 2px; text-underline-offset: .2em; }
+/* A steady cue follows the one available action. It adds no animation or hit area. */
+#app .quest-activity .next-action-target { outline: 3px solid #216d63; outline-offset: 4px; }
+#app .quest-activity .canvas-hit.next-action-target { border-radius: 12px; background: #e8fff012; }
+#app .quest-activity:has([data-demo-run]) .next-action-target,
+#app .quest-activity:has(.coach-bubble:not([hidden])) .next-action-target { outline: none; }
+#app .quest-activity .coach-more.coach-visual-guide { display: block; grid-area: 3 / 1 / 4 / -1; margin: 8px 0 0; }
+@media (max-width: 600px) {
+  .science-note { padding: 12px; }
+  .science-note p { font-size: 17px; }
+}

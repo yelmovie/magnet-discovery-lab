@@ -2,12 +2,13 @@ import { record, type Activity, type Save } from './domain';
 import type { View } from './activity-types';
 import { missionView } from './mission-play';
 import { missionReady } from './mission-model';
-import { discoveries, inquiries, fieldMissions, playQuestions } from './inquiry-content';
+import { discoveryFor, inquiries, fieldMissions, playQuestions } from './inquiry-content';
 import { defaultFieldSetup, explanationCorrect, fieldResult, inquiryPhase, inquiryReady, routeDirection, type FieldSetup } from './inquiry-model';
 import { icon, magnet, objectArt, equipmentArt, sceneArt } from './art';
 import { trialPicture, readableRecord } from './trial-records';
 import { experimentScenes } from './experiment-scenes';
 import { promptPending, recordReflection } from './inquiry-prompts';
+import { emphasizeScience } from './science-guidance';
 
 const escape=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const choice=(group:string,value:string|number,label:string,selected:boolean)=>`<button type="button" class="inquiry-option ${selected?'selected':''}" data-inquiry-group="${group}" data-value="${value}" aria-pressed="${selected}">${label}</button>`;
@@ -146,11 +147,11 @@ function playInquiryView(n:number,a:Activity,s:Save,base:View,preview=false):Vie
   if(inquiryPhase(a)==='complete'&&!inquiryReady(n,a))a.values.inquiryPhase='explain';
   const phase=inquiryPhase(a);
   if(phase==='experiment')return {html:`<div class="inquiry-shell play-inquiry" data-phase="experiment"><div class="inquiry-workbench">${base.html}</div></div>`,bind:base.bind};
-  const d=discoveries[Math.floor((n-1)/2)],complete=phase==='complete'&&inquiryReady(n,a);
+  const d=discoveryFor(n,a),complete=phase==='complete'&&inquiryReady(n,a);
   const evidence=(a.trials||[]).slice(-1);
   const feedback=complete?d.finding:a.values.reflectionFeedback;
   const answers=d.choices.map((t,i)=>`<button type="button" class="inquiry-option ${a.values.reflection===i?'selected':''}" data-inquiry-group="reflection" data-value="${i}" aria-pressed="${a.values.reflection===i}" ${complete?'disabled':''}><b class="quiz-choice-number">${complete&&i===d.answer?'✓':i+1}</b><span>${t}</span></button>`).join('');
-  return {html:`<div class="inquiry-shell play-inquiry" data-phase="${complete?'complete':'explain'}"><div class="inquiry-card play-discovery"><header class="quiz-question"><strong>문제</strong><h2 id="discovery-question">${d.question}</h2></header>${replayStrip(n,s)}<p class="quiz-answer-label" id="quiz-task">${complete?'✓ 발견 정리 완료':'아래에서 답 하나를 골라 줘'}</p><div class="inquiry-options play-discovery-options" role="group" aria-labelledby="discovery-question quiz-task">${answers}</div>${feedback?`<p class="inquiry-feedback ${complete?'success':''}" role="status">${escape(feedback)}</p>`:''}<div class="quiz-tools"><details class="inquiry-evidence"><summary>내 실험 기록 펼치기</summary>${evidence.length?`<div class="trial-grid">${evidence.map(trialPicture).join('')}</div>`:''}<ul>${a.records.filter(r=>!r.key.startsWith('inquiry')).slice(-2).map(r=>`<li>${escape(r.label)}: ${escape(readableRecord(r.result))}</li>`).join('')}</ul></details>${complete?'':`<button class="quest-text-button" data-inquiry="revisit">실험대로 돌아가 보기</button>`}</div></div></div>`,bind(c){
+  return {html:`<div class="inquiry-shell play-inquiry" data-phase="${complete?'complete':'explain'}"><div class="inquiry-card play-discovery"><header class="quiz-question"><strong>문제</strong><h2 id="discovery-question">${d.question}</h2></header>${replayStrip(n,s)}<p class="quiz-answer-label" id="quiz-task">${complete?'✓ 발견 정리 완료':'아래에서 답 하나를 골라 줘'}</p><div class="inquiry-options play-discovery-options" role="group" aria-labelledby="discovery-question quiz-task">${answers}</div>${feedback?`<p class="inquiry-feedback ${complete?'success':''}" role="status">${complete?emphasizeScience(String(feedback)):escape(feedback)}</p>`:''}<div class="quiz-tools"><details class="inquiry-evidence"><summary>내 실험 기록 펼치기</summary>${evidence.length?`<div class="trial-grid">${evidence.map(trialPicture).join('')}</div>`:''}<ul>${a.records.filter(r=>!r.key.startsWith('inquiry')).slice(-2).map(r=>`<li>${escape(r.label)}: ${escape(readableRecord(r.result))}</li>`).join('')}</ul></details>${complete?'':`<button class="quest-text-button" data-inquiry="revisit">실험대로 돌아가 보기</button>`}</div></div></div>`,bind(c){
     const controller=new AbortController(),opts={signal:controller.signal};
     const refresh=()=>{c.touch();c.refresh();};
     c.root.querySelectorAll<HTMLButtonElement>('[data-inquiry-group="reflection"]').forEach(b=>b.addEventListener('click',()=>{

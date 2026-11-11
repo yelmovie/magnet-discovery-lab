@@ -14,7 +14,7 @@ export const ideaProperties = [
   { id: 'iron', title: '철을 끌어당겨', from: '재료 연구소에서 찾은 발견' },
   { id: 'opposite', title: '다른 극끼리 당겨', from: '극의 탑에서 찾은 발견' },
   { id: 'same', title: '같은 극끼리 밀어내', from: '극의 탑에서 찾은 발견' },
-  { id: 'through', title: '얇은 물체 너머로 힘이 전해져', from: '수조관에서 찾은 발견' },
+  { id: 'through', title: '얇은 종이·유리 너머로 당겨', from: '수조관에서 찾은 발견' },
   { id: 'distance', title: '가까울수록 힘이 세져', from: '재료 연구소에서 찾은 발견' },
 ];
 export const ideaStickers = [
@@ -26,7 +26,7 @@ export const ideaStickers = [
 export const feedbackStickers = [
   { id: 'useful', label: '쓸모 있어' }, { id: 'clever', label: '기발해' }, { id: 'curious', label: '궁금해' },
 ] as const;
-export const pitchPrompts = ['누구의 어떤 불편을 해결해?', '자석을 어디에 어떻게 썼어?', '왜 그렇게 움직여?'];
+export const pitchPrompts = ['누구의 어떤 불편을 해결해?', '자석을 어디에 어떻게 썼어?', '어떤 자석의 성질로 물체가 움직여?'];
 
 const shapes: Record<string, string> = {
   iron: '<rect x="-10" y="-6" width="20" height="12" rx="1.5" fill="#8d9aa3" stroke="#42525c" stroke-width="1"/><path d="M-7-3h14M-7 1h14" stroke="#c6d0d6" stroke-width=".8"/>',

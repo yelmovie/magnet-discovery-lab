@@ -234,7 +234,7 @@ export function repair(v: Surface){
         v.tell(i===2&&installed()?'자석은 있는데 덮개가 열렸어. 아래에서 고칠 곳을 골라 봐.':'덮개가 열렸어. 이번엔 홈에 자석을 끼워 봐.');
       }
       if(i===2?v.has('with2'):v.has(`with${i}`)&&v.has(`without${i}`)){
-        v.proof(`repair${i}`,i===2?'새 장치의 철판 자리까지 고치기':'같은 장치의 자석 유무 비교','success',puzzle?{course:'loose-plate'}:{});
+        v.proof(`repair${i}`,i===2?'새 장치의 철판 자리까지 고치기':puzzle?'우편함의 자석과 철판 자리 수리':'같은 장치의 자석 유무 비교','success',puzzle?{course:'loose-plate'}:{});
         if(puzzle)playEffect('reward',v.s.settings);
         v.refresh();
       }else v.draw();

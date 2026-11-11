@@ -1,5 +1,6 @@
 import './learning-visuals.css';
 import { apparatusFigure } from './apparatus-figures';
+import { scienceNoteMarkup } from './science-guidance';
 
 interface LearningVisual {
   image: string; title: string; alt: string; parts: string[];
@@ -19,20 +20,23 @@ const visuals: LearningVisual[] = [
   { image:'mailbox', title:'지금 만든 배치로 시험', alt:'안쪽 자석과 철 걸쇠가 마주 보게 조립한 우편함의 구조', parts:['내가 배치한 자석','마주 보는 부품','실제로 사용할 손잡이'], look:'이전 시험이 아니라 지금 놓인 부품의 위치를 확인해.', move:'손잡이를 움직여 사용한 뒤 사용 시험을 눌러봐.', notice:'배치를 고쳤다면 고친 배치로 다시 시험해봐.' },
 ];
 
-function visual(n: number, template: string): LearningVisual {
+export function learningVisual(n: number, template: string, a?: { values: Record<string, unknown> }): LearningVisual {
   const item=visuals[Math.max(0,Math.min(9,n-1))];
+  if(n===4&&a?.values.puzzleRevision===2)return {...item,title:'철 열쇠까지의 간격 비교',alt:'자석과 철 물체 사이에 얇은 종이를 세운 거리 비교 예시',parts:['움직이는 자석','철 열쇠','얇은 종이 한 장'],look:'실험대의 철 열쇠 끝과 자석 끝 사이의 빈칸을 세어 봐.',move:'먼저 5칸에서 철 열쇠를 놓아 봐. 다음에는 자석을 가까이 옮겨 다시 놓아 봐.',notice:'철 열쇠가 움직인 출발 간격을 유지하고 종이만 넣어 비교해 봐.'};
+  if(n===6&&a?.values.puzzleRevision===2)return {...item,title:'고리로 발판 올리고 내리기',move:'아래 고리부터 기둥에 놓아 봐. 위 고리를 뒤집고 손을 떼어 발판 높이를 바꿔 봐.',notice:'발판이 뜰 때와 내려갈 때, 마주 보는 두 면의 극을 비교해 봐.'};
+  if(n===8&&a?.values.puzzleRevision===2)return {...item,move:'깃발에 맞춰 멈추고 다음 구간으로 가 봐. 마지막에는 출발점으로 돌아와.',notice:'목적지에 닿기 전에 조종 자석을 떼어 봐. 조금 더 구르다가 멈추는지도 살펴봐.'};
   if(n===10&&template==='remote')return {...item,image:'aquarium',title:'판 너머로 힘 전달하기',alt:'유리 양쪽에서 서로 마주 보는 바깥 자석 손잡이와 안쪽 패드의 배치 예시',parts:['판 바깥 조작 자석','사이에 있는 유리판','판 안쪽 대상 부품'],look:'그림처럼 판 양쪽을 살펴봐. 내 장치의 안쪽 부품은 실험대에 보여.',move:'내 배치의 바깥 손잡이를 움직여 안쪽 부품을 목표로 보내봐.'};
   return item;
 }
 
-export function visualPreview(n: number, template: string): string {
-  const v=visual(n,template);
+export function visualPreview(n: number, template: string, a?: { values: Record<string, unknown> }): string {
+  const v=learningVisual(n,template,a);
   const interactive=apparatusFigure(n);
-  return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="${v.title} · ${interactive ? '장치 움직여 보기' : '장치 그림 크게 보기'}"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치 살펴보기 <b aria-hidden="true">${interactive ? '▸' : '＋'}</b></span></button>`;
+  return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="핵심 개념 · ${v.title} · ${interactive ? '장치 움직여 보기' : '장치 그림 크게 보기'}"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치·개념 <b aria-hidden="true">${interactive ? '▸' : '＋'}</b></span></button>`;
 }
 
-export function apparatusThumbnail(n:number,template:string) {
-  const item=visual(n,template);
+export function apparatusThumbnail(n:number,template:string,a?: { values: Record<string, unknown> }) {
+  const item=learningVisual(n,template,a);
   return {src:`/assets/learning/${item.image}.webp`,alt:item.alt};
 }
 
@@ -46,8 +50,10 @@ export function bindVisualGuide(dialog: HTMLElement) {
   });
 }
 
-export function visualGuideMarkup(n: number, template: string): string {
-  const v=visual(n,template);
+export function visualGuideMarkup(n: number, template: string, a?: { values: Record<string, unknown> }, photo?: string): string {
+  const v=learningVisual(n,template,a);
+  const source=photo || `/assets/learning/${v.image}.webp`;
+  const alt=photo ? '지금 실험대의 자석과 물체 배치' : v.alt;
   const controls='<button class="btn primary" data-action="modal-close">실험대로 돌아가기</button>';
-  return `<div class="learning-visual-guide"><span class="learning-visual-kicker">그림에서 찾고, 실험대에서 확인해요</span><h2>${v.title}</h2><div class="learning-visual-layout"><figure><div class="learning-visual-frame"><img src="/assets/learning/${v.image}.webp" alt="${v.alt}" width="1024" height="688"></div><button type="button" class="learning-visual-zoom" aria-pressed="false">그림 크게 보기</button><figcaption>${v.parts.map(p=>`<span>${p}</span>`).join('')}</figcaption></figure><ol>${[['눈으로 찾기',v.look],['직접 움직이기',v.move],['변화 관찰하기',v.notice]].map(([title,text])=>`<li><strong>${title}</strong><p>${text}</p></li>`).join('')}</ol></div>${controls}</div>`;
+  return `<div class="learning-visual-guide"><span class="learning-visual-kicker">그림에서 찾고, 실험대에서 확인해요</span><h2>${v.title}</h2><div class="learning-visual-layout"><figure><div class="learning-visual-frame"><img src="${source}" alt="${alt}" width="1024" height="688"></div><button type="button" class="learning-visual-zoom" aria-pressed="false">그림 크게 보기</button><figcaption>${v.parts.map(p=>`<span>${p}</span>`).join('')}</figcaption></figure><ol>${[['눈으로 찾기',v.look],['직접 움직이기',v.move],['변화 관찰하기',v.notice]].map(([title,text])=>`<li><strong>${title}</strong><p>${text}</p></li>`).join('')}</ol></div>${scienceNoteMarkup(n,a)}${controls}</div>`;
 }

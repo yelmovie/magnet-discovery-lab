@@ -11,6 +11,8 @@ import './fit-screen.css';
 import './fit-activity.css';
 import './fit-report.css';
 import './scenic-glass.css';
+import './science-guidance.css';
+import { scienceNoteMarkup } from './science-guidance';
 import { visualPreview, visualGuideMarkup, bindVisualGuide } from './learning-visuals';
 import { apparatusFigure, apparatusFigureMarkup, apparatusFigureTitle, bindApparatusFigure } from './apparatus-figures';
 import { coachMarkup, bindCoach } from './coach';
@@ -21,8 +23,8 @@ import { inquiryView, inquiryNext, advanceInquiry, inquirySteps } from './inquir
 import { inquiryPhase } from './inquiry-model';
 import { missionReady, puzzleSolved, puzzleStars } from './mission-model';
 import { canDemonstrate, ExperimentAutoplay } from './experiment-autoplay';
-import { rememberExperiment } from './experiment-scenes';
-import { missionQuestion, missionGuides, questRewards, abilityStatements } from './mission-content';
+import { rememberExperiment, savedExperimentPhoto } from './experiment-scenes';
+import { missionQuestion, missionGuide, questRewards, abilityStatements } from './mission-content';
 import { puzzleStarsMarkup } from './puzzle-hud';
 import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
 import { bindResidentChat, chatMarkup, reunionTitle } from './resident-chat';
@@ -180,7 +182,7 @@ function activityPage() {
   if(usesIdeaLab(model,screen)){a.values.ideaVersion=1;currentView=ideaView(screen,a,model,adminOn());return currentView.html;}
   currentView=inquiryView(screen,a,model,adminOn());
   const next=nextStep(a);
-  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
+  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template,a)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
 }
 function openRecords() {
   const a = s.activities[screen];
@@ -471,18 +473,32 @@ function bindCommon() {
       case 'retry-save': void flush(); break;
       case 'walk-next': if (city) city.goTo(s.evidence.length === 5 ? 5 : s.evidence.length); else pendingPlace = s.evidence.length === 5 ? 5 : s.evidence.length; break;
       case 'complete': b.disabled = true; void finishActivity(); break;
-      case 'hint': notify(screen === 10 ? designResult(s.design).reason : missionGuides[screen-1]); break;
+      case 'hint': notify(missionGuide(screen,s.activities[screen])); break;
       case 'observations': openRecords(); break;
+      case 'science-guide':
       case 'visual-guide': {
         const kind=apparatusFigure(screen);
         if(kind){
           let dispose=()=>{};
-          const guide=showModal(apparatusFigureMarkup(kind),apparatusFigureTitle(kind),()=>dispose());
+          const guide=showModal(apparatusFigureMarkup(kind)+scienceNoteMarkup(screen,s.activities[screen]),apparatusFigureTitle(kind),()=>dispose());
           guide.dialog.classList.add('apparatus-figure-dialog');
           dispose=bindApparatusFigure(guide.dialog.querySelector<HTMLElement>('.apparatus-figure')!,s.settings.motion,s.settings,touch);
           break;
         }
-        const guide=showModal(visualGuideMarkup(screen,s.design.template),'장치 그림 살펴보기');
+        const canvas=document.querySelector<HTMLCanvasElement>('#experiment-root canvas');
+        let photo: string | undefined;
+        if(s.activities[screen]?.values.puzzleRevision===2){
+          photo=savedExperimentPhoto(s.activities[screen]);
+          if(canvas&&canvas.dataset.pendingArt!=='true'){
+            const frame=document.createElement('canvas');frame.width=960;frame.height=450;
+            const drawing=frame.getContext('2d');
+            if(drawing){
+              drawing.drawImage(canvas,canvas.width*.04,canvas.height*.28,canvas.width*.92,canvas.height*.6,0,0,960,450);
+              photo=frame.toDataURL('image/webp',.85);
+            }
+          }
+        }
+        const guide=showModal(visualGuideMarkup(screen,s.design.template,s.activities[screen],photo),'장치 그림 살펴보기');
         guide.dialog.classList.add('learning-visual-dialog');
         bindVisualGuide(guide.dialog);
         break;

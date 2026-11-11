@@ -55,6 +55,24 @@ export const missionGuides = [
   '내 배치 그대로 손잡이를 움직인 뒤 사용 시험을 눌러 봐. 잘 안 되면 거리·높이·극을 하나씩 고치고 지금 설계로 다시 확인해.',
 ];
 
+/** The renewed distance experiment uses a key, with the matching Korean particles. */
+export function keyRescueText(text: string): string {
+  return text.replaceAll('철 클립', '클립')
+    .replaceAll('클립을', '철 열쇠를')
+    .replaceAll('클립이', '철 열쇠가')
+    .replaceAll('클립은', '철 열쇠는')
+    .replaceAll('클립', '철 열쇠');
+}
+
+export function missionGuide(n: number, a?: { values: Record<string, unknown> }): string {
+  if (n === 2 && a?.values.puzzleVersion === 1) return '덮개를 닫고 흔들어 봐. 자석을 넣어도 열리면 철판 자리를 살펴봐. 자석은 그대로 두고 철판을 가까이 옮겨 다시 흔들어 봐.';
+  if (a?.values.ideaVersion === 1) return n === 9
+    ? '주민의 불편과 쓸 자석의 성질을 골라. 자석을 놓을 곳과 움직일 물체를 그림이나 글로 설명해 봐.'
+    : '발명품 이름과 소개를 적고 전시해 봐. 친구의 질문을 듣고 더 알아볼 점을 찾아봐.';
+  const guide = missionGuides[n - 1];
+  return n === 4 && a?.values.puzzleRevision === 2 ? keyRescueText(guide) : guide;
+}
+
 /** The learner closes the journey by choosing what they can now do, printed on the certificate. */
 export const abilityStatements = [
   '자석에 붙는 물체와 붙지 않는 물체를 실험으로 가려낼 수 있어요.',

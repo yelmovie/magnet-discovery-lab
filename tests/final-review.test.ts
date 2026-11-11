@@ -44,7 +44,7 @@ describe('광장의 다섯 실험 정리 문제',()=>{
     for(let index=0;index<5;index++){
       page=mount(s);expect(s.final.review?.page).toBe(index);
       page.press(`[data-review-answer="${finalQuestions[index].answer}"]`);page.dispose?.();
-      page=mount(s);expect(page.html).toContain(finalQuestions[index].reason);expect(page.html).toContain('data-result="correct"');
+      page=mount(s);expect(page.html.replace(/<[^>]*>/g, '')).toContain(finalQuestions[index].reason);expect(page.html).toContain('data-result="correct"');
       page.press(`[data-review-answer="${(finalQuestions[index].answer+1)%3}"]`);
       expect(s.final.review?.answers[index]).toBe(finalQuestions[index].answer);
       page.press('[data-review-next]');page.dispose?.();

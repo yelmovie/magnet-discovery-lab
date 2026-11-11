@@ -194,7 +194,7 @@ export function distanceLab(v: Surface){
       observed=true;v.a.values.distanceObserved=true;
       const trial=v.proof(`distance-choice-${Number(gap.toFixed(1))}`,`${measure}에서 관찰`,'none',{paper:false,clearanceCells:Number(gap.toFixed(1)),material:'iron'});
       trial.initialObjects=[{id:'magnet',...m},{id:objectId,...target}];trial.objects=structuredClone(trial.initialObjects);
-      v.settle({},()=>{released=1;const still=`${measure}에서는 ${objectSubject} 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
+      v.settle({},()=>{released=1;const still=`${measure}에서는 ${objectSubject} 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1&&!rescue)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
       return;
     }
     if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${objectName}를 살펴봐.`);

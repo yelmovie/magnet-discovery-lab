@@ -2,7 +2,7 @@ import { emptyActivity, type Activity, type Point, type Save } from './domain';
 import { sortingSpecimens } from './material-sorting';
 import type { View } from './activity-types';
 import { placementControls } from './manipulation';
-import { missionGuides, missionQuestion, questRewards } from './mission-content';
+import { missionGuide, missionQuestion, questRewards } from './mission-content';
 import { bindPuzzleHud, puzzleHud } from './puzzle-hud';
 import { mailbox, updateMailboxLayout } from './mailbox';
 import { clipCompareView, clipStops } from './clip-comparison';
@@ -105,7 +105,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
   const viewToggle=canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>`:'';
   return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
-    const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuides[n-1]);});
+    const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuide(n,a));});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;
       const expanded=world.classList.toggle('bench-wide');

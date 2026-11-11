@@ -663,6 +663,18 @@ describe('먼 거리 관찰 뒤 직접 고르는 거리',()=>{
     const t=m.a.trials!.find(t=>t.key==='near')!;
     expect(t.objects.find(o=>o.id==='clip')!.x).toBeLessThan(t.initialObjects.find(o=>o.id==='clip')!.x);
   });
+  it('새 열쇠 퍼즐에서는 움직이지 않은 거리도 유효한 관찰로 남기며 별을 깎지 않는다',()=>{
+    const m=mount(4,{paceVersion:1,mechanicsVersion:1,puzzleVersion:1,puzzleRevision:2,round:1,done0:true});
+    for(const gap of [3,2]){
+      m.place('distance-magnet',{x:55-gap*6,y:55});m.click('release');tick(1);
+      expect(m.a.values.puzzleMisses||0).toBe(0);
+      expect(m.a.trials?.find(t=>t.key===`distance-choice-${gap}`)?.outcome).toBe('none');
+    }
+    expect(m.a.values.done1).not.toBe(true);
+    m.place('distance-magnet',{x:49,y:55});m.click('release');tick(1.2);
+    expect(m.a.values.done1).toBe(true);
+    expect(m.a.trials?.find(t=>t.key==='near')?.objects.some(o=>o.id==='key')).toBe(true);
+  });
   it('움직임 줄이기에서도 놓은 손과 관찰 결과가 남는다',()=>{
     const m=mount(4,{paceVersion:1,round:1});m.s.settings.motion=false;
     m.click('gap-3');m.click('release');expect(m.c.root.dataset.handState).toBe('released');

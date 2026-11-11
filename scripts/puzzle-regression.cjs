@@ -130,6 +130,27 @@ async function door(viewport) {
   pass(`${viewport.width}x${viewport.height} actual pointer drag restores labels, retries and opens the door`);
   await context.close();
 }
+async function distanceObservations() {
+  const context = await start(4);
+  await mission('release'); await idle(); await mission('next');
+  for (const gap of [3, 2]) {
+    await drag('distance-magnet', 55-gap*6, 55);
+    await mission('release'); await idle();
+  }
+  await page.waitForTimeout(800);
+  const before = (await saved()).activities[4];
+  assert.equal(before.values.puzzleMisses || 0, 0);
+  assert.equal(before.trials.filter(t => t.key.startsWith('distance-choice-')).length, 2);
+  assert.ok(!before.values.done1);
+  await page.reload(); await page.locator('[data-action="start"]').click();
+  assert.equal((await saved()).activities[4].values.puzzleMisses || 0, 0);
+  await drag('distance-magnet', 49, 55); await mission('release'); await idle();
+  await mission('next'); await drag('paper', 56, 55); await mission('release'); await idle();
+  assert.equal(await page.locator('.puzzle-stars .on').count(), 3);
+  await shot('distance-observations');
+  pass('distance exploration preserves observations across reload and earns three manual stars');
+  await context.close();
+}
 async function misses(n) {
   const context = await start(n);
   if (n === 3) {
@@ -138,10 +159,6 @@ async function misses(n) {
     await drag('sweep-magnet', 86, 38);
     await drag('sweep-magnet', 66, 43);
     for (let i = 0; i < 2; i++) await drag('material-2', 86, 44);
-  }
-  if (n === 4) {
-    await mission('release'); await idle(); await mission('next');
-    for (const gap of [3, 2]) { await drag('distance-magnet',55-gap*6,55); await mission('release'); await idle(); }
   }
   if (n === 6) {
     for (let i = 0; i < 2; i++) {
@@ -227,7 +244,8 @@ async function plaza(viewport){
     browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' }), headless: true });
     for (const n of [2, 4, 5, 6, 8]) await autoplay(n);
     for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 1920, height: 1080 }, { width: 915, height: 412 }]) await door(viewport);
-    for (const n of [3, 4, 6, 7]) await misses(n);
+    for (const n of [3, 6, 7]) await misses(n);
+    await distanceObservations();
     for (const viewport of [{ width: 1280, height: 800 }, { width: 915, height: 412 }]) await deliveryLabels(viewport);
     for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:1920,height:1080},{width:915,height:412}]){
       await mechanisms(viewport);await plaza(viewport);

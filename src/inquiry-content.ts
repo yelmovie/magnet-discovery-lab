@@ -1,3 +1,4 @@
+import { keyRescueText } from './mission-content';
 /** Questions are tied to evidence made in the corresponding hands-on experiment. */
 export interface Inquiry {
   client: string; request: string; prediction: string; guesses: string[];
@@ -11,6 +12,13 @@ export const discoveries = [
   { question:'손대지 않고 카트를 배달할 수 있었던 까닭은?', choices:['자석이 카트를 밀거나 당겨서','카트의 색이 바뀌어서','자석이 멀리 있어도 언제나 같은 힘으로 움직여서'], answer:0, feedback:'조종 자석을 가까이 댔을 때 카트가 어떻게 움직였는지 봐.', finding:'자석의 위치와 마주 보는 극을 바꾸면, 손대지 않고 물체를 밀거나 당길 수 있어.' },
   { question:'내 발명품이 작동한다는 증거는?', choices:['부품을 많이 놓은 설계도','지금 배치한 부품으로 직접 사용해 본 결과','처음 골랐던 부품의 색'], answer:1, feedback:'손잡이로 장치를 직접 움직였을 때, 무엇을 보고 작동한다고 알았지?', finding:'자석의 성질을 이용해 생활의 불편을 해결했어. 배치를 바꾸면 그 배치로 다시 시험해 보면 돼.' },
 ];
+
+export function discoveryFor(n: number, a: { values: Record<string, unknown> }) {
+  const item = discoveries[Math.floor((n - 1) / 2)];
+  if (n !== 4 || a.values.puzzleRevision !== 2) return item;
+  return { ...item, question: keyRescueText(item.question),
+    choices: item.choices.map(keyRescueText), finding: keyRescueText(item.finding) };
+}
 export const playQuestions = [
   '덮개를 닫으면 자석과 철판은 어떻게 될까?',
   '같은 물건에서 자석만 빼면 덮개는 어떻게 될까?',

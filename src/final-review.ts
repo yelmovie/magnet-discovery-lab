@@ -1,4 +1,5 @@
 import type { Save } from './domain';
+import { keyRescueText } from './mission-content';
 
 export interface FinalReview { version: 1; page: number; answers: number[]; first?: number[] }
 export const finalQuestions = [
@@ -55,6 +56,12 @@ const workshopQuestion = {
 } as const;
 
 export function reviewQuestion(s: Save, index: number) {
+  const distanceActivity = s.evidence.find(e => e.stage === 1)?.activities[1] ?? s.activities[4];
+  if (index === 1 && distanceActivity?.values.puzzleRevision === 2) {
+    const q = finalQuestions[1];
+    return { ...q, tab: '철 열쇠', question: keyRescueText(q.question),
+      choices: q.choices.map(keyRescueText), reason: keyRescueText(q.reason) };
+  }
   return index === 4 && s.idea && s.activities[10]?.values.ideaVersion === 1 ? workshopQuestion : finalQuestions[index];
 }
 

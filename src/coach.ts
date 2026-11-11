@@ -1,6 +1,6 @@
 import { ready, type Activity, type Save } from './domain';
 import { materialClassified, sortingSpecimens } from './material-sorting';
-import { shakePrompt } from './mission-content';
+import { keyRescueText, shakePrompt } from './mission-content';
 import { inquiryPhase } from './inquiry-model';
 import { deliveryRoute, distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
 import { magnetInstalled, mailbox } from './mailbox';
@@ -17,7 +17,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
   const paced = a.values.paceVersion === 1;
   if(a.values.inquiryVersion===2 && inquiryPhase(a)!=='experiment'){
     const complete=inquiryPhase(a)==='complete';
-    return {action:complete?'발견 정리 완료! 아래 버튼으로 구역을 고치자':'직접 본 움직임과 맞는 답 하나를 골라 줘',clues:['문제 옆 개념 다시보기를 누르면 실험 원리를 볼 수 있어.'],focus:'',done:complete?2:1,total:2};
+    return {action:complete?'발견 정리 완료! 아래 버튼으로 구역을 고치자':'직접 본 움직임과 맞는 답 하나를 골라 줘',clues:['문제 옆 개념 다시보기를 누르면 실험 원리를 볼 수 있어.'],focus:complete?'complete':'',done:complete?2:1,total:2};
   }
   if(a.values.inquiryVersion===1){
     const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?3:4}[phase];
@@ -53,7 +53,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
         else if(!closed){action='덮개 손잡이를 아래로 내려 닫아 봐';focus='lid';}
         else{action=shakePrompt(f(installed?'without0':'with0'));focus='shake';}
       }
-      clues = ['자석이 덮개를 붙잡는지 보려면 자석만 넣거나 빼고, 상자는 같은 세기로 흔들어 봐.', '자석과 철판이 가까이 마주 보는지 살펴봐.']; break;
+      clues = [a.values.puzzleVersion===1?'자석을 넣어도 열리면 철판 자리를 살펴봐. 자석은 그대로 두고 철판을 가까이 옮겨 봐.':'자석이 덮개를 붙잡는지 보려면 자석만 넣거나 빼고, 상자는 같은 세기로 흔들어 봐.', '자석과 철판이 가까이 마주 보는지 살펴봐.']; break;
     case 3:
       total=sortingSpecimens.length;done=sortingSpecimens.filter(m=>materialClassified(a,m.id)).length;
       action='자석을 물건에 가까이 대고, 반응에 따라 여섯 물건을 나눠 담아 줘';focus='sweep-magnet';
@@ -151,7 +151,10 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
   else if (ready(n, a, s)) { action = n % 2 ? '발견 완료! 오른쪽 아래에서 다음 의뢰로 가자' : '발견 완료! 내 실험을 이야기하고 개념 영상을 보자'; focus = ''; done = total; }
   else if (a.values[`done${r}`] || a.values[`solved${r}`] && (n!==5||f(`test${r}N`)&&f(`test${r}S`)) || a.values[`segment${r}`] || n === 1 && f(`found${r}`) && (a.values.mechanicsVersion!==1||f(`latch${r}`)) || n === 2 && f(`with${r}`) && f(`without${r}`) || n === 10 && !paced && r === 0 && f('use0')) { action = '관찰했어! 실험대 아래의 다음 의뢰 버튼을 눌러 줘'; focus = ''; }
   if(a.values.puzzleRevision===2){
-    if(n===4)action=action.replaceAll('클립','철 열쇠');
+    if(n===4){
+      action=keyRescueText(action);
+      if(focus==='release')action='열쇠 움직임 관찰 버튼을 눌러 결과를 살펴봐';
+    }
     if(n===5&&f('doorOpen')&&!a.values.doorIndex&&!f('doorPullOpen')){action='첫 문이 열렸어! 당겨 여는 다음 문으로 가자';focus='door-next';}
     else if(n===5&&a.values.doorIndex===1&&!f('doorPullOpen')){action='이번 문은 빗장을 당겨야 열려. 다른 극을 마주 보게 해 줘';focus='probe';}
     if(n===8){total=3;done=[0,1,2].filter(i=>f(`segment${i}`)).length;if(f(`segment${r}`)&&r<2){action='정차 완료! 다음 택배 구간으로 가자';focus='delivery-next';}}
@@ -162,7 +165,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
 }
 
 export function coachMarkup(n=1) {
-  return `<aside class="lab-coach" aria-label="보조 캐릭터 자꾸의 도움"><button class="coach-toggle" type="button" aria-expanded="false" aria-controls="coach-bubble">${coachArt()}<span>자꾸 · 힌트</span></button><div class="coach-bubble" id="coach-bubble" hidden><div class="coach-heading"><strong>수리 도우미 자꾸</strong><button type="button" class="coach-close" aria-label="힌트 닫기">×</button></div><p class="coach-clue" aria-live="polite"></p><button class="coach-more" type="button">다른 단서 보기</button><button class="coach-more" type="button" data-concept="${Math.floor((n-1)/2)}">▶ 개념 다시보기</button></div></aside>`;
+  return `<aside class="lab-coach" aria-label="보조 캐릭터 자꾸의 도움"><button class="coach-toggle" type="button" aria-expanded="false" aria-controls="coach-bubble">${coachArt()}<span>자꾸 · 힌트</span></button><div class="coach-bubble" id="coach-bubble" hidden><div class="coach-heading"><strong>수리 도우미 자꾸</strong><button type="button" class="coach-close" aria-label="힌트 닫기">×</button></div><p class="coach-clue" aria-live="polite"></p><button class="coach-more" type="button">다른 단서 보기</button><button class="coach-more" type="button" data-concept="${Math.floor((n-1)/2)}">▶ 개념 다시보기</button><button class="coach-more coach-visual-guide" type="button" data-action="science-guide">장치·핵심 개념 보기</button></div></aside>`;
 }
 
 export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
@@ -194,6 +197,11 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
     if(cause)cause.textContent=helper.dataset.reason==='true'?'아직 남은 실험이 있어':'수리 도우미 자꾸';
     root.querySelectorAll('.coach-focus').forEach(el => el.classList.remove('coach-focus'));
     if(!bubble.hidden)nextTarget(state.focus)?.classList.add('coach-focus');
+    root.querySelectorAll('.next-action-target').forEach(el => el.classList.remove('next-action-target'));
+    const target = nextTarget(state.focus);
+    if (target && !target.matches(':disabled, [hidden]') && !target.closest('[inert], [hidden]')) {
+      target.classList.add('next-action-target');
+    }
   };
   const setOpen = (open: boolean) => { bubble.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); update(); };
   root.querySelector('[data-action="missing-step"]')?.addEventListener('click',()=>{helper.dataset.reason='true';level=0;setOpen(true);helper.querySelector<HTMLButtonElement>('.coach-close')?.focus({preventScroll:true});},{signal:signal.signal});
