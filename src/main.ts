@@ -485,7 +485,7 @@ window.addEventListener('popstate', () => {
   for (let extra = historyDepth - depth; extra > 1; extra--) backStack.pop();
   historyDepth = depth; void flush(); goBack();
 });
-async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
+async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); await Promise.all([400, 700, 800].map(weight => document.fonts.load(`${weight} 20px NanumSquareNeo`))).catch(() => {}); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });
 void boot();

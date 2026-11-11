@@ -1,30 +1,16 @@
-@font-face {
-  font-family: 'NanumSquare Neo'; font-style: normal; font-weight: 400;
-  font-display: swap; src: url('/fonts/NanumSquareNeoTTF-bRg.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'NanumSquare Neo'; font-style: normal; font-weight: 700 900;
-  font-display: swap; src: url('/fonts/NanumSquareNeoTTF-cBd.woff2') format('woff2');
-}
+@font-face{font-family:NanumSquareNeo;src:url(/fonts/NanumSquareNeoTTF-bRg.woff2) format("woff2");font-weight:100 500;font-style:normal;font-display:swap}
+@font-face{font-family:NanumSquareNeo;src:url(/fonts/NanumSquareNeoTTF-cBd.woff2) format("woff2");font-weight:600 700;font-style:normal;font-display:swap}
+@font-face{font-family:NanumSquareNeo;src:url(/fonts/NanumSquareNeoTTF-dEb.woff2) format("woff2");font-weight:800 900;font-style:normal;font-display:swap}
+
+
+
+
+
 /* Magnet Quest: illustrated worlds, exact learning graphics and a small DOM HUD. */
-@font-face {
-  font-family: 'Magnet Quest Display'; font-style: normal; font-weight: 400;
-  font-display: swap; src: url('/fonts/quest-display-ko.woff2') format('woff2');
-  unicode-range: U+AC00-D7A3, U+1100-11FF, U+3130-318F, U+A960-A97F, U+D7B0-D7FF, U+3000-303F, U+FF00-FFEF;
-}
-@font-face {
-  font-family: 'Magnet Quest Display'; font-style: normal; font-weight: 400;
-  font-display: swap; src: url('/fonts/quest-display-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+2000-206F, U+2190-21FF, U+2300-25FF, U+2600-26FF, U+2700-27BF;
-}
-@font-face {
-  font-family: 'Magnet Quest Sans'; font-style: normal; font-weight: 400;
-  font-display: swap; src: url('/fonts/quest-body-regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Magnet Quest Sans'; font-style: normal; font-weight: 700 900;
-  font-display: swap; src: url('/fonts/quest-body-bold.woff2') format('woff2');
-}
+
+
+
+
 
 :root {
   /* Primitive values: sampled from the city, the two magnets and their tools. */
@@ -54,8 +40,8 @@
   --color-surface-glass: #fff8e7ed;
   --color-text-main: var(--quest-deep-teal);
   --color-text-sub: #43636a;
-  --font-display: 'NanumSquare Neo', sans-serif;
-  --font-body: 'NanumSquare Neo', 'Malgun Gothic', sans-serif;
+  --font-display: 'NanumSquareNeo', sans-serif;
+  --font-body: 'NanumSquareNeo', 'Malgun Gothic', sans-serif;
   --font-size-caption: clamp(16px, 1.3vw, 20px);
   --font-size-body: clamp(20px, 1.65vw, 25px);
   --font-size-button: clamp(20px, 1.8vw, 28px);

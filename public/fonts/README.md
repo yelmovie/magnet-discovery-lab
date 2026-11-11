@@ -19,3 +19,7 @@ software under that license; they may not be sold by themselves.
 ## NanumSquare Neo (2026-11-10)
 
 Titles, body text, and map-villain labels use the unmodified official Naver NanumSquare Neo regular/bold WOFF2 files. Source: https://hangeul.naver.com/font (NaverNanumSquareNeo.zip). The original SIL OFL and copyright notice are included in NanumSquareNeo-OFL.txt. Existing fonts remain preserved for compatibility.
+
+## Complete UI and canvas coverage (2026-11-11)
+
+All live UI, dynamically drawn experiment labels, 3D label textures, and exported invention cards now use NanumSquareNeo. Regular (100–500), bold (600–700), and extra-bold (800–900) are bundled unmodified with the existing license. Startup waits for these font faces before drawing canvas content. Legacy font files remain preserved but are no longer selected by runtime code. Text baked into existing images or video frames is not changed by CSS.

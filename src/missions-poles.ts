@@ -185,7 +185,7 @@ export function rings(v: Surface){
     if(Math.abs(q.x-stand.x)<1){
       g.save();g.beginPath();g.rect(x-12,y-ringHeight/2,24,ringHeight*.44);g.clip();drawStand();g.restore();
     }
-    g.save();g.font='bold 21px "Magnet Quest Sans",sans-serif';g.textBaseline='middle';g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#233b46';g.lineWidth=3;
+    g.save();g.font='bold 21px "NanumSquareNeo",sans-serif';g.textBaseline='middle';g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#233b46';g.lineWidth=3;
     for(const [label,dx,dy] of [[top,-49,-16],[bottom,21,28]] as const){g.strokeText(label,x+dx,y+dy);g.fillText(label,x+dx,y+dy);}
     g.restore();
     if(Math.abs(q.x-68)>6)v.label(`${i+1}번 고리`,pt(q.x,q.y-9),true);

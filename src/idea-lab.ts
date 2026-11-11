@@ -227,7 +227,7 @@ async function exportCard(i: Idea, notify: (text: string) => void) {
     await document.fonts.ready;
     const canvas = document.createElement('canvas'); canvas.width = 1600; canvas.height = 900;
     const g = canvas.getContext('2d')!;
-    const font = '"Magnet Quest Sans", "Noto Sans KR", sans-serif';
+    const font = '"NanumSquareNeo", "Noto Sans KR", sans-serif';
     g.fillStyle = '#eaf3f5'; g.fillRect(0, 0, canvas.width, canvas.height);
     g.fillStyle = '#1e4755'; g.font = `700 26px ${font}`; g.fillText('시민 발명 공방 · 내 발명 발표', 60, 57);
     g.font = `700 62px ${font}`; g.fillText(name.trim() || '내 발명', 60, 132, 1480);

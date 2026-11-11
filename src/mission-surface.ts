@@ -155,7 +155,7 @@ export class Surface {
   label(text: string, p: Point, small = false, color = '#203e40') {
     // The inquiry header already gives this instruction and progress count.
     if(this.a.values.inquiryVersion&&p.x===50&&(p.y===26||p.y===29))return;
-    const g = this.ctx,scale=this.c.root.querySelector('canvas')!.getBoundingClientRect().width/W,font=Math.max(small?20:26,(small?16:20)/Math.max(.5,scale));g.save(); g.font = `${small?'600':'700'} ${font}px "Magnet Quest Sans", Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const g = this.ctx,scale=this.c.root.querySelector('canvas')!.getBoundingClientRect().width/W,font=Math.max(small?20:26,(small?16:20)/Math.max(.5,scale));g.save(); g.font = `${small?'600':'700'} ${font}px "NanumSquareNeo", Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.lineWidth = 7; g.strokeStyle = '#fff8e4ed'; g.strokeText(text, p.x / 100 * W, p.y / 100 * H); g.fillStyle = color; g.fillText(text, p.x / 100 * W, p.y / 100 * H); g.restore();
   }
   target(p: Point, name: string, w = 130, h = 90) {
@@ -174,7 +174,7 @@ export class Surface {
     const img=this.asset('magnet-bar','/assets/quest/magnet-bar.webp');
     if(img.complete&&img.naturalWidth){g.save();if(left==='S')g.scale(-1,1);g.drawImage(img,60,370,1420,285,-75,-28,150,56);g.restore();}
     else {g.fillStyle = left === 'N' ? '#d94c42' : '#3d83b4';g.beginPath();g.roundRect(-70,-27,140,54,10);g.fill();g.fillStyle=left==='N'?'#3d83b4':'#d94c42';g.fillRect(0,-27,64,54);g.strokeStyle='#243b46';g.lineWidth=3;g.beginPath();g.roundRect(-70,-27,140,54,10);g.stroke();}g.shadowBlur=0;g.shadowOffsetY=0;
-    g.fillStyle='#fff6df';g.font='bold 25px "Magnet Quest Sans",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(left,-35,1);g.fillText(opposite(left),35,1);g.fillStyle='#ffffff3a';g.fillRect(-60,-21,120,5);g.restore();
+    g.fillStyle='#fff6df';g.font='bold 25px "NanumSquareNeo",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(left,-35,1);g.fillText(opposite(left),35,1);g.fillStyle='#ffffff3a';g.fillRect(-60,-21,120,5);g.restore();
   }
   iron(p: Point, name = '철', size = 55) {
     if(!this.equipment('plate',p,size*1.4,size)){
@@ -213,7 +213,7 @@ export class Surface {
     g.save();g.translate(596,503);g.rotate(.041);
     g.fillStyle=repaired?'#265345':'#49311e';g.strokeStyle='#dfba71';g.lineWidth=2;
     g.beginPath();g.roundRect(-89,-17,178,34,5);g.fill();g.stroke();
-    g.textAlign='center';g.textBaseline='middle';g.font='bold 20px sans-serif';g.fillStyle='#fff1cb';
+    g.textAlign='center';g.textBaseline='middle';g.font='bold 20px NanumSquareNeo, sans-serif';g.fillStyle='#fff1cb';
     g.fillText(repaired?'✓ 수리 완료':caption,0,1,166);g.restore();
   }
   cleanup() { this.stopped=true;this.cleanups.forEach(fn=>fn()); }

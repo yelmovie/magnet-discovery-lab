@@ -82,7 +82,7 @@ function poleLabel(pole: Pole) {
   const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
   g.fillStyle = pole === 'N' ? '#be3d39' : '#2368a3'; g.beginPath(); g.roundRect(8, 8, 112, 112, 24); g.fill();
   g.strokeStyle = '#fffaf0'; g.lineWidth = 8; g.stroke();
-  g.fillStyle = '#fffaf0'; g.font = 'bold 76px "Magnet Quest Sans", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(pole, 64, 70);
+  g.fillStyle = '#fffaf0'; g.font = 'bold 76px "NanumSquareNeo", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(pole, 64, 70);
   const texture = new THREE.CanvasTexture(c); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false })); sprite.scale.setScalar(0.0105); sprite.renderOrder = 2;
   return sprite;
