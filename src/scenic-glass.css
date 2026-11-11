@@ -1,0 +1,36 @@
+/* Scenic surfaces: keep semantic state colors and hands-on pieces intact. */
+body.quest-mode #app :is(.quest-icon,.quest-text-button,.expedition-map-controls button,.expedition-building:not(.locked):not(.restored),.mission-3d,.view3d-toggle) {
+ background:linear-gradient(135deg,#fffdf2d9,#edf6edb8);border-color:#456b5e66;box-shadow:0 4px 14px #173c4920,inset 0 1px 0 #ffffffd9;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#214b42;
+}
+body.quest-mode #app :is(.quest-cta,.mission-cta,.expedition-next):not(:disabled){background:linear-gradient(135deg,#fff4ccd9,#f4d77bc9);border-color:#80602380;box-shadow:0 4px 14px #5d482729,inset 0 1px 0 #fff8e8;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+body.quest-mode #app :is(.mission-head,.quest-dialog,.quest-panel,.quest-talk,.resident-bubble,.inspection-note,.play-question,.quest-caption){background:#fffdf0d6;border-color:#6b8b7066;box-shadow:0 5px 18px #173c4919;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+body.quest-mode :is(.modal,.settings-dialog,.concept-card,.resident-chat){background:#fffdf1ed;box-shadow:0 16px 48px #123d4138;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+body.quest-mode #app :is(.quest-icon,.quest-text-button,.quest-cta,.mission-cta,.expedition-next):focus-visible {outline:3px solid #17655c;outline-offset:3px;}
+@media(prefers-reduced-transparency:reduce){body.quest-mode #app :is(.quest-icon,.quest-text-button,.mission-head,.quest-dialog,.quest-panel,.quest-talk,.inspection-note,.play-question){background:#fffdf0;backdrop-filter:none;-webkit-backdrop-filter:none;}}
+
+body.quest-mode #app :is(.mission-action,.learning-visual-preview){background:#fffdf0d9;box-shadow:0 3px 12px #173c4920;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+@media(max-width:800px) and (orientation:portrait){
+ body.quest-mode #app .screen-6 .mission-board>.mission-actions{left:4%;right:auto;bottom:-128px;transform:none;}
+ body.quest-mode #app .screen-6 .mission-board>.mission-3d{top:auto;bottom:-128px;right:4%;}
+ #app .quest-activity .learning-visual-preview span{flex-wrap:wrap;}
+ #app .quest-activity .learning-visual-preview b{display:none;}
+}
+@media(max-width:600px){
+ #app .quest-activity .mission-study-tools{left:12px;max-width:39%;}
+ #app .quest-activity .mission-study-tools button{width:100%;white-space:normal;padding:6px;font-size:15px;}
+ #app .quest-activity>.mission-cta{max-width:54%;right:12px;}
+ body.quest-mode #app .screen-6 .mission-board>.mission-actions{left:2%;}
+ body.quest-mode #app .screen-6 .mission-board>.mission-3d{right:2%;font-size:15px;padding:8px;}
+}
+@media(max-width:600px){
+ body.quest-mode #app .quest-activity>.mission-cta{font-size:15px;min-height:48px;padding:6px 8px;line-height:1.2;}
+ body.quest-mode #app .screen-6 .mission-board>.mission-actions{bottom:-82px;width:165px;max-width:46%;}
+ body.quest-mode #app .screen-6 .mission-actions .mission-action{font-size:15px;padding:6px;min-width:0;width:100%;min-height:48px;}
+ body.quest-mode #app .screen-6 .mission-board>.mission-3d{left:auto;top:auto;bottom:-62px;width:150px;max-width:43%;min-height:48px;transform:none;}
+ #app .map-overview .mv-target{top:89%!important;}
+ #app .map-overview .mv-target[data-stage="0"]{left:10%!important;}
+ #app .map-overview .mv-target[data-stage="1"]{left:30%!important;}
+ #app .map-overview .mv-target[data-stage="2"]{left:50%!important;}
+ #app .map-overview .mv-target[data-stage="3"]{left:70%!important;}
+ #app .map-overview .mv-target[data-stage="4"]{left:90%!important;}
+}

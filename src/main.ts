@@ -10,6 +10,7 @@ import './polish.css';
 import './fit-screen.css';
 import './fit-activity.css';
 import './fit-report.css';
+import './scenic-glass.css';
 import { visualPreview, visualGuideMarkup, bindVisualGuide } from './learning-visuals';
 import { apparatusFigure, apparatusFigureMarkup, apparatusFigureTitle, bindApparatusFigure } from './apparatus-figures';
 import { coachMarkup, bindCoach } from './coach';
