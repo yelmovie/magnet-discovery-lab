@@ -1,5 +1,6 @@
+import { autoplaySpeed } from './autoplay-controls';
 import { opposite, type Point, type Pole } from './domain';
-import { deliveryCourse, distance, puzzleHint } from './mission-model';
+import { deliveryCourse, deliveryRoute, distance, puzzleHint } from './mission-model';
 import { deliveryHints, padHints } from './mission-content';
 import { playEffect } from './game-audio';
 import { clearedGlass, drawGlassStain, glassStains, wipeGlass } from './aquarium-glass';
@@ -80,7 +81,7 @@ export function aquarium(v: Surface){
   }
   function follow(now:number){
     raf=0;
-    const dt=Math.max(0,Math.min((now-previous)/1000,.045));previous=now;
+    const dt=Math.max(0,Math.min((now-previous)/1000,.045))*(v.c.root.dataset.demoRun!==undefined?autoplaySpeed(v.s.settings):1);previous=now;
     if(v.c.root.dataset.demoPaused===undefined&&!document.hidden&&!v.c.root.inert&&!document.querySelector('dialog[open],.modal-backdrop')){
       const handle=v.p('cleaner',handleStart),gap=distance(handle,pad);
       const next=gap<(connected?18:8);
@@ -106,7 +107,7 @@ export function aquarium(v: Surface){
 /** Solving re-renders the bench; only that next render plays the goblin's exit. */
 let justSolved:object|null=null;
 export function delivery(v: Surface){
-  const r=Number(v.a.values.round||0),puzzle=v.a.values.puzzleVersion===1&&r===0,start=r===2?74:27,goal=puzzle?deliveryCourse.goal:r===2?30:73;const solvedAt=justSolved===v.a?performance.now():-1e9;justSolved=null;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
+  const r=Number(v.a.values.round||0),{wall:puzzle,start,goal}=deliveryRoute(v.a);const solvedAt=justSolved===v.a?performance.now():-1e9;justSolved=null;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
   const carPoint=()=>pt(car,59);
   const forceOn=()=>{const q=v.p('controller',pt(20,40));return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
   let speed=Number(v.a.values.cartSpeed||0);
@@ -134,7 +135,7 @@ export function delivery(v: Surface){
     const path=v.path;
     stopProof(`stop${r}`,'배달 장소에서 카트가 멈춘 뒤 확인');v.path=path;
     stopProof(`delivery${r}`,'극의 힘으로 운반하고 정차');
-    if(puzzle){justSolved=v.a;playEffect('reward',v.s.settings);}
+    if(puzzle||v.a.values.puzzleRevision===2&&r===2){justSolved=v.a;playEffect('reward',v.s.settings);}
     v.tell(puzzle?'배달 완료! 유리벽 너머 깃발에 딱 멈췄어. 도깨비가 달아난다!':'배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
   };
   // Puzzle course: a miss is a visible result plus the next clue, never a penalty screen.
@@ -230,8 +231,13 @@ export function delivery(v: Surface){
     v.magnet(q,pole,.72);
   };
   v.drag('controller',pt(20,40),()=>{finishStopped();},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
-  v.button('detach',()=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(q.x,38)));v.c.touch();if(finishStopped())return;v.tell(speed!==0?'자석을 멀리했어. 카트가 조금 더 굴러 멈추는지 봐.':'조종 자석을 멀리했어.');v.draw();});
-  const frame=(now:number)=>{if(v.stopped)return;const dt=Math.max(0,Math.min(.045,(now-prev)/1000));prev=now;
+  v.button('detach',()=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(puzzle?20:q.x,38)));v.c.touch();if(finishStopped())return;v.tell(speed!==0?'자석을 멀리했어. 카트가 조금 더 굴러 멈추는지 봐.':'조종 자석을 멀리했어.');v.draw();});
+  v.button('delivery-next',()=>{
+    if(v.a.values.puzzleRevision!==2||!v.has(`segment${r}`)||r>=2)return;
+    v.a.values.round=r+1;v.a.values.car=goal;v.a.values.cartSpeed=0;v.a.values.controllerPole='N';
+    delete v.a.values.driveFacing;delete v.a.values.driveCartFacing;v.a.points={};v.refresh();
+  });
+  const frame=(now:number)=>{if(v.stopped)return;const dt=Math.max(0,Math.min(.045,(now-prev)/1000))*(v.c.root.dataset.demoRun!==undefined?autoplaySpeed(v.s.settings):1);prev=now;
     if(document.hidden||v.c.root.inert||v.c.root.dataset.demoPaused!==undefined||document.querySelector('dialog[open],.modal-backdrop')){raf=requestAnimationFrame(frame);return;}
     cartMoving=false;
     if(moved&&!v.has(`segment${r}`)){

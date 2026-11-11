@@ -1,3 +1,4 @@
+import { mascot } from './art';
 import { opposite, type Point, type Pole } from './domain';
 import { type TrialObject } from './trial-records';
 import { distance, ringFloating } from './mission-model';
@@ -56,11 +57,12 @@ export function poles(v: Surface){
   // that only opens when a like pole pushes it away.
   const puzzle=v.a.values.puzzleVersion===1&&r===0;
   const doorPhase=()=>puzzle&&v.has('solved0')&&tested('N')&&tested('S');
-  const doorOpen=()=>v.has('doorOpen');
+  const pulling=v.a.values.puzzleRevision===2&&v.a.values.doorIndex===1;
+  const doorOpen=()=>v.has(pulling?'doorPullOpen':'doorOpen');
   const startDoor=(afterReaction:boolean)=>{
     const ready=()=>{
       resetTrial();v.a.values.doorReady=true;
-      v.tell('극 표시를 되찾았어! 이제 빗장 자석을 오른쪽으로 밀어내 문을 열어 줘.');v.draw();v.c.touch();v.c.meta();
+      v.tell(pulling?'이번 문은 빗장을 왼쪽으로 당겨야 열려. 마주 보는 극을 살펴봐.':'극 표시를 되찾았어! 이제 빗장 자석을 오른쪽으로 밀어내 문을 열어 줘.');v.draw();v.c.touch();v.c.meta();
     };
     if(!afterReaction){v.set('probe',probeHome);v.set('unknown-magnet',rest);ready();return;}
     // Leave the last reaction on the bench for a moment before the mechanism resets.
@@ -73,12 +75,12 @@ export function poles(v: Surface){
     v.a.points['initial:unknown-magnet']={...initial};v.set('probe',dock);
     v.settle({'unknown-magnet':repel?repelled:contact},()=>{
       reaction=repel?'밀려났어':'당겨졌어';v.a.values.reaction=reaction;probeStart={...dock};
-      if(!repel){playEffect('snap',v.s.settings);v.miss(`${facing}극을 대니 빗장이 당겨져서 문은 그대로야.`,doorHints);v.draw();return;}
-      v.mark('doorOpen','같은 극으로 문 열기',`빗장의 ${hidden}극에 같은 ${facing}극을 대서 밀어내 문을 열었어.`);
-      const trial=v.proof('door0','같은 극끼리 밀어내는 힘으로 빗장을 밀어 문 열기','success',{facing,hidden,course:'pole-door'});
+      if(repel===pulling){playEffect('snap',v.s.settings);v.miss(pulling?`${facing}극을 대니 빗장이 밀려나서 문은 그대로야.`:`${facing}극을 대니 빗장이 당겨져서 문은 그대로야.`,pulling?['빗장이 어느 쪽으로 움직여야 문이 열리는지 살펴봐.','다른 극끼리 마주 보면 끌어당겨. 기준 자석을 뒤집어 봐.']:doorHints);v.draw();return;}
+      v.mark(pulling?'doorPullOpen':'doorOpen',pulling?'다른 극으로 문 열기':'같은 극으로 문 열기',pulling?'다른 극끼리 당기는 힘으로 빗장을 당겨 문을 열었어.':`빗장의 ${hidden}극에 같은 ${facing}극을 대서 밀어내 문을 열었어.`);
+      const trial=v.proof(pulling?'door1':'door0',pulling?'다른 극끼리 당기는 힘으로 문 열기':'같은 극끼리 밀어내는 힘으로 빗장을 밀어 문 열기','success',{facing,hidden,course:'pole-door',method:pulling?'pull':'push'});
       trial.initialObjects=[{id:'probe',...from,pole:probe},{id:'unknown-magnet',...initial,pole:hidden}];
-      trial.objects=[{id:'probe',...dock,pole:probe},{id:'unknown-magnet',...repelled,pole:hidden}];
-      playEffect('reward',v.s.settings);v.tell('같은 극끼리 밀어내서 빗장이 밀려났어. 문이 열렸다!',true);v.refresh();
+      trial.objects=[{id:'probe',...dock,pole:probe},{id:'unknown-magnet',...(pulling?contact:repelled),pole:hidden}];
+      playEffect('reward',v.s.settings);v.tell(pulling?'다른 극끼리 당겨서 두 번째 문도 열렸어!':'같은 극끼리 밀어내서 빗장이 밀려났어. 문이 열렸다!',true);v.refresh();
     });
   };
   if(doorPhase()&&!doorOpen()&&!v.has('doorReady'))startDoor(false);
@@ -131,8 +133,8 @@ export function poles(v: Surface){
       g.fillStyle=open?'#58b368':phase?'#f4c35c':'#9a8f80';g.strokeStyle='#5d4a22';g.lineWidth=3;
       g.beginPath();g.arc(x-8,cy,11,0,2*Math.PI);g.fill();g.stroke();
       g.restore();
-      v.label(open?'문이 열렸어':phase?'빗장을 밀면 열려':'잠긴 문',pt((x+w/2)*100/W,36),true,open?'#20765e':'#203e40');
-      if(phase&&!open&&!reaction&&!v.animating)v.arrow(pt(q.x+3,43),pt(q.x+11,43),'#b8892f');
+      v.label(open?'문이 열렸어':phase?(pulling?'빗장을 당기면 열려':'빗장을 밀면 열려'):'잠긴 문',pt((x+w/2)*100/W,36),true,open?'#20765e':'#203e40');
+      if(phase&&!open&&!reaction&&!v.animating)v.arrow(pt(q.x+(pulling?-3:3),43),pt(q.x+(pulling?-11:11),43),'#b8892f');
     }
     v.label(puzzle&&doorPhase()?'문 빗장 자석':'종이로 가린 자석',pt(q.x,q.y-10),true);
     v.magnet(ref,probe,probeWidth/150);
@@ -181,11 +183,14 @@ export function poles(v: Surface){
       v.draw();v.c.touch();v.c.meta();
     },undefined,520);
   });
+  v.button('door-next',()=>{if(!v.has('doorOpen')||v.a.values.doorIndex===1)return;v.a.values.doorIndex=1;delete v.a.values.doorReady;resetTrial();v.refresh();});
   v.button('next',()=>{v.a.values.round=1;delete v.a.values.reaction;v.a.points={};v.refresh();});
 }
 export function rings(v: Surface){
   const r=Number(v.a.values.round||0),count=v.compact||r===0?2:3;
   let release=v.has('ringReleased')?1:0;
+  const platform=v.a.values.puzzleRevision===2?document.createElement('div'):null;
+  if(platform){platform.className='puzzle-platform';platform.setAttribute('aria-label','고리 위 승강 발판과 밀이·당이');platform.innerHTML=mascot('mili',64,0)+mascot('dangi',64,0)+'<span></span>';v.c.root.querySelector('.mission-board')!.append(platform);}
   const pole=(i:number)=>(v.a.values[`ringPole${i}`]||'N') as Pole;
   const slot=(i:number)=>pt(68,71-i*15),tray=(i:number)=>pt(23+i*16,73);
   const ringWidth=166,ringHeight=75;
@@ -241,19 +246,27 @@ export function rings(v: Surface){
   if(v.has('ringReleased'))for(const [id,p] of Object.entries(positions()))v.set(id,p);
   v.draw=()=>{
     v.base();
+    if(platform){
+      const g=v.ctx;g.save();g.fillStyle='#90744e';g.fillRect(92*W/100,64*H/100,3*W/100,17*H/100);g.fillRect(78*W/100,64*H/100,17*W/100,2*H/100);g.restore();
+      const upper=v.p('ring1',tray(1));
+      const crossed=v.has('platformCrossed');
+      platform.classList.toggle('is-crossed',crossed);
+      platform.style.left=`${crossed?87:68}%`;platform.style.top=`${crossed?64:Math.abs(upper.x-68)<7?upper.y-5:64}%`;
+      v.label(crossed?'두 친구가 건넜어!':r<2?'발판을 올려 친구들을 태워 줘':'발판을 내려 건너편 길과 이어 줘',pt(44,35),true);
+    }
     drawStand();
     if(!v.has('ringReleased')&&!v.animating){
       for(let i=0;i<count;i++)if(distance(v.p(`ring${i}`,tray(i)),slot(i))>2)v.target(slot(i),'',ringWidth+8,62);
     }
     for(let i=0;i<count;i++)drawRing(i);
     const upper=v.p(`ring${count-1}`,tray(count-1));
-    if(Math.abs(upper.x-68)<7||v.animating||v.has('ringReleased'))v.hand(pt(slot(count-1).x+6,slot(count-1).y-1),release,'고리');
+    if(!v.has('platformCrossed')&&(Math.abs(upper.x-68)<7||v.animating||v.has('ringReleased')))v.hand(pt(slot(count-1).x+6,slot(count-1).y-1),release,'고리');
     if(v.has('ringReleased')){
       const floating=Array.from({length:count-1},(_,i)=>ringFloating(pole(i),pole(i+1)));
       const message=floating.every(Boolean)?'같은 극끼리 밀어내서 떠 있어':floating.some(Boolean)?'마주 보는 극에 따라 간격이 달라':'다른 극끼리 끌어당겨 붙었어';
       v.label(message,pt(36,52),true);
     }
-    v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:`${count}개 고리를 서로 붙게!`,pt(50,29),true);
+    if(!platform)v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:`${count}개 고리를 서로 붙게!`,pt(50,29),true);
   };
   for(let i=0;i<count;i++){
     v.drag(`ring${i}`,tray(i),p=>{v.a.values.ringReleased=false;release=0;if(distance(p,slot(i))<11)v.set(`ring${i}`,slot(i));v.draw();},()=>{v.a.values.ringReleased=false;release=0;});
@@ -276,6 +289,7 @@ export function rings(v: Surface){
         const wrong=r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.';
         if(v.a.values.puzzleVersion===1)v.miss(wrong,ringHints);else v.tell(wrong);v.draw();return;
       }
+      if(platform)v.a.values[r<2?'platformRaised':'platformCrossed']=true;
       v.mark(`done${r}`,'고리 배치 문제 해결',r<2?'같은 극이 마주 보자 고리가 밀려 떠올랐어.':'다른 극이 마주 보자 두 면이 맞닿았어.');v.refresh();
     },t=>{release=handRelease(t);const motion=afterHandRelease(t);return allFloat?1-Math.exp(-5*motion)*Math.cos(6*motion)*(1-motion):Math.min(1,(motion/.78)**2);},900);
   });

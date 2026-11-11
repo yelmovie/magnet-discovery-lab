@@ -1,1 +1,1 @@
-export function mountMapVillains(world:HTMLElement,options:{key:string;power:string;reduced:boolean;preview:boolean;stages:{name:string;x:number;y:number;ready:boolean;token:string}[];sound?:(final:boolean)=>void}):()=>void;
+export function mountMapVillains(world:HTMLElement,options:{key:string;power:string;reduced:boolean;preview:boolean;stages:{name:string;x:number;y:number;ready:boolean;puzzle?:boolean;token:string}[];sound?:(final:boolean)=>void}):()=>void;

@@ -1,9 +1,18 @@
+import { finalQuestions } from '../src/final-review';
 import { describe, expect, it } from 'vitest';
 import { completeActivity, coreReady, emptyActivity, freshSave, migrateSave, ready } from '../src/domain';
 import { addTrial } from '../src/trial-records';
 import { courierPosition, doors, expeditionMarkup, nearestRoad, residentMarkers, residents, roadRoute, roads, trailPoint, travelFacing, walkRoad } from '../src/expedition';
 import { assemblyAligned, magneticReach, ringFloating } from '../src/mission-model';
 import { initializeFinal } from '../src/final-mission';
+
+it('migrates demonstration preferences while preserving teacher choices', () => {
+  const old = freshSave();
+  delete old.settings.autoplay; delete old.settings.autoplaySpeed;
+  expect(migrateSave(old)?.settings).toMatchObject({ autoplay: true, autoplaySpeed: 1 });
+  old.settings.autoplay = false; old.settings.autoplaySpeed = 2;
+  expect(migrateSave(old)?.settings).toMatchObject({ autoplay: false, autoplaySpeed: 2 });
+});
 import { installRestoration, restorationView } from '../src/restoration';
 
 const proof=(a:ReturnType<typeof emptyActivity>,key:string,revision=0)=>addTrial(a,{key,activity:10,conditions:{label:key},initialObjects:[{id:'magnet',x:30,y:50}],objects:[{id:'magnet',x:50,y:50}],input:[{x:30,y:50},{x:50,y:50}],outcome:'success',designRevision:revision,template:'box'});
@@ -124,4 +133,37 @@ describe('자석 모형과 실제 지도 길',()=>{
   it('첫 RAF 시간이 이르거나 경로가 한 바퀴 돌아도 택배가 유효한 길 위에 있다',()=>{for(const phase of [-.001,0,.1,9.99,10,20.5,NaN]){const p=courierPosition(phase);expect(Number.isFinite(p.x)&&Number.isFinite(p.y)).toBe(true);expect(nearestRoad(p).x).toBeCloseTo(p.x,5);}expect(courierPosition(10)).toEqual(courierPosition(0));});
   it('당이는 밀이가 지나온 길 위에서 일정한 거리만큼 뒤따른다',()=>{const trail=roadRoute(roads[0],12);const p=trailPoint(trail,3.6);expect(nearestRoad(p).x).toBeCloseTo(p.x,5);expect(nearestRoad(p).y).toBeCloseTo(p.y,5);expect(trailPoint([{x:50,y:88}],3.6)).toEqual({x:50,y:88});});
   it('걷는 좌표는 길에 투영되며 물이나 건물로 빠지지 않는다',()=>{expect(nearestRoad({x:50,y:83})).toEqual({x:50,y:83});const p=nearestRoad({x:5,y:10});expect(p.x).toBeGreaterThan(5);expect(Number.isFinite(p.y)).toBe(true);});
+});
+
+describe('리뉴얼 광장 연결 퍼즐의 저장 경계',()=>{
+  it('새 리뉴얼 경로만 연결 퍼즐을 거쳐 수첩으로 간다',()=>{
+    const s=freshSave();s.activities[8]=emptyActivity();s.activities[8].values.puzzleRevision=2;
+    const view=restorationView(s);
+    expect(view.html).toContain('plaza-magnet');expect(s.final.review).toBeUndefined();
+  });
+  it('이미 시작한 수첩과 수료 기록에는 연결 퍼즐을 추가하지 않는다',()=>{
+    const s=freshSave();s.activities[8]=emptyActivity();s.activities[8].values.puzzleRevision=2;
+    s.final.review={version:1,page:0,answers:[-1,-1,-1,-1,-1]};
+    expect(restorationView(s).html).toContain('data-review-answer');
+    expect(restorationView(s).html).not.toContain('plaza-magnet');
+  });
+});
+
+describe('광장 연결 완료 판정',()=>{
+  it('수첩 답이 모두 있어도 네 연결 증거가 없으면 수료를 막는다',()=>{
+    const s=freshSave();s.final.report=true;
+    for(let stage=0;stage<5;stage++){s.completed.push(stage*2+1,stage*2+2);s.evidence.push({stage,date:s.updated,activities:[emptyActivity(),emptyActivity()],summary:[]});}
+    restorationView(s);
+    s.final.review!.answers=finalQuestions.map(q=>q.answer);
+    const a=s.final.puzzle=emptyActivity();
+    expect(coreReady(s)).toBe(false);
+    for(const key of ['plaza-iron','plaza-distance','plaza-poles'])proof(a,key);
+    expect(coreReady(s)).toBe(false);
+    proof(a,'plaza-glass');expect(coreReady(s)).toBe(true);
+    // Reuse the actual question keys rather than weakening the review gate.
+    const notebook=restorationView(s);expect(notebook.html).toContain('plaza-next');
+    a.values.notebook=true;
+    expect(restorationView(s).html).toContain('final-review');
+    const restored=migrateSave(s)!;expect(restored.final.puzzle!.trials).toHaveLength(4);
+  });
 });

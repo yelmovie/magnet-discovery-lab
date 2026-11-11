@@ -108,7 +108,13 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
               await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').press('Enter');
               await page.locator('#nickname').fill('과학 탐험가');
               assert.equal(await page.locator('#certificate-name').textContent(),'과학 탐험가');
-              await page.pdf({path:`${out}/${width}-certificate.pdf`,format:'A4',landscape:true,printBackground:true,preferCSSPageSize:true});
+              if(process.env.TEST_CAPTURE_EXPORT==='1'){
+                // Return PDF bytes directly so the browser needs no OS temporary stream file.
+                const session=await context.newCDPSession(page);
+                const pdf=await session.send('Page.printToPDF',{landscape:true,printBackground:true,preferCSSPageSize:true,transferMode:'ReturnAsBase64'});
+                const bytes=Buffer.from(pdf.data,'base64');assert.equal(bytes.subarray(0,4).toString(),'%PDF');
+                fs.writeFileSync(`${out}/${width}-certificate.pdf`,bytes);await session.detach();
+              }else await page.pdf({path:`${out}/${width}-certificate.pdf`,format:'A4',landscape:true,printBackground:true,preferCSSPageSize:true});
               record(`${width}x${height} invention notebook, festival and certificate`);
               if(width===1280){
                 await page.evaluate(()=>new Promise((resolve,reject)=>{
@@ -145,10 +151,12 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
     }
     const context=await browser.newContext();
     const page=await context.newPage();await page.goto(base);await action(page,'start').waitFor();
+    // Registration starts after load. An offline revisit requires the first cache installation to finish.
+    await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});
     await context.setOffline(true);
     let offline=false;
     try{await page.reload({timeout:5000});offline=await action(page,'start').isVisible();}catch{}
-    results.push({name:'offline revisit',offline});await context.close();
+    results.push({name:'offline revisit',offline});assert.equal(offline,true,'a cached visit reopens offline');await context.close();
   }finally{
     fs.writeFileSync(`${out}/smoke.json`,JSON.stringify({base,results},null,2));await browser.close();
   }

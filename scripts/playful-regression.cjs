@@ -100,6 +100,9 @@ async function experiments(n) {
     assert.equal((await save()).activities[5].values.puzzleMisses,1,'the attracting pole is a visible miss');
     await mission('flip');await idle();await put('probe',48,53);
     await page.waitForFunction(()=>window.__lab.save.activities[5].values.doorOpen===true);await idle();
+    assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);
+    await mission('door-next');await mission('flip');await idle();await put('probe',48,53);await idle();
+    assert.equal((await save()).activities[5].values.doorPullOpen,true);
   }
   if(n===6){for(let i=0;i<2;i++)await put('ring'+i,68,71-i*15);await mission('check');await wait(750);assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);await mission('next');await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);}
   if(n===7){
@@ -112,27 +115,32 @@ async function experiments(n) {
       assert.equal((await save()).activities[7].values['clean'+i],true);
     }
   }
-  if(n===8){for(let r=0;r<1;r++){
-    // Puzzle course: the controller stops at the glass partition (x 47.5), the flag is beyond it (x 60).
-    assert.equal((await save()).activities[8].values.puzzleVersion,1,'new delivery starts as the puzzle course');
-    for(let j=0;j<120;j++){const car=Number((await save()).activities[8].values.car??27);if(car>41)break;await put('controller',car+7,59);await wait(90);}
-    await put('controller',70,59);await wait(1700);
-    const stuck=(await save()).activities[8];
-    assert.ok(stuck.points.controller.x<=47.6,'controller cannot pass the glass');
-    assert.ok(Number(stuck.values.car)<45,'pulling alone stops the cart before the glass');
-    assert.equal(stuck.values.puzzleMisses,1,'the blocked pull is the first visible miss');
-    await mission('detach');await mission('flip');
-    for(let j=0;j<210;j++){const car=Number((await save()).activities[8].values.car??27);if(Math.abs(car-60)<1.5)break;await put('controller',Math.min(47.5,car-7),59);await wait(90);}
-    assert.ok(Math.abs(Number((await save()).activities[8].values.car)-60)<3,'cart reaches destination');
-    assert.notEqual((await save()).activities[8].values['segment'+r],true,'must stop to deliver');
-    await mission('detach');
-    await page.waitForFunction(round=>window.__lab.save.activities[8].values['segment'+round]===true,r,{timeout:3000});
-    assert.equal((await save()).activities[8].values.cartSpeed,0);
-  }}
+  if(n===8){
+    for(let r=0;r<3;r++){
+      const goal=[44,60,30][r];
+      if(r===1)await mission('flip');
+      for(let j=0;j<240;j++){
+        const car=Number((await save()).activities[8].values.car??27);
+        if(Math.abs(car-goal)<1.5)break;
+        await put('controller',r===1?Math.min(47.5,car-10):car+Math.sign(goal-car)*10,59);await wait(90);
+      }
+      assert.ok(Math.abs(Number((await save()).activities[8].values.car)-goal)<3,'cart reaches each destination');
+      await mission('detach');
+      await page.waitForFunction(round=>window.__lab.save.activities[8].values['segment'+round]===true,r,{timeout:4000});
+      if(r<2){assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await mission('delivery-next');}
+    }
+  }
   await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(),true,'activity '+n+' actual evidence unlocks continuation');
 }
 async function finish(n) {
+  if(n>=2&&n<=8){
+    const expected=await page.evaluate(async n=>{
+      const {puzzleStars}=await import('/src/mission-model.ts');
+      return puzzleStars(window.__lab.save.activities[n]);
+    },n);
+    assert.equal(await page.locator('.mission-board > .puzzle-stars .on').count(),expected,'earned stars appear immediately for activity '+n);
+  }
   await action('complete');
   if(n%2===1)await page.waitForFunction(n=>window.__lab.screen===n+1,n);
   if(n%2===0){
@@ -146,11 +154,34 @@ async function finish(n) {
     await page.locator('[data-inquiry-group="reflection"]').nth(answer).click();
     await action('complete');
     assert.equal(await page.locator('.concept-video').count(),0,'no automatic video');
+    const expected=await page.evaluate(async n=>{
+      const {puzzleStars}=await import('/src/mission-model.ts');
+      return window.__lab.save.evidence.find(e=>e.stage===n/2-1).activities.filter(a=>a.values.puzzleVersion===1).map(puzzleStars);
+    },n);
+    const stars=page.locator('.reward-stars .puzzle-stars');
+    assert.equal(await stars.count(),expected.length,'reward keeps each star group with its label');
+    const labels=await page.locator('.reward-stars > span').allTextContents();
+    assert.equal(new Set(labels).size,labels.length,'each puzzle reward has its own label');
+    assert.ok(labels.every(label=>label!=='퍼즐 별'),'reward identifies the puzzle instead of repeating a generic label');
+    for(let i=0;i<expected.length;i++)assert.equal(await stars.nth(i).locator('.on').count(),expected[i],'reward matches the saved puzzle evidence');
+    await wait(700);
+    await page.screenshot({path:out+`/reward-${n/2}.png`});
     await action('next-zone');
   }
   assert.equal((await save()).completed.includes(n),true);check('activity '+n+' complete with real evidence');
 }
 // The final notebook only opens the next page after the right answer, then restoration can finish.
+async function plazaPuzzle(){
+  if(await page.locator('#plaza-experiment').count()){
+    const move=async(x,y)=>{await put('plaza-magnet',x,y);await page.waitForFunction(()=>!document.querySelector('#plaza-experiment').inert);};
+    await move(54,55);await move(34,55);await mission('plaza-next');
+    await move(54,55);await mission('plaza-next');
+    await mission('plaza-flip');await move(54,55);await mission('plaza-next');
+    await move(46,55);await move(46,40);await mission('plaza-next');
+    assert.equal((await save()).final.puzzle.trials.filter(t=>t.outcome==='success').length,4);
+    check('four linked plaza mechanisms unlock the notebook');
+  }
+}
 async function reviewNotebook(start=0){
   const questions=await page.evaluate(async()=>(await import('/src/final-review.ts')).finalQuestions.map(q=>q.answer));
   for(const [i,answer] of questions.entries()){
@@ -204,11 +235,30 @@ async function workshop() {
   await page.keyboard.press('Escape');
   await page.locator('.idea-present').waitFor({state:'hidden'});
   assert.equal(await page.locator('[data-act="present"]').evaluate(el=>el===document.activeElement),true);
-  const download=page.waitForEvent('download');
-  await page.locator('[data-act="export"]').click();
-  const card=await download;
-  assert.equal(card.suggestedFilename().endsWith('.png'),true);
-  await card.saveAs(out+'/invention-card.png');
+  if(process.env.TEST_CAPTURE_EXPORT==='1'){
+    // The macOS write sandbox blocks Chrome's OS download staging. Capture the app's Blob before that step.
+    await page.evaluate(()=>{
+      const original=HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click=function(){
+        if(this.download&&this.href.startsWith('blob:')){
+          window.__exportCapture=fetch(this.href).then(r=>r.arrayBuffer()).then(b=>Array.from(new Uint8Array(b)));
+          window.__exportName=this.download;
+        }else original.call(this);
+      };
+    });
+    await page.locator('[data-act="export"]').click();
+    await page.waitForFunction(()=>!!window.__exportCapture);
+    const bytes=Buffer.from(await page.evaluate(()=>window.__exportCapture));
+    assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.ok(bytes.length>1000);
+    assert.match(await page.evaluate(()=>window.__exportName),/\.png$/);
+    fs.writeFileSync(out+'/invention-card.png',bytes);
+  }else{
+    const download=page.waitForEvent('download');
+    await page.locator('[data-act="export"]').click();
+    const card=await download;
+    assert.equal(card.suggestedFilename().endsWith('.png'),true);
+    await card.saveAs(out+'/invention-card.png');
+  }
   await next().click();
   await page.locator('[data-act="buddy"]').click();
   assert.equal((await save()).idea.feedback.length,2);
@@ -226,6 +276,7 @@ async function student() {
   await action('walk-next');await action('enter');
   for(let n=1;n<=8;n++){assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);if(n%2===0){await reload();assert.equal((await save()).evidence.length,n/2,'district '+n/2+' survives reconnecting');}}
   await workshop();
+  await plazaPuzzle();
   await page.locator('[data-review-answer="1"]').click();
   await page.locator('[data-review-next]').click();
   await reload();

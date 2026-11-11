@@ -25,8 +25,8 @@ export interface Save {
   greetedResidents?: number[];
   design: Design; designs: Partial<Record<'box' | 'remote', Design>>;
   idea?: Idea;
-  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number };
-  final: { report: boolean; latch: Pole; ring: Pole; plate: number; complete: boolean; date: string; review?: FinalReview; route?: { mode: 'basic' | 'challenge'; repair: 'delivery' | 'rings' | 'invention'; installed: boolean; operated: boolean; segments: string[]; revision: number; template: string; attempt?: Activity; optionalBackup?: string; replayEvidenceIds?: number[] } };
+  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number; autoplay?: boolean; autoplaySpeed?: 1 | 2 };
+  final: { report: boolean; latch: Pole; ring: Pole; plate: number; complete: boolean; date: string; puzzle?: Activity; review?: FinalReview; route?: { mode: 'basic' | 'challenge'; repair: 'delivery' | 'rings' | 'invention'; installed: boolean; operated: boolean; segments: string[]; revision: number; template: string; attempt?: Activity; optionalBackup?: string; replayEvidenceIds?: number[] } };
 }
 export const stageNames = ['생활 자석 조사국', '힘 실험 연구소', '극성 복원 센터', '원격 제어 구역', '시민 발명 공방'];
 export const missionNames = ['장치 속 힘의 단서', '붙는 물체의 규칙', '뒤섞인 극을 복원하라', '손대지 않는 제어 작전', '도시를 위한 자석 발명'];
@@ -44,7 +44,7 @@ export const materials = [
 export const emptyActivity = (): Activity => ({ values: {}, points: {}, records: [], mask: [] });
 export const defaultDesign = (template: Design['template'] = 'box'): Design => ({ template, pair: 'iron', pole: 'N', gap: 65, aligned: false, revision: 0 });
 export function freshSave(): Save {
-  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: true, musicVersion: 1, effects: true, musicVolume: .35, motion: true, nickname: '' }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
+  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: true, musicVersion: 1, effects: true, musicVolume: .35, motion: true, nickname: '', autoplay: true, autoplaySpeed: 1 }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
 }
 export function opposite(p: Pole): Pole { return p === 'N' ? 'S' : 'N'; }
 export function relation(a: Pole, b: Pole): Relation { return a === b ? 'repel' : 'attract'; }
@@ -142,7 +142,11 @@ export function sweep(mask: number[], from: Point, to: Point): number[] {
     for (let y = Math.max(0, Math.floor(py - 2)); y <= Math.min(grid.h - 1, Math.ceil(py + 2)); y++) for (let x = Math.max(0, Math.floor(px - 3)); x <= Math.min(grid.w - 1, Math.ceil(px + 3)); x++) if (dirtyCell(x, y) && ((x - px) / 3) ** 2 + ((y - py) / 2) ** 2 < 1) set.add(y * grid.w + x);
   } return [...set];
 }
+export function plazaPuzzlePassed(a:Activity):boolean {
+  return ['plaza-iron','plaza-distance','plaza-poles','plaza-glass'].every(key=>a.trials?.some(t=>t.key===key&&validTrial(t)&&t.outcome==='success'));
+}
 export function coreReady(s: Save, preview = false): boolean {
+  if(!preview&&s.final.puzzle&&!plazaPuzzlePassed(s.final.puzzle))return false;
   if(s.final.review)return preview || s.evidence.length===5&&s.final.report&&reviewPassed(s.final.review);
   if (s.final.route) {
     const r = s.final.route;
@@ -169,6 +173,7 @@ export function validSave(input: unknown): input is Save {
     Array.isArray(a.records) && a.records.every(r => r && typeof r.key === 'string' && typeof r.label === 'string' && typeof r.result === 'string') &&
     Array.isArray(a.mask) && a.mask.every(Number.isInteger) && (!a.trials || Array.isArray(a.trials) && a.trials.every(validTrial));
   for (const a of [...Object.values(s.activities), ...s.evidence.flatMap(e => e.activities)]) if (!validActivity(a)) return false;
+  if(s.final.puzzle&&!validActivity(s.final.puzzle))return false;
   const route = s.final.route;
   if(s.final.review&&!validReview(s.final.review))return false;
   if (route && (!['basic', 'challenge'].includes(route.mode) || !['delivery', 'rings', 'invention'].includes(route.repair) || !Array.isArray(route.segments) || typeof route.operated !== 'boolean' || typeof route.installed !== 'boolean' || !Number.isInteger(route.revision) || !['box', 'remote'].includes(route.template))) return false;
@@ -190,7 +195,7 @@ export function repairSave(input: unknown): Save | null {
   if (raw.activities && typeof raw.activities === 'object') for (const [n, activity] of Object.entries(raw.activities)) keep('activities', { ...next.activities, [n]: activity });
   for (const key of ['design', 'designs', 'idea', 'greetedResidents', 'city', 'final'] as const) keep(key, raw[key]);
   if (Number.isInteger(raw.resume)) next.resume = raw.resume as number;
-  if (raw.settings && typeof raw.settings === 'object') { const s = raw.settings as Partial<Save['settings']>; if (typeof s.sound === 'boolean') next.settings.sound = s.sound; if (typeof s.motion === 'boolean') next.settings.motion = s.motion; if (typeof s.nickname === 'string') next.settings.nickname = s.nickname; }
+  if (raw.settings && typeof raw.settings === 'object') { const s = raw.settings as Partial<Save['settings']>; if (typeof s.sound === 'boolean') next.settings.sound = s.sound; if (typeof s.motion === 'boolean') next.settings.motion = s.motion; if (typeof s.nickname === 'string') next.settings.nickname = s.nickname; if (typeof s.autoplay === 'boolean') next.settings.autoplay = s.autoplay; if (s.autoplaySpeed === 1 || s.autoplaySpeed === 2) next.settings.autoplaySpeed = s.autoplaySpeed; }
   const recovered = next.completed.length > 0 || Object.keys(next.activities).length > 0;
   if (!recovered) return null;
   next.started = true;
@@ -211,6 +216,8 @@ export function migrateSave(input: unknown): Save | null {
   next.settings.musicVersion = 1;
   next.settings.effects = typeof next.settings.effects === 'boolean' ? next.settings.effects : next.settings.sound;
   next.settings.musicVolume = Number.isFinite(next.settings.musicVolume) ? Math.max(0, Math.min(1, next.settings.musicVolume!)) : .35;
+  next.settings.autoplay = next.settings.autoplay !== false;
+  next.settings.autoplaySpeed = next.settings.autoplaySpeed === 2 ? 2 : 1;
   for (const a of Object.values(next.activities)) a.trials ||= [];
   return validSave(next) ? next : null;
 }

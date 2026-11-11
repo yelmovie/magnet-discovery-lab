@@ -69,6 +69,7 @@ body.quest-mode #app .screen-8 .mission-board > .delivery-state {
   padding:8px 16px; font-weight:700; font-size:clamp(16px,1.7vw,23px);
 }
 body.quest-mode #app .screen-8 .bench-wide .delivery-state { top:24%; }
+body.quest-mode #app .screen-8 .bench-wide:has(.puzzle-stars) .delivery-state { top:14%; }
 body.quest-mode #app .screen-8 .mission-board > .mission-feedback { display:none; }
 @media (max-width:759px) and (max-aspect-ratio:1/1) {
   body.quest-mode #app .screen-8 .mission-board > .delivery-state { top:auto; bottom:calc(100% + 8px); max-width:94%; }

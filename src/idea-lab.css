@@ -164,7 +164,6 @@ body.quest-mode #app .idea-lab.screen-9 { background: #dce7ea; }
 #app .idea-resident-chosen { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 48px; color: #24555e; font-weight: 700; }
 .idea-resident-chosen small { font-size: 13px; font-weight: 500; }
 .idea-resident-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; }
-#app .idea-resident-actions .idea-workshop-voice { min-height: 48px; padding: 6px 11px; font-size: 15px; }
 .idea-resident-actions small[role='status'] { color: #356574; }
 .idea-resident-actions small[role='status']:empty { display: none; }
 .idea-resident-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }

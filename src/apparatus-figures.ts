@@ -1,3 +1,5 @@
+import type { Save } from './domain';
+import { autoplaySpeed, autoplaySpeedMarkup, bindAutoplaySpeed } from './autoplay-controls';
 import './apparatus-figures.css';
 import {
   P, avg, board, boardTop, box, byDepth, castShadow, cross, cylX, dot, fill, hullInk,
@@ -246,12 +248,14 @@ export function apparatusFigureMarkup(kind: ApparatusFigure) {
   </div>`;
 }
 
-export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
+export function bindApparatusFigure(root: HTMLElement, motion: boolean, settings: Save['settings']={sound:true,motion,nickname:''}, changed:()=>void=()=>{}) {
   const tank=root.dataset.apparatusFigure==='aquarium';
   const svg=root.querySelector<SVGSVGElement>('.apparatus-drawing')!;
   const note=root.querySelector<HTMLElement>('.apparatus-note')!;
   const legend=root.querySelector<HTMLElement>('.apparatus-key')!;
   const auto=root.querySelector<HTMLButtonElement>('[data-figure-action=autoplay]');
+  if(auto){auto.hidden=settings.autoplay===false;if(settings.autoplay!==false)auto.insertAdjacentHTML('afterend',autoplaySpeedMarkup(settings));}
+  const speedCleanup=bindAutoplaySpeed(root,settings,changed);
   const detach=root.querySelector<HTMLButtonElement>('[data-figure-action=detach]');
   const lidButton=root.querySelector<HTMLButtonElement>('[data-figure-action=lid]');
   const insideButton=root.querySelector<HTMLButtonElement>('[data-figure-action=inside]');
@@ -285,9 +289,10 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
   function animate(step:(p:number)=>void, duration:number, end?:()=>void) {
     cancelAnimationFrame(raf);
     if(reduce()){ step(1); render(); end?.(); return; }
-    const start=performance.now();
+    let previous=performance.now(),elapsed=0;
     const tick=(now:number)=>{
-      const p=clamp((now-start)/duration,0,1);
+      elapsed+=(now-previous)*(playing?autoplaySpeed(settings):1);previous=now;
+      const p=clamp(elapsed/duration,0,1);
       step(p*p*(3-2*p));render();
       if(p<1)raf=requestAnimationFrame(tick);
       else{raf=0;end?.();}
@@ -358,9 +363,9 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
               playing=false;replayReady=true;updateAuto();render();
               say('3 / 3 · 착! 자석이 철 걸쇠를 붙잡았어.');
             });
-          },650);
+          },650/autoplaySpeed(settings));
         });
-      },1050);
+      },1050/autoplaySpeed(settings));
     });
   }
   function startTankAuto() {
@@ -384,10 +389,10 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
       animate(p=>updateHand(mix(from,to,p)),Math.max(160,Math.abs(to-from)*31),()=>{
         if(cleanCount()===stainCenters.length)playing=false;
         describeTank();
-        if(playing)autoTimer=window.setTimeout(next,reduce()?380:140);
+        if(playing)autoTimer=window.setTimeout(next,(reduce()?380:140)/autoplaySpeed(settings));
       });
     };
-    const begin=()=>{render();say('자동재생 중 · 안쪽 패드를 살펴봐.');autoTimer=window.setTimeout(next,320);};
+    const begin=()=>{render();say('자동재생 중 · 안쪽 패드를 살펴봐.');autoTimer=window.setTimeout(next,320/autoplaySpeed(settings));};
     if(detached){
       say('먼저 손잡이를 패드 가까이 붙여.');
       const start=hand;
@@ -422,6 +427,7 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
         break;
       }
       case 'autoplay': {
+        if(settings.autoplay===false)return;
         if(playing){
           stopAuto();
           if(tank){attachForMove();say(`자동재생을 멈췄어. 얼룩 ${cleanCount()} / 3`);}
@@ -483,5 +489,5 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean) {
   say(tank?'손잡이를 오른쪽으로 밀어 봐.':'덮개를 열면 안쪽을 볼 수 있어.');
   updateAuto();
   render();
-  return ()=>{controls.abort();cancelAnimationFrame(raf);clearTimeout(autoTimer);};
+  return ()=>{speedCleanup();controls.abort();cancelAnimationFrame(raf);clearTimeout(autoTimer);};
 }

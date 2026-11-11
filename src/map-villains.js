@@ -10,17 +10,17 @@ export function mountMapVillains(world, options) {
  let stored={};try{const raw=JSON.parse(localStorage.getItem(options.key)||'{}');if(raw&&typeof raw==='object'&&!Array.isArray(raw))stored=raw;}catch{}
  const later=(fn,ms)=>{const id=setTimeout(()=>{timers.delete(id);fn();},ms);timers.add(id);};
  options.stages.forEach((stage,index)=>{
-  const token=stage.token||'pending';const cleared=stage.ready&&stored[index]===token;
+  const token=stage.token||'pending';const cleared=stage.ready&&(stage.puzzle||stored[index]===token);
   const b=document.createElement('button');b.type='button';b.className='mv-target';b.style.left=stage.x+'%';b.style.top=stage.y+'%';b.dataset.stage=String(index);b.dataset.state=cleared?'cleared':stage.ready?'ready':'locked';
   b.innerHTML='<span class="mv-wave" aria-hidden="true"></span><span class="mv-creature" aria-hidden="true"><i></i><i></i><em></em></span><span class="mv-label"></span><span class="mv-meter" aria-hidden="true">● ● ●</span>';
   const label=b.querySelector('.mv-label'),meter=b.querySelector('.mv-meter');let hits=0,busy=false;
-  const describe=()=>{label.textContent=cleared?'퇴치 완료':stage.ready?options.power+' 톡!':'탐구 후 힘 충전';b.setAttribute('aria-label',stage.name+' 고철 도깨비 · '+(cleared?'퇴치 완료':stage.ready?'과학 파동으로 세 번 타격':'탐구를 완료하면 타격할 수 있어요'));};describe();
+  const describe=()=>{label.textContent=cleared?(stage.puzzle?'퍼즐 해결 · 퇴장':'퇴치 완료'):stage.ready?options.power+' 톡!':stage.puzzle?'퍼즐 해결 대기':'구역 복구 대기';b.setAttribute('aria-label',stage.name+' 고철 도깨비 · '+(cleared?'퇴치 완료':stage.ready?'과학 파동으로 세 번 타격':stage.puzzle?'퍼즐을 풀어 도깨비 물리치기':'구역 탐구를 완료해 도깨비 물리치기'));};describe();
   if(cleared){b.disabled=true;meter.textContent='✓';}
   b.addEventListener('pointerdown',e=>e.stopPropagation(),{signal:abort.signal});
   b.addEventListener('keydown',e=>{if(e.repeat&&(e.key==='Enter'||e.key===' '))e.preventDefault();},{signal:abort.signal});
   b.addEventListener('click',e=>{
    e.stopPropagation();if(busy||b.dataset.state==='cleared')return;
-   if(!stage.ready){status.textContent=stage.name+' 탐구를 먼저 마치고 과학의 힘을 모아 주세요.';return;}
+   if(!stage.ready){status.textContent=stage.name+(stage.puzzle?' 퍼즐을 풀면 도깨비가 물러나요.':' 탐구를 마치면 도깨비를 물리칠 수 있어요.');return;}
    busy=true;hits++;options.sound?.(hits===3);const reduced=options.reduced||matchMedia('(prefers-reduced-motion: reduce)').matches;
    b.classList.toggle('mv-reduced',reduced);b.classList.remove('mv-hit');void b.offsetWidth;b.classList.add('mv-hit');
    meter.textContent='● '.repeat(3-hits)+'○ '.repeat(hits);status.textContent=stage.name+' 고철 도깨비에게 '+hits+'번째 파동!';

@@ -1,7 +1,7 @@
 import './idea-lab.css';
 import { icon, mascot } from './art';
 import { record, stageNames, type Activity, type Point, type Save } from './domain';
-import { playEffect, playNarration, type NarrationState } from './game-audio';
+import { playEffect, playNarration } from './game-audio';
 import { update, type Context, type View } from './activity-types';
 import { boardLayers, feedbackStickers, ideaCard, ideaProblems, ideaProperties, ideaStickers, paletteIcon, pitchPrompts, problemText, propertyTitles } from './idea-content';
 import { boardSize, buddyFeedback, emptyIdea, hasIdeaSketch, ideaReady, pitchReady, problemChosen, type Idea, type IdeaFeedback } from './idea-model';
@@ -45,8 +45,6 @@ function residentDialogue(p: WorkshopResident, chosen: boolean) {
     <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><span>${p.who}</span><h2>${p.text}</h2><p>${chosen ? '도와준다니 고마워요! 어떤 자석의 성질을 쓸지 생각해 봐요.' : p.detail}</p></div>
       <div class="idea-resident-actions">
         ${chosen ? `<button type="button" class="btn idea-resident-chosen" data-resident-example aria-haspopup="dialog">${icon('check', 18)} 도와주기로 했어 <small>예시 다시 보기</small></button>` : `<button type="button" class="btn idea-resident-accept" data-problem="${p.id}" aria-haspopup="dialog">이 불편을 해결할래 ${icon('arrow', 18)}</button>`}
-        <button type="button" class="btn idea-workshop-voice" data-workshop-voice aria-pressed="false">${chosen ? '불편 다시 듣기' : '목소리 듣기'}</button>
-        <small data-workshop-voice-status role="status"></small>
       </div>
     </div>`;
 }
@@ -302,20 +300,10 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     const custom = root.querySelector<HTMLElement>('.idea-custom');
     const example = root.querySelector<HTMLDialogElement>('.idea-example');
     let speaker = startingResident(i);
-    let voiceState: NarrationState = 'stopped', stopVoice = () => {};
-    const voiceChanged = (state: NarrationState) => {
-      voiceState = state;
-      const button = scene?.querySelector<HTMLButtonElement>('[data-workshop-voice]');
-      const status = scene?.querySelector<HTMLElement>('[data-workshop-voice-status]');
-      if (!button || !status) return;
-      const playing = state === 'loading' || state === 'playing';
-      button.setAttribute('aria-pressed', String(playing));
-      button.textContent = playing ? '그만 듣기' : i.problem === speaker.id ? '불편 다시 듣기' : '목소리 듣기';
-      status.textContent = state === 'muted' ? '설정에서 효과음을 켜 줘.' : state === 'blocked' || state === 'unavailable' ? '목소리 듣기를 다시 눌러 줘.' : '';
-    };
+    let stopVoice = () => {};
     const speak = () => {
       stopVoice();
-      stopVoice = playNarration(`/audio/voices/workshop-${speaker.id}.mp3`, s.settings, voiceChanged);
+      stopVoice = playNarration(`/audio/voices/workshop-${speaker.id}.mp3`, s.settings);
     };
     const showResident = () => {
       if (!scene) return;
@@ -348,11 +336,6 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     }, { signal }));
     scene?.addEventListener('click', e => {
       const target = e.target as Element;
-      if (target.closest('[data-workshop-voice]')) {
-        if (voiceState === 'playing' || voiceState === 'loading') stopVoice();
-        else speak();
-        return;
-      }
       if (target.closest('[data-resident-example]')) { openExample(); return; }
       if (!target.closest('[data-problem]')) return;
       i.problem = speaker.id;

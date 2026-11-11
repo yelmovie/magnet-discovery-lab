@@ -67,9 +67,6 @@ body.quest-mode .modal.town-reunion {
   .town-news p, .town-news-earned small { font-size: 18px; }
 }
 .town-replies .btn { text-align: start; }
-.resident-voice-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0 0 12px; text-align: start; }
-.resident-voice-controls .btn { min-height: 48px; }
-.resident-voice-controls small { color: #52685c; font: 500 14px/1.4 var(--font-body); }
 .friend-album {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
   margin: 18px 0 0; padding: 12px; border: 1px solid #d8c89e; border-radius: 12px; background: #f8f0d9;

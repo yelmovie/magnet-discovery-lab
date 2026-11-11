@@ -1,5 +1,5 @@
 import { emptyActivity, finalRepairPassed, type Save } from './domain';
-import { initializeFinal } from './final-mission';
+import { initializeFinal, plazaPuzzleView } from './final-mission';
 import { currentInventionTrial } from './trial-records';
 import { icon, mascot } from './art';
 import { experimentScenes } from './experiment-scenes';
@@ -35,8 +35,12 @@ function changedFrom(s:Save,review:FinalReview,index:number) {
   return first>=0&&first!==q.answer&&q.choices[first]?`<small class="final-changed">처음 고른 답: ${q.choices[first]}</small>`:'';
 }
 
-/** The plaza is a short conclusion to the completed experiments, never another operation trial. */
+/** Expanded attempts unlock the notebook through four linked magnetic mechanisms. */
 export function restorationView(s:Save,preview=false):View {
+  const expanded=Object.values(s.activities).some(a=>a.values.puzzleRevision===2);
+  if(!s.final.complete&&(s.final.puzzle||expanded&&!s.final.review)){
+    const puzzle=plazaPuzzleView(s);if(puzzle)return puzzle;
+  }
   // Old certificates remain earned; opening this summary must not add unanswered new work to their save.
   const legacyCompleted=s.final.complete&&!s.final.review;
   const review=legacyCompleted?{version:1 as const,page:5,answers:finalQuestions.map(()=>-1)}:initializeReview(s), done=reviewPassed(review);

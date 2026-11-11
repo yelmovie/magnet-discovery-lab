@@ -1,6 +1,6 @@
 import { stageNames, type Save } from './domain';
 import { residents } from './expedition';
-import { playNarration, type NarrationState } from './game-audio';
+import { playNarration } from './game-audio';
 
 const stories = [
   {
@@ -66,29 +66,18 @@ function stampRow(s:Save) {
 export function chatMarkup(s:Save, stage:number) {
   const {name}=residents[stage], story=stories[stage];
   return `<div class="resident-chat"><img src="/assets/quest/resident-${stage+1}.webp" alt=""><div><small>${stageNames[stage]} · 돌아온 주민</small><h2>${name}</h2><p aria-live="polite" data-town-speech>${s.greetedResidents?.includes(stage)?story.again:story.hello}</p></div></div>
-    <div class="resident-voice-controls"><button type="button" class="btn soft" data-town-voice aria-pressed="false">▶ 목소리 듣기</button><small data-town-audio-status role="status"></small></div>
     <div class="town-replies" aria-label="주민에게 물어보기"><button class="btn soft" data-town-reply="news">${story.question}</button><button class="btn soft" data-town-reply="science">${story.science}</button></div>
     <div class="friend-album" data-friend-album>${stampRow(s)}</div><p class="friend-receipt" role="status">${s.greetedResidents?.includes(stage)?'이 친구의 도장을 모았어.':'궁금한 걸 물어보고 친구 도장을 받아 봐.'}</p>`;
 }
 
 export function bindResidentChat(dialog:HTMLElement, s:Save, stage:number, onStamp:()=>void) {
-  const events = new AbortController(), button = dialog.querySelector<HTMLButtonElement>('[data-town-voice]')!;
-  const status = dialog.querySelector<HTMLElement>('[data-town-audio-status]')!;
+  const events = new AbortController();
   let line:'hello'|'again'|'news'|'science' = s.greetedResidents?.includes(stage) ? 'again' : 'hello';
-  let state:NarrationState = 'stopped', disposed = false, stopVoice = () => {};
-  const update = (next:NarrationState) => {
-    if (disposed) return;
-    state = next;
-    const active = next === 'loading' || next === 'playing';
-    button.setAttribute('aria-pressed',String(active));
-    button.textContent = active ? '■ 그만 듣기' : '▶ 다시 듣기';
-    status.textContent = next === 'muted' ? '소리 설정에서 효과음을 켜 줘.' : next === 'blocked' ? '다시 듣기를 눌러 줘.' : next === 'unavailable' ? '목소리를 못 불러왔어. 다시 눌러 봐.' : '';
-  };
+  let stopVoice = () => {};
   const speak = () => {
     stopVoice();
-    stopVoice = playNarration(`/audio/voices/resident-${stage+1}-${line}.mp3`,s.settings,update);
+    stopVoice = playNarration(`/audio/voices/resident-${stage+1}-${line}.mp3`,s.settings);
   };
-  button.addEventListener('click',()=>{if(state==='playing'||state==='loading')stopVoice();else speak();},{signal:events.signal});
   dialog.querySelectorAll<HTMLButtonElement>('[data-town-reply]').forEach(btn=>btn.addEventListener('click',()=>{
     line = btn.dataset.townReply==='news' ? 'news' : 'science';
     dialog.querySelector<HTMLElement>('[data-town-speech]')!.textContent=line==='news'?stories[stage].news:residents[stage].speech;
@@ -102,5 +91,5 @@ export function bindResidentChat(dialog:HTMLElement, s:Save, stage:number, onSta
   },{signal:events.signal}));
   // Opening a resident is already a click/key gesture; rejected playback keeps the text usable.
   speak();
-  return () => { disposed = true; events.abort(); stopVoice(); };
+  return () => { events.abort(); stopVoice(); };
 }

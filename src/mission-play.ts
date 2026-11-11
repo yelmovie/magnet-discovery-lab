@@ -35,7 +35,7 @@ function initialize(a: Activity, n: number) {
   const fresh=emptyActivity();a.points=fresh.points;a.values={playVersion:4,mechanicsVersion:1,paceVersion:1};a.records=fresh.records;a.trials=[];a.mask=[];
   a.values.round=0;
   // Puzzle courses start with new attempts only; an activity already in progress keeps its rules.
-  if(n>=2&&n<=8)a.values.puzzleVersion=1;
+  if(n>=2&&n<=8){a.values.puzzleVersion=1;a.values.puzzleRevision=2;}
 }
 export function missionView(n: number, a: Activity, s: Save): View {
   initialize(a,n);
@@ -71,18 +71,20 @@ export function missionView(n: number, a: Activity, s: Save): View {
       if(a.points.paper?.x===23&&a.points.paper.y===76)a.points.paper={...paperStart};
       hits.push({id:'paper',p:p('paper',paperStart),label:'얇은 종이 한 장'});
     }
-    actions=action('release',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 관찰`,a.values[`done${round}`]===true);
-    if(round===1&&!a.values.done1)comparison=`<div class="distance-choices" role="group" aria-label="붙을 것 같은 자리 고르기"><span>붙을 것 같은 곳은?</span>${[4,3,2,1].map(mark=>action(`gap-${mark}`,`${mark}칸`)).join('')}</div>`;
+    actions=action('release',a.values.puzzleRevision===2?'열쇠 움직임 관찰':`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 관찰`,a.values[`done${round}`]===true);
+    if(round===1&&!a.values.done1&&a.values.puzzleRevision!==2)comparison=`<div class="distance-choices" role="group" aria-label="붙을 것 같은 자리 고르기"><span>붙을 것 같은 곳은?</span>${[4,3,2,1].map(mark=>action(`gap-${mark}`,`${mark}칸`)).join('')}</div>`;
     if(a.values[`done${round}`]&&round<(compact?2:3))actions=action('next',round===0?'붙을 것 같은 자리 고르기 →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');
   }
-  if(n===4&&round===2&&a.values.done2){
+  if(n===4&&round===2&&a.values.done2&&a.values.puzzleRevision!==2){
     const stops=clipStops(a.trials);
     if(stops){comparison=clipCompareView(stops);actions=action('replay-pull','▶ 두 실험 다시 보기')+(compact?'':actions);}
   }
   if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,78)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,78)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&a.values.test0N&&a.values.test0S&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
+  if(n===5&&a.values.puzzleRevision===2&&a.values.doorOpen&&!a.values.doorPullOpen&&!a.values.doorIndex)actions=action('door-next','이번에는 당겨 여는 문 →');
   if(n===6){for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);if(a.values[`done${round}`]&&round<2)actions=action('next',compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
   if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('detach','자석 떼기');}
+  if(n===8&&a.values.puzzleRevision===2&&a.values[`segment${round}`]&&round<2)actions=action('delivery-next',round===0?'유리벽 너머로 배달 →':'돌아오는 택배를 운반 →');
   if(n===9){
     if(!a.values.chosen)actions=`<div class="mission-requests workshop-requests">${action('box','<img src="/assets/learning/mailbox.webp" alt="">우편함이 자꾸 열려요')}${action('remote','<img src="/assets/learning/aquarium.webp" alt="">유리 너머 패드를 옮겨 주세요')}</div>`;
     else {hits.push({id:'base',p:p('base',pt(18,65)),label:'장치 몸체'},{id:'design-magnet',p:p('design-magnet',pt(22,44)),label:'설계 자석'},{id:'design-target',p:p('design-target',pt(77,45)),label:'마주 볼 철판 또는 자석'});actions=action('pair',s.design.pair==='iron'?'자석으로 바꾸기':'철판으로 바꾸기')+action('flip','자석 뒤집기')+action('prototype','시제품 반응 시험');}

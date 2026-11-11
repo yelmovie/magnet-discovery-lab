@@ -40,3 +40,59 @@
 @media (prefers-reduced-motion: reduce) {
   .puzzle-stars.is-solved .on, #app .puzzle-crisis-card, #app .puzzle-crisis-card img { animation: none; }
 }
+
+#app .puzzle-platform { position:absolute; z-index:2; display:flex; align-items:flex-end; transform:translate(-50%,-100%); pointer-events:none; width:17%; }
+#app .puzzle-platform .mascot { width:50%!important; height:auto!important; aspect-ratio:3/4; }
+#app .puzzle-platform > span:last-child { position:absolute; left:-10%; right:-10%; bottom:0; height:10px; border:2px solid #765332; border-radius:5px; background:#d9b477; }
+
+#app .plaza-puzzle { width:100%; margin:auto; }
+#app .plaza-puzzle header { position:relative; z-index:2; padding:12px 5%; text-align:center; }
+#app .plaza-puzzle h1 { margin:6px 0; font-size:clamp(22px,2.6vw,34px); }
+#app .plaza-puzzle header p { margin:6px 0; }
+#app .plaza-puzzle ol { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:0; list-style:none; }
+#app .plaza-puzzle li { padding:5px 10px; border-radius:12px; background:#e9dfc7; }
+#app .plaza-puzzle [aria-current=step] { background:#235f58; color:white; }
+#app .plaza-puzzle .mission-world { background-image:url('/assets/quest/stage-remote.webp'); }
+#app .plaza-puzzle .mission-board { aspect-ratio:1280/720; width:100%; min-height:0; }
+#app .plaza-puzzle .mission-feedback { display:block; top:22%; bottom:auto; }
+@media(max-height:520px) {
+  #app .plaza-puzzle header { padding:4px 5%; }
+  #app .plaza-puzzle header h1 { font-size:20px; }
+  #app .plaza-puzzle ol { margin:4px 0; font-size:13px; }
+}
+
+#app .puzzle-guardian { position:absolute; left:1%; top:34%; width:8%; pointer-events:none; }
+#app .puzzle-guardian img { display:block; width:100%; }
+#app .puzzle-guardian span { display:none; color:#235f58; font-weight:800; font-size:clamp(12px,1.5vw,20px); text-align:center; }
+#app .puzzle-guardian.is-restored img { animation:puzzle-guardian-leave .65s ease-in forwards; }
+#app .puzzle-guardian.is-restored span { display:block; }
+@keyframes puzzle-guardian-leave { to { transform:translate(-30px,-25px) scale(.3); opacity:0; } }
+@media(prefers-reduced-motion:reduce) { #app .puzzle-guardian.is-restored img { animation:none; opacity:0; } }
+
+body.quest-mode #app .plaza-puzzle { display:flex; flex-direction:column; height:100dvh; }
+body.quest-mode #app .plaza-puzzle header { flex:none; }
+body.quest-mode #app #plaza-experiment { flex:1; display:block; min-height:0; height:auto; padding:0; }
+body.quest-mode #app #plaza-experiment .mission-world { container-type:size; position:relative; width:100%; height:100%; min-height:0; margin:0; }
+body.quest-mode #app #plaza-experiment .mission-board { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(100cqw,177.777cqh); height:auto; aspect-ratio:16/9; }
+body.quest-mode #app #plaza-experiment .mission-access { position:absolute; left:12px; bottom:8px; z-index:5; }
+@media(max-height:520px) {
+  body.quest-mode #app .plaza-puzzle header { padding:3px 120px; }
+  body.quest-mode #app .plaza-puzzle header small { display:none; }
+  body.quest-mode #app .plaza-puzzle header p { font-size:14px; margin:4px 0; }
+  body.quest-mode #app .plaza-puzzle header h1 { margin:0; }
+  body.quest-mode #app .plaza-puzzle li { padding:3px 6px; }
+  body.quest-mode #app #plaza-experiment .mission-action { min-height:44px; font-size:16px; }
+}
+body.quest-mode #app #plaza-experiment .mission-board > .mission-actions { top:auto; bottom:4%; left:50%; right:auto; transform:translateX(-50%); }
+body.quest-mode #app #plaza-experiment .mission-board > .mission-feedback { display:block; top:12%; bottom:auto; left:50%; transform:translateX(-50%); width:max-content; max-width:80%; }
+#app .puzzle-platform { transition:left .45s ease; }
+body.quest-mode #app .screen-6 .mission-board:has(.puzzle-platform.is-crossed) > .mission-3d {
+  left:24%; right:auto; top:62%; bottom:auto; transform:none;
+}
+@media(prefers-reduced-motion:reduce) { #app .puzzle-platform { transition:none; } }
+
+body.quest-mode #app #plaza-experiment .canvas-hit { min-width:64px; min-height:44px; }
+#app .plaza-guardian { position:absolute; right:2%; top:20%; width:9%; pointer-events:none; }
+#app .plaza-guardian img { display:block; width:100%; }
+#app .plaza-guardian.is-restored { animation:puzzle-guardian-leave .65s ease-in forwards; }
+@media(prefers-reduced-motion:reduce) { #app .plaza-guardian.is-restored { animation:none; opacity:0; } }

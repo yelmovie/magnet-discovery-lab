@@ -22,15 +22,25 @@ export function puzzleStarsMarkup(a: Activity): string {
   return `<div class="puzzle-stars${solved ? ' is-solved' : ''}" role="img" aria-label="${label}">${[0, 1, 2].map(i => `<span class="${i < count ? 'on' : ''}">${star}</span>`).join('')}</div>`;
 }
 export function puzzleHud(n: number, a: Activity): string {
-  const crisis = crises[n];
+  const extended:Record<number,{title:string;task:string}>={
+    4:{title:'도깨비가 철 열쇠를 깊은 틈에 떨어뜨렸어!',task:'멀리서 살펴보고 가까이 가져가 봐. 종이 막이 있어도 자석으로 꺼낼 수 있을까?'},
+    5:{title:'극 표시가 지워진 두 문이 길을 막았어!',task:'극 표시를 되찾고 빗장을 밀어 첫 문을, 당겨 두 번째 문을 열어 줘.'},
+    6:{title:'승강 발판이 내려앉아서 두 친구가 건너지 못해!',task:'고리자석으로 발판을 올려 친구들을 태우고, 다시 내려 건너편 길과 이어 줘.'},
+    8:{title:'택배 레일에 세 구간이 남았어!',task:'먼저 중간 깃발에 멈춰 줘. 유리벽 너머에 배달한 뒤 돌아오는 택배도 운반해 줘.'},
+  };
+  const crisis = a.values.puzzleRevision===2&&extended[n]?{...crises[n],...extended[n]}:crises[n];
   if (a.values.puzzleVersion !== 1 || !crisis) return '';
   const card = a.values.crisisSeen === true || puzzleSolved(a) ? '' : `<div class="puzzle-crisis" role="group" aria-label="긴급 의뢰">
     <div class="puzzle-crisis-card"><img src="/assets/quest/villain-scrap-goblin.png" alt="" width="180" height="180">
     <div><small>${crisis.place}</small><strong>${crisis.title}</strong><p>${crisis.task}</p>
     <button type="button" class="mission-action" data-mission="crisis-go">출동하기</button></div></div></div>`;
-  return puzzleStarsMarkup(a) + card;
+  const restored=puzzleSolved(a);
+  const guardian=a.values.puzzleRevision===2&&n!==8?`<div class="puzzle-guardian${restored?' is-restored':''}" aria-hidden="true"><img src="/assets/quest/villain-scrap-goblin.png" alt=""><span>시설 복구!</span></div>`:'';
+  return puzzleStarsMarkup(a) + guardian + card;
 }
 export function bindPuzzleHud(c: Context): void {
+  const guardian=c.root.querySelector<HTMLElement>('.puzzle-guardian');
+  c.root.addEventListener('puzzle-update',()=>guardian?.classList.toggle('is-restored',puzzleSolved(c.a)));
   const card = c.root.querySelector<HTMLElement>('.puzzle-crisis');
   if (!card) return;
   card.querySelector('[data-mission="crisis-go"]')?.addEventListener('click', () => {

@@ -33,6 +33,12 @@ export function assemblyIssue(magnet:Point,target:Point,remote:boolean):string {
 }
 /** Activity 8 puzzle course: the hand-held magnet stops at the glass partition, the cart rolls through its door. */
 export const deliveryCourse = { start:27, wall:52, reach:47.5, goal:60, tolerance:3 } as const;
+/** Extended attempts add a stop before the glass room and a return delivery afterwards. */
+export function deliveryRoute(a:Activity) {
+  const round=Number(a.values.round||0),extended=a.values.puzzleRevision===2;
+  const wall=a.values.puzzleVersion===1&&(extended?round===1:round===0);
+  return {wall,start:extended?[27,44,60][round]??27:round===2?74:27,goal:wall?deliveryCourse.goal:extended?(round===0?44:30):round===2?30:73};
+}
 /** Help follows how often the learner was stopped, never the clock. 0 none · 1 where to look · 2 what to compare · 3 offer autoplay. */
 export const puzzleHint = (misses:number) => Math.max(0,Math.min(3,misses-1));
 /** Derived from the saved trial each time: solved by hand, then one fewer for each of the first two misses. */
@@ -41,7 +47,12 @@ export function puzzleStars(a:Activity):number {
 }
 /** The stored proof that ends each puzzle course, by activity. */
 const puzzleProof:Record<number,RegExp>={2:/^repair0$/,3:/^materials$/,4:/^paper$/,5:/^door0$/,6:/^join2$/,7:/^clean$/,8:/^delivery\d$/};
-const solvingTrials=(a:Activity)=>a.values.puzzleVersion===1?(a.trials||[]).filter(t=>puzzleProof[t.activity]?.test(t.key)&&validTrial(t)&&t.outcome==='success'):[];
+const extendedPuzzleProof:Record<number,RegExp>={...puzzleProof,5:/^door1$/,8:/^delivery2$/};
+function solvingTrials(a:Activity){
+  if(a.values.puzzleVersion!==1)return [];
+  const proofs=a.values.puzzleRevision===2?extendedPuzzleProof:puzzleProof;
+  return (a.trials||[]).filter(t=>proofs[t.activity]?.test(t.key)&&validTrial(t)&&t.outcome==='success');
+}
 export const puzzleSolved=(a:Activity)=>solvingTrials(a).length>0;
 export function missionReady(screen: number, a: Activity, s: Save): boolean {
   if(screen===1&&a.values.assemblyVersion===1&&(!mailboxAssembled(a)||a.values.latch0!==true))return false;
@@ -73,10 +84,10 @@ export function missionReady(screen: number, a: Activity, s: Save): boolean {
         near.conditions.paper===false && paper.conditions.paper===true &&
         JSON.stringify(near.initialObjects)===JSON.stringify(paper.initialObjects);
     }
-    case 5: return (compact?[0]:[0,1]).every(i => f(`test${i}N`) && f(`test${i}S`) && f(`solved${i}`)) && (a.values.puzzleVersion!==1 || proof('door0'));
+    case 5: return (compact?[0]:[0,1]).every(i => f(`test${i}N`) && f(`test${i}S`) && f(`solved${i}`)) && (a.values.puzzleVersion!==1 || proof('door0')) && (a.values.puzzleRevision!==2 || proof('door1'));
     case 6: return (compact?['float2','join2']:['float2','float3','join3']).every(proof);
     case 7: return [0, 1, 2].every(i => f(`clean${i}`)) && proof('clean');
-    case 8: return [0,1,2].some(i => f(`segment${i}`) && proof(`delivery${i}`));
+    case 8: return a.values.puzzleRevision===2?[0,1,2].every(i=>f(`segment${i}`)&&proof(`delivery${i}`)):[0,1,2].some(i => f(`segment${i}`) && proof(`delivery${i}`));
     case 9: return f('base') && f('magnet') && f('target');
     case 10: return (compact?[0]:[0,1]).every(i => !!a.trials?.some(t => t.key === `use${i}` && validTrial(t) && t.outcome === 'success' && t.designRevision === s.design.revision && t.template === s.design.template)) && (compact || f('force-arrow'));
     default: return false;

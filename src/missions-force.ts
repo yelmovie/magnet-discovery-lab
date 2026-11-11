@@ -49,7 +49,12 @@ export function salvage(v: Surface){
     if(m.magnetic){held=i;heldSide=q.x>=p.x?1:-1;v.set(`material-${i}`,atPole(p));}
   };
   v.draw=()=>{
-    v.base();v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);
+    v.base();
+    if(v.a.values.puzzleRevision===2){
+      const g=v.ctx,clear=sorted()===sortingSpecimens.length;g.save();g.fillStyle=clear?'#65b69d':'#a78e6e';g.fillRect(25*W/100,80*H/100,48*W/100,9);g.restore();
+      v.label(clear?'철 부품을 되찾았어 · 길이 열렸어':'부품을 치워 길을 열어 줘',pt(49,84),true);
+    }
+    v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);
     sortingSpecimens.forEach(m=>{
       const p=v.p(`material-${m.index}`,pt(m.x,m.y));
       if(v.has(`sorted-${m.id}`)){v.material(m.index,p,54,false);return;}
@@ -75,6 +80,8 @@ export function salvage(v: Surface){
 }
 export function distanceLab(v: Surface){
   const r=Number(v.a.values.round||0),target=r===3?pt(69,42):pt(61,55);
+  const rescue=v.a.values.puzzleRevision===2,objectId=rescue||r===3?'key':'clip',objectName=rescue||r===3?'철 열쇠':'클립';
+  const objectSubject=objectId==='key'?'철 열쇠가':'클립이';
   const key=['far','near','paper','rescue'][r];
   const nearTrial=v.a.trials?.find(t=>t.key==='near'&&t.outcome==='success');
   const previous=nearTrial?.initialObjects.find(o=>o.id==='magnet');
@@ -97,7 +104,7 @@ export function distanceLab(v: Surface){
   for(const mark of [4,3,2,1])v.button(`gap-${mark}`,()=>{
     if(v.animating||result)return;
     heldAgain();v.set('distance-magnet',pt(target.x-contact-mark*cell,target.y));
-    v.tell(`${mark}칸을 골랐어. 손을 놓으면 클립이 움직일까?`);v.draw();v.c.touch();v.c.meta();
+    v.tell(`${mark}칸을 골랐어. 손을 놓으면 ${objectSubject} 움직일까?`);v.draw();v.c.touch();v.c.meta();
   });
   if(paper)v.drag('paper',paperStart,p=>{
     if(distance(p,paperSlot)<5)v.set('paper',paperSlot);
@@ -155,22 +162,27 @@ export function distanceLab(v: Surface){
     v.base();
     const m=q(),gap=clearanceCells(m,target),object=result&&r>0?(v.animating?v.a.points['moving-clip']:landingPoint(m)):target;
     magnet.disabled=result||r===2;if(paper)paper.disabled=result;
+    if(rescue){
+      const g=v.ctx;g.save();g.fillStyle='#344b5040';g.fillRect(60*W/100,43*H/100,14*W/100,20*H/100);
+      g.strokeStyle='#8b764c';g.lineWidth=5;g.strokeRect(60*W/100,43*H/100,14*W/100,20*H/100);g.restore();
+      v.label(result&&r===2?'열쇠를 꺼낼 수 있어!':r===2?'종이 막 너머의 열쇠':'손이 닿지 않는 틈',pt(65,38),true);
+    }
     drawRuler(gap);
     if(r===2)drawSheet();
     if(result&&(r===1||r===2)){
-      v.ctx.save();v.ctx.globalAlpha=.26;v.material(0,target,74,false);v.ctx.restore();
+      v.ctx.save();v.ctx.globalAlpha=.26;if(rescue)v.equipment('key',target,74,74);else v.material(0,target,74,false);v.ctx.restore();
       if(target.x-object.x>.6)v.arrow(pt(target.x,target.y+3),pt(object.x,target.y+3));
-      v.label('클립 출발',pt(target.x+3,target.y-10),true);
+      v.label(`${objectName} 출발`,pt(target.x+3,target.y-10),true);
     }
-    if(r===3){
+    if(rescue||r===3){
       if(v.equipment('key',object,74,74))v.label('철 열쇠',pt(object.x,object.y+8),true);
       else v.iron(object,'철 열쇠',50);
     }else v.material(0,object,74);
     v.magnet(m,'N',.7);
-    v.hand(pt(target.x+2,target.y-3),released,r===3?'열쇠':'클립');
+    if(!rescue)v.hand(pt(target.x+2,target.y-3),released,objectName);
     for(const mark of [4,3,2,1])v.c.root.querySelector(`[data-mission="gap-${mark}"]`)?.setAttribute('aria-pressed',String(Math.abs(gap-mark)<.1));
     if(sensor){
-      const text=`${result||observed?'놓기 전':'현재'} 간격 ${cellLabel(gap)} · ${result?(r===0?'움직이지 않았어':v.animating?(r===3?'철 열쇠가 움직이는 중':'클립이 움직이는 중'):r===2?'종이 너머로 끌려옴':'끌려옴'):observed?'움직이지 않았어 · 다른 자리도 골라 봐':r===2?'종이만 넣기':r===0?'5칸에서 관찰':'붙을 것 같은 곳을 골라 봐'}`;
+      const text=`${result||observed?'놓기 전':'현재'} 간격 ${cellLabel(gap)} · ${result?(r===0?'움직이지 않았어':v.animating?(`${objectSubject} 움직이는 중`):r===2?'종이 너머로 끌려옴':'끌려옴'):observed?'움직이지 않았어 · 다른 자리도 골라 봐':r===2?'종이만 넣기':r===0?'5칸에서 관찰':'붙을 것 같은 곳을 골라 봐'}`;
       if(sensor.textContent!==text)sensor.textContent=text;
     }
   };
@@ -181,18 +193,18 @@ export function distanceLab(v: Surface){
     if(r===1&&gap>1.05){
       observed=true;v.a.values.distanceObserved=true;
       const trial=v.proof(`distance-choice-${Number(gap.toFixed(1))}`,`${measure}에서 관찰`,'none',{paper:false,clearanceCells:Number(gap.toFixed(1)),material:'iron'});
-      trial.initialObjects=[{id:'magnet',...m},{id:'clip',...target}];trial.objects=structuredClone(trial.initialObjects);
-      v.settle({},()=>{released=1;const still=`${measure}에서는 클립이 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
+      trial.initialObjects=[{id:'magnet',...m},{id:objectId,...target}];trial.objects=structuredClone(trial.initialObjects);
+      v.settle({},()=>{released=1;const still=`${measure}에서는 ${objectSubject} 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
       return;
     }
-    if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${r===3?'열쇠':'클립'}를 살펴봐.`);
+    if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${objectName}를 살펴봐.`);
     if(r===2&&!paperIn())return v.tell('앞 실험의 간격은 그대로야. 얇은 종이만 점선 안에 넣어 봐.');
     if(r===2)v.set('paper',paperSlot);
     const end=r===0?target:landingPoint(m);
     const outcome=r===0?'움직이지 않았어.':r===2?'자석에 끌려와 종이 앞에서 멈췄어.':'자석에 끌려왔어.';
-    v.mark(`done${r}`,'한 가지 조건 비교',`출발 간격 ${measure}${r===2?'에 종이 한 장을 넣으니':'에서'} ${r===3?'열쇠가':'클립이'} ${outcome}`);
-    const trial=v.proof(key,`${measure} · ${r===2?'종이 한 장':'종이 없음'}`,'success',{paper:r===2,gap:d,clearanceCells:Number(gap.toFixed(1)),material:'iron'});
-    const id=r===3?'key':'clip';
+    v.mark(`done${r}`,'한 가지 조건 비교',`출발 간격 ${measure}${r===2?'에 종이 한 장을 넣으니':'에서'} ${rescue||r===3?'열쇠가':'클립이'} ${outcome}`);
+    const trial=v.proof(key,`${measure} · ${r===2?'종이 한 장':'종이 없음'}`,'success',{paper:r===2,gap:d,clearanceCells:Number(gap.toFixed(1)),material:'iron',...(rescue?{course:'key-rescue'}:{})});
+    const id=objectId;
     trial.initialObjects=r===2&&nearTrial?structuredClone(nearTrial.initialObjects):[{id:'magnet',...m},{id,...target}];
     trial.objects=[{id:'magnet',...m},{id,...end}];
     result=true;

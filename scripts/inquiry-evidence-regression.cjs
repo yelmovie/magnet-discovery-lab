@@ -26,7 +26,10 @@ function at(n){
   const s=quiet(structuredClone(fixture));s.resume=n;s.started=true;s.completed=s.completed.filter(i=>i<n);s.evidence=s.evidence.filter(e=>e.stage<Math.floor((n-1)/2));
   s.final={report:false,latch:'N',ring:'N',plate:80,complete:false,date:''};delete s.idea;for(const k of Object.keys(s.activities))if(Number(k)>=n)delete s.activities[k];return s;
 }
-async function resume(p,s){await seed(p,s);await p.reload();await action(p,'start').click();await p.locator('#experiment-root').waitFor();}
+async function resume(p,s){
+  await seed(p,s);await p.reload();await action(p,'start').click();await p.locator('#experiment-root').waitFor();
+  const crisis=p.locator('[data-mission="crisis-go"]');if(await crisis.count())await crisis.click();
+}
 async function inside(p,selector,label){
   const v=p.viewportSize(),box=await p.locator(selector).first().boundingBox();
   assert.ok(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=v.width+1&&box.y+box.height<=v.height+1,`${label} ${selector} ${JSON.stringify(box)} in ${v.width}x${v.height}`);
@@ -184,7 +187,7 @@ async function regressions(){
     const {context,page:p}=await open(viewport);await resume(p,at(8));
     for(let i=0;i<40;i++)await p.locator('[data-drag="controller"]').press('ArrowUp');await p.locator('[data-drag="controller"]').press('Enter');await settled(p);
     const box=await p.locator('[data-drag="controller"]').boundingBox(),covered=[];
-    for(const selector of ['[data-action="home"]','[data-action="back"]','[data-action="sound"]','[data-action="settings"]','[data-demo="toggle"]','.bench-view-toggle']){
+    for(const selector of ['[data-action="home"]','[data-action="back"]','[data-action="settings"]','[data-demo="toggle"]','.bench-view-toggle']){
       if(!await p.locator(selector).count())continue;const b=await p.locator(selector).first().boundingBox();
       if(b&&box.x<b.x+b.width&&box.x+box.width>b.x&&box.y<b.y+b.height&&box.y+box.height>b.y)covered.push(selector);
     }

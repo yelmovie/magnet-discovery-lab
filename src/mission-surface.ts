@@ -1,3 +1,4 @@
+import { autoplaySpeed } from './autoplay-controls';
 import { opposite, record, type Point, type Pole } from './domain';
 import { ironNutArt, materialCatalog, sortingSpecimens } from './material-sorting';
 import type { Context } from './activity-types';
@@ -61,12 +62,12 @@ export class Surface {
     const objects = Object.entries(this.a.points).filter(([id]) => !id.startsWith('initial:')&&!id.startsWith('assembly-')).map(([id, p]) => ({ id, ...p }));
     const watched=this.c.root.dataset.demoRun!==undefined;if(watched)this.a.values.autoObserved=true;
     const trial=addTrial(this.a, { key, activity: this.n, conditions: { label, ...extra, ...(watched?{autoplay:true}:{manual:true}) }, initialObjects: Object.entries(this.a.points).filter(([id]) => id.startsWith('initial:')&&!id.startsWith('initial:assembly-')).map(([id, p]) => ({ id: id.slice(8), ...p })), objects, input: this.path, outcome, designRevision: this.s.design.revision, template: this.s.design.template, pinned: true });
-    record(this.a, { key, label, result: trialOutcome(outcome) }); this.c.touch(); this.c.meta(); this.path = [];return trial;
+    record(this.a, { key, label, result: trialOutcome(outcome) }); this.c.touch(); this.c.meta(); this.path = [];this.c.root.dispatchEvent(new Event('puzzle-update'));return trial;
   }
   /** Puzzle courses: a miss is a visible result plus the next clue, never a penalty screen. */
   miss(text: string, clues: readonly string[]) {
     const count=Number(this.a.values.puzzleMisses||0)+1,level=puzzleHint(count);this.a.values.puzzleMisses=count;
-    this.tell([text,level===3?puzzleAutoHint:level?clues[level-1]:''].filter(Boolean).join(' '));
+    this.tell([text,level===3&&this.s.settings.autoplay!==false?puzzleAutoHint:level?clues[Math.min(level,2)-1]:''].filter(Boolean).join(' '));
     playEffect('bump',this.s.settings);this.c.touch();this.c.meta();
   }
   button(id: string, fn: () => void) { this.c.root.querySelector(`[data-mission="${id}"]`)?.addEventListener('click', fn); }
@@ -85,7 +86,7 @@ export class Surface {
     const frame=(now:number)=>{
       if(this.stopped)return;
       const dt=Math.min(50,now-previous);previous=now;
-      if(this.c.root.dataset.demoPaused===undefined&&!document.hidden&&!document.querySelector('dialog[open],.modal-backdrop'))elapsed+=dt;
+      if(this.c.root.dataset.demoPaused===undefined&&!document.hidden&&!document.querySelector('dialog[open],.modal-backdrop'))elapsed+=dt*(this.c.root.dataset.demoRun!==undefined?autoplaySpeed(this.s.settings):1);
       const t=Math.min(1,elapsed/duration),k=ease(t);
       Object.entries(targets).forEach(([id,p])=>this.set(id,pt(starts[id].x+(p.x-starts[id].x)*k,starts[id].y+(p.y-starts[id].y)*k)));this.draw();
       if(t<1)raf=requestAnimationFrame(frame);else{this.c.root.inert=false;this.animating=false;finish();}

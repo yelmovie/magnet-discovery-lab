@@ -19,7 +19,7 @@ import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
 import { questHud, questTitle } from './quest-ui';
 import { inquiryView, inquiryNext, advanceInquiry, inquirySteps } from './inquiry';
 import { inquiryPhase } from './inquiry-model';
-import { missionReady } from './mission-model';
+import { missionReady, puzzleSolved, puzzleStars } from './mission-model';
 import { canDemonstrate, ExperimentAutoplay } from './experiment-autoplay';
 import { rememberExperiment } from './experiment-scenes';
 import { missionQuestion, missionGuides, questRewards, abilityStatements } from './mission-content';
@@ -66,7 +66,6 @@ const backStack: Route[] = [];
 let historyDepth: number = history.state?.depth ?? 0;
 let stopCompanionVoice = () => {};
 const adminOn = () => adminBackup !== null;
-const audioEnabled = () => { const settings=normalizedAudioSettings(s.settings); return settings.effects || settings.music; };
 const canEnter = (n: number) => accessible(s, n, adminOn());
 const canActivate = () => coreReady(s, adminOn());
 const esc = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -83,7 +82,13 @@ function saveSnapshot(): Save {
   return { ...s, activities: practiceBackup.activities, design: practiceBackup.design, designs: practiceBackup.designs, idea: practiceBackup.idea, resume: 0 };
 }
 async function flush() { if (adminOn() || resetting) return; clearTimeout(saveTimer); saveTimer=0; saving = true; saveView(); try { const owner=s, snap = saveSnapshot(); await persist(snap); owner.revision = snap.revision; saveMessage = ''; } catch (e) { saveMessage = e instanceof Error ? e.message : '저장 실패 · 다시 시도'; } finally { saving = false; saveView(); } }
-function touch() { if (adminOn() || resetting) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
+function touch() {
+  if(adminBackup && (adminBackup.save.settings.autoplay!==s.settings.autoplay || adminBackup.save.settings.autoplaySpeed!==s.settings.autoplaySpeed)) {
+    adminBackup.save.settings.autoplay=s.settings.autoplay;
+    adminBackup.save.settings.autoplaySpeed=s.settings.autoplaySpeed;
+    void persist(adminBackup.save).catch(()=>notify('자동재생 설정을 저장하지 못했어. 저장 상태를 확인해 줘.'));
+  }
+  if (adminOn() || resetting) return; s.updated = new Date().toISOString(); clearTimeout(saveTimer); saveTimer = window.setTimeout(() => void flush(), 500); }
 function cleanPage() { stopCompanionVoice(); autoplay.reset(); cleanup?.(); cleanup = undefined; city?.destroy(); city = undefined; modalCleanup?.(); modalCleanup = undefined; document.querySelector('.modal-backdrop')?.remove(); }
 function restorePractice() { if (!practiceBackup) return; s.activities = practiceBackup.activities; s.design = practiceBackup.design; s.designs = practiceBackup.designs; s.idea = practiceBackup.idea; practiceBackup = null; }
 function go(next: typeof page, remember = true) {
@@ -118,7 +123,7 @@ function render() {
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
   }
-  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', sound: audioEnabled(), canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
+  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
   bindCommon();
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
@@ -192,6 +197,10 @@ function meta() {
   const blocked=document.querySelector<HTMLButtonElement>('[data-action="missing-step"]');if(blocked)blocked.hidden=next.enabled;
   const hint = document.querySelector('#completion-hint'); if (hint) hint.textContent = done ? '탐구를 마쳤어! 다음으로 가볼까?' : '직접 실험하고 발견을 기록해보자.';
   const count = document.querySelector('#record-count'); if (count) count.textContent = `${a.records.length}개의 관찰`;
+  const stars = document.querySelector('#experiment-root .mission-board > .puzzle-stars');
+  if (stars && (stars.classList.contains('is-solved') !== puzzleSolved(a) || stars.querySelectorAll('.on').length !== puzzleStars(a))) {
+    stars.outerHTML = puzzleStarsMarkup(a);
+  }
   document.querySelector('.quest-activity')?.dispatchEvent(new Event('coach-update'));
 }
 function bindActivity() {
@@ -225,8 +234,8 @@ function bindActivity() {
   const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, a, model);
   // Cards and feedback start below the mission head, whatever its wrapped height.
   const shell = document.querySelector<HTMLElement>('.quest-activity')!, head = shell.querySelector<HTMLElement>('.mission-head')!;
-  if(canDemonstrate(screen,a))root.insertAdjacentHTML('beforebegin',autoplay.markup());
-  const autoplayCleanup=autoplay.bind(shell,root,screen,s,notify);
+  if(s.settings.autoplay!==false&&canDemonstrate(screen,a))root.insertAdjacentHTML('beforebegin',autoplay.markup(s.settings));
+  const autoplayCleanup=autoplay.bind(shell,root,screen,s,notify,touch);
   // Keep optional help useful without stacking several panels over the experiment.
   const helpEvents=new AbortController();
   const closeOtherHelp=(keep:HTMLElement)=>{
@@ -273,7 +282,12 @@ function showReward(stage: number,newResident: boolean) {
   playEffect('reward',s.settings);
   const kit = questRewards[stage];
   // Stars come from the stored puzzle evidence of this zone, when it has a puzzle course.
-  const stars=(s.evidence.find(e=>e.stage===stage)?.activities||[]).filter(x=>x.values.puzzleVersion===1).map(x=>`<p class="reward-stars"><span>퍼즐 별</span>${puzzleStarsMarkup(x)}</p>`).join('');
+  const puzzleNames=['우편함 조립','우편함 수리','철 부품 분류','거리·종이 실험','자석 문 열기','고리자석','수조 청소','택배 운반'];
+  const stars=(s.evidence.find(e=>e.stage===stage)?.activities||[]).map((activity,index)=>{
+    if(activity.values.puzzleVersion!==1)return '';
+    const name=puzzleNames[stage*2+index];
+    return `<div class="reward-stars" role="group" aria-label="${name} 퍼즐 별"><span>${name}</span>${puzzleStarsMarkup(activity)}</div>`;
+  }).join('');
   const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(questRewards[stage].icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${questRewards[stage].name} 획득!</h2><p>${questRewards[stage].change}<br><strong>${questRewards[stage].use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p>${stars}<div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '광장에서 발견 정리 →', 'primary')}${newResident ? button('meet-resident', `${residents[stage].name} 만나기`) : button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
   const reunion = `<div class="town-news"><img src="/assets/quest/resident-${stage+1}.webp" alt=""><div><small>마을 소식 · ${stage + 1} / 5 구역 복구</small><h2>${reunionTitle(stage)}</h2><p>${restoredTownMessage(stage)}</p></div></div>
     <div class="town-news-earned"><span>${icon(kit.icon,24)}<b>${kit.name}</b><small>연구 가방에 저장</small></span><div><strong>도시 복구 ${progress(s)}%</strong><progress aria-label="도시 복구율" max="100" value="${progress(s)}"></progress></div></div>
@@ -434,8 +448,10 @@ async function restartExploration(startNow: boolean) {
 }
 function openSettings() {
   modalCleanup?.();
-  modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{touch();syncAudioSettings(s.settings);const b=document.querySelector<HTMLButtonElement>('[data-action="sound"]');if(b){const on=audioEnabled();b.innerHTML=icon(on?'sound':'mute');b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'소리 끄기':'소리 켜기');}},
-    onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
+  const previousAutoplay=s.settings.autoplay!==false;
+  let autoplayChanged=false;
+  modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{autoplayChanged=previousAutoplay!==(s.settings.autoplay!==false);touch();syncAudioSettings(s.settings);},
+    onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));if(!paused&&autoplayChanged){autoplayChanged=false;autoplay.reset();cleanPage();render();}},
     onAdminToggle:setTeacherPreview,
     onStory:()=>openFilm('intro',()=>{},true),onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:notebook,
     onReset:()=>void restartExploration(false)
@@ -449,7 +465,6 @@ function bindCommon() {
       case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else if (s.final.report && !s.final.complete && s.evidence.length === 5) go('core'); else go('city'); break;
       case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', () => void restartExploration(true)); break;
       case 'city': void flush(); go('city'); break;
-      case 'sound': s.settings.sound = !audioEnabled(); s.settings.effects=s.settings.sound; s.settings.music=s.settings.sound; syncAudioSettings(s.settings); touch(); b.innerHTML = icon(s.settings.sound ? 'sound' : 'mute'); b.setAttribute('aria-label', s.settings.sound ? '소리 끄기' : '소리 켜기'); b.setAttribute('aria-pressed',String(s.settings.sound)); break;
       case 'settings': openSettings(); break;
       case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);stopCompanionVoice();if(open)stopCompanionVoice=playNarration(`/audio/voices/mascot-${b.dataset.companionType}-title.mp3`,s.settings);break;}
       case 'notebook': if (page === 'activity') openRecords(); else notebook(); break;
@@ -464,7 +479,7 @@ function bindCommon() {
           let dispose=()=>{};
           const guide=showModal(apparatusFigureMarkup(kind),apparatusFigureTitle(kind),()=>dispose());
           guide.dialog.classList.add('apparatus-figure-dialog');
-          dispose=bindApparatusFigure(guide.dialog.querySelector<HTMLElement>('.apparatus-figure')!,s.settings.motion);
+          dispose=bindApparatusFigure(guide.dialog.querySelector<HTMLElement>('.apparatus-figure')!,s.settings.motion,s.settings,touch);
           break;
         }
         const guide=showModal(visualGuideMarkup(screen,s.design.template),'장치 그림 살펴보기');

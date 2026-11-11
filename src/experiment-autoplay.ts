@@ -1,9 +1,10 @@
+import { autoplaySpeed, autoplaySpeedMarkup, bindAutoplaySpeed } from './autoplay-controls';
 import { emptyActivity, type Activity, type Point, type Save } from './domain';
 import { inquiryPhase } from './inquiry-model';
 import { mailbox } from './mailbox';
 import { mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { glassStains } from './aquarium-glass';
-import { deliveryCourse, missionReady, paperGapMiddle } from './mission-model';
+import { deliveryCourse, deliveryRoute, missionReady, paperGapMiddle } from './mission-model';
 import { materialBins, sortingSpecimens } from './material-sorting';
 import { promptPending } from './inquiry-prompts';
 import './experiment-autoplay.css';
@@ -71,12 +72,14 @@ function experimentSteps(stage: number, save: Save): Step[] {
         if(facing!==pole){steps.push(press('flip','기준 자석을 뒤집고 처음 자리에서 다시 비교하기'));facing=pole;}
         steps.push(move('probe',48,53,`${pole}극을 가까이 대고 움직임 보기`));
       }
-      // Puzzle course: with the labels restored by the learner, a like pole pushes the bolt and opens the door.
-      if(!steps.length&&a.values.puzzleVersion===1&&round===0&&f('solved0')&&f('doorReady')&&!f('doorOpen')){
-        if(facing!=='S'||a.values.reaction)steps.push(press('flip',facing==='S'?'처음 자리에서 다시 시작하기':'같은 극이 마주 보도록 기준 자석 뒤집기'));
-        if(facing==='S'&&a.values.reaction)steps.push(press('flip','같은 극이 마주 보도록 기준 자석 뒤집기'));
-        steps.push(move('probe',48,53,'빗장과 같은 S극을 대서 밀어내기'));
+      // With labels restored, the two doors require repulsion and attraction respectively.
+      if(!steps.length&&a.values.puzzleVersion===1&&round===0&&f('solved0')&&f('doorReady')&&!(a.values.doorIndex===1?f('doorPullOpen'):f('doorOpen'))){
+        const needed=a.values.doorIndex===1?'N':'S';
+        if(facing!==needed||a.values.reaction)steps.push(press('flip','기준 자석을 뒤집고 처음 자리에서 다시 시작하기'));
+        if(facing===needed&&a.values.reaction)steps.push(press('flip',`${needed}극이 빗장을 향하도록 뒤집기`));
+        steps.push(move('probe',48,53,a.values.doorIndex===1?'빗장과 다른 N극을 대서 당기기':'빗장과 같은 S극을 대서 밀어내기'));
       }
+      if(a.values.puzzleRevision===2&&f('doorOpen')&&!a.values.doorIndex)return [press('door-next','다른 극으로 당겨 여는 문으로 이동')];
       return steps;
     }
     case 6: {
@@ -99,6 +102,7 @@ function experimentSteps(stage: number, save: Save): Step[] {
       return steps;
     }
     case 8: {
+      if(a.values.puzzleRevision===2&&f(`segment${round}`)&&round<2)return [press('delivery-next','다음 택배 구간으로 이동')];
       if(a.values.puzzleVersion!==1)return [{kind:'drive',label:'자석으로 카트를 배달하고 목적지에서 멈추기'}];
       const drive:Step={kind:'drive',label:'유리벽 앞까지 당기고, 뒤집어 뒤에서 밀어 깃발에 세우기'};
       return [drive];
@@ -138,12 +142,13 @@ export class ExperimentAutoplay {
   private attachment?: {root:HTMLElement; panel:HTMLElement; stage:number};
   get save() { return this.run?.save; }
   reset() { window.clearTimeout(this.timer); this.run=undefined; this.update(); }
-  markup() {
-    return '<div class="experiment-autoplay" role="group" aria-label="실험 자동재생"><button type="button" data-demo="toggle"></button><button type="button" data-demo="stop" hidden>■ 중지</button><span class="demo-caption" role="status" aria-live="polite" hidden></span></div>';
+  markup(settings: Save['settings']) {
+    return `<div class="experiment-autoplay" role="group" aria-label="실험 자동재생"><div class="demo-controls"><button type="button" data-demo="toggle"></button>${autoplaySpeedMarkup(settings)}</div><button type="button" data-demo="stop" hidden>■ 중지</button><span class="demo-caption" role="status" aria-live="polite" hidden></span></div>`;
   }
-  bind(shell: HTMLElement, root: HTMLElement, stage: number, save: Save, notify:(text:string)=>void) {
+  bind(shell: HTMLElement, root: HTMLElement, stage: number, save: Save, notify:(text:string)=>void, changed:()=>void=()=>{}) {
     const panel=shell.querySelector<HTMLElement>('.experiment-autoplay');
     if(!panel)return ()=>{};
+    const speedCleanup=bindAutoplaySpeed(panel,save.settings,changed);
     const attachment={root,panel,stage}; this.attachment=attachment;
     const events=new AbortController(), signal=events.signal;
     const toggle=panel.querySelector<HTMLButtonElement>('[data-demo="toggle"]')!;
@@ -153,6 +158,7 @@ export class ExperimentAutoplay {
       notify('자동재생을 멈췄어. 지금까지 한 활동은 그대로 남아 있어.');
     };
     toggle.addEventListener('click',()=>{
+      if(save.settings.autoplay===false){this.reset();return;}
       if(this.run?.mode==='playing'){ this.pause(); return; }
       if(stage===9&&!save.activities[9]?.values.chosen){ notify('먼저 고칠 장치를 직접 골라 줘. 그다음 몸체 놓기와 시제품 시험을 관찰할 수 있어.'); return; }
       if(!this.run||this.run.mode==='finished'){
@@ -182,7 +188,7 @@ export class ExperimentAutoplay {
     window.addEventListener('experiment-pause',event=>{if((event as CustomEvent).detail)this.pause();},{signal});
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.pause();},{signal});
     this.update();
-    return ()=>{events.abort();if(this.attachment===attachment)this.attachment=undefined;};
+    return ()=>{speedCleanup();events.abort();if(this.attachment===attachment)this.attachment=undefined;};
   }
   private update() {
     const a=this.attachment;if(!a)return;
@@ -205,19 +211,25 @@ export class ExperimentAutoplay {
     window.clearTimeout(this.timer);
     if(this.run?.mode!=='playing')return;
     this.tickTime=performance.now();
-    this.timer=window.setTimeout(()=>this.tick(),65);
+    this.timer=window.setTimeout(()=>this.tick(),65/autoplaySpeed(this.run.save.settings));
   }
   private tick() {
     const a=this.attachment,run=this.run;
     if(!a||!run||run.mode!=='playing')return;
+    if(run.save.settings.autoplay===false){this.reset();return;}
     if(document.hidden||a.root.parentElement?.closest('[inert]')||document.querySelector('dialog[open],.modal-backdrop')){this.pause();return;}
     // Physical releases have their own animation; wait for their real completion.
     if(a.root.inert){this.schedule();return;}
     const step=run.steps[run.index],dt=Math.min(performance.now()-this.tickTime,120);
-    run.elapsed+=dt;
+    run.elapsed+=dt*autoplaySpeed(run.save.settings);
     if(run.acted && run.elapsed >= 700){
       run.index++;run.elapsed=0;run.acted=false;run.released=false;run.wipeLeg=undefined;
-      if(run.index>=run.steps.length){run.mode='finished';this.update();return;}
+      if(run.index>=run.steps.length){
+        const current=run.save.activities[a.stage];
+        const remaining=current?.values.puzzleRevision===2&&[5,8].includes(a.stage)?demonstrationSteps(a.stage,run.save):[];
+        if(!remaining.length){run.mode='finished';this.update();return;}
+        run.steps=remaining;run.index=0;
+      }
       run.label=run.steps[run.index].label;this.update();
     }else if(!run.acted && run.elapsed>=450){
       // The demonstration never answers for the learner: it holds here until they choose.
@@ -243,8 +255,8 @@ export class ExperimentAutoplay {
         }
       }
       else if(step.kind==='drive'){
-        const activity=run.save.activities[a.stage],round=Number(activity.values.round||0),course=activity.values.puzzleVersion===1&&round===0,goal=course?deliveryCourse.goal:round===2?30:73;
-        const car=Number(activity.values.car??(round===2?74:27)),pull=activity.values.controllerPole!=='S';
+        const activity=run.save.activities[a.stage],round=Number(activity.values.round||0),{wall:course,goal,start}=deliveryRoute(activity);
+        const car=Number(activity.values.car??start),pull=activity.values.controllerPole!=='S';
         if(!run.released && Math.abs(car-goal)<=1.5){
           run.released=true;run.label='자석을 떼고 카트가 조금 더 굴러 멈추는 모습 보기';this.update();
           a.root.querySelector<HTMLButtonElement>('[data-mission="detach"]')?.click();
@@ -255,7 +267,7 @@ export class ExperimentAutoplay {
           else if(!lifted)a.root.querySelector<HTMLButtonElement>('[data-mission="detach"]')?.click();
           else if(this.move(el,{x:car-10,y},false))a.root.querySelector<HTMLButtonElement>('[data-mission="flip"]')?.click();
         }else if(!run.released)this.move(el,{x:car+Math.sign(goal-car)*(pull?10:-10),y:59},false);
-        finished=missionReady(a.stage,activity,run.save);
+        finished=activity.values[`segment${round}`]===true;
         if(!finished && run.elapsed>30000){run.mode='paused';run.label='잠시 멈췄어. 중지를 눌러 직접 움직여 봐.';this.update();return;}
       }else if(!run.save.settings.motion || run.elapsed>9000){
         el.dispatchEvent(new CustomEvent('piece-place',{detail:step.target}));

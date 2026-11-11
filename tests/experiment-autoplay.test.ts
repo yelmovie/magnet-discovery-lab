@@ -82,6 +82,56 @@ class Control extends EventTarget {
   setAttribute(){} focus(){} click(){this.dispatchEvent(new Event('click'));}
 }
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
+it.each([1, 2] as const)('plays the same observation sequence at %ix speed', speed => {
+  vi.useFakeTimers();
+  vi.stubGlobal('window', Object.assign(new EventTarget(), { setTimeout, clearTimeout }));
+  vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false, querySelector: () => null }));
+  vi.stubGlobal('CustomEvent', class extends Event {
+    detail: unknown;
+    constructor(type: string, init: { detail: unknown }) { super(type); this.detail = init.detail; }
+  });
+  const shell = new Control(), root = new Control(), panel = new Control(), toggle = new Control(), flip = new Control(), probe = new Control();
+  shell.children.set('.experiment-autoplay', panel);
+  panel.children.set('[data-demo="toggle"]', toggle);
+  panel.children.set('[data-demo="stop"]', new Control());
+  panel.children.set('.demo-caption', new Control());
+  root.children.set('[data-mission="flip"]', flip);
+  root.children.set('[data-drag="probe"]', probe);
+  const save = freshSave(), activity = save.activities[5] = emptyActivity();
+  save.settings.motion = false;
+  save.settings.autoplaySpeed = speed;
+  activity.values = { paceVersion: 1, round: 0, test0S: true };
+  let observations = 0;
+  flip.addEventListener('click', () => { activity.values.probePole = 'S'; });
+  probe.addEventListener('piece-place', () => { observations++; activity.values.test0N = true; });
+  const player = new ExperimentAutoplay();
+  const dispose = player.bind(shell as unknown as HTMLElement, root as unknown as HTMLElement, 5, save, () => {});
+  toggle.click();
+  vi.advanceTimersByTime(1000);
+  expect(observations).toBe(speed === 2 ? 1 : 0);
+  vi.advanceTimersByTime(2000);
+  expect(observations).toBe(1);
+  expect(activity.values.solved0).toBeUndefined();
+  dispose(); player.reset();
+});
+
+it('blocks starting a demonstration when the teacher turns it off', () => {
+  vi.stubGlobal('window', Object.assign(new EventTarget(), { setTimeout, clearTimeout }));
+  vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false }));
+  const shell = new Control(), root = new Control(), panel = new Control(), toggle = new Control();
+  shell.children.set('.experiment-autoplay', panel);
+  panel.children.set('[data-demo="toggle"]', toggle);
+  panel.children.set('[data-demo="stop"]', new Control());
+  panel.children.set('.demo-caption', new Control());
+  const save = freshSave(); save.settings.autoplay = false;
+  const player = new ExperimentAutoplay();
+  const dispose = player.bind(shell as unknown as HTMLElement, root as unknown as HTMLElement, 1, save, () => {});
+  toggle.click();
+  expect(player.save).toBeUndefined();
+  expect(root.dataset.demoRun).toBeUndefined();
+  dispose(); player.reset();
+});
+
 it('autoplay updates the live activity, keeps observations on stop, and does not submit answers',()=>{
   vi.useFakeTimers();
   vi.stubGlobal('window',Object.assign(new EventTarget(),{setTimeout,clearTimeout}));
