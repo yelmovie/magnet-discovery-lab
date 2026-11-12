@@ -1,3 +1,4 @@
+import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { mountMapVillains } from './map-villains.js';
 import { playEffect } from './game-audio';
 import { icon, walkingMascot } from './art';
@@ -80,7 +81,8 @@ function onPavement(p:Point):Point{
 export function walkRoad(start:Point,dir:Point,step:number):Point{
   const length=Math.hypot(dir.x,dir.y);
   if(!length)return start;
-  return onPavement({x:start.x+step*dir.x/length,y:start.y+step*dir.y/(length*aspect)});
+  const p=assistMapStep({x:start.x,y:start.y*aspect},{x:step*dir.x/length,y:step*dir.y/length},q=>projectRoad({x:q.x,y:q.y/aspect}).distance<=1.8,.25);
+  return {x:p.x,y:p.y/aspect};
 }
 // 당이 walks the same stones a fixed distance behind 밀이, never beside the road.
 export function trailPoint(trail:Point[],gap:number):Point{
@@ -236,12 +238,9 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     },{signal});
   });
   root.querySelectorAll<HTMLElement>('[data-place]').forEach(b=>b.addEventListener('click',()=>goTo(Number(b.dataset.place)),{signal}));
-  root.querySelectorAll<HTMLButtonElement>('[data-dir]').forEach(b=>{
-    const [x,y]=b.dataset.dir!.split(',').map(Number);
-    b.addEventListener('pointerdown',e=>{if(e.button!==0)return;b.setPointerCapture(e.pointerId);pressDirection(String(e.pointerId),{x,y});},{signal});
-    const release=(e:PointerEvent)=>{held.delete(String(e.pointerId));readDirection();};
-    b.addEventListener('pointerup',release,{signal});b.addEventListener('pointercancel',release,{signal});b.addEventListener('lostpointercapture',release,{signal});
-    b.addEventListener('click',e=>{if(e.detail===0&&!paused){setFree(false);route=[];p=walkRoad(p,{x,y},1.2);}},{signal});
+  bindDirectionPad(root,'[data-dir]',b=>{const [x,y]=b.dataset.dir!.split(',').map(Number);return x<0?'left':x>0?'right':y<0?'up':'down';},{signal,blocked:()=>paused||document.hidden||!!document.querySelector('dialog[open]'),
+    press:d=>{held.delete('pad');pressDirection('pad',{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0});},release:()=>{held.delete('pad');readDirection();},
+    tap:d=>{setFree(false);route=[];p=walkRoad(p,{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0},1.2);}
   });
   const keyDirs:Record<string,Point>={ArrowUp:{x:0,y:-1},KeyW:{x:0,y:-1},ArrowDown:{x:0,y:1},KeyS:{x:0,y:1},ArrowLeft:{x:-1,y:0},KeyA:{x:-1,y:0},ArrowRight:{x:1,y:0},KeyD:{x:1,y:0}};
   window.addEventListener('keydown',e=>{if(paused||!keyDirs[e.code]||e.ctrlKey||e.metaKey||e.altKey||(e.target instanceof HTMLElement&&(e.target.isContentEditable||e.target.closest('dialog,[role="dialog"],input,textarea,select'))))return;e.preventDefault();if(!e.repeat)pressDirection(e.code,keyDirs[e.code]);},{signal});

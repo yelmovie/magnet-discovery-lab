@@ -32,3 +32,10 @@
 @media(max-width:1100px){.site-header{gap:10px;padding-left:20px;padding-right:20px}.header-left{gap:12px}.header-center{display:none}}
 @media(max-width:600px){.site-header{padding:0 10px;gap:8px}.header-left{gap:6px}.brand{font-size:13px}.brand-icon,.brand small{display:none}.site-header nav{gap:2px}.site-header nav .settings-button{display:inline-grid}.site-header .icon-button{width:48px;height:48px}.admin-pages{grid-template-columns:1fr}}
 @media(max-width:420px){.header-left .brand{display:none}}
+
+/* Map controls: clear local feedback without moving the layout. */
+[data-map-pad] { min-width:44px; min-height:44px; touch-action:none; user-select:none; -webkit-user-select:none; }
+[data-map-pad] > * { pointer-events:none; }
+[data-map-pad][data-map-held] { filter:brightness(1.15); outline:3px solid #f4bc45; outline-offset:1px; box-shadow:inset 0 0 0 2px #fff8da; }
+[data-map-pad]:focus-visible { outline:3px solid #165fba; outline-offset:3px; }
+[data-map-pad]:disabled { opacity:.5; }
