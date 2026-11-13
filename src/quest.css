@@ -663,3 +663,57 @@ body.quest-mode :is(.eyebrow,.tag,.small-note,.certificate-overline,.certificate
 
 #app .expedition-next .expedition-destination-arrow.no-motion { animation:none; }
 #app .quest-city .expedition-resident:not(.is-near,.just-returned,:focus-visible) .resident-bubble { visibility:hidden; }
+
+/* Map HUD: place movement and destination on opposite lower corners. */
+#app .quest-city {
+  --map-key:52px; --map-key-gap:7px; --map-cta-h:60px;
+  --map-left:calc(16px + env(safe-area-inset-left,0px));
+  --map-right:calc(16px + env(safe-area-inset-right,0px));
+  --map-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  --map-pad-width:calc(3 * var(--map-key) + 2 * var(--map-key-gap));
+  --map-pad-height:calc(2 * var(--map-key) + var(--map-key-gap));
+  --map-cta-font:22px;
+}
+@media (min-width:1450px) and (min-height:900px) {
+  #app .quest-city { --map-key:64px; --map-key-gap:10px; --map-cta-font:25px; }
+}
+@media (max-width:640px), (max-height:620px) {
+  #app .quest-city { --map-key:44px; --map-key-gap:4px; --map-cta-h:52px; --map-cta-font:18px; }
+}
+#app .quest-city .expedition-dpad {
+  grid-template:repeat(2,var(--map-key)) / repeat(3,var(--map-key));
+  gap:var(--map-key-gap); padding:0; border:0; background:transparent; box-shadow:none;
+  pointer-events:none;
+}
+#app .quest-city .expedition-dpad button {
+  display:grid; place-items:center; width:var(--map-key); height:var(--map-key);
+  min-width:var(--map-key); min-height:var(--map-key); padding:0;
+  color:#233e33; background:#fff6dc; border:2px solid #667b58;
+  border-radius:14px; box-shadow:0 3px 0 #3d5947; backdrop-filter:none;
+  -webkit-backdrop-filter:none; font-weight:800; pointer-events:auto;
+}
+#app .quest-city .expedition-dpad button:is(:active,[data-map-held],.is-held,.is-pressed) {
+  background:#245b46; color:#fff; border-color:#123e2e;
+  box-shadow:0 1px 0 #123e2e; transform:none; translate:0 2px; filter:none;
+}
+#app .quest-city .expedition-dpad button:focus-visible { outline:3px solid #165fba; outline-offset:2px; }
+#app .quest-city .expedition-dpad { left:var(--map-left); bottom:var(--map-bottom); }
+body.quest-mode #app .quest-city .expedition-next:not(:disabled) {
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  min-height:var(--map-cta-h); min-width:0; padding:8px clamp(10px,2vw,22px);
+  font-size:var(--map-cta-font); line-height:1.2; text-align:center;
+  white-space:normal; word-break:keep-all; overflow-wrap:anywhere;
+  color:#463813; background:linear-gradient(#ffe391,#f4c95f);
+  border:2px solid #a8802f; border-radius:16px; box-shadow:0 5px 0 #8c6a24;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body.quest-mode #app .quest-city .expedition-next > svg { flex:none; width:22px; height:22px; }
+body.quest-mode #app .quest-city .expedition-next:hover:not(:disabled,[aria-disabled="true"]) { background:linear-gradient(#ffeba9,#f9d473); }
+body.quest-mode #app .quest-city .expedition-next:active:not(:disabled,[aria-disabled="true"]) { box-shadow:0 1px 0 #8c6a24; }
+body.quest-mode #app .quest-city .expedition-next[aria-busy="true"] { color:#463813; background:#fff3c8; border-color:#a8802f; filter:none; opacity:1; }
+body.quest-mode #app .quest-city .expedition-next:focus-visible { outline:3px solid #165fba; outline-offset:3px; }
+body.quest-mode #app .quest-city .expedition-next {
+  right:var(--map-right); bottom:var(--map-bottom);
+  max-width:min(480px, calc(100% - var(--map-left) - var(--map-right) - var(--map-pad-width) - 10px));
+}
+body.quest-mode #app .quest-city .expedition-next[aria-busy="true"]:hover { translate:none; }

@@ -2,7 +2,7 @@
 body.quest-mode #app :is(.quest-icon,.quest-text-button,.expedition-map-controls button,.expedition-building:not(.locked):not(.restored),.mission-3d,.view3d-toggle) {
  background:linear-gradient(135deg,#fffdf2d9,#edf6edb8);border-color:#456b5e66;box-shadow:0 4px 14px #173c4920,inset 0 1px 0 #ffffffd9;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#214b42;
 }
-body.quest-mode #app :is(.quest-cta,.mission-cta,.expedition-next):not(:disabled){background:linear-gradient(135deg,#fff4ccd9,#f4d77bc9);border-color:#80602380;box-shadow:0 4px 14px #5d482729,inset 0 1px 0 #fff8e8;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+body.quest-mode #app :is(.quest-cta,.mission-cta):not(.expedition-next):not(:disabled){background:linear-gradient(135deg,#fff4ccd9,#f4d77bc9);border-color:#80602380;box-shadow:0 4px 14px #5d482729,inset 0 1px 0 #fff8e8;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
 body.quest-mode #app :is(.mission-head,.quest-dialog,.quest-panel,.quest-talk,.resident-bubble,.inspection-note,.play-question,.quest-caption){background:#fffdf0d6;border-color:#6b8b7066;box-shadow:0 5px 18px #173c4919;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
 body.quest-mode :is(.modal,.settings-dialog,.concept-card,.resident-chat){background:#fffdf1ed;box-shadow:0 16px 48px #123d4138;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
 body.quest-mode #app :is(.quest-icon,.quest-text-button,.quest-cta,.mission-cta,.expedition-next):focus-visible {outline:3px solid #17655c;outline-offset:3px;}
