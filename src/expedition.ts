@@ -1,3 +1,4 @@
+import {bindMapZoom} from './map-gestures.js';
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { icon, walkingMascot } from './art';
 import { stageNames, type Point, type Save } from './domain';
@@ -165,40 +166,45 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     walker.position={...position};
   };
   const abort=new AbortController(),signal=abort.signal;let overview=false;
-  let viewWidth=viewport.clientWidth,viewHeight=viewport.clientHeight,lastTransform='',lastScale=0;
-  const viewportSize=new ResizeObserver(([entry])=>{viewWidth=entry.contentRect.width;viewHeight=entry.contentRect.height;draw();});
+  let viewWidth=viewport.clientWidth,viewHeight=viewport.clientHeight,lastTransform='',lastScale=0,zoom=1;
+  let displayed={x:0,y:0},focus={x:50,y:50},previousFrame=0;
+  const center=()=>({x:(viewWidth/2-displayed.x)/(1600*lastScale||1),y:(viewHeight/2-displayed.y)/(900*lastScale||1)});
+  const viewAt=(point:Point)=>{const s=Math.max(viewWidth/1600,viewHeight/900)*1.45*zoom;return{x:viewWidth/2-point.x*1600*s,y:viewHeight/2-point.y*900*s};};
+  const viewportSize=new ResizeObserver(([entry])=>{const before=lastScale&&free?center():null;viewWidth=entry.contentRect.width;viewHeight=entry.contentRect.height;if(before)cam=viewAt(before);draw();});
   // Dragging the map frees the camera; walking again hands it back to the explorer.
   const panButton=root.querySelector<HTMLButtonElement>('[data-map-pan]');let free=false,cam={x:0,y:0},drag:{id:number;x:number;y:number;camX:number;camY:number;moved:boolean}|null=null,swallowClick=false;
   const setFree=(value:boolean)=>{free=value;panButton?.setAttribute('aria-pressed',String(value));root.classList.toggle('map-free',value);};
-  let returnView={free:false,cam:{x:0,y:0}};
+  let returnView={free:false,center:{x:.5,y:.5},zoom:1};
   const setOverview=(value:boolean)=>{
     if(value===overview)return;
-    if(value){returnView={free,cam:{...cam}};cancelRoute();releaseDirections();}
+    if(value){returnView={free,center:center(),zoom};cancelRoute();releaseDirections();}
     overview=value;
     const button=root.querySelector<HTMLButtonElement>('[data-map-overview]')!;
-    const label=value?'이전 지도 보기':'지도 전체 보기';
-    button.setAttribute('aria-label',label);button.title=label;button.setAttribute('aria-pressed',String(value));
-    if(!value)cam={...returnView.cam};
+    button.setAttribute('aria-pressed',String(value));
+    if(!value){zoom=returnView.zoom;cam=viewAt(returnView.center);focus={x:returnView.center.x*100,y:returnView.center.y*100};}
     setFree(!value&&returnView.free);root.classList.toggle('map-overview',value);
     draw();
   };
   panButton?.addEventListener('click',()=>{
     if(paused)return;
     if(overview)setOverview(false);
-    else if(free){setFree(false);draw();return;}
-    draw();const m=new DOMMatrix(getComputedStyle(world).transform);cam={x:m.e,y:m.f};
+    else if(free){resumeFollow();draw();return;}
+    draw();cam={...displayed};
     cancelRoute();releaseDirections();setFree(true);draw();
   },{signal});
   root.querySelector('[data-map-overview]')?.addEventListener('click',()=>{if(!paused)setOverview(!overview);},{signal});
-  const draw=()=>{
+  const draw=(now=performance.now())=>{
     if(!viewWidth||!viewHeight)return;
     const shortLandscape=viewWidth>viewHeight&&viewHeight<=559;
     const top=shortLandscape?62:100,bottom=shortLandscape?72:110,available=Math.max(1,viewHeight-top-bottom);
-    const scale=overview?Math.min(viewWidth/1600,available/900):Math.max(viewWidth/1600,viewHeight/900)*1.45;
+    const scale=overview?Math.min(viewWidth/1600,available/900):Math.max(viewWidth/1600,viewHeight/900)*1.45*zoom;
     const ww=1600*scale,hh=900*scale;
-    const tx=overview?(viewWidth-ww)/2:Math.max(viewWidth-ww,Math.min(0,free?cam.x:viewWidth/2-p.x/100*ww));
-    const ty=overview?top+(available-hh)/2:Math.max(viewHeight-hh,Math.min(0,free?cam.y:viewHeight/2-p.y/100*hh));
-    if(free)cam={x:tx,y:ty};
+    const blend=!previousFrame||reducedMotion.matches||!options.save.settings.motion?1:1-Math.exp(-Math.max(0,Math.min(50,now-previousFrame))/115);
+    previousFrame=now;
+    if(!overview&&!free){focus.x+=(p.x-focus.x)*blend;focus.y+=(p.y-focus.y)*blend;}
+    const tx=overview?(viewWidth-ww)/2:Math.max(viewWidth-ww,Math.min(0,free?cam.x:viewWidth/2-focus.x/100*ww));
+    const ty=overview?top+(available-hh)/2:Math.max(viewHeight-hh,Math.min(0,free?cam.y:viewHeight/2-focus.y/100*hh));
+    displayed={x:tx,y:ty};if(free)cam={...displayed};
     const transform=`translate(${tx}px,${ty}px) scale(${scale})`;
     if(transform!==lastTransform){world.style.transform=transform;lastTransform=transform;}
     if(scale!==lastScale){world.style.setProperty('--map-scale',String(scale));lastScale=scale;}
@@ -213,17 +219,21 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     dir={x:Math.sign(x),y:Math.sign(y)};
   }
   function releaseDirections(){held.clear();readDirection();}
+  function resumeFollow(){
+    if(overview)setOverview(false);
+    if(free){const at=center();focus={x:at.x*100,y:at.y*100};}
+    setFree(false);
+  }
   function pressDirection(key:string,d:Point){
     if(paused||held.has(key))return;
-    setFree(false);cancelRoute();held.set(key,d);readDirection();
+    resumeFollow();cancelRoute();held.set(key,d);readDirection();
     // A quick tap can start and end between frames. Give it one visible step.
     p=walkRoad(p,dir,.55);
   }
   const goTo=(i:number,guided=false)=>{
     if(paused||i<0||i>5||(guided&&guidedDoor!==null))return;
     if(guided&&i>options.save.evidence.length&&!options.admin)return;
-    if(overview)setOverview(false);
-    setFree(false);releaseDirections();route=roadRoute(p,doors[i]);doorLatch=-1;setGuidedDoor(guided?i:null);
+    resumeFollow();releaseDirections();route=roadRoute(p,doors[i]);doorLatch=-1;setGuidedDoor(guided?i:null);
   };
   function frameResident(stage:number) {
     if(overview)return;
@@ -239,6 +249,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(!button)return;
     button.classList.add('just-returned');
     root.querySelector(`[data-district-light="${stage}"]`)?.classList.add('newly-lit');
+    root.querySelector(`[data-district-haze="${stage}"]`)?.classList.add('just-cleared');
     button.querySelector('.resident-bubble')!.textContent='!';
     frameResident(stage);
     button.focus({preventScroll:true});
@@ -257,13 +268,19 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   root.querySelectorAll<HTMLElement>('[data-place]').forEach(b=>b.addEventListener('click',()=>goTo(Number(b.dataset.place)),{signal}));
   bindDirectionPad(root,'[data-dir]',b=>{const [x,y]=b.dataset.dir!.split(',').map(Number);return x<0?'left':x>0?'right':y<0?'up':'down';},{signal,blocked:()=>paused||document.hidden||!!document.querySelector('dialog[open]'),
     press:d=>{held.delete('pad');pressDirection('pad',{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0});},release:()=>{held.delete('pad');readDirection();},
-    tap:d=>{setFree(false);cancelRoute();p=walkRoad(p,{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0},1.2);}
+    tap:d=>{resumeFollow();cancelRoute();p=walkRoad(p,{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0},1.2);}
   });
   const keyDirs:Record<string,Point>={ArrowUp:{x:0,y:-1},KeyW:{x:0,y:-1},ArrowDown:{x:0,y:1},KeyS:{x:0,y:1},ArrowLeft:{x:-1,y:0},KeyA:{x:-1,y:0},ArrowRight:{x:1,y:0},KeyD:{x:1,y:0}};
   window.addEventListener('keydown',e=>{if(paused||!keyDirs[e.code]||e.ctrlKey||e.metaKey||e.altKey||(e.target instanceof HTMLElement&&(e.target.isContentEditable||e.target.closest('dialog,[role="dialog"],input,textarea,select'))))return;e.preventDefault();if(!e.repeat)pressDirection(e.code,keyDirs[e.code]);},{signal});
   window.addEventListener('keyup',e=>{if(held.delete(e.code))readDirection();},{signal});window.addEventListener('blur',releaseDirections,{signal});
-  viewport.addEventListener('pointerdown',e=>{if(paused||drag||!e.isPrimary||e.button!==0)return;swallowClick=false;if(overview)return;const m=new DOMMatrix(getComputedStyle(world).transform);drag={id:e.pointerId,x:e.clientX,y:e.clientY,camX:m.e,camY:m.f,moved:false};},{signal});
-  viewport.addEventListener('pointermove',e=>{if(paused||!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;cancelRoute();releaseDirections();viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};},{signal});
+  bindMapZoom(viewport,{signal,enabled:()=>!paused&&!document.hidden&&!overview&&!document.querySelector('dialog[open]'),
+    onStart:()=>{drag=null;swallowClick=false;cancelRoute();releaseDirections();cam={...displayed};setFree(true);},
+    onZoom:(start,end,ratio)=>{if(!lastScale)return;const point={x:(start.x-displayed.x)/lastScale,y:(start.y-displayed.y)/lastScale};
+      zoom=Math.min(1.65,Math.max(.72,zoom*ratio));const s=Math.max(viewWidth/1600,viewHeight/900)*1.45*zoom;
+      cam={x:end.x-point.x*s,y:end.y-point.y*s};draw();}
+  });
+  viewport.addEventListener('pointerdown',e=>{if(paused||drag||!e.isPrimary||e.button!==0)return;swallowClick=false;if(overview)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,camX:displayed.x,camY:displayed.y,moved:false};},{signal});
+  viewport.addEventListener('pointermove',e=>{if(paused||!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;cancelRoute();releaseDirections();viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};draw();},{signal});
   for(const event of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(event,e=>{if(!drag||drag.id!==(e as PointerEvent).pointerId)return;swallowClick=event==='pointerup'&&drag.moved;drag=null;viewport.classList.remove('is-dragging');},{signal});
   // A drag that ends over a building must not also walk there.
   viewport.addEventListener('click',e=>{if(swallowClick){swallowClick=false;e.stopPropagation();e.preventDefault();}},{signal,capture:true});
@@ -281,6 +298,6 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
       if(signal.aborted)return;
       break;
     }
-  }draw();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
-  return{goTo,welcomeResident,direction(x,y){setFree(false);cancelRoute();releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){cancelRoute();drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
+  }draw(now);raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
+  return{goTo,welcomeResident,direction(x,y){resumeFollow();cancelRoute();releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){cancelRoute();drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
 }

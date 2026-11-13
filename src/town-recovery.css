@@ -1,6 +1,15 @@
 .town-lights {
   position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
 }
+.town-dormant-facade.is-cleared, .town-reveal-ring { opacity: 0; }
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.reduce-motion) .town-dormant-facade.just-cleared { animation: town-mist-clears .9s ease-out both; }
+  body:not(.reduce-motion) .newly-lit .town-reveal-ring {
+    transform-origin: center; transform-box: fill-box; animation: town-light-spreads .8s .22s ease-out both;
+  }
+}
+@keyframes town-mist-clears { from { opacity:1 } to { opacity:0 } }
+@keyframes town-light-spreads { from { opacity:.85;transform:scale(.7) } to { opacity:0;transform:scale(1.85) } }
 .town-restored-fixture image { filter: drop-shadow(1px 3px 2px #25332b78); }
 .town-fixture-reflection { opacity: .28; }
 .town-plaza-shine { opacity: .28; }

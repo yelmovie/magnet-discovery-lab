@@ -294,7 +294,17 @@ async function finishActivityOnce(conceptDone: boolean) {
     startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
   }
   go('city');
-  if(newResident)city?.welcomeResident(stage);
+  if(newResident&&city){
+    const expedition=city;
+    expedition.welcomeResident(stage);
+    if(s.settings.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      // Let the newly repaired facade become visible before the existing resident dialogue opens.
+      window.setTimeout(()=>{
+        if(page==='city'&&city===expedition&&!app.inert)showReward(stage,true);
+      },950);
+      return;
+    }
+  }
   showReward(stage,newResident);
 }
 function showReward(stage: number,newResident: boolean) {

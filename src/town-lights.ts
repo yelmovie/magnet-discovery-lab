@@ -17,6 +17,13 @@ const restoredFixtures = [
   { asset:'workshop', x:431, y:487, width:70, height:63, name:'발명 공방에 톱니 문장이 걸렸어.' },
 ] as const;
 
+// The unlit tint lives under the artwork, over each actual roof and wall.
+// Lighten the city gradually while keeping the unvisited districts distinct.
+const districtHaze = [
+  [340,191,193,162], [842,111,205,125], [1411,177,196,171],
+  [1321,551,202,171], [342,519,205,165],
+] as const;
+
 export const restoredTownMessage = (stage: number) => restoredFixtures[stage]?.name ?? '';
 
 export function districtRestored(s: Save, stage: number) {
@@ -24,6 +31,8 @@ export function districtRestored(s: Save, stage: number) {
 }
 
 export function townLights(s: Save) {
+  const restoredCount = districtHaze.filter((_, stage) => districtRestored(s, stage)).length;
+  const dormant = districtHaze.map(([x,y,rx,ry], stage) => `<ellipse class="town-dormant-facade${districtRestored(s,stage)?' is-cleared':''}" data-district-haze="${stage}" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#town-dormant)"/>`).join('');
   const art = buildings.map(({ lamp:[x,y], panes, door, flags:[fx,fy,span], color }, stage) => {
     const first = s.completed.includes(stage * 2 + 1), restored = districtRestored(s,stage);
     if (!first) return '';
@@ -41,19 +50,21 @@ export function townLights(s: Save) {
     ];
     return `<g data-district-light="${stage}" class="${restored?'town-lit':'porch-lit'}" style="color:${color}">
       <circle cx="${x}" cy="${y}" r="24" fill="url(#town-halo)"/><circle cx="${x}" cy="${y}" r="3.7" fill="#fff2bd"/>
-      ${restored?`<g class="town-windows"><path d="${panes}" fill="currentColor" opacity=".35" filter="url(#town-bloom)"/><path d="${panes}" fill="currentColor" opacity=".36"/>
+      ${restored?`<g class="town-windows"><path d="${panes}" fill="currentColor" opacity=".42" filter="url(#town-bloom)"/><path d="${panes}" fill="currentColor" opacity=".52"/>
       <ellipse cx="${door[0]}" cy="${door[1]}" rx="44" ry="15" fill="url(#town-halo)"/>
+      <ellipse class="town-reveal-ring" cx="${door[0]}" cy="${door[1]}" rx="36" ry="12" fill="none" stroke="#fff0b7" stroke-width="3"/>
       <g transform="translate(${fx} ${fy})"><path d="M0 0Q${span/2} 18 ${span} 0" fill="none" stroke="#664c32" stroke-width="2"/>${pennants}</g></g>
       <g class="town-restored-fixture" data-town-fixture="${fixture.asset}">
         <image href="/assets/quest/town-restored-${fixture.asset}.webp" x="${fixture.x}" y="${fixture.y}" width="${fixture.width}" height="${fixture.height}"/>
         <g class="town-fixture-reflection">${reflections[stage]}</g>
       </g>`:''}</g>`;
   }).join('');
-  const plaza = buildings.every((_, stage) => districtRestored(s, stage))
+  const plaza = restoredCount === buildings.length
     ? '<g class="town-plaza-emblem" data-plaza-emblem><ellipse cx="836" cy="516" rx="66" ry="21" fill="#3f4653" opacity=".15"/><image href="/assets/quest/town-plaza-emblem.webp" x="768" y="473" width="136" height="80"/><ellipse class="town-plaza-shine" cx="836" cy="507" rx="63" ry="21" fill="url(#town-plaza-halo)"/></g>'
     : '';
   return `<svg class="town-lights" viewBox="0 0 1672 941" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-    <defs><radialGradient id="town-halo"><stop stop-color="#fff5bb" stop-opacity=".94"/><stop offset=".4" stop-color="#ffd36c" stop-opacity=".53"/><stop offset="1" stop-color="#ffc05e" stop-opacity="0"/></radialGradient>
+    <defs><radialGradient id="town-dormant"><stop stop-color="#253d55" stop-opacity=".48"/><stop offset=".55" stop-color="#364c60" stop-opacity=".34"/><stop offset="1" stop-color="#3e576a" stop-opacity="0"/></radialGradient><radialGradient id="town-halo"><stop stop-color="#fff5bb" stop-opacity=".94"/><stop offset=".4" stop-color="#ffd36c" stop-opacity=".53"/><stop offset="1" stop-color="#ffc05e" stop-opacity="0"/></radialGradient>
     <radialGradient id="town-plaza-halo"><stop stop-color="#e7ffff" stop-opacity=".6"/><stop offset="1" stop-color="#9df8ec" stop-opacity="0"/></radialGradient>
-    <filter id="town-bloom" x="-50%" y="-70%" width="200%" height="240%"><feGaussianBlur stdDeviation="5"/></filter></defs>${art}${plaza}</svg>`;
+    <filter id="town-bloom" x="-50%" y="-70%" width="200%" height="240%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+    <rect width="1672" height="941" fill="#354d60" opacity="${(.10*(1-restoredCount/buildings.length)).toFixed(3)}"/>${dormant}${art}${plaza}</svg>`;
 }
