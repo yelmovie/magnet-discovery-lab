@@ -2,44 +2,13 @@ import {mountMapEncounters,normalizeMapHits} from './map-encounters.js';
 
 // This copy ships with its own map so offline play needs no cross-project request.
 const STAGES = [
-  [
-    "clip",
-    "cap",
-    "클립은 내 뿔에 있지!",
-    "철 클립은 여기 붙어 있어!"
-  ],
-  [
-    "parts",
-    "plate",
-    "이 쇳조각은 내가 챙길래!",
-    "철못도 하나 붙여 볼까?"
-  ],
-  [
-    "pole",
-    "flip",
-    "어느 쪽 뿔부터 볼래?",
-    "이번에는 파란 뿔이지!"
-  ],
-  [
-    "latch",
-    "plug",
-    "손 안 대고도 걸어 잠갔지!",
-    "철판 뒤 빗장을 당겨야지!"
-  ],
-  [
-    "workshop",
-    "gear",
-    "그 부품은 내가 챙길래!",
-    "철 부품은 내 주머니에!"
-  ],
-  [
-    "plaza",
-    "flag",
-    "광장 문은 내가 잠근다!",
-    "셔터 빗장을 더 세게 걸 거야!"
-  ]
+  ["clip", "cap", "철 클립만 붙는 걸 봤어? 내 자석 뿔을 비밀로 할걸!", "다음 장난은 쇠 클립으로 만든 뿔 모자다!", "앗, 철 클립이 떨려!", "내 뿔에서 클립이 와르르!", "쳇, 클립은 돌려줄게. 뿔은 내 거야!"],
+  ["parts", "plate", "철하고 다른 재료를 구별해? 내 주머니를 뒤집을 셈이야?", "내 쇳조각 수집품엔 손대지 마!", "앗, 철못이 주머니 밖으로!", "섞어 둔 부품이 또 나뉘잖아!", "흥, 철 부품과 다른 부품을 나눠 둘게!"],
+  ["pole", "flip", "같은 극이 밀어내는 걸 알아냈어? 내 뿔 바꿔치기 실패야!", "한쪽 뿔을 몰래 돌리면 또 속겠지?", "앗, 자석 뿔이 돌아갔어!", "밀다가 붙어 버렸잖아!", "쳇, 자석 극 표지는 원래대로 할게!"],
+  ["latch", "plug", "장벽 너머 빗장도 움직였어? 손 안 대는 건 내 특기였는데!", "다음 빗장은 꼭 내 주머니 뒤에 숨길 거야!", "앗, 빗장이 달칵!", "가려 놓은 빗장이 풀려!", "흥, 그 문은 열어 둘게!"],
+  ["workshop", "gear", "자석 장치를 고쳤어? 내 부품 빼돌리기까지 들켰군!", "다음엔 내 뿔로 공구함째 들고 가야지!", "앗, 공방 부품이 떨어져!", "다시 맞춘 장치가 움직이잖아!", "쳇, 공방에 부품을 두고 갈게!"],
+  ["plaza", "flag", "네 장치로 광장 문까지 열었다고? 거긴 내 비밀 본부였는데!", "간판은 이미 ‘자석 뿔 본부’로 주문했단 말이야!", "앗, 광장 셔터가 들렸어!", "마지막 빗장까지 움직였잖아!", "흥, 광장은 돌려줄게. 간판 주문이나 취소해야지!"],
 ];
-const hit = ["앗, 자석 뿔이 돌아갔어!", "고철이 떨어지잖아!"], finish = "빗장을 풀고 갈게!";
 const palette = '#67b4f8';
 const art = {
   left: '/assets/adventure/map-villain-left-v2.webp',
@@ -59,14 +28,14 @@ export function normalizeVillageEncounters(value,legacy) {
   return {...normalizeMapHits(previous,STAGES.map(([id])=>id)),...normalizeMapHits(value,STAGES.map(([id])=>id))};
 }
 
-export function mountVillageEncounters({host,stages,progress,onSave,blocked,reduced,tone,actors}) {
+export function mountVillageEncounters({host,stages,progress,onSave,blocked,reduced,tone,actors,clearIndex}) {
   const points=stages.flatMap((stage,i)=>{
     if(!stage||!STAGES[i])return [];
-    const [id,prop,first,again]=STAGES[i];
-    return [{id,prop,lines:[first,again],hit,finish,...stage}];
+    const [id,prop,first,again,hitOne,hitTwo,finish]=STAGES[i];
+    return [{id,prop,lines:[first,again],hit:[hitOne,hitTwo],finish,speaker:"자석 뿔 악당",...stage}];
   });
   if(!points.some(({id})=>(progress?.[id]||0)<3))return null;
-  const runtime=mountMapEncounters({host,stages:points,progress,onSave,blocked,reduced,tone,art,palette,
+  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,onSave,blocked,reduced,tone,art,palette,clearStage:()=>STAGES[clearIndex]?.[0],
     reach:92,contact:23});
   const layer=host.querySelector('.map-encounter-layer');
   const poses=reactions.map((src,i)=>{

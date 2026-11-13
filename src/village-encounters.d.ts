@@ -3,6 +3,7 @@ type HitPatch = Record<string,number>;
 type Tone = (kind:'hit'|'finish'|'contact',hits:number)=>void;
 export function normalizeVillageEncounters(value:unknown,legacy?:unknown):HitPatch;
 export function mountVillageEncounters(options:{
+  clearIndex?:number|null;
   host:HTMLElement;stages:({x:number;y:number;name:string}|null)[];
   progress?:HitPatch;onSave:(patch:HitPatch)=>void;blocked:()=>boolean;reduced:()=>boolean;
   tone:Tone;actors:(HTMLElement|((visible:boolean)=>void)|undefined)[];

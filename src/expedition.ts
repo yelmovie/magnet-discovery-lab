@@ -123,7 +123,7 @@ export function expeditionMarkup(s:Save,admin=false){
   return `<section class="quest-city"><div class="expedition-viewport" aria-label="길을 따라 걷는 자석 도시"><div class="expedition-world"><img class="expedition-map" src="/assets/quest/city-expedition.webp" alt="넓은 돌길로 이어진 우편국, 재료 연구소, 극의 탑, 수조, 공방, 중앙 광장" draggable="false">${aquariumOnMap(s)}${townLights(s)}${buildings}${residentMarkers(s)}${courierOnMap(s)}<div class="expedition-player" aria-label="탐험가 밀이">${walkingMascot('mili',104)}</div><div class="expedition-npc" role="img" aria-label="길을 따라오는 당이">${walkingMascot('dangi',96)}</div></div></div><div class="expedition-map-tools"><button type="button" class="quest-icon" data-map-pan aria-pressed="false" aria-label="손으로 지도를 밀어 둘러봐요" title="손으로 지도 밀기">${icon('hand',27)}</button><button type="button" class="quest-icon" data-map-overview aria-pressed="false" aria-label="지도 전체 보기" title="지도 전체 보기">${icon('expand',27)}</button></div><div class="expedition-dpad" aria-label="도시에서 걷기">${[['0,-1','↑','위'],['-1,0','←','왼쪽'],['0,1','↓','아래'],['1,0','→','오른쪽']].map(([d,arrow,label])=>`<button data-dir="${d}" aria-label="${label}${label.endsWith('쪽')?'으':''}로 걷기">${arrow}</button>`).join('')}</div>${admin?'':`<button class="expedition-next quest-cta" data-action="walk-next">${next===5?'중앙 광장으로 가기':`${stageNames[next]} 입구로 가기`}${destinationArrow}</button>`}</section>`;
 }
 export interface ExpeditionHandle {goTo(i:number,guided?:boolean):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
-export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onEncounterSave:(hits:Record<string,number>)=>void;onArrive:(i:number,guided:boolean)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
+export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;clearIndex?:number|null;onPosition:(p:Point)=>void;onEncounterSave:(hits:Record<string,number>)=>void;onArrive:(i:number,guided:boolean)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
   const viewport=root.querySelector<HTMLElement>('.expedition-viewport')!,world=root.querySelector<HTMLElement>('.expedition-world')!,player=root.querySelector<HTMLElement>('.expedition-player')!,npc=root.querySelector<HTMLElement>('.expedition-npc')!;
   const courier=root.querySelector<HTMLElement>('.expedition-courier');let courierPhase=0;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -196,7 +196,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   },{signal});
   root.querySelector('[data-map-overview]')?.addEventListener('click',()=>{if(!paused)setOverview(!overview);},{signal});
   const toWorld=({x,y}:Point)=>({x:x*16,y:y*9});
-  const encounters=options.admin?null:mountVillageEncounters({host:viewport,stages:doors.map((node,i)=>{
+  const encounters=options.admin?null:mountVillageEncounters({host:viewport,clearIndex:options.clearIndex,stages:doors.map((node,i)=>{
     if(!(i===5?options.save.final.complete:districtRestored(options.save,i)))return null;
     const door=roads[node],edge=roadEdges.find(pair=>pair.includes(node));
     const path=roads[edge?.find(index=>index!==node)??node];

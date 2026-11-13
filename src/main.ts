@@ -128,8 +128,10 @@ function render() {
 }
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
+let dialogueStage:number|null=null;
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),clearIndex:dialogueStage,onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
+  dialogueStage=null;
 }
 function showResident(stage:number, completion?: { reward: string; destination: number }) {
   const {name}=residents[stage];
@@ -293,6 +295,7 @@ async function finishActivityOnce(conceptDone: boolean) {
   if (screen % 2) {
     startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
   }
+  if(newResident)dialogueStage=stage;
   go('city');
   if(newResident&&city){
     const expedition=city;
@@ -353,7 +356,7 @@ function bindCore() {
   root.addEventListener('activate-final', () => { void activate(); });
   cleanup = () => { dispose?.(); };
 }
-async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
+async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; dialogueStage=5; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
 // The ending page is the finale film; its closing card leads to the certificate.
 function endingPage() { return '<section class="ending-film" aria-label="도시 축제 영상"></section>'; }
 function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, onDone: () => go('certificate') }); }
