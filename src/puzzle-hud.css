@@ -20,25 +20,22 @@
   border-radius: inherit; background: #173f47b3;
 }
 #app .puzzle-crisis-card {
-  display: flex; align-items: center; gap: clamp(12px, 2vw, 28px); max-width: min(760px, 94%); max-height: 100%; overflow: auto;
+  max-width: min(760px, 94%); max-height: 100%; overflow: auto;
   padding: clamp(14px, 2.2vw, 28px); border: 3px solid var(--quest-gold-edge); border-radius: var(--radius-md);
   background: var(--quest-paper); box-shadow: var(--shadow-popover); color: var(--color-text-main);
   animation: puzzle-crisis-in .32s ease-out both;
 }
-#app .puzzle-crisis-card img { flex: none; width: clamp(96px, 16vw, 180px); height: auto; animation: puzzle-goblin-bob 1.6s ease-in-out infinite alternate; }
 #app .puzzle-crisis-card > div { display: grid; gap: 8px; justify-items: start; min-width: 0; }
 #app .puzzle-crisis-card small { padding: 3px 10px; border-radius: 999px; background: var(--quest-magnet-red); color: #fff; font-size: var(--font-size-caption); font-weight: 800; }
 #app .puzzle-crisis-card strong { font-family: var(--font-display); font-size: clamp(22px, 2.3vw, 34px); line-height: var(--line-height-tight); word-break: keep-all; }
 #app .puzzle-crisis-card p { margin: 0; font-size: var(--font-size-body); line-height: var(--line-height-normal); word-break: keep-all; }
 #app .puzzle-crisis-card .mission-action { position: static; transform: none; min-height: 56px; margin-top: 6px; padding: 8px 28px; font-size: var(--font-size-button); }
 @keyframes puzzle-crisis-in { from { transform: translateY(14px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes puzzle-goblin-bob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-8px) rotate(3deg); } }
 @media (max-height: 520px), (max-width: 620px) {
-  #app .puzzle-crisis-card img { width: 84px; }
   #app .puzzle-crisis-card p { font-size: var(--font-size-caption); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .puzzle-stars.is-solved .on, #app .puzzle-crisis-card, #app .puzzle-crisis-card img { animation: none; }
+  .puzzle-stars.is-solved .on, #app .puzzle-crisis-card { animation: none; }
 }
 
 #app .puzzle-platform { position:absolute; z-index:2; display:flex; align-items:flex-end; transform:translate(-50%,-100%); pointer-events:none; width:17%; }
@@ -61,13 +58,6 @@
   #app .plaza-puzzle ol { margin:4px 0; font-size:13px; }
 }
 
-#app .puzzle-guardian { position:absolute; left:1%; top:34%; width:8%; pointer-events:none; }
-#app .puzzle-guardian img { display:block; width:100%; }
-#app .puzzle-guardian span { display:none; color:#235f58; font-weight:800; font-size:clamp(12px,1.5vw,20px); text-align:center; }
-#app .puzzle-guardian.is-restored img { animation:puzzle-guardian-leave .65s ease-in forwards; }
-#app .puzzle-guardian.is-restored span { display:block; }
-@keyframes puzzle-guardian-leave { to { transform:translate(-30px,-25px) scale(.3); opacity:0; } }
-@media(prefers-reduced-motion:reduce) { #app .puzzle-guardian.is-restored img { animation:none; opacity:0; } }
 
 body.quest-mode #app .plaza-puzzle { display:flex; flex-direction:column; height:100dvh; }
 body.quest-mode #app .plaza-puzzle header { flex:none; }
@@ -92,7 +82,3 @@ body.quest-mode #app .screen-6 .mission-board:has(.puzzle-platform.is-crossed) >
 @media(prefers-reduced-motion:reduce) { #app .puzzle-platform { transition:none; } }
 
 body.quest-mode #app #plaza-experiment .canvas-hit { min-width:64px; min-height:44px; }
-#app .plaza-guardian { position:absolute; right:2%; top:20%; width:9%; pointer-events:none; }
-#app .plaza-guardian img { display:block; width:100%; }
-#app .plaza-guardian.is-restored { animation:puzzle-guardian-leave .65s ease-in forwards; }
-@media(prefers-reduced-motion:reduce) { #app .plaza-guardian.is-restored { animation:none; opacity:0; } }

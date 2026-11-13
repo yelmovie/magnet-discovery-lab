@@ -70,11 +70,10 @@ const results = [], errors = [];
     if(expanded)s.activities[2].values.puzzleRevision=2;
     window.__qa.setSave(s);
    },{s:fixture,expanded});
-   assert.equal(await page.getByText('탐구 후 힘 충전',{exact:true}).count(),0);
-   assert.ok((await page.locator('.mv-label').allTextContents()).every(s=>s===(expanded?'퍼즐 해결 대기':'구역 복구 대기')));
-   await page.locator('.mv-target').first().evaluate(el=>el.click());
-   assert.match(await page.locator('.mv-status').textContent(),expanded?/퍼즐을 풀면 도깨비가 물러나/:/탐구를 마치면 도깨비를 물리칠/);
-   results.push(`map waiting message, expanded ${expanded}`);
+   assert.equal(await page.locator('.mv-target, .mv-status').count(),0);
+   assert.equal(await page.getByText('퍼즐 해결 대기',{exact:true}).count(),0);
+   assert.equal(await page.locator('.expedition-building').count(),6);
+   results.push(`map navigation without combat targets, expanded ${expanded}`);
   }
   await page.evaluate(s=>window.__qa.setSave(s),fixture);
   for(const destination of ['title','city','report','core','certificate','ending']) {

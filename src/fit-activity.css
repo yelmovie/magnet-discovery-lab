@@ -398,3 +398,19 @@ body.quest-mode #app .quest-activity .inquiry-shell:not(.play-inquiry):is([data-
   body.quest-mode #app .quest-activity .play-discovery .inquiry-feedback,
   #app .play-discovery .quiz-scenes figcaption { font-size: 18px; }
 }
+
+/* The mailbox assembly uses the compact experiment header without the inquiry toolbar. */
+#app .quick-mailbox .mailbox-route-label { grid-area: count; font-size: 16px; word-break: keep-all; }
+@media (max-width:759px) and (orientation:portrait) {
+  #app .quick-mailbox .mailbox-route-label { grid-area: steps; }
+}
+@media (orientation:landscape) and (max-height:559px) {
+  body.quest-mode #app .quick-mailbox > .mission-head {
+    top:4px;grid-template-columns:82px minmax(0,1fr);grid-template-areas:'art stage' 'art q' 'next next';gap:2px 6px;padding:3px 8px 5px;
+  }
+  #app .quick-mailbox .mailbox-route-label { display:none; }
+  body.quest-mode #app .quick-mailbox .learning-visual-preview { min-height:64px;width:82px; }
+  body.quest-mode #app .quick-mailbox .learning-visual-preview img { height:32px; }
+  body.quest-mode #app .quick-mailbox .learning-visual-preview span { min-height:24px;font-size:12px; }
+  body.quest-mode #app .quick-mailbox .mission-board > .mission-actions:has([data-mission="fit-part"]) { left:62%;right:auto;transform:translateX(-50%); }
+}

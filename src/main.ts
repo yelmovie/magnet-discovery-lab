@@ -21,6 +21,7 @@ import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
 import { questHud, questTitle } from './quest-ui';
 import { inquiryView, inquiryNext, advanceInquiry, inquirySteps } from './inquiry';
 import { inquiryPhase } from './inquiry-model';
+import { missionView, prepareQuickMailbox } from './mission-play';
 import { missionReady, puzzleSolved, puzzleStars } from './mission-model';
 import { canDemonstrate, ExperimentAutoplay } from './experiment-autoplay';
 import { rememberExperiment, savedExperimentPhoto } from './experiment-scenes';
@@ -107,6 +108,7 @@ function goBack() {
 function startActivity(n: number, practice = false, remember = true) {
   if (!canEnter(n)) return notify('앞의 탐구를 마치면 이 활동이 열려.');
   if ((practice || adminOn()) && !practiceBackup) { practiceBackup = { activities: structuredClone(s.activities), design: structuredClone(s.design), designs: structuredClone(s.designs), idea: structuredClone(s.idea) }; const first = Math.floor((n - 1) / 2) * 2 + 1; s.activities[first] = emptyActivity(); s.activities[first + 1] = emptyActivity(); if (first === 9) s.idea = undefined; }
+  if(n<=2){n=2;prepareQuickMailbox(s.activities[n] ||= emptyActivity());}
   screen = n; s.activities[n] ||= emptyActivity(); s.resume = practiceBackup ? 0 : n; go('activity', remember); touch();
 }
 function button(action: string, label: string, style = 'soft', disabled = false) { return `<button class="btn ${style}" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`; }
@@ -146,8 +148,9 @@ function bindCity() {
 function showResident(stage:number) {
   const {name}=residents[stage];
   let dispose=()=>{};
-  const modal=showModal(chatMarkup(s,stage)+button('modal-close','지도로 돌아가기','primary'),`${name} 이야기`,()=>dispose());
-  modal.dialog.classList.add('resident-dialog');
+  const modal=showModal(chatMarkup(s,stage),`${name} 이야기`,()=>dispose());
+  modal.dialog.className='resident-conversation';
+  modal.dialog.parentElement!.classList.add('resident-conversation-backdrop');
   dispose=bindResidentChat(modal.dialog,s,stage,()=>{
     const marker=app.querySelector<HTMLButtonElement>(`[data-resident="${stage}"]`);
     if(marker){
@@ -171,6 +174,7 @@ function showPlace(index:number) {
 let currentView: View;
 // Teacher unlock opens every step, so "next" always moves on without writing completion records.
 function nextStep(a: Activity) {
+  if(screen===2&&a.values.mailboxQuickRepair===true)return {label:'개념영상 보기', enabled:missionReady(screen,a,s)};
   const next = inquiryNext(screen, a, s);
   if (!adminOn()) return next;
   if (inquiryPhase(a) === 'experiment' && !(a.values.inquiryVersion === 2 && screen % 2)) return { label: next.label, enabled: true };
@@ -180,9 +184,10 @@ function activityPage() {
   const model=s;
   const a=model.activities[screen] ||= emptyActivity();
   if(usesIdeaLab(model,screen)){a.values.ideaVersion=1;currentView=ideaView(screen,a,model,adminOn());return currentView.html;}
-  currentView=inquiryView(screen,a,model,adminOn());
+  const quick=screen===2&&a.values.mailboxQuickRepair===true;
+  currentView=quick?missionView(screen,a,model):inquiryView(screen,a,model,adminOn());
   const next=nextStep(a);
-  return `<section class="quest-activity${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template,a)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]} · 탐구 ${screen%2?1:2}/2</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
+  return `<section class="quest-activity${quick?' quick-mailbox':''}${adminOn() ? ' is-preview' : ''}"><header class="mission-head">${visualPreview(screen,s.design.template,a)}<span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]}${quick?'':` · 탐구 ${screen%2?1:2}/2`}</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${quick?'<span class="mailbox-route-label">우편함 수리 → 개념영상</span>':inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}${quick?'':`<div class="mission-study-tools"><button class="quest-text-button" data-action="observations">내 실험 다시 보기 <span class="discovery-count"></span></button></div>`}<button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button>${quick||adminOn()||inquiryPhase(a)!=='experiment'?'':`<button ${next.enabled?'hidden':''} class="quest-cta mission-cta missing-step" data-action="missing-step" aria-controls="coach-bubble" type="button">자꾸 · 남은 단계 보기</button>`}</section>`;
 }
 function openRecords() {
   const a = s.activities[screen];
@@ -254,17 +259,28 @@ function bindActivity() {
   root.addEventListener('open-3d', event => open3d((event as CustomEvent<Open3d>).detail));
 }
 let finishingActivity = false;
-async function finishActivity() {
+async function finishActivity(conceptDone = false) {
   if (finishingActivity) return;
   autoplay.reset();
   finishingActivity = true;
-  try { await finishActivityOnce(); } finally { finishingActivity = false; }
+  try { await finishActivityOnce(conceptDone); } finally { finishingActivity = false; }
 }
-async function finishActivityOnce() {
+async function finishActivityOnce(conceptDone: boolean) {
   const activity=s.activities[screen], idea=activity.values.ideaVersion===1;
-  if(!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+  const quick=screen===2&&activity.values.mailboxQuickRepair===true;
+  if(quick){
+    if(!ready(screen,activity,s))return;
+    if(!conceptDone){
+      rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+      touch();
+      openConcept(0,false,()=>void finishActivity(true),true);
+      return;
+    }
+    if(adminOn())return startActivity(3);
+  }
+  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
   if(adminOn()){if(!idea&&advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
-  if(!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
+  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
   if (!ready(screen, s.activities[screen], s)) return;
   sound(true);
   if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); restorePractice(); s.resume = 0; await flush(); go('city'); notify('다시 탐구했어! 처음 발견과 복구 기록은 그대로 보관돼.'); return; }
@@ -343,6 +359,7 @@ function endingPage() { return '<section class="ending-film" aria-label="도시 
 function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, onDone: () => go('certificate') }); }
 /** Story film over the current page (intro, or replays from settings). The page pauses underneath. */
 function openFilm(id: FilmId, onDone: () => void, replay = false) {
+  stopCompanionVoice();
   modalCleanup?.(); document.querySelector('.modal-backdrop')?.remove();
   city?.pause(true); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: true }));
   const release = () => { close(); if (modalCleanup === release) modalCleanup = undefined; city?.pause(false); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: false })); };
@@ -368,13 +385,13 @@ function showModal(content: string, label: string, onClose?: () => void) {
   backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); }); dialog.focus(); modalCleanup = close;
   return { dialog, close };
 }
-function openConcept(stage: number, replay = true, onContinue?: () => void) {
+function openConcept(stage: number, replay = true, onContinue?: () => void, finishVideo = false) {
   if(!concepts[stage])return;
   let dispose = () => {};
   const modal = showModal(conceptMarkup(stage,replay),concepts[stage].title,()=>dispose());
   modal.dialog.classList.add('concept-dialog');
   setAudioPaused(true);
-  dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();});
+  dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();},finishVideo);
 }
 type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] };
 function open3d(detail: Open3d) {

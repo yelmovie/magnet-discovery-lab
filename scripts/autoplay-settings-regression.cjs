@@ -41,7 +41,7 @@ async function teacherToggle() {
   await page.locator('.settings-close-icon').click();
 }
 async function controls(viewport) {
-  const context=await start(2,1,viewport);
+  const context=await start(7,1,viewport);
   const select=page.locator('[data-autoplay-speed]');
   await select.selectOption('2');
   assert.equal(await page.evaluate(()=>window.__qa.save.settings.autoplaySpeed),2);
@@ -54,7 +54,7 @@ async function controls(viewport) {
   assert.equal(await page.locator('.experiment-autoplay').count(),0);
   await page.waitForTimeout(900);
   assert.equal(await page.evaluate(()=>document.querySelector('#experiment-root').inert),false);
-  assert.equal(await page.evaluate(()=>window.__qa.save.activities[2].values.with0===true),false);
+  assert.equal(await page.evaluate(()=>window.__qa.save.activities[7].values.clean0===true),false);
   await page.locator('[data-action="visual-guide"]').click();
   assert.equal(await page.locator('[data-figure-action="autoplay"]').isVisible(),false);
   assert.equal(await page.locator('[data-autoplay-speed]').count(),0);
@@ -128,12 +128,12 @@ async function figureTiming(n,speed) {
  try{
   browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
   for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:1920,height:1080},{width:915,height:412},{width:830,height:515}])await controls(viewport);
-  for(const n of [2,8]){
+  for(const n of [8]){
     const normal=await timed(n,1),fast=await timed(n,2);
     assert.ok(fast<normal*.75,`2x must materially shorten activity ${n}: ${fast} vs ${normal}`);
   }
   await plaza();await teacherPreview();await physicalCancel();
-  for(const n of [2,7]){
+  for(const n of [7]){
     const normal=await figureTiming(n,1),fast=await figureTiming(n,2);
     assert.ok(fast<normal*.8,`2x must shorten figure ${n}: ${fast} vs ${normal}`);
   }

@@ -48,7 +48,7 @@ function badge(point: Point3, n: number, dx: number, dy: number) {
 /* The lid pivots about the rear hinge. A magnet in its front underside meets a
    stationary iron strike on the front rim; the decorative handle is not the magnet.
    Parts: wood walls/base, rear hinge, hinged lid, handle and mounts, magnet, iron strike. */
-function mailbox(angle: number, inside: boolean, cue?:LatchCue) {
+function mailbox(angle: number, inside: boolean, cue?:LatchCue, hasMagnet=true, shellOpacity=.35) {
   const a = angle*Math.PI/180, c=Math.cos(a), s=Math.sin(a);
   const turn = ([u,y,z]: Point3): Point3 => [-29+u*c-z*s,y,49+u*s+z*c];
   const panel = (u0:number,y0:number,z0:number,u1:number,y1:number,z1:number,mat:Material) => {
@@ -96,6 +96,7 @@ function mailbox(angle: number, inside: boolean, cue?:LatchCue) {
   const handle=panel(45,-15,10,54,15,14,darkWood);
   const magnet=panel(52,-10,-3,58,10,0,red);
   if(vis([s,0,-c]))magnet.svg+=trace([turn([53.3,-8,-3.05]),turn([53.3,8,-3.05])],'#f6a58f',.65);
+  if(!hasMagnet)magnet.svg='';
   const strike=block([23,-10,45],[32.15,10,46],iron);
   strike.svg+=shape(profile(32.2,[[-10,41],[10,41],[10,46],[-10,46]]),'#b8c7ce',.65)
     +[-7,7].map(y=>shape(oval(32.3,y,43.2,.9,.9),'#596f75',0)).join('');
@@ -105,10 +106,10 @@ function mailbox(angle: number, inside: boolean, cue?:LatchCue) {
   const shell=[...walls,letters,hinge,at([[31,-21,25],[31.6,21,40]],plaque),
     at([[-24,-43,26],[31.3,47.3,37]],timber)];
   const model=inside
-    ? `<g opacity=".35">${byDepth([...shell,{...lid,svg:lidArt}])}</g>${byDepth([magnet,strike])}`
+    ? `<g opacity="${shellOpacity}">${byDepth([...shell,{...lid,svg:lidArt}])}</g>${byDepth([magnet,strike])}`
     : byDepth([...shell,{...lid,svg:under?lidArt+magnet.svg:magnet.svg+lidArt},strike]);
   const labels=inside
-    ? badge(turn([55,0,-3]),1,-26,-18)+badge([32.2,0,43],2,29,6)
+    ? (hasMagnet?badge(turn([55,0,-3]),1,-26,-18):'')+badge([32.2,0,43],2,29,6)
     : angle>46?badge(turn([55,0,-3]),1,-28,-9)+badge([32.2,0,43],2,26,4):'';
   const strikePoint:Point3=[26,0,46];
   const [lx,ly]=P(...strikePoint);
@@ -116,6 +117,12 @@ function mailbox(angle: number, inside: boolean, cue?:LatchCue) {
     ? `<g data-latch-cue="near">${fill(pd([turn([55,0,-3]),strikePoint],false),'none','stroke="#a16b2b" stroke-width="1.65" stroke-linecap="round" stroke-dasharray="1.5 2.2"')}</g>`
     :cue==='latched'? `<g data-latch-cue="latched"><circle cx="${lx}" cy="${ly}" r="7" fill="#ffd789" fill-opacity=".35" stroke="#ad7637" stroke-width="1.4"/><circle cx="${lx}" cy="${ly}" r="2" fill="#fff6cb" stroke="#ad7637" stroke-width=".65"/></g>`:'';
   return plinth(47,63,[[-31,-48,7],[32,-48,7],[32,48,7],[-31,48,7],turn([60,40,5])]) + model + cueArt + labels;
+}
+
+/** Reuse the complete, hinged apparatus in the student's recorded explanation. */
+export function mailboxReplayArt(angle:number, hasMagnet=true) {
+  setFigureView(41,26);
+  return `<svg x="0" y="0" width="360" height="220" viewBox="-113 ${-85-angle} 226 ${158+angle*.5}">${mailbox(angle,true,angle===0&&hasMagnet?'latched':undefined,hasMagnet,.75)}</svg>`;
 }
 
 /* Glass tank: the outer hand grip houses a magnet, and the inner scrubbing pad
@@ -207,9 +214,7 @@ const copy = {
     model:'나무 우편함과 덮개 안쪽 자석, 철 걸쇠',
     labels:['덮개 안쪽 자석','몸체의 철 걸쇠'],
     controls:`<button type="button" class="btn primary" data-figure-action="lid">덮개 열기</button>
-      <div class="apparatus-extra">
-      <button type="button" class="btn apparatus-auto" data-figure-action="autoplay">자동재생</button>
-      <button type="button" class="btn" data-figure-action="inside" aria-pressed="false">안쪽 보기</button></div>`,
+      <button type="button" class="btn" data-figure-action="inside" aria-pressed="false">안쪽 보기</button>`,
   },
   aquarium: {
     title:'유리 너머 청소 장치',
@@ -346,28 +351,6 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean, settings
       insideButton.textContent=value?'겉모습 보기':tank?'옆에서 보기':'안쪽 보기';
     }
   }
-  function startMailboxAuto() {
-    playing=true;replayReady=false;latchCue=undefined;
-    setInside(false);setLid(true);updateAuto();
-    say('1 / 3 · 덮개를 열고 빨간 자석을 찾아봐.');
-    const from=angle;
-    animate(p=>{angle=mix(from,65,p);},600,()=>{
-      autoTimer=window.setTimeout(()=>{
-        setInside(true);
-        say('2 / 3 · 덮개를 내리면 자석이 철 걸쇠에 가까워져.');
-        animate(p=>{angle=mix(65,9,p);latchCue=angle<=18?'near':undefined;},780,()=>{
-          autoTimer=window.setTimeout(()=>{
-            setLid(false);
-            animate(p=>{angle=mix(9,0,p);},220,()=>{
-              latchCue='latched';
-              playing=false;replayReady=true;updateAuto();render();
-              say('3 / 3 · 착! 자석이 철 걸쇠를 붙잡았어.');
-            });
-          },650/autoplaySpeed(settings));
-        });
-      },1050/autoplaySpeed(settings));
-    });
-  }
   function startTankAuto() {
     if(drag)return;
     attachForMove();
@@ -407,9 +390,8 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean, settings
     if(!button)return;
     switch(button.dataset.figureAction){
       case 'lid': {
-        if(playing){stopAuto();setLid(angle>1);}
         setLid(!opened);
-        replayReady=false;latchCue=undefined;updateAuto();
+        latchCue=undefined;
         const from=angle;
         const open=opened;
         say(open?'덮개 안쪽에 자석이 있고 몸체에는 철 걸쇠가 있어.':'자석과 철 걸쇠가 가까워지고 있어.');
@@ -419,7 +401,6 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean, settings
         break;
       }
       case 'inside': {
-        if(!tank&&playing){stopAuto();setLid(angle>1);}
         setInside(!side);
         if(tank){if(!playing)say(side?'유리를 사이에 두고 두 부품이 마주 보고 있어.':'손잡이를 움직여 안쪽 패드도 따라오는지 봐.');}
         else say(side?'① 덮개의 자석과 ② 몸체의 철 걸쇠를 찾아봐.':'덮개를 열고 두 부품을 찾아봐.');
@@ -427,14 +408,12 @@ export function bindApparatusFigure(root: HTMLElement, motion: boolean, settings
         break;
       }
       case 'autoplay': {
-        if(settings.autoplay===false)return;
+        if(!tank||settings.autoplay===false)return;
         if(playing){
           stopAuto();
-          if(tank){attachForMove();say(`자동재생을 멈췄어. 얼룩 ${cleanCount()} / 3`);}
-          else {setLid(angle>1);say('자동재생을 멈췄어. 덮개를 직접 움직여 봐.');}
+          attachForMove();say(`자동재생을 멈췄어. 얼룩 ${cleanCount()} / 3`);
           render();
-        }else if(tank)startTankAuto();
-        else startMailboxAuto();
+        }else startTankAuto();
         break;
       }
       case 'detach': {

@@ -144,10 +144,16 @@ function assembleMailbox(v:Surface){
       playEffect('snap',v.s.settings);
       if(mailboxAssembled(v.a)){
         v.set('lid',mailbox.handleOpen);v.a.values.fixedMailbox=true;
-        v.set('fixed-magnet',mailbox.socket);v.set('fixed-plate',mailbox.plate);
-        v.set('initial:fixed-magnet',mailbox.socket);v.set('initial:fixed-plate',mailbox.plate);
         v.mark('found0','우편함 부품 조립','뚜껑에 자석을, 몸체 안쪽에 철판을 직접 끼웠어.');
-        v.proof('inspect0','분리된 부품으로 우편함을 조립하고 자석과 철판의 자리 확인','success',{assembled:true});
+        if(v.n===2){
+          v.set('repair-magnet',mailbox.socket);v.set('repair-plate',mailbox.plate);
+          v.set('initial:repair-magnet',mailbox.looseMagnet);v.set('initial:lid',mailbox.handleOpen);
+          v.a.values.repairClosed=false;
+        }else{
+          v.set('fixed-magnet',mailbox.socket);v.set('fixed-plate',mailbox.plate);
+          v.set('initial:fixed-magnet',mailbox.socket);v.set('initial:fixed-plate',mailbox.plate);
+          v.proof('inspect0','분리된 부품으로 우편함을 조립하고 자석과 철판의 자리 확인','success',{assembled:true});
+        }
       }
       v.refresh();
     },undefined,350);
@@ -156,13 +162,14 @@ function assembleMailbox(v:Surface){
   v.button('fit-part',()=>{const next=nextMailboxPart(v.a);if(next)fit(next,next.target);});
 }
 export function repair(v: Surface){
+  if(v.has('mailboxQuickRepair')&&!mailboxAssembled(v.a)){assembleMailbox(v);return;}
   const i=Number(v.a.values.round||0);let closed=typeof v.a.values.repairClosed==='boolean'?v.has('repairClosed'):(v.a.points.lid?.y||38)>55;
   const setClosed=(value:boolean)=>{closed=value;v.a.values.repairClosed=value;v.set('lid',value?mailbox.handleClosed:mailbox.handleOpen);};
   setClosed(closed);
   let rattle=0;
   const installed=()=>magnetInstalled(v.p('repair-magnet',mailbox.looseMagnet));
-  // Puzzle course: the goblin also knocked the strike plate away, so a magnet alone does not hold the lid.
-  const puzzle=v.a.values.puzzleVersion===1&&i===0,loosePlate=i===2||puzzle;
+  // Puzzle course: the strike plate is out of alignment, so a magnet alone does not hold the lid.
+  const quick=v.has('mailboxQuickRepair'),puzzle=!quick&&v.a.values.puzzleVersion===1&&i===0,loosePlate=i===2||puzzle;
   const plateAligned=()=>!loosePlate||distance(v.p('repair-plate',pt(75,47)),mailbox.plate)<7;
   v.draw=()=>{
     const handle=v.p('lid',mailbox.handleOpen),magnet=v.c.root.querySelector<HTMLButtonElement>('[data-drag="repair-magnet"]')!;
@@ -175,7 +182,7 @@ export function repair(v: Surface){
     v.base();drawMagnetTray(v.ctx,mailbox.looseMagnet);
     v.label('부품 받침',pt(mailbox.looseMagnet.x,mailbox.looseMagnet.y+8.4),true);
     v.ctx.save();v.ctx.translate(rattle,Math.abs(rattle)*-.22);
-    v.mailboxBody(i===1?1:0,handle,plateAligned(),i===1?'수리할 책 보관함':'수리할 우편함',mounted&&closed&&plateAligned()&&v.has(`with${i}`)&&(i===2||v.has(`without${i}`)));
+    v.mailboxBody(i===1?1:0,handle,plateAligned(),i===1?'수리할 책 보관함':'수리할 우편함',mounted&&closed&&plateAligned()&&v.has(`with${i}`)&&(quick||i===2||v.has(`without${i}`)));
     if(mounted&&insideVisible)v.hardware('magnet',mountedMagnet(handle));
     if(insideVisible&&!mounted){const spot=mountedMagnet(handle);v.label('자석 끼우는 홈',pt(spot.x,spot.y+4.3),true);}
     if(loosePlate){
@@ -191,13 +198,13 @@ export function repair(v: Surface){
     v.ctx.restore();
     if(!mounted){
       const loose=v.a.points['repair-magnet'];
-      if(insideVisible && !v.animating && v.has(`without${i}`) && distance(loose,mailbox.looseMagnet)<1){
+      if(insideVisible && !v.animating && (quick||v.has(`without${i}`)) && distance(loose,mailbox.looseMagnet)<1){
         v.arrow(pt(mailbox.looseMagnet.x+6.7,mailbox.looseMagnet.y-3),pt(mailbox.socket.x-6,mailbox.socket.y+.6),'#30766c');
       }
       v.ctx.save();v.ctx.shadowColor='#3b2b2370';v.ctx.shadowBlur=3;v.ctx.shadowOffsetY=2;
       v.hardware('magnet',loose);v.ctx.restore();
     }
-    v.label(i===2?'새 우편함 · 철판 자리도 맞춰 줘!':`${v.has(`without${i}`)?'✓':'○'} 자석 없이   ${v.has(`with${i}`)?'✓':'○'} 자석 넣고`,pt(50,29),true);
+    v.label(quick?(v.has('with0')?'✓ 흔들어도 닫혀 있어!':mounted?'덮개를 닫고 흔들어 봐!':'빨강·파랑 자석을 홈에 끼워 봐!'):i===2?'새 우편함 · 철판 자리도 맞춰 줘!':`${v.has(`without${i}`)?'✓':'○'} 자석 없이   ${v.has(`with${i}`)?'✓':'○'} 자석 넣고`,pt(50,29),true);
   };
   v.drag('repair-magnet',mailbox.looseMagnet,p=>{
     if(puzzle&&!v.has('without0')&&inSocket(p)){v.set('repair-magnet',mailbox.looseMagnet);v.tell('먼저 지금 그대로 덮개를 닫고 흔들어 보자.');v.draw();return;}
@@ -206,7 +213,7 @@ export function repair(v: Surface){
     else v.set('repair-magnet',mailbox.looseMagnet);
     v.draw();
   });
-  v.drag('lid',mailbox.handleOpen,p=>{setClosed(p.y>50);v.tell(closed?shakePrompt(v.has(`${installed()?'without':'with'}${i}`)):'손잡이를 아래로 내려 닫아 봐.');v.draw();},undefined,lidPosition);
+  v.drag('lid',mailbox.handleOpen,p=>{setClosed(p.y>50);v.tell(closed?(quick?'우편함을 흔들어 덮개가 열리는지 확인해 봐.':shakePrompt(v.has(`${installed()?'without':'with'}${i}`))):'손잡이를 아래로 내려 닫아 봐.');v.draw();},undefined,lidPosition);
   if(puzzle)v.drag('repair-plate',pt(75,47),()=>{
     if(!v.has('without0')){v.set('repair-plate',pt(75,47));v.tell('먼저 지금 그대로 덮개를 닫고 흔들어 보자.');}
     else if(plateAligned()){v.set('repair-plate',mailbox.plate);playEffect('snap',v.s.settings);v.tell('철판을 자석 맞은편에 맞췄어. 덮개를 닫고 흔들어 봐.');}
@@ -218,12 +225,13 @@ export function repair(v: Surface){
   v.button('shake',()=>{
     if(v.animating)return;
     if(!closed)return v.tell('먼저 덮개 손잡이를 아래로 내려 닫아 줘.');
+    if(quick&&!installed())return v.tell('손잡이를 올리고, 덮개 안쪽 홈에 자석을 끼워 줘.');
     const locked=installed()&&plateAligned();
     playEffect('lid',v.s.settings);
     v.settle({lid:locked?mailbox.handleClosed:mailbox.handleOpen},()=>{
       rattle=0;setClosed(locked);
       if(locked){
-        v.mark(`with${i}`,'자석을 넣고 같은 흔들림','자석이 철판을 당겨 덮개가 닫혀 있었어.');
+        v.mark(`with${i}`,quick?'자석을 끼운 우편함 흔들기':'자석을 넣고 같은 흔들림','자석이 철판을 당겨 덮개가 닫혀 있었어.');
         v.tell('흔들어도 닫혀 있어! 네가 끼운 자석이 철판을 붙잡았어.',true,'snap');
       }else if(puzzle&&installed()){
         v.mark('faultObserved0','자석을 넣고 같은 흔들림','자석을 넣어도 멀리 있는 철판을 붙잡지 못해 덮개가 열렸어.');
@@ -233,8 +241,8 @@ export function repair(v: Surface){
         if(i===2&&installed())v.mark('faultObserved2','고장 증거','자석을 넣어도 멀리 있는 철판을 붙잡지 못했어.');
         v.tell(i===2&&installed()?'자석은 있는데 덮개가 열렸어. 아래에서 고칠 곳을 골라 봐.':'덮개가 열렸어. 이번엔 홈에 자석을 끼워 봐.');
       }
-      if(i===2?v.has('with2'):v.has(`with${i}`)&&v.has(`without${i}`)){
-        v.proof(`repair${i}`,i===2?'새 장치의 철판 자리까지 고치기':puzzle?'우편함의 자석과 철판 자리 수리':'같은 장치의 자석 유무 비교','success',puzzle?{course:'loose-plate'}:{});
+      if(quick?locked:i===2?v.has('with2'):v.has(`with${i}`)&&v.has(`without${i}`)){
+        v.proof(`repair${i}`,quick?'흔들어도 열리지 않는 우편함':i===2?'새 장치의 철판 자리까지 고치기':puzzle?'우편함의 자석과 철판 자리 수리':'같은 장치의 자석 유무 비교','success',quick?{quick:true,assembled:mailboxAssembled(v.a)}:puzzle?{course:'loose-plate'}:{});
         if(puzzle)playEffect('reward',v.s.settings);
         v.refresh();
       }else v.draw();

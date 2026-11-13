@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { trialPicture, trialSummary, validTrial, type Trial } from '../src/trial-records';
 import { bindTrialReplay, trialReplayMarkup } from '../src/trial-replay';
 import { assemblyIssue } from '../src/mission-model';
+import { mailboxReplayScene } from '../src/mailbox-replay';
+import { trialResultSentence } from '../src/trial-observations';
 
 const trial=():Trial=>({id:'5:pole0S',key:'pole0S',activity:5,modelVersion:1,conditions:{label:'S극을 가까이 댄 반응',facing:'S',hidden:'S'},initialObjects:[{id:'probe',x:48,y:53,pole:'N'},{id:'unknown-magnet',x:64,y:53,pole:'S'}],objects:[{id:'probe',x:48,y:53,pole:'N'},{id:'unknown-magnet',x:72,y:53,pole:'S'}],input:[],outcome:'repel'});
 // This suite runs in Node. Drive the same button, range and animation-frame events used by the modal.
@@ -25,6 +27,24 @@ function replayHarness(trials:Trial[],motion=true,reduced=false){
   return {el,buttons,close,tick,frames};
 }
 describe('실험 다시보기의 과학 근거',()=>{
+  it('조립한 우편함은 분리된 여섯 부품에서 닫힌 전체 장치까지 보여 준다',()=>{
+    const t:Trial={...trial(),activity:2,key:'repair0',conditions:{quick:true,assembled:true},outcome:'success',template:'box'};
+    const scene=mailboxReplayScene(t)!;
+    for(const name of ['몸체','덮개','손잡이','자석 틀','철판','자석'])expect(scene.before).toContain(name);
+    expect(scene.frame(.8).caption).toContain('흔들어');
+    expect(scene.frame(1).art).toContain('data-latch-cue="latched"');
+    expect(trialResultSentence(t)).not.toContain('자석을 뺀');
+    const h=replayHarness([t]);
+    expect(h.el('[data-replay-before-caption]').textContent).toContain('여섯 부품');
+    h.el('[data-replay-play]').dispatchEvent(new Event('click'));h.tick(2600);
+    expect(h.el('#trial-position').value).toBe('50');h.close();
+  });
+  it('이전 빠른 수리 기록에서도 하지 않은 자석 없는 흔들기를 설명에 넣지 않는다',()=>{
+    const t:Trial={...trial(),activity:2,key:'repair0',conditions:{label:'흔들어도 열리지 않는 우편함'},outcome:'success'};
+    expect(trialResultSentence(t)).not.toContain('자석을 뺀');
+    expect(mailboxReplayScene(t)?.beforeCaption).toContain('끼우기 전');
+    t.initialObjects=[];expect(mailboxReplayScene(t)).toBeUndefined();
+  });
   it('마주 본 극과 대상의 처음·결과 위치, 밀림을 한국어로 표시한다',()=>{
     const t=trial(),summary=trialSummary(t);expect(validTrial(t)).toBe(true);
     expect(summary).toContain('기준 S극 · 대상 S극');expect(summary).toContain('처음 자리에서 오른쪽으로 이동했어');expect(summary).toContain('밀려났어');

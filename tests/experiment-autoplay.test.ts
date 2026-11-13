@@ -19,7 +19,8 @@ describe('optional experiment demonstrations', () => {
       expect(canDemonstrate(5,a)).toBe(false);
     }
     a.values.inquiryPhase='experiment';
-    for(let stage=1;stage<=10;stage++)expect(canDemonstrate(stage,a)).toBe(true);
+    for(let stage=1;stage<=2;stage++)expect(canDemonstrate(stage,a)).toBe(false);
+    for(let stage=3;stage<=10;stage++)expect(canDemonstrate(stage,a)).toBe(true);
     expect(canDemonstrate(11,a)).toBe(false);
     a.values.inquiryVersion=1;
     expect(canDemonstrate(5,a)).toBe(false);

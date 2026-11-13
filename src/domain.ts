@@ -63,13 +63,13 @@ export function designResult(d: Design): { ready: boolean; reason: string } {
 }
 export function progress(s: Save): number { return s.final.complete ? 100 : [0, 20, 40, 60, 80, 95][s.evidence.length] ?? 0; }
 export function unlockedStage(s: Save, stage: number, preview = false): boolean { return stage >= 0 && stage < 5 && (preview || stage <= s.evidence.length); }
-export function accessible(s: Save, screen: number, preview = false): boolean { return Number.isInteger(screen) && screen >= 1 && screen <= 10 && (preview || (unlockedStage(s, Math.floor((screen - 1) / 2)) && (screen % 2 === 1 || s.completed.includes(screen - 1)))); }
+export function accessible(s: Save, screen: number, preview = false): boolean { return Number.isInteger(screen) && screen >= 1 && screen <= 10 && (preview || (unlockedStage(s, Math.floor((screen - 1) / 2)) && (screen % 2 === 1 || s.completed.includes(screen - 1) || (screen === 2 && s.activities[2]?.values.mailboxQuickRepair === true)))); }
 export function value(a: Activity, key: string, fallback: number): number { return typeof a.values[key] === 'number' ? a.values[key] as number : fallback; }
 export function flag(a: Activity, key: string): boolean { return a.values[key] === true; }
 export function record(a: Activity, o: Observation): void { const i = a.records.findIndex(r => r.key === o.key); if (i >= 0) a.records[i] = o; else a.records.push(o); }
 export function ready(screen: number, a: Activity, s: Save): boolean {
   if (a.values.ideaVersion === 1) return ideaReady(screen, s.idea);
-  if (a.values.playVersion === 4) return missionReady(screen, a, s) && inquiryReady(screen,a);
+  if (a.values.playVersion === 4) return missionReady(screen, a, s) && ((screen === 2 && flag(a, 'mailboxQuickRepair')) || inquiryReady(screen,a));
   const f = (k: string) => flag(a, k);
   if (a.values.playVersion === 3) {
     switch (screen) {
@@ -122,9 +122,10 @@ export function completeActivity(s: Save, screen: number): boolean {
       const previous = s.activities[screen - 1];
       const activities = structuredClone([previous ?? emptyActivity(), a]);
       const summary = activities.flatMap(x => x.records.map(r => `${r.label}: ${r.result}`));
-      if (!previous) summary.unshift('첫 번째 탐구는 완료했어. 이전 저장에는 그때의 관찰 기록이 남아 있지 않아.');
+      if (!previous && !(screen === 2 && flag(a, 'mailboxQuickRepair'))) summary.unshift('첫 번째 탐구는 완료했어. 이전 저장에는 그때의 관찰 기록이 남아 있지 않아.');
       s.evidence.push({ stage, date: new Date().toISOString(), activities, summary });
     }
+    if (screen === 2 && flag(a, 'mailboxQuickRepair') && !s.completed.includes(1)) s.completed.push(1);
     s.resume = 0;
   } else s.resume = screen + 1;
   if (!s.completed.includes(screen)) s.completed.push(screen);

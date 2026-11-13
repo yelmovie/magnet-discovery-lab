@@ -1,6 +1,7 @@
 import { stageNames, type Save } from './domain';
 import { residents } from './expedition';
 import { playNarration } from './game-audio';
+import './resident-conversation.css';
 
 const stories = [
   {
@@ -23,9 +24,9 @@ const stories = [
     place:'극의 탑',
     hello:'잘 왔구나. 네가 극을 찾아 준 덕에 탑 문을 다시 열었단다. 안에서는 고리 전시가 한창이야.',
     again:'다시 왔구나. 서두르지 말고 고리 사이를 천천히 보렴. 작은 틈에도 재미있는 이야기가 있단다.',
-    question:'고리 전시는 어때?',
+    question:'고리 전시는 어때요?',
     news:'아이들이 고리 사이로 살짝 몸을 낮춰 보고 있단다. 두 고리가 닿지 않았다는 걸 발견하면 눈이 동그래지지.',
-    science:'고리는 어떻게 떠 있어?',
+    science:'고리는 어떻게 떠 있어요?',
   },
   {
     place:'수조관',
@@ -65,31 +66,110 @@ function stampRow(s:Save) {
 
 export function chatMarkup(s:Save, stage:number) {
   const {name}=residents[stage], story=stories[stage];
-  return `<div class="resident-chat"><img src="/assets/quest/resident-${stage+1}.webp" alt=""><div><small>${stageNames[stage]} · 돌아온 주민</small><h2>${name}</h2><p aria-live="polite" data-town-speech>${s.greetedResidents?.includes(stage)?story.again:story.hello}</p></div></div>
-    <div class="town-replies" aria-label="주민에게 물어보기"><button class="btn soft" data-town-reply="news">${story.question}</button><button class="btn soft" data-town-reply="science">${story.science}</button></div>
-    <div class="friend-album" data-friend-album>${stampRow(s)}</div><p class="friend-receipt" role="status">${s.greetedResidents?.includes(stage)?'이 친구의 도장을 모았어.':'궁금한 걸 물어보고 친구 도장을 받아 봐.'}</p>`;
+  const speech=s.greetedResidents?.includes(stage)?story.again:story.hello;
+  const receipt=s.greetedResidents?.includes(stage)?'이 친구의 도장을 모았어.':'궁금한 걸 물어보고 친구 도장을 받아 봐.';
+  return `<div class="resident-stage" data-resident-stage="${stage}">
+    <div class="resident-stage-character" aria-hidden="true" style="--resident-portrait:url('/assets/quest/resident-${stage+1}-dialogue.webp')"></div>
+    <aside class="resident-stage-album"><div data-friend-album>${stampRow(s)}</div><p class="resident-stage-receipt" data-friend-receipt role="status">${receipt}</p></aside>
+    <div class="resident-stage-panel">
+      <div class="resident-stage-name"><h2>${name}</h2><span>${stageNames[stage]} · 돌아온 주민</span></div>
+      <p class="resident-stage-speech" data-town-speech><span class="resident-speech-layout" aria-hidden="true">${speech}</span><span class="resident-speech-visual" aria-hidden="true">${speech}</span><span class="resident-speech-readable" role="status">${speech}</span></p>
+      <div class="resident-stage-controls"><div class="resident-stage-replies" aria-label="주민에게 물어보기"><button data-town-reply="news">${story.question}</button><button data-town-reply="science">${story.science}</button></div><button class="resident-stage-return" data-action="modal-close">지도로 돌아가기</button></div>
+      <span class="sr-only" data-town-queue role="status"></span>
+    </div>
+  </div>`;
 }
 
 export function bindResidentChat(dialog:HTMLElement, s:Save, stage:number, onStamp:()=>void) {
   const events = new AbortController();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const speech = dialog.querySelector<HTMLElement>('[data-town-speech]')!;
+  const layout = speech.querySelector<HTMLElement>('.resident-speech-layout')!;
+  const visual = speech.querySelector<HTMLElement>('.resident-speech-visual')!;
+  const readable = speech.querySelector<HTMLElement>('.resident-speech-readable')!;
+  const character = dialog.querySelector<HTMLElement>('.resident-stage-character')!;
   let line:'hello'|'again'|'news'|'science' = s.greetedResidents?.includes(stage) ? 'again' : 'hello';
+  const buttons = [...dialog.querySelectorAll<HTMLButtonElement>('[data-town-reply]')];
+  const queueStatus = dialog.querySelector<HTMLElement>('[data-town-queue]')!;
+  let queued: HTMLButtonElement | undefined, voiceActive = false;
+  const setQueued = (btn?: HTMLButtonElement) => {
+    queued = btn;
+    buttons.forEach(b => b.classList.toggle('is-next-reply', b === btn));
+    queueStatus.textContent = btn ? '지금 대사가 끝나면 선택한 이야기를 이어서 들려줄게.' : '';
+  };
   let stopVoice = () => {};
+  let frame = 0, typing = false;
+  let reaction: Animation | undefined;
+  const finishText = () => {
+    cancelAnimationFrame(frame); frame = 0; typing = false;
+    visual.textContent=layout.textContent;
+    dialog.dataset.typing = 'false';
+  };
+  const stopMotion = () => { finishText(); reaction?.cancel(); };
+  const showSpeech = (text:string, entering = false) => {
+    stopMotion();
+    // The complete line reserves its own height. Typing never moves the paper or portrait.
+    layout.textContent = text;
+    readable.textContent = text;
+    dialog.dataset.tone = line==='news'?'delighted':line==='science'?'thinking':'welcoming';
+    if (!s.settings.motion || reduced.matches || document.hidden) { finishText(); return; }
+    visual.textContent = ''; typing = true; dialog.dataset.typing = 'true';
+    const characters = Array.from(text), started = performance.now();
+    const tick = (now:number) => {
+      if (!dialog.isConnected) { stopMotion(); return; }
+      const count = Math.floor((now-started)/26)+1;
+      visual.textContent = characters.slice(0,count).join('');
+      if (count>=characters.length) finishText();
+      else frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    reaction = character.animate(entering
+      ? [{opacity:0,transform:'translateY(22px)'},{opacity:1,transform:'translateY(0)'}]
+      : [{transform:'translateY(0)'},{transform:'translateY(5px)',offset:.4},{transform:'translateY(0)'}],
+      {duration:entering?280:240,easing:'ease-out'});
+  };
   const speak = () => {
     stopVoice();
-    stopVoice = playNarration(`/audio/voices/resident-${stage+1}-${line}.mp3`,s.settings);
+    stopVoice = playNarration(`/audio/voices/resident-${stage+1}-${line}.mp3`,s.settings,state=>{
+      voiceActive = state==='loading' || state==='playing';
+      dialog.dataset.speaking=String(state==='playing' && s.settings.motion);
+      if (!voiceActive && queued && state !== 'stopped' && dialog.isConnected && !document.hidden) {
+        const next = queued;
+        setQueued();
+        next.click();
+      }
+    });
   };
-  dialog.querySelectorAll<HTMLButtonElement>('[data-town-reply]').forEach(btn=>btn.addEventListener('click',()=>{
+  const completeOrChoose = () => {
+    if (typing) finishText();
+    else dialog.querySelector<HTMLButtonElement>('[data-town-reply]')!.focus();
+  };
+  speech.addEventListener('click',completeOrChoose,{signal:events.signal});
+  dialog.addEventListener('keydown',event=>{
+    if ((event.key==='Enter'||event.key===' ') && event.target===dialog) {
+      event.preventDefault();
+      if(!event.repeat)completeOrChoose();
+    }
+  },{signal:events.signal});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){setQueued();stopMotion();stopVoice();}
+  },{signal:events.signal});
+  window.addEventListener('pagehide',()=>{setQueued();stopMotion();stopVoice();},{signal:events.signal});
+  reduced.addEventListener('change',()=>{if(reduced.matches)stopMotion();},{signal:events.signal});
+  showSpeech(layout.textContent || '',true);
+  buttons.forEach(btn=>btn.addEventListener('click',()=>{
+    if (voiceActive) { setQueued(btn); return; }
     line = btn.dataset.townReply==='news' ? 'news' : 'science';
-    dialog.querySelector<HTMLElement>('[data-town-speech]')!.textContent=line==='news'?stories[stage].news:residents[stage].speech;
+    showSpeech(line==='news'?stories[stage].news:residents[stage].speech);
     if (!s.greetedResidents?.includes(stage)) {
       (s.greetedResidents??=[]).push(stage);
       dialog.querySelector<HTMLElement>('[data-friend-album]')!.innerHTML=stampRow(s);
-      dialog.querySelector<HTMLElement>('.friend-receipt')!.textContent=`${residents[stage].name}의 인사 도장을 받았어!`;
+      dialog.querySelector<HTMLElement>('[data-friend-receipt]')!.textContent=`${residents[stage].name}의 인사 도장을 받았어!`;
       onStamp();
     }
     speak();
   },{signal:events.signal}));
   // Opening a resident is already a click/key gesture; rejected playback keeps the text usable.
   speak();
-  return () => { events.abort(); stopVoice(); };
+  return () => { events.abort(); setQueued(); stopMotion(); stopVoice(); };
 }

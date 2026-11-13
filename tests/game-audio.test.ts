@@ -79,6 +79,18 @@ describe('music and game effects', () => {
     expect(context.oscillators.length).toBeGreaterThan(0);
   });
 
+  it('starts music inside the gesture even if the effects context has not resumed', () => {
+    const doc = environment();
+    vi.stubGlobal('window', {AudioContext: class extends AudioDouble {
+      state: AudioContextState = 'suspended';
+      resume = vi.fn(() => new Promise<void>(() => {}));
+    }});
+    ensureAudio({music:true});
+    doc.dispatchEvent(new Event('pointerdown'));
+    expect(AudioDouble.instances[0].resume).toHaveBeenCalledOnce();
+    expect(MusicDouble.instances[0].play).toHaveBeenCalledOnce();
+  });
+
   it('switches to a single final track, continues on the certificate, and restarts only for replay', () => {
     const doc = environment(); ensureAudio({}); doc.dispatchEvent(new Event('pointerdown'));
     const music = MusicDouble.instances[0]; setMusicTheme('final');

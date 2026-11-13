@@ -17,8 +17,8 @@ export function conceptMarkup(stage: number, replay: boolean) {
   return `<div class="concept-heading" data-concept-stage="${stage}"><span class="concept-tag">발견 ${stage + 1} · 12초 개념 실험실</span><h2>${item.title}</h2></div><div class="concept-screen"><video class="concept-video" playsinline preload="metadata" poster="${base}.webp" aria-label="${item.title} 개념 영상" controls><source src="${base}.mp4" type="video/mp4"><track kind="captions" srclang="ko" label="한국어" src="${base}.vtt"></video><p class="concept-error" role="status" hidden>영상을 불러오지 못했어. ${item.summary}</p></div><p class="concept-caption" role="status" aria-live="polite">${emphasizeConcept(conceptCaptions[stage][0],conceptTerms[stage])}</p><p class="concept-summary">${item.question}</p><div class="concept-actions"><button type="button" class="btn" data-video="restart">처음부터 보기</button><button type="button" class="btn primary" data-video="continue">${replay ? '탐험으로 돌아가기' : '도구 받고 도시로 →'}</button></div>`;
 }
 
-/** All media listeners and playback belong to the modal lifetime. No viewing-time gate. */
-export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void) {
+/** All media listeners and playback belong to the modal lifetime. Only the mailbox wrap-up waits for the clip to end. */
+export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void, finishVideo = false) {
   const video = dialog.querySelector<HTMLVideoElement>('video')!, controller = new AbortController();
   const signal = controller.signal;
   const stage=Number(dialog.querySelector<HTMLElement>('[data-concept-stage]')!.dataset.conceptStage);
@@ -32,8 +32,14 @@ export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boole
   if(video.textTracks[0])video.textTracks[0].mode='hidden';
   video.muted = !effects; video.volume = .42;
   dialog.querySelector('[data-video="restart"]')!.addEventListener('click', () => { video.currentTime = 0; void video.play().catch(() => {}); }, { signal });
-  dialog.querySelector('[data-video="continue"]')!.addEventListener('click', onContinue, { signal });
-  const fail=()=>{video.pause();dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);};
+  const next=dialog.querySelector<HTMLButtonElement>('[data-video="continue"]')!;
+  if(finishVideo){
+    next.disabled=true;
+    next.textContent='영상이 끝나면 마무리';
+    video.addEventListener('ended',()=>{next.disabled=false;next.textContent='도구 받고 도시로 →';},{signal});
+  }
+  next.addEventListener('click', onContinue, { signal });
+  const fail=()=>{video.pause();next.disabled=false;if(finishVideo)next.textContent='내용 읽고 도시로 →';dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);};
   video.addEventListener('error',fail,{signal});
   video.querySelector('source')?.addEventListener('error',fail,{signal});
   document.addEventListener('visibilitychange', () => { if (document.hidden) video.pause(); }, { signal });

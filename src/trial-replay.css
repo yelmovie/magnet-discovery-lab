@@ -24,6 +24,9 @@ body.quest-mode .replay-scenes figure > svg {display:block;width:100%;height:aut
 .replay-no-scene {font:600 18px var(--font-body);fill:#50655a;}
 .replay-trace {fill:none;stroke:#65917d;stroke-width:2.5;stroke-dasharray:5 5;}
 .replay-origin {fill:#fffdf3;stroke:#507a68;stroke-width:2;}
+.replay-part-name {font:700 15px var(--font-body);fill:#31574e;}
+.record-drawer-content .replay-scene-caption {grid-column:1/-1;margin:5px 2px 2px;font-size:clamp(15px,1.6vw,19px);line-height:1.4;font-weight:700;word-break:keep-all;}
+.record-drawer-content .replay-legend {margin:7px 0;color:#31574e;font-size:16px;line-height:1.4;word-break:keep-all;}
 .record-drawer-content .replay-finding {margin:8px 0;padding:8px 11px;border-left:4px solid #447c69;background:#edf5e9;color:#214e43;
   font-size:clamp(16px,1.7vw,21px);line-height:1.4;font-weight:700;text-align:left;}
 .replay-controls {display:flex;align-items:center;gap:9px;}

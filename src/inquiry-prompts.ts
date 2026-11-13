@@ -37,6 +37,7 @@ function comparePrompt(a: Activity): Prompt {
 
 /** The one small choice this activity is waiting for, if any. Completion rules stay in mission-model. */
 export function currentPrompt(n: number, a: Activity, s: Save): Prompt | null {
+  if(n===2&&a.values.mailboxQuickRepair===true)return null;
   const check = watchChecks[n];
   if (n === 1 && mailboxPrompts(a) && a.values.found0 === true && a.values.latch0 !== true && a.values.predict === undefined) {
     return { kind: 'predict', pending: true, question: '덮개를 닫으면 자석과 철판은 어떻게 될까?', action: '덮개를 닫기 전에 내 예상을 골라 줘', choices: predictions, message: '틀려도 괜찮아. 네 생각을 골라 봐.' };

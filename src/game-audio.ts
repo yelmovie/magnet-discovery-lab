@@ -129,8 +129,9 @@ function apply() {
 function activate() {
   if (paused()) return;
   activated = true; makeContext(); loadSamples();
-  if (context?.state === 'suspended') void context.resume().then(apply).catch(() => { /* Retry on the next gesture. */ });
-  else apply();
+  // Start HTML audio in the gesture itself. A suspended effects context must not delay music.
+  apply();
+  if (context?.state === 'suspended') void context.resume().catch(() => { /* Retry on the next gesture. */ });
 }
 
 function visibilityChanged() {

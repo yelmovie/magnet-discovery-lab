@@ -58,6 +58,7 @@ export function missionReady(screen: number, a: Activity, s: Save): boolean {
   if(screen===1&&a.values.assemblyVersion===1&&(!mailboxAssembled(a)||a.values.latch0!==true))return false;
   const f = (k: string) => a.values[k] === true;
   const proof = (key: string) => !!a.trials?.some(t => t.key === key && validTrial(t) && t.outcome === 'success');
+  if(screen===2&&f('mailboxQuickRepair'))return f('with0')&&proof('repair0');
   const compact=a.values.paceVersion===1;
   if(a.values.mechanicsVersion===1){
     if(screen===1&&!(compact?[0]:[0,1]).every(i=>f(`latch${i}`)))return false;

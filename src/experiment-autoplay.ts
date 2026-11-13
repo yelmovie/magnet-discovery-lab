@@ -1,7 +1,7 @@
 import { autoplaySpeed, autoplaySpeedMarkup, bindAutoplaySpeed } from './autoplay-controls';
 import { emptyActivity, type Activity, type Point, type Save } from './domain';
 import { inquiryPhase } from './inquiry-model';
-import { mailbox } from './mailbox';
+import { mailbox, magnetInstalled } from './mailbox';
 import { mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { glassStains } from './aquarium-glass';
 import { deliveryCourse, deliveryRoute, missionReady, paperGapMiddle } from './mission-model';
@@ -10,7 +10,7 @@ import { promptPending } from './inquiry-prompts';
 import './experiment-autoplay.css';
 
 export const canDemonstrate = (stage: number, a: Activity) =>
-  stage >= 1 && stage <= 10 && a.values.inquiryVersion === 2 && inquiryPhase(a) === 'experiment';
+  stage >= 3 && stage <= 10 && a.values.inquiryVersion === 2 && inquiryPhase(a) === 'experiment';
 
 type Step =
   | { kind: 'move'; id: string; target: Point; label: string }
@@ -23,7 +23,7 @@ const press = (id: string, label: string): Step => ({kind:'press',selector:`[dat
 export function demonstrationSteps(stage: number, save: Save): Step[] {
   const a=save.activities[stage], steps=experimentSteps(stage,save);
   // A puzzle course opens with its emergency card; the demonstration acknowledges it first.
-  return steps.length&&a?.values.puzzleVersion===1&&a.values.crisisSeen!==true&&stage>=2&&stage<=8?[press('crisis-go','긴급 의뢰 확인하기'),...steps]:steps;
+  return steps.length&&a?.values.puzzleVersion===1&&a.values.mailboxQuickRepair!==true&&a.values.crisisSeen!==true&&stage>=2&&stage<=8?[press('crisis-go','긴급 의뢰 확인하기'),...steps]:steps;
 }
 function experimentSteps(stage: number, save: Save): Step[] {
   const a=save.activities[stage]||emptyActivity(), f=(key:string)=>a.values[key]===true;
@@ -35,7 +35,10 @@ function experimentSteps(stage: number, save: Save): Step[] {
   };
   switch (stage) {
     case 1: return f('latch0')?[]:[...mailboxParts.filter(part=>!partInstalled(a,part)).map(part=>move(partKey(part),part.target.x,part.target.y,part.action)),lid(false)];
-    case 2: return [
+    case 2: return f('mailboxQuickRepair') ? [
+      ...(!magnetInstalled(a.points['repair-magnet']??mailbox.looseMagnet)?[lid(true),move('repair-magnet',mailbox.socket.x,mailbox.socket.y,'덮개의 홈에 자석 끼우기')]:[]),
+      lid(false),press('shake','흔들어도 덮개가 닫혀 있는지 확인')
+    ] : [
       ...(!f('without0')?[lid(true),move('repair-magnet',mailbox.looseMagnet.x,mailbox.looseMagnet.y,'자석만 빼고 비교하기'),lid(false),press('shake','자석 없이 흔들면 덮개가 열릴까?')]:[]),
       ...(!f('with0')?[lid(true),move('repair-magnet',mailbox.socket.x,mailbox.socket.y,'덮개의 홈에 자석 끼우기'),...(a.values.puzzleVersion===1&&Math.hypot((a.points['repair-plate']?.x??75)-mailbox.plate.x,(a.points['repair-plate']?.y??47)-mailbox.plate.y)>=4?[move('repair-plate',mailbox.plate.x,mailbox.plate.y,'어긋난 철판을 자석 맞은편에 맞추기')]:[]),lid(false),press('shake','자석을 넣고 똑같이 흔들면 덮개가 열릴까?')]:[])];
     case 3: {

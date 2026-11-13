@@ -1,88 +1,82 @@
 {
-  "generatedAt": "2026-11-05T13:16:04.757Z",
+  "generatedAt": "2026-11-12T13:04:50+00:00",
   "language": "ko",
-  "source": "Momo Jarvis · local synthesis",
-  "model": "Qwen3-TTS / Supertonic 3",
+  "source": "ElevenLabs",
+  "model": "eleven_v4",
   "sampleRate": 44100,
   "encoding": "MP3 mono 96 kbps",
   "cast": [
     {
       "name": "우체부",
-      "voice": "preset-03",
-      "model": "qwen3tts"
+      "voice": "dnZGOA54w68T7vLLPFTp",
+      "voiceName": "Klamon",
+      "model": "eleven_v4"
     },
     {
       "name": "재료 연구원",
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "voiceMix": {
-        "id": "researcher-40s-clear",
-        "note": "40대 여성 · 밝고 또렷하게",
-        "tempo": 1.065,
-        "pitchRatio": 1.075
-      }
+      "voice": "9cino9hfS3ougiPeFvp1",
+      "voiceName": "수진",
+      "model": "eleven_v4"
     },
     {
       "name": "시계탑 지기",
-      "voice": "preset-09",
-      "model": "qwen3tts"
+      "voice": "5ON5Fnz24cnOozEQfGAm",
+      "voiceName": "Grandfather Namchun",
+      "model": "eleven_v4"
     },
     {
       "name": "수조 관리인",
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "voiceMix": {
-        "id": "aquarist-40s-low",
-        "note": "40대 남성 · 차분한 중저음",
-        "tempo": 1.055,
-        "pitchRatio": 0.875
-      }
+      "voice": "vn80HZNY7EsdYzoFRYZm",
+      "voiceName": "SK",
+      "model": "eleven_v4"
     },
     {
       "name": "발명가",
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "voiceMix": {
-        "id": "inventor-confident",
-        "note": "기존 목소리 · 말 시작이 빠르고 또렷하게",
-        "tempo": 1.12,
-        "pitchRatio": 1
-      }
+      "voice": "cqeVB2yNJTjdCz7lFBhn",
+      "voiceName": "선율 v1",
+      "model": "eleven_v4"
     },
     {
       "name": "밀이",
-      "voice": "preset-01",
-      "model": "qwen3tts"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "voiceName": "oki",
+      "model": "eleven_v4"
     },
     {
       "name": "당이",
-      "voice": "preset-02",
-      "model": "qwen3tts"
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "voiceName": "Aria",
+      "model": "eleven_v4"
     },
     {
       "name": "담임 선생님",
-      "voice": "F1",
-      "model": "momo-voice"
+      "voice": "xyE2KXhy5mfTGV7xRXpD",
+      "voiceName": "Sara Kim",
+      "model": "eleven_v4"
     },
     {
       "name": "도서관 사서",
-      "voice": "preset-05",
-      "model": "qwen3tts"
+      "voice": "rCm09Tf1yMYbOyCRLDyB",
+      "voiceName": "Taek",
+      "model": "eleven_v4"
     },
     {
       "name": "옆집 할머니",
-      "voice": "preset-10",
-      "model": "qwen3tts"
+      "voice": "ZjAPD4f11zlnEnZpKDgo",
+      "voiceName": "Haemi",
+      "model": "eleven_v4"
     },
     {
       "name": "1층 가게 주인",
-      "voice": "preset-07",
-      "model": "qwen3tts"
+      "voice": "XIBeHrnXIVdoqMMadmog",
+      "voiceName": "MyungIn",
+      "model": "eleven_v4"
     },
     {
       "name": "급식실 조리사",
-      "voice": "preset-08",
-      "model": "qwen3tts"
+      "voice": "ZubHeGTOAkECknc02Zmo",
+      "voiceName": "Eunhye",
+      "model": "eleven_v4"
     }
   ],
   "clips": [
@@ -91,77 +85,105 @@
       "kind": "title",
       "src": "/audio/voices/mascot-mili-title.mp3",
       "text": "자석에 붙는 물건, 직접 찾아보자!",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 2.88,
-      "bytes": 35466,
-      "sha256": "abf8d154b6d9803a429ddb1b1ae035fa28223216a3ccb9ab4624f8de720d4904"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 2.926,
+      "bytes": 35467,
+      "sha256": "0a29fc6afb8e4c5d92b2d7aaa19a9e4f94b9e65c9b5c70f4d364f6001972af19",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "HE7OCxzsotxytQKx4CiQ",
+      "gainDb": 1.6
     },
     {
       "speaker": "당이",
       "kind": "title",
       "src": "/audio/voices/mascot-dangi-title.mp3",
       "text": "단서를 모아 우리만의 발명품을 만들자!",
-      "voice": "preset-02",
-      "model": "qwen3tts",
-      "durationSeconds": 3.095,
-      "bytes": 37973,
-      "sha256": "26d8ff294a20d8eda84026d328979ac6935274d8b5eeb90b3016ee98fd292b24"
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "model": "eleven_v4",
+      "durationSeconds": 3.239,
+      "bytes": 39228,
+      "sha256": "de62027653f2a1ca8a5f9a805f4522a25a7383fea7206766f129ad7bec9b6528",
+      "voiceName": "Aria",
+      "source": "ElevenLabs",
+      "generationId": "6zj1FfsCJYHETkCFldqZ",
+      "gainDb": -1.6
     },
     {
       "speaker": "담임 선생님",
       "kind": "workshop",
       "src": "/audio/voices/workshop-eraser.mp3",
       "text": "칠판 지우개가 자꾸 바닥에 떨어져요. 수업 중에 떨어질 때마다 주워야 해서 불편해요.",
-      "voice": "F1",
-      "model": "momo-voice",
-      "durationSeconds": 6.114,
-      "bytes": 74336,
-      "sha256": "7366536d260d677d42cca951f57dc9d52bc07b64a48cbe9da65c4ff6723be052"
+      "voice": "xyE2KXhy5mfTGV7xRXpD",
+      "model": "eleven_v4",
+      "durationSeconds": 6.87,
+      "bytes": 82800,
+      "sha256": "80bf11924b9d1192881f455464e2748ad0cc886219f8242d965b483c5e4652c4",
+      "voiceName": "Sara Kim",
+      "source": "ElevenLabs",
+      "generationId": "UMRKzHezhjb1Uajz4PTU",
+      "gainDb": 0.4
     },
     {
       "speaker": "도서관 사서",
       "kind": "workshop",
       "src": "/audio/voices/workshop-pins.mp3",
       "text": "쏟아진 압정을 찔리지 않고 줍고 싶어요. 책장 아래에 들어간 압정은 손이 잘 닿지도 않아요.",
-      "voice": "preset-05",
-      "model": "qwen3tts",
-      "durationSeconds": 4.671,
-      "bytes": 56782,
-      "sha256": "27f54f90556f6600c601423e8c01613c16447e0cff658cd993382a3a124fcf45"
+      "voice": "rCm09Tf1yMYbOyCRLDyB",
+      "model": "eleven_v4",
+      "durationSeconds": 7.706,
+      "bytes": 92831,
+      "sha256": "8cb656cc1521e990581ee159b6c039371078e7cdef26841913d8365c52099c5d",
+      "voiceName": "Taek",
+      "source": "ElevenLabs",
+      "generationId": "AQSUmsfl04MOXtK3WL8m",
+      "gainDb": -0.9
     },
     {
       "speaker": "옆집 할머니",
       "kind": "workshop",
       "src": "/audio/voices/workshop-bag.mp3",
       "text": "손이 아파서 가방을 닫기가 힘들어요. 한 손으로도 쉽게 닫을 수 있으면 좋겠어요.",
-      "voice": "preset-10",
-      "model": "qwen3tts",
-      "durationSeconds": 6.246,
-      "bytes": 75903,
-      "sha256": "f4f424fae4455bb0970f5a0d56cc403f06e4155ca1b93c7b85eebdeafbf4b076"
+      "voice": "ZjAPD4f11zlnEnZpKDgo",
+      "model": "eleven_v4",
+      "durationSeconds": 6.87,
+      "bytes": 82800,
+      "sha256": "825928397e8761c74b3ee414a280f9789d33e99c27929ba1c4c1fe214195b602",
+      "voiceName": "Haemi",
+      "source": "ElevenLabs",
+      "generationId": "MgLiSWnBx8Rcgi2ozgKM",
+      "gainDb": 4.7
     },
     {
       "speaker": "1층 가게 주인",
       "kind": "workshop",
       "src": "/audio/voices/workshop-door.mp3",
       "text": "바람이 불면 문이 쾅 닫혀서 깜짝 놀라요. 물건을 옮길 때만이라도 문을 열어 두고 싶어요.",
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "durationSeconds": 5.23,
-      "bytes": 63678,
-      "sha256": "9879fb2bb667a3355ada34d8b4f5ba23093f1965b9074a542caafa44e26b7e7b"
+      "voice": "XIBeHrnXIVdoqMMadmog",
+      "model": "eleven_v4",
+      "durationSeconds": 6.713,
+      "bytes": 80920,
+      "sha256": "e4e450548c69faccfa534eb954c3957452cc2b0dfcaa4d3ba817032b927599f6",
+      "voiceName": "MyungIn",
+      "source": "ElevenLabs",
+      "generationId": "MgxknB7M0MQKWsHozdF8",
+      "gainDb": -1.9
     },
     {
       "speaker": "급식실 조리사",
       "kind": "workshop",
       "src": "/audio/voices/workshop-cup.mp3",
       "text": "쟁반이 흔들리면 컵이 미끄러져 떨어져요. 쟁반을 들고 걸어갈 때도 컵이 제자리에 있으면 좋겠어요.",
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "durationSeconds": 5.802,
-      "bytes": 70574,
-      "sha256": "2f5d0250c45827d35584f40cd518b4b56e8e39321432a7cd66b44cad64b7278b"
+      "voice": "ZubHeGTOAkECknc02Zmo",
+      "model": "eleven_v4",
+      "durationSeconds": 7.497,
+      "bytes": 90324,
+      "sha256": "f4de2b91381108fe16626e3f4040aa71ed50dfa4ad113a4c1f80dcc5c69d9e88",
+      "voiceName": "Eunhye",
+      "source": "ElevenLabs",
+      "generationId": "TX7Ewr8dzVWa4cmAltN4",
+      "gainDb": 1.6
     },
     {
       "speaker": "우체부",
@@ -169,11 +191,15 @@
       "src": "/audio/voices/resident-1-hello.mp3",
       "text": "딩동! 네 덕분에 편지 배달을 다시 시작했어. 오늘 첫 소식, 들어 볼래?",
       "resident": 1,
-      "voice": "preset-03",
-      "model": "qwen3tts",
-      "durationSeconds": 4.998,
-      "bytes": 60857,
-      "sha256": "a90acc4d809e9ae6489073b59d5e97ea1f8b374c4b3b2e4ac755f3dab06548f4"
+      "voice": "dnZGOA54w68T7vLLPFTp",
+      "model": "eleven_v4",
+      "durationSeconds": 5.904,
+      "bytes": 71202,
+      "sha256": "c2df86a172f810fa93b5d3a45f632d31c8755f8a33467bc8638b209199c2f07b",
+      "voiceName": "Klamon",
+      "source": "ElevenLabs",
+      "generationId": "KFAe1PbBeAtoTt1SZCqu",
+      "gainDb": 1.1
     },
     {
       "speaker": "재료 연구원",
@@ -181,12 +207,15 @@
       "src": "/audio/voices/resident-2-hello.mp3",
       "text": "어, 마침 잘 왔어! 네가 나눠 준 재료로 실험대를 다시 차렸어. 어떤 재료가 남았는지 볼래?",
       "resident": 2,
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "durationSeconds": 6.832,
-      "bytes": 82799,
-      "sha256": "3ede371ff48b11a471100b9a53adf3d61da0c8d5c040597995faa6bea4284396",
-      "voiceMix": "researcher-40s-clear"
+      "voice": "9cino9hfS3ougiPeFvp1",
+      "model": "eleven_v4",
+      "durationSeconds": 7.262,
+      "bytes": 87503,
+      "sha256": "9c1eefb4178e6a1071d5b57c1acc957746b09a6f81361cb2d898d7ec246b64e5",
+      "voiceName": "수진",
+      "source": "ElevenLabs",
+      "generationId": "GZuLKlxeUcMmKxu98YWs",
+      "gainDb": -0.5
     },
     {
       "speaker": "시계탑 지기",
@@ -194,11 +223,15 @@
       "src": "/audio/voices/resident-3-hello.mp3",
       "text": "잘 왔구나. 네가 극을 찾아 준 덕에 탑 문을 다시 열었단다. 안에서는 고리 전시가 한창이야.",
       "resident": 3,
-      "voice": "preset-09",
-      "model": "qwen3tts",
-      "durationSeconds": 6.39,
-      "bytes": 77470,
-      "sha256": "f6d6ae6f6976069e5b594726cc1858b910ad328fdee938636e4ebbad955f4bda"
+      "voice": "5ON5Fnz24cnOozEQfGAm",
+      "model": "eleven_v4",
+      "durationSeconds": 7.576,
+      "bytes": 91264,
+      "sha256": "cbcb1695c7d2d7c5b8a21ca352ec503208cde8e0e5de39c8fbdad4addf394343",
+      "voiceName": "Grandfather Namchun",
+      "source": "ElevenLabs",
+      "generationId": "y9JtzZwyiN77fBhteh8c",
+      "gainDb": 3.0
     },
     {
       "speaker": "수조 관리인",
@@ -206,12 +239,15 @@
       "src": "/audio/voices/resident-4-hello.mp3",
       "text": "어서 와! 네가 유리를 닦아 준 덕에 물고기들이 잘 보여. 여기서 잠깐 같이 구경할래?",
       "resident": 4,
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "durationSeconds": 5.464,
-      "bytes": 66499,
-      "sha256": "1c549acad4b0cbf193aa995c238603418e93e99ff215ebcd10c7fed0217c6970",
-      "voiceMix": "aquarist-40s-low"
+      "voice": "vn80HZNY7EsdYzoFRYZm",
+      "model": "eleven_v4",
+      "durationSeconds": 6.374,
+      "bytes": 76845,
+      "sha256": "c5a90ee4a2e9e3c10c821aa83f7e0c9e234cce9103cf2f402fd2f335a0544f88",
+      "source": "ElevenLabs",
+      "voiceName": "SK",
+      "generationId": "YYIgHCZS2PTGoA46mwLc",
+      "gainDb": -0.9
     },
     {
       "speaker": "발명가",
@@ -219,111 +255,157 @@
       "src": "/audio/voices/resident-5-hello.mp3",
       "text": "좋아, 공방 다시 문 열었어! 네 발명품을 첫 전시대에 놓았지. 구경 온 친구 이야기를 들어 볼래?",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 8.18,
-      "bytes": 99100,
-      "sha256": "da1eae68ae098af91416131bf7f270b1a70b7b01680107f668f42370956c7558",
-      "voiceMix": "inventor-confident"
+      "voice": "cqeVB2yNJTjdCz7lFBhn",
+      "model": "eleven_v4",
+      "durationSeconds": 6.713,
+      "bytes": 80920,
+      "sha256": "16440543592804dfda61900cc36c45d51019a80fd4251c8b52fed18142481f97",
+      "voiceName": "선율 v1",
+      "source": "ElevenLabs",
+      "generationId": "DLXP3YseoLe4H7Fyf6vb",
+      "gainDb": -1.2
     },
     {
       "speaker": "밀이",
       "kind": "story",
       "src": "/audio/voices/story-intro-1.mp3",
       "text": "큰일이야! 우편함은 안 잠기고 택배 수레도 멈춰 버렸어.",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 4.055,
-      "bytes": 49572,
-      "sha256": "e292b05a66655175d5ca85e1964d6aea2da4e68f411cdd010ec95281a36ce458"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 4.101,
+      "bytes": 49573,
+      "sha256": "bf0ebac1c3367d4979e2de1cc6a19d5d8c62fb8a1fc983aad4506d6139a4263b",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "FIaCiLHe12VCZNEjGqtD",
+      "tempo": 1.099,
+      "gainDb": 1.9
     },
     {
       "speaker": "당이",
       "kind": "story",
       "src": "/audio/voices/story-intro-2.mp3",
-      "text": "돋보기로 봐! 철 클립만 자석에 착 붙어 있어.",
-      "voice": "preset-02",
-      "model": "qwen3tts",
-      "durationSeconds": 2.718,
-      "bytes": 33585,
-      "sha256": "7cc02a68f5961033557e0e440bdf1f60917667b97fc1cf304583b148feeb43e4"
+      "text": "봐! 철 클립만 자석에 붙었어.",
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "model": "eleven_v4",
+      "durationSeconds": 2.638,
+      "bytes": 32018,
+      "sha256": "55573d81648d940eb841d40437c84463f7a6c6888088b7669be8eac50cf00f79",
+      "voiceName": "Aria",
+      "source": "ElevenLabs",
+      "generationId": "9lPoikTAbbYphE7TDCob",
+      "tempo": 1.049,
+      "gainDb": 2.5
     },
     {
       "speaker": "밀이",
       "kind": "story",
       "src": "/audio/voices/story-intro-3.mp3",
       "text": "무엇이 붙고 무엇이 안 붙는지 직접 실험하면 고칠 방법이 보여.",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 4.082,
-      "bytes": 49885,
-      "sha256": "bf1c7dc19c6bb1f671bc09a10995c051aa0bd54b7a6c29b9094e63a13f8a3fc1"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 4.049,
+      "bytes": 48946,
+      "sha256": "dd8e1000eddade84168b4ca7cb0667f6ea1715fe3b02a70e9f7c11fa83c1ad69",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "PuvRaqFyjaLrZNhaeQzu",
+      "tempo": 1.193,
+      "gainDb": 1.9
     },
     {
       "speaker": "당이",
       "kind": "story",
       "src": "/audio/voices/story-intro-4.mp3",
       "text": "다섯 구역을 고치고 나면 여기서 네 발명품을 만들 차례야!",
-      "voice": "preset-02",
-      "model": "qwen3tts",
-      "durationSeconds": 3.501,
-      "bytes": 42989,
-      "sha256": "73349f57e5cb0224b4e03050a00d9d1fef1fa6f93a0eaad4e8da9a57bb631197"
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "model": "eleven_v4",
+      "durationSeconds": 3.448,
+      "bytes": 41736,
+      "sha256": "0890baa4411803cec6d5ee191fb21b35811efecdc468680d6d055f7dc14ec8f9",
+      "voiceName": "Aria",
+      "source": "ElevenLabs",
+      "generationId": "HkMfxelqdH1h8hf2WFU7",
+      "tempo": 1.227,
+      "gainDb": 0.5
     },
     {
       "speaker": "밀이",
       "kind": "story",
       "src": "/audio/voices/story-final-1.mp3",
       "text": "네가 설계한 발명품이야. 자석으로 당겨 볼게!",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 3.115,
-      "bytes": 38287,
-      "sha256": "4b214caeda6c7bc4cf4234679320f05bb464afc020f1dbedea2fa5d108469bbf"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 3.03,
+      "bytes": 36720,
+      "sha256": "41aba09fb6939551bee1414cd4e10beb9613857272afbe250dc463fbb48528a8",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "EWciyoomIQTsrNGsagKs",
+      "tempo": 1.13,
+      "gainDb": 1.5
     },
     {
       "speaker": "당이",
       "kind": "story",
       "src": "/audio/voices/story-final-2.mp3",
       "text": "택배가 안전하게 도착했어! 완벽한 성공이야.",
-      "voice": "preset-02",
-      "model": "qwen3tts",
-      "durationSeconds": 2.819,
-      "bytes": 34525,
-      "sha256": "bb68ea797b385c94e0bd75e3a87cb8e9f4b14bdb45ac8d23a717404e2c026e6f"
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "model": "eleven_v4",
+      "durationSeconds": 2.743,
+      "bytes": 33272,
+      "sha256": "a44012f587208c71ffcde1ed42268621f10f7db07b4ba873519a922b36e3927d",
+      "voiceName": "Aria",
+      "source": "ElevenLabs",
+      "generationId": "yrHM94yKWo4q9jP5Xzpz",
+      "tempo": 1.321,
+      "gainDb": -1.3
     },
     {
       "speaker": "밀이",
       "kind": "story",
       "src": "/audio/voices/story-final-3.mp3",
       "text": "봐! 수조도 맑아지고 택배 수레도 다시 달려.",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 2.992,
-      "bytes": 36719,
-      "sha256": "e6bd87fdc078e9e3f554782d41beb2043a8eef3ba19c055eb7d171fbfa62a647"
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 2.952,
+      "bytes": 35780,
+      "sha256": "6330c23bfe5124413c62078f91d2aa7c7f10dbf5c239bec5e1b3431b4c20b078",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "RFyu2MRY9iJLyTG2xIJV",
+      "tempo": 1.318,
+      "gainDb": 0.4
     },
     {
       "speaker": "당이",
       "kind": "story",
       "src": "/audio/voices/story-final-4.mp3",
-      "text": "닫힌 우편함까지… 네 실험이 도시를 바꿨어.",
-      "voice": "preset-02",
-      "model": "qwen3tts",
-      "durationSeconds": 2.807,
-      "bytes": 34525,
-      "sha256": "4c9b87494fa2ff0e383d53230d747664231e6bbd6df523f908d36c9f211ff33e"
+      "text": "네 실험이 도시를 바꿨어!",
+      "voice": "O2KReOFLpoR65nz6C9Se",
+      "model": "eleven_v4",
+      "durationSeconds": 2.664,
+      "bytes": 32332,
+      "sha256": "a120d04111bae0d53f881c74213a6e0d148183b8202de973f979be0096cc150e",
+      "voiceName": "Aria",
+      "source": "ElevenLabs",
+      "generationId": "NDus6kJl289km6Okil6s",
+      "gainDb": -0.5
     },
     {
       "speaker": "밀이",
       "kind": "story",
       "src": "/audio/voices/story-final-5.mp3",
-      "text": "다섯 구역 복구 완료! 오늘의 주인공은 바로 너야.",
-      "voice": "preset-01",
-      "model": "qwen3tts",
-      "durationSeconds": 2.92,
-      "bytes": 35779,
-      "sha256": "bc9de3e2c0323c8038bd46843716dde5710d5ae0628f578970477c1670202277"
+      "text": "복구 완료! 주인공은 바로 너야!",
+      "voice": "IQt4I2Udet4gAwcFGAlU",
+      "model": "eleven_v4",
+      "durationSeconds": 2.769,
+      "bytes": 33586,
+      "sha256": "2b9aedbcbad67eeda425e83e31d2eb2b4e0184f72338d983323abf26bdbdfdae",
+      "voiceName": "oki",
+      "source": "ElevenLabs",
+      "generationId": "A12c0o6vr7LBLEVfViuo",
+      "gainDb": -0.8
     },
     {
       "speaker": "우체부",
@@ -331,11 +413,15 @@
       "src": "/audio/voices/resident-1-again.mp3",
       "text": "또 만났네! 다음 배달을 준비하고 있었어. 우편함은 오늘도 잘 닫혀 있어!",
       "resident": 1,
-      "voice": "preset-03",
-      "model": "qwen3tts",
-      "durationSeconds": 4.814,
-      "bytes": 58662,
-      "sha256": "d8f82b732000aa5bb2c1932f3fc4a5b761aaeb245b0f6c5cc9d7a6a1522d42be"
+      "voice": "dnZGOA54w68T7vLLPFTp",
+      "model": "eleven_v4",
+      "durationSeconds": 5.642,
+      "bytes": 68067,
+      "sha256": "eca9cbfa4e133d807eb10321521d306b409ce201e068fb6268b0bff5e88d3a67",
+      "voiceName": "Klamon",
+      "source": "ElevenLabs",
+      "generationId": "lKiT06i2tQTmZJC43oiI",
+      "gainDb": 0.9
     },
     {
       "speaker": "우체부",
@@ -343,11 +429,15 @@
       "src": "/audio/voices/resident-1-news.mp3",
       "text": "물론이지! 덜컹거리는 다리를 건너도 덮개가 닫혀 있었어. 편지를 받고 웃는 얼굴을 보니 신이 나더라!",
       "resident": 1,
-      "voice": "preset-03",
-      "model": "qwen3tts",
-      "durationSeconds": 5.882,
-      "bytes": 71515,
-      "sha256": "dafc10deb2c19ea34d8ca6bfb4a15aea4b3e89072a99f1cd000a786d7c376684"
+      "voice": "dnZGOA54w68T7vLLPFTp",
+      "model": "eleven_v4",
+      "durationSeconds": 7.993,
+      "bytes": 96280,
+      "sha256": "93a97d7caddc26aae6217efdaa983b2f0e6085b991d565190e8deb4b391b02af",
+      "voiceName": "Klamon",
+      "source": "ElevenLabs",
+      "generationId": "GOt95a0kjH7qGeTQhyog",
+      "gainDb": 1.9
     },
     {
       "speaker": "우체부",
@@ -355,11 +445,15 @@
       "src": "/audio/voices/resident-1-science.mp3",
       "text": "착, 닫혔지? 덮개 안쪽 자석이 몸체의 철판을 끌어당겨 붙잡아 줘. 덕분에 배달길에서도 편지를 지킬 수 있어!",
       "resident": 1,
-      "voice": "preset-03",
-      "model": "qwen3tts",
-      "durationSeconds": 6.684,
-      "bytes": 80919,
-      "sha256": "0336766617130b420f63d41b2fc02462f06b294c02f839fb2a407249aab67472"
+      "voice": "dnZGOA54w68T7vLLPFTp",
+      "model": "eleven_v4",
+      "durationSeconds": 8.699,
+      "bytes": 104743,
+      "sha256": "8fbd6dbe633bb579546a45255d22902b7a12ef22e5dc10dd2dc15c379725a143",
+      "voiceName": "Klamon",
+      "source": "ElevenLabs",
+      "generationId": "Dhu8xDuKtevkb3TvfmHW",
+      "gainDb": 2.6
     },
     {
       "speaker": "재료 연구원",
@@ -367,12 +461,15 @@
       "src": "/audio/voices/resident-2-again.mp3",
       "text": "또 궁금한 게 생겼구나? 좋아, 실험 기록을 같이 보자!",
       "resident": 2,
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "durationSeconds": 3.887,
-      "bytes": 47377,
-      "sha256": "922346038367d476f054bf7341b79e8abf8d6f7e93b6c45c2f2661f2c7a4baa3",
-      "voiceMix": "researcher-40s-clear"
+      "voice": "9cino9hfS3ougiPeFvp1",
+      "model": "eleven_v4",
+      "durationSeconds": 4.18,
+      "bytes": 50513,
+      "sha256": "97d945edf140904be28cf3f9b6a0d17a8497923c4a499b8ef40461ca518e2bbb",
+      "voiceName": "수진",
+      "source": "ElevenLabs",
+      "generationId": "lmqbj2d7RFNGBhwEMurn",
+      "gainDb": -2.1
     },
     {
       "speaker": "재료 연구원",
@@ -380,12 +477,15 @@
       "src": "/audio/voices/resident-2-news.mp3",
       "text": "나무와 알루미늄은 그 자리에 남았어. 붙은 철 클립은 따로 모았지. 반짝이는 재료끼리도 반응이 다르다니, 재미있지?",
       "resident": 2,
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "durationSeconds": 7.804,
-      "bytes": 94398,
-      "sha256": "632183e9d62ba92d1cf2c0665342b52a7845af22d231dc44494d699b3dd11d98",
-      "voiceMix": "researcher-40s-clear"
+      "voice": "9cino9hfS3ougiPeFvp1",
+      "model": "eleven_v4",
+      "durationSeconds": 9.195,
+      "bytes": 110699,
+      "sha256": "b6e5c17f51c69f0ea7b0a35dd758c581040162f6f76b0672b56fd9b76cea0283",
+      "source": "ElevenLabs",
+      "voiceName": "수진",
+      "generationId": "aVA79mQBFHqDGDq2rId6",
+      "gainDb": 1.3
     },
     {
       "speaker": "재료 연구원",
@@ -393,12 +493,15 @@
       "src": "/audio/voices/resident-2-science.mp3",
       "text": "같은 자석을 가까이 대고 반응을 비교했어! 철 클립은 붙고, 알루미늄과 나무는 붙지 않았지. 겉모습만 보고 골랐다면 어땠을까?",
       "resident": 2,
-      "voice": "preset-08",
-      "model": "qwen3tts",
-      "durationSeconds": 8.631,
-      "bytes": 104429,
-      "sha256": "184d798097a50f1c642bb255b94c07dac19b866cdf7c1d6d5296639709162a65",
-      "voiceMix": "researcher-40s-clear"
+      "voice": "9cino9hfS3ougiPeFvp1",
+      "model": "eleven_v4",
+      "durationSeconds": 10.318,
+      "bytes": 124178,
+      "sha256": "b930e154697dd5b356e39aaa2e4cfb7d062fb33f30510a4ed1ce304408ec63df",
+      "voiceName": "수진",
+      "source": "ElevenLabs",
+      "generationId": "XukNnuxdDOMTPbVEaHbQ",
+      "gainDb": -0.9
     },
     {
       "speaker": "시계탑 지기",
@@ -406,11 +509,15 @@
       "src": "/audio/voices/resident-3-again.mp3",
       "text": "다시 왔구나. 서두르지 말고 고리 사이를 천천히 보렴. 작은 틈에도 재미있는 이야기가 있단다.",
       "resident": 3,
-      "voice": "preset-09",
-      "model": "qwen3tts",
-      "durationSeconds": 7.083,
-      "bytes": 85934,
-      "sha256": "8b7c5bfffc0e0567927ac16def102d84ce29c0e97fa4c370659ec0336b8ef68a"
+      "voice": "5ON5Fnz24cnOozEQfGAm",
+      "model": "eleven_v4",
+      "durationSeconds": 7.837,
+      "bytes": 94399,
+      "sha256": "2f62455c46192687be859b109ecfd115d26ecff02178ee21357d5cf4ab7831e5",
+      "voiceName": "Grandfather Namchun",
+      "source": "ElevenLabs",
+      "generationId": "1944ptbg8HThkKcBhi52",
+      "gainDb": 5.7
     },
     {
       "speaker": "시계탑 지기",
@@ -418,11 +525,15 @@
       "src": "/audio/voices/resident-3-news.mp3",
       "text": "아이들이 고리 사이로 살짝 몸을 낮춰 보고 있단다. 두 고리가 닿지 않았다는 걸 발견하면 눈이 동그래지지.",
       "resident": 3,
-      "voice": "preset-09",
-      "model": "qwen3tts",
-      "durationSeconds": 7.005,
-      "bytes": 84994,
-      "sha256": "f074c2115315e2ce7323861272b33c2d8ccc416b3a7cd1f463b8dfe09d1b1fcd"
+      "voice": "5ON5Fnz24cnOozEQfGAm",
+      "model": "eleven_v4",
+      "durationSeconds": 8.464,
+      "bytes": 101922,
+      "sha256": "a8914444bbb3796539e70933d77cd8018a8d7cc2196bc630280b4da8d57753d0",
+      "voiceName": "Grandfather Namchun",
+      "source": "ElevenLabs",
+      "generationId": "sYPs4empTrZhIUWjV2NF",
+      "gainDb": 7.1
     },
     {
       "speaker": "시계탑 지기",
@@ -430,11 +541,15 @@
       "src": "/audio/voices/resident-3-science.mp3",
       "text": "기둥에 끼운 두 고리의 마주 보는 면을 보렴. 같은 극이면 밀어내 위 고리가 떠 있고, 다른 극이면 서로 붙는단다.",
       "resident": 3,
-      "voice": "preset-09",
-      "model": "qwen3tts",
-      "durationSeconds": 7.92,
-      "bytes": 95965,
-      "sha256": "20f19e0efdebb5718f1d0a4d5324f6aad719e165d5d34102b844d5c17bddb33c"
+      "voice": "5ON5Fnz24cnOozEQfGAm",
+      "model": "eleven_v4",
+      "durationSeconds": 8.594,
+      "bytes": 103489,
+      "sha256": "2487b0b9cb47a33b973df4da6dbbaa5e06b1911979a4c495cc2388ff3606b78d",
+      "voiceName": "Grandfather Namchun",
+      "source": "ElevenLabs",
+      "generationId": "XoLhehlnc3U0RjrMhPPV",
+      "gainDb": 4.1
     },
     {
       "speaker": "수조 관리인",
@@ -442,12 +557,15 @@
       "src": "/audio/voices/resident-4-again.mp3",
       "text": "반가워! 오늘도 물고기들을 돌보고 있었어. 맑은 유리 앞에 오니 한눈에 잘 보이지?",
       "resident": 4,
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "durationSeconds": 5.087,
-      "bytes": 61797,
-      "sha256": "68706058c24c06ddca407bb0fdc9c1b98148694a17de5da7cfc8da33e90af43f",
-      "voiceMix": "aquarist-40s-low"
+      "voice": "vn80HZNY7EsdYzoFRYZm",
+      "model": "eleven_v4",
+      "durationSeconds": 6.374,
+      "bytes": 76845,
+      "sha256": "eaa625780ca8832bc590c2e8a48159d75ccb983c4933c14e133208f9045a321e",
+      "source": "ElevenLabs",
+      "voiceName": "SK",
+      "generationId": "2aThCPfaE0p1zvCF8PGt",
+      "gainDb": -1.0
     },
     {
       "speaker": "수조 관리인",
@@ -455,12 +573,15 @@
       "src": "/audio/voices/resident-4-news.mp3",
       "text": "저기 수초 뒤를 봐. 노란 물고기가 쏙 나왔네! 얼룩 때문에 안 보였는데, 네 덕에 이제 잘 보이는구나.",
       "resident": 4,
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "durationSeconds": 6.463,
-      "bytes": 78411,
-      "sha256": "e78444d7d4d029446632156dcd6faf7abf32ff2c109672c509601e6782c528eb",
-      "voiceMix": "aquarist-40s-low"
+      "voice": "vn80HZNY7EsdYzoFRYZm",
+      "model": "eleven_v4",
+      "durationSeconds": 7.471,
+      "bytes": 90010,
+      "sha256": "70bdf400cacdb3315824009bd0c930904cc7dc487d7d2cdaa303b0f787fdac4d",
+      "source": "ElevenLabs",
+      "voiceName": "SK",
+      "generationId": "FpXNcbBDjbyp25WKpWzb",
+      "gainDb": -0.8
     },
     {
       "speaker": "수조 관리인",
@@ -468,12 +589,15 @@
       "src": "/audio/voices/resident-4-science.mp3",
       "text": "여기, 유리 양쪽에 자석이 하나씩 있지? 서로 끌어당겨서 바깥 손잡이를 옮기면 물속 패드도 따라와. 그 패드가 안쪽 얼룩을 닦아 주는 거야.",
       "resident": 4,
-      "voice": "preset-07",
-      "model": "qwen3tts",
-      "durationSeconds": 8.042,
-      "bytes": 97219,
-      "sha256": "faf16ec00867a863cd9b52c40870d11e1dd896eb7a3e0137d86233e3ea44d433",
-      "voiceMix": "aquarist-40s-low"
+      "voice": "vn80HZNY7EsdYzoFRYZm",
+      "model": "eleven_v4",
+      "durationSeconds": 10.266,
+      "bytes": 123551,
+      "sha256": "e90473cad1fecc9535214a8b3bf1b83316fcb25b262a36e428297f2d95c9c0a6",
+      "source": "ElevenLabs",
+      "voiceName": "SK",
+      "generationId": "9sBnIo6LMMz39kiAh425",
+      "gainDb": -1.4
     },
     {
       "speaker": "발명가",
@@ -481,12 +605,15 @@
       "src": "/audio/voices/resident-5-again.mp3",
       "text": "왔네! 새 설계도를 펼치고 있었어. 쓸모 있는 장치를 만들려면 직접 맞추고 시험해 봐야지!",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 7.177,
-      "bytes": 86875,
-      "sha256": "71ed220b2e88934445c73ba805cc6cab9eace5e5e42e249e79da1af4b274ef38",
-      "voiceMix": "inventor-confident"
+      "voice": "cqeVB2yNJTjdCz7lFBhn",
+      "model": "eleven_v4",
+      "durationSeconds": 6.687,
+      "bytes": 80606,
+      "sha256": "407a0f9ee068e7c610b5dbfa2bf11dc4e6c5f3e20f087115380a775edc6f1051",
+      "voiceName": "선율 v1",
+      "source": "ElevenLabs",
+      "generationId": "DyaDrfhhWhrVrEP2rTNM",
+      "gainDb": -0.1
     },
     {
       "speaker": "발명가",
@@ -494,12 +621,15 @@
       "src": "/audio/voices/resident-5-news.mp3",
       "text": "옆 골목 꼬마가 네 설계도를 한참 보더라! 자기도 이웃의 불편을 고쳐 주고 싶대. 그래서 같이 부품부터 골라 보기로 했어.",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 8.083,
-      "bytes": 97846,
-      "sha256": "e2cc1473c9895530e1ca9616275e7c6544bbfbab6e35647019e823710c3b3e5b",
-      "voiceMix": "inventor-confident"
+      "voice": "cqeVB2yNJTjdCz7lFBhn",
+      "model": "eleven_v4",
+      "durationSeconds": 8.176,
+      "bytes": 98474,
+      "sha256": "1d6f5f53e1a98952ad4f4c5adc0a1bfbee8a96166e14e7b44362b247fb0e616f",
+      "voiceName": "선율 v1",
+      "source": "ElevenLabs",
+      "generationId": "cF77fUkJgIgyfG9M8Vl6",
+      "gainDb": -0.9
     },
     {
       "speaker": "발명가",
@@ -507,12 +637,15 @@
       "src": "/audio/voices/resident-5-science.mp3",
       "text": "좋아, 움직일 부품과 자석이 가까이 마주 보게 달아 봐! 철판은 자석에 끌려와. 자석끼리는 마주 보는 극에 따라 당기거나 밀지. 달았으면 꼭 움직여 시험해 보자!",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 12.36,
-      "bytes": 149255,
-      "sha256": "ac7c3f9e91ee6a3c7938a3f99da8fbeb4e08ec43a899c423dee9fe803c55abb1",
-      "voiceMix": "inventor-confident"
+      "voice": "cqeVB2yNJTjdCz7lFBhn",
+      "model": "eleven_v4",
+      "durationSeconds": 11.912,
+      "bytes": 143300,
+      "sha256": "97504bbee27772b7690e1ac19dbd969b00a4ae0c9ef69baf4d24d03f79e2c07a",
+      "voiceName": "선율 v1",
+      "source": "ElevenLabs",
+      "generationId": "RmoshixDeIEIk5uFVd9H",
+      "gainDb": -1.1
     }
   ]
 }

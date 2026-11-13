@@ -27,12 +27,6 @@ body.quest-mode #app :is(.mission-action,.learning-visual-preview){background:#f
  body.quest-mode #app .screen-6 .mission-board>.mission-actions{bottom:-82px;width:165px;max-width:46%;}
  body.quest-mode #app .screen-6 .mission-actions .mission-action{font-size:15px;padding:6px;min-width:0;width:100%;min-height:48px;}
  body.quest-mode #app .screen-6 .mission-board>.mission-3d{left:auto;top:auto;bottom:-62px;width:150px;max-width:43%;min-height:48px;transform:none;}
- #app .map-overview .mv-target{top:89%!important;}
- #app .map-overview .mv-target[data-stage="0"]{left:10%!important;}
- #app .map-overview .mv-target[data-stage="1"]{left:30%!important;}
- #app .map-overview .mv-target[data-stage="2"]{left:50%!important;}
- #app .map-overview .mv-target[data-stage="3"]{left:70%!important;}
- #app .map-overview .mv-target[data-stage="4"]{left:90%!important;}
 }
 
 :root{--scenic-card-radius:20px;--scenic-card-gap:12px;}

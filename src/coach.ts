@@ -14,6 +14,17 @@ export function coachArt() {
 
 export type Coaching = { action: string; clues: string[]; focus: string; done: number; total: number };
 export function coaching(n: number, a: Activity, s: Save): Coaching {
+  if(n===2&&a.values.mailboxQuickRepair===true){
+    const next=nextMailboxPart(a);
+    if(next)return {action:next.action,focus:partKey(next),done:mailboxParts.filter(part=>partInstalled(a,part)).length,total:8,clues:['분리된 부품을 하나씩 초록 점선 자리에 놓아 줘.','자석은 덮개 안쪽에, 철판은 몸체 안쪽에 달아.']};
+    const installed=magnetInstalled(a.points['repair-magnet']??mailbox.looseMagnet);
+    const closed=a.values.repairClosed===true;
+    const verified=missionReady(n,a,s);
+    const [action,focus]=verified?['수리 완료! 개념영상으로 자석의 역할을 확인해 봐','complete']
+      :!installed?closed?['손잡이를 위로 올려 덮개를 열어 봐','lid']:['덮개 안쪽 홈에 자석을 끼워 봐','repair-magnet']
+      :!closed?['손잡이를 아래로 내려 덮개를 닫아 봐','lid']:['흔들어서 덮개가 열리지 않는지 확인해 봐','shake'];
+    return {action,focus,done:verified?8:closed?7:6,total:8,clues:['덮개 안쪽에 자석이 들어갈 홈이 있어.','덮개를 닫으면 자석과 몸체에 고정된 철판이 만나.']};
+  }
   const paced = a.values.paceVersion === 1;
   if(a.values.inquiryVersion===2 && inquiryPhase(a)!=='experiment'){
     const complete=inquiryPhase(a)==='complete';

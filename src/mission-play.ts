@@ -15,6 +15,8 @@ import { salvage, distanceLab } from './missions-force';
 import { poles, rings } from './missions-poles';
 import { aquarium, delivery } from './missions-remote';
 import { design, useDesign } from './missions-workshop';
+import { validTrial } from './trial-records';
+import { missionReady } from './mission-model';
 import { bindInquiryPrompts } from './inquiry-prompts';
 
 function hit(h: Hit) {
@@ -37,12 +39,27 @@ function initialize(a: Activity, n: number) {
   // Puzzle courses start with new attempts only; an activity already in progress keeps its rules.
   if(n>=2&&n<=8){a.values.puzzleVersion=1;a.values.puzzleRevision=2;}
 }
+export function prepareQuickMailbox(a: Activity) {
+  initialize(a,2);
+  updateMailboxLayout(a);
+  const verified=a.values.with0===true&&a.trials?.some(t=>t.key==='repair0'&&validTrial(t)&&t.outcome==='success');
+  if(a.values.assemblyVersion!==1){
+    a.points['repair-magnet']=verified?mailbox.socket:mailbox.looseMagnet;
+    a.points.lid=verified?mailbox.handleClosed:mailbox.handleOpen;
+    a.values.repairClosed=Boolean(verified);
+    prepareMailboxAssembly(a);
+    if(verified)for(const part of mailboxParts)a.values[partKey(part)]=true;
+  }
+  a.values.round=0;
+  a.values.mailboxQuickRepair=true;
+}
 export function missionView(n: number, a: Activity, s: Save): View {
   initialize(a,n);
-  const round=Number(a.values.round||0), compact=a.values.paceVersion===1, hits:Hit[]=[];let actions='', comparison='';
+  if(n===2&&a.values.mailboxQuickRepair===true)prepareQuickMailbox(a);
+  const round=Number(a.values.round||0), compact=a.values.paceVersion===1, quick=n===2&&a.values.mailboxQuickRepair===true, hits:Hit[]=[];let actions='', comparison='';
   if(n<=2)updateMailboxLayout(a);
   const p=(id:string, fallback:Point)=>a.points[id]||fallback;
-  if(n===1){
+  if(n===1||quick&&!mailboxAssembled(a)){
     prepareMailboxAssembly(a);
     if(!mailboxAssembled(a)){
       const next=nextMailboxPart(a)!;
@@ -62,7 +79,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
     if(!compact&&inspected&&round===0)actions+=action('next','책 보관함도 살펴보기 →');
     }
   }
-  if(n===2){hits.push({id:'repair-magnet',p:p('repair-magnet',mailbox.looseMagnet),label:'넣고 뺄 수 있는 자석'},{id:'lid',p:p('lid',mailbox.handleOpen),label:'덮개 손잡이'});if(round===2||a.values.puzzleVersion===1&&round===0)hits.push({id:'repair-plate',p:p('repair-plate',pt(75,47)),label:'자리가 어긋난 철판'});actions=action('shake','흔들어 열리는지 보기');if(!compact&&a.values.with0&&a.values.without0&&round===0)actions=action('next','책 보관함도 고쳐 주기 →');if(a.values.with1&&a.values.without1&&round===1)actions=action('next','새 우편함의 철판도 맞춰 줘 →');}
+  if(n===2&&(!quick||mailboxAssembled(a))){hits.push({id:'repair-magnet',p:p('repair-magnet',mailbox.looseMagnet),label:'넣고 뺄 수 있는 자석'},{id:'lid',p:p('lid',mailbox.handleOpen),label:'덮개 손잡이'});if(!quick&&(round===2||a.values.puzzleVersion===1&&round===0))hits.push({id:'repair-plate',p:p('repair-plate',pt(75,47)),label:'자리가 어긋난 철판'});actions=action('shake','흔들어 열리는지 보기',quick&&missionReady(n,a,s));if(!quick&&!compact&&a.values.with0&&a.values.without0&&round===0)actions=action('next','책 보관함도 고쳐 주기 →');if(a.values.with1&&a.values.without1&&round===1)actions=action('next','새 우편함의 철판도 맞춰 줘 →');}
   if(n===2&&round===2&&!a.values.diagnosis2)actions+=`<div class="mission-diagnosis">${action('fault-distance','철판 위치를 고칠래')}${action('fault-color','자석 색을 바꿀래')}</div>`;
   if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});sortingSpecimens.forEach(m=>{if(!a.values[`sorted-${m.id}`])hits.push({id:`material-${m.index}`,p:p(`material-${m.index}`,m),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});}
   if(n===4){
@@ -104,7 +121,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
   const canExpand=n===8||n===9||n===10;
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
   const viewToggle=canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>`:'';
-  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details></div>`,bind(c){
+  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}${quick?'':`<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details>`}</div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuide(n,a));});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;

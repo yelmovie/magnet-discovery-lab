@@ -45,7 +45,6 @@ body.quest-mode .modal .apparatus-actions .btn, body.quest-mode .modal .apparatu
 .apparatus-actions .btn[aria-pressed='true'] { background: #dcebe3; border-color: #316e62; }
 .apparatus-arrows, .apparatus-extra { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .apparatus-extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-[data-apparatus-figure='mailbox'] .apparatus-extra { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body.quest-mode .modal .apparatus-extra .btn { padding-inline: 4px; white-space: normal; }
 body.quest-mode .modal .apparatus-extra .apparatus-auto { color: #fffdf6; background: #28695f; border-color: #24564e; }
 .apparatus-auto[data-playing='true']::before { content: '■'; }
@@ -78,8 +77,7 @@ body.quest-mode .modal .apparatus-note {
   .apparatus-layout { grid-template-columns: minmax(0,1fr); }
   .apparatus-drawing { max-height: 41dvh; }
   .apparatus-panel { gap: 8px; }
-  [data-apparatus-figure='mailbox'] .apparatus-actions { grid-template-columns: repeat(3,minmax(0,1fr)); }
-  [data-apparatus-figure='mailbox'] .apparatus-extra { display: contents; }
+  [data-apparatus-figure='mailbox'] .apparatus-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
   [data-apparatus-figure='aquarium'] .apparatus-drawing { max-height: 38dvh; }
   .apparatus-footer { margin-top: 9px; }
   .apparatus-footer .btn { width: 100%; }

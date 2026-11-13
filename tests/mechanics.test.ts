@@ -3,7 +3,7 @@ import { mailbox } from '../src/mailbox';
 import { mailboxParts, partKey, partInstalled } from '../src/mailbox-assembly';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyActivity, freshSave, validSave, type Activity, type Point, type Save } from '../src/domain';
-import { missionView } from '../src/mission-play';
+import { missionView, prepareQuickMailbox } from '../src/mission-play';
 import { deliveryCourse, missionReady, puzzleHint, puzzleSolved, puzzleStars } from '../src/mission-model';
 import type { Context } from '../src/activity-types';
 import { bindPlacement } from '../src/manipulation';
@@ -108,6 +108,34 @@ function mount(n: number, values: Record<string, string | number | boolean> = {}
 const assembledValues=()=>({assemblyVersion:1,...Object.fromEntries(mailboxParts.map(part=>[partKey(part),true]))});
 
 describe('분리된 부품부터 조립하는 우편함',()=>{
+  it('빠른 우편함도 여섯 부품부터 시작하고 조립·닫기·흔들기를 직접 마쳐야 한다',()=>{
+    const s=freshSave(),a=s.activities[2]=emptyActivity();
+    prepareQuickMailbox(a);
+    let m=mount(2,{}, {a,s});
+    const html=missionView(2,a,s).html;
+    expect(html).not.toContain('mission-access');
+    expect(html).not.toContain('puzzle-stars');
+    expect(mailboxParts.every(part=>!partInstalled(a,part))).toBe(true);
+    for(const [index,part] of mailboxParts.entries()){
+      expect(a.points[partKey(part)]).toEqual(part.start);
+      if(index%2)m.click('fit-part');else m.place(partKey(part),part.target);
+      tick(.5);
+      const saved=JSON.parse(JSON.stringify(m.s)) as Save;
+      prepareQuickMailbox(saved.activities[2]);
+      m=mount(2,{}, {a:saved.activities[2],s:saved});
+      expect(mailboxParts.filter(part=>partInstalled(m.a,part))).toHaveLength(index+1);
+      expect(missionReady(2,m.a,m.s)).toBe(false);
+    }
+    expect(m.a.points['repair-magnet']).toEqual(mailbox.socket);
+    m.place('lid',mailbox.handleClosed);
+    expect(missionReady(2,m.a,m.s)).toBe(false);
+    m.click('shake');tick(1);
+    expect(missionReady(2,m.a,m.s)).toBe(true);
+    expect(m.a.trials?.find(t=>t.key==='repair0')?.conditions).toMatchObject({quick:true,assembled:true});
+    prepareQuickMailbox(m.a);
+    expect(mailboxParts.every(part=>partInstalled(m.a,part))).toBe(true);
+    expect(m.a.points.lid).toEqual(mailbox.handleClosed);
+  });
   it('처음에는 여섯 부품만 조작할 수 있고 기다려도 조립이나 관찰이 완료되지 않는다',()=>{
     const m=mount(1,{paceVersion:1,mechanicsVersion:1});
     expect(m.c.root.querySelector('[data-drag="lid"]')).toBeNull();

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { addTrial } from '../src/trial-records';
 import { accessible, cartDirection, cleanPercent, completeActivity, coreReady, defaultDesign, designResult, dirtyCell, emptyActivity, freshSave, grid, progress, ready, relation, response, ringGaps, sweep, validSave } from '../src/domain';
 
 describe('magnet rules', () => {
@@ -15,6 +16,19 @@ describe('magnet rules', () => {
   });
 });
 describe('meaningful completion', () => {
+  it('unlocks the next district after one real mailbox repair and keeps previous observations', () => {
+    const save=freshSave(), repair=save.activities[2]=emptyActivity();
+    repair.values={playVersion:4,mailboxQuickRepair:true,with0:true};
+    save.activities[1]=emptyActivity();
+    save.activities[1].records.push({key:'old-observation',label:'기존 관찰',result:'그대로 보관'});
+    expect(accessible(save,2)).toBe(true);
+    expect(completeActivity(save,2)).toBe(false);
+    addTrial(repair,{key:'repair0',activity:2,conditions:{manual:true},initialObjects:[],objects:[],input:[],outcome:'success'});
+    expect(completeActivity(save,2)).toBe(true);
+    expect(save.completed).toEqual([1,2]);
+    expect(save.evidence[0].summary).toEqual(['기존 관찰: 그대로 보관']);
+    expect(accessible(save,3)).toBe(true);
+  });
   it('requires actual observations of both devices', () => {
     const s = freshSave(), a = emptyActivity(); a.values.found0 = a.values.found1 = true; expect(ready(1, a, s)).toBe(false);
     for (const i of [0, 1]) for (const name of ['open', 'inside', 'predicted']) a.values[`${name}${i}`] = true;

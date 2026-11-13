@@ -22,6 +22,7 @@ const visuals: LearningVisual[] = [
 
 export function learningVisual(n: number, template: string, a?: { values: Record<string, unknown> }): LearningVisual {
   const item=visuals[Math.max(0,Math.min(9,n-1))];
+  if(n===2&&a?.values.mailboxQuickRepair===true)return {...item,title:'덮개 속 자석과 철판',parts:['덮개 안쪽 자석','몸체 안쪽 철판','덮개 손잡이'],look:'덮개 안쪽에는 자석을 넣을 홈이 있고 몸체에는 철판이 고정돼 있어.',move:'자석을 홈에 끼우고 덮개를 닫아. 흔들어도 열리지 않는지 봐.',notice:'덮개를 닫을 때 어떤 두 부품이 만나니? 개념영상에서 확인해 봐.'};
   if(n===4&&a?.values.puzzleRevision===2)return {...item,title:'철 열쇠까지의 간격 비교',alt:'자석과 철 물체 사이에 얇은 종이를 세운 거리 비교 예시',parts:['움직이는 자석','철 열쇠','얇은 종이 한 장'],look:'실험대의 철 열쇠 끝과 자석 끝 사이의 빈칸을 세어 봐.',move:'먼저 5칸에서 철 열쇠를 놓아 봐. 다음에는 자석을 가까이 옮겨 다시 놓아 봐.',notice:'철 열쇠가 움직인 출발 간격을 유지하고 종이만 넣어 비교해 봐.'};
   if(n===6&&a?.values.puzzleRevision===2)return {...item,title:'고리로 발판 올리고 내리기',move:'아래 고리부터 기둥에 놓아 봐. 위 고리를 뒤집고 손을 떼어 발판 높이를 바꿔 봐.',notice:'발판이 뜰 때와 내려갈 때, 마주 보는 두 면의 극을 비교해 봐.'};
   if(n===8&&a?.values.puzzleRevision===2)return {...item,move:'깃발에 맞춰 멈추고 다음 구간으로 가 봐. 마지막에는 출발점으로 돌아와.',notice:'목적지에 닿기 전에 조종 자석을 떼어 봐. 조금 더 구르다가 멈추는지도 살펴봐.'};

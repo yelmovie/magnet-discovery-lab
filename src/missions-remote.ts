@@ -104,10 +104,8 @@ export function aquarium(v: Surface){
   v.drag('cleaner',handleStart,moveHandle,moveHandle,p=>pt(clamp(p.x,26,77),clamp(p.y,35,74)));
   v.cleanups.push(()=>cancelAnimationFrame(raf));
 }
-/** Solving re-renders the bench; only that next render plays the goblin's exit. */
-let justSolved:object|null=null;
 export function delivery(v: Surface){
-  const r=Number(v.a.values.round||0),{wall:puzzle,start,goal}=deliveryRoute(v.a);const solvedAt=justSolved===v.a?performance.now():-1e9;justSolved=null;let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
+  const r=Number(v.a.values.round||0),{wall:puzzle,start,goal}=deliveryRoute(v.a); let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
   const carPoint=()=>pt(car,59);
   const forceOn=()=>{const q=v.p('controller',pt(20,40));return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
   let speed=Number(v.a.values.cartSpeed||0);
@@ -135,13 +133,12 @@ export function delivery(v: Surface){
     const path=v.path;
     stopProof(`stop${r}`,'배달 장소에서 카트가 멈춘 뒤 확인');v.path=path;
     stopProof(`delivery${r}`,'극의 힘으로 운반하고 정차');
-    if(puzzle||v.a.values.puzzleRevision===2&&r===2){justSolved=v.a;playEffect('reward',v.s.settings);}
-    v.tell(puzzle?'배달 완료! 유리벽 너머 깃발에 딱 멈췄어. 도깨비가 달아난다!':'배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
+    if(puzzle||v.a.values.puzzleRevision===2&&r===2)playEffect('reward',v.s.settings);
+    v.tell(puzzle?'배달 완료! 유리벽 너머 깃발에 딱 멈췄어.':'배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
   };
   // Puzzle course: a miss is a visible result plus the next clue, never a penalty screen.
   let blocked=0,bumpAt=-1e9;
   const miss=(kind:'wall'|'over',text:string)=>v.miss(text,deliveryHints[kind]);
-  const goblin=puzzle?v.asset('villain-goblin','/assets/quest/villain-scrap-goblin.png'):null;
   const state=document.createElement('p');state.className='delivery-state';state.setAttribute('role','status');v.c.root.querySelector('.mission-board')!.append(state);
   const safePosition=(p:Point):Point=>{
     const bounds=board.getBoundingClientRect(),piece=controller.getBoundingClientRect();
@@ -204,11 +201,6 @@ export function delivery(v: Surface){
       g.strokeStyle='#ffffffcc';g.lineWidth=3;g.beginPath();g.moveTo(wx-2,252);g.lineTo(wx-2,330);g.stroke();
       g.fillStyle='#5f9fb2';g.fillRect(wx-12,456,24,10);g.restore();
       v.label('유리벽',pt(deliveryCourse.wall-6,35),true);
-      if(goblin?.complete&&goblin.naturalWidth){
-        // The goblin guards the storeroom until the parcel arrives, then runs off.
-        const t=done?Math.min(1,(performance.now()-solvedAt)/900):0;
-        if(t<1){g.save();g.globalAlpha=1-t;g.drawImage(goblin,1010+t*150,300-Math.sin(t*Math.PI)*70,128,128);g.restore();}
-      }
     }
     g.save();g.fillStyle=(atGoal||done)?'#89bd8480':'#ffe19788';g.strokeStyle=done?'#20765e':'#956515';
     g.lineWidth=4;g.setLineDash([9,7]);g.beginPath();g.roundRect(gx-3*W/100,416,6*W/100,102,10);g.fill();g.stroke();

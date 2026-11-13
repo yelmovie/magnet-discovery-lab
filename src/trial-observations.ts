@@ -52,6 +52,8 @@ export function trialResultSentence(t:Trial):string {
         if(/^latch\d+$/.test(t.key))return '덮개를 닫으니 자석이 몸체의 철판에 붙어 덮개를 잡아 줬어.';
         break;
       case 2:
+        if(/^repair\d+$/.test(t.key)&&(c.quick===true||c.label==='흔들어도 열리지 않는 우편함'))return '덮개 안쪽의 자석이 몸체의 철판을 붙잡아서, 흔들어도 덮개가 닫혀 있었어.';
+        if(c.course==='loose-plate')return '철판을 자석 가까이 옮기니 자석이 철판을 붙잡아 덮개가 닫혀 있었어.';
         if(/^repair\d+$/.test(t.key))return t.key==='repair2'?'철판의 자리를 고치니 자석이 덮개를 붙잡았어.':'똑같이 흔들었을 때 자석이 있는 덮개는 닫혀 있고, 자석을 뺀 덮개는 열렸어.';
         break;
       case 3:{

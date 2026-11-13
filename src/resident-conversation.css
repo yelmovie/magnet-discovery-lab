@@ -1,0 +1,155 @@
+/* This stage deliberately uses its own classes, clear of the older modal card rules. */
+body.quest-mode .modal-backdrop.resident-conversation-backdrop {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  background: #172d287a;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.resident-conversation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #3e3427;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-body);
+}
+.resident-conversation > .modal-close {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  right: 5%;
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  color: #604b30;
+  background: #fff6df;
+  border: 1px solid #b89a67;
+  border-radius: 9px;
+}
+.resident-stage { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 5%; width: 90%; }
+.resident-stage-character {
+  --portrait-width: min(52vw, 490px, 54.9dvh, 432px);
+  position: absolute;
+  right: 7%;
+  bottom: calc(100% - 7px);
+  width: var(--portrait-width);
+  aspect-ratio: 9 / 10;
+  /* Both poses share one image. Only one half of the sheet is ever painted. */
+  background: var(--resident-portrait) left bottom / 200% 100% no-repeat;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px #172d2838);
+}
+/* The lab portrait ends at the wrist on the left. Tuck the edge behind the paper. */
+.resident-stage[data-resident-stage="1"] .resident-stage-character {
+  bottom: calc(100% - clamp(22px, 5dvh, 38px));
+}
+.resident-conversation[data-tone="delighted"] .resident-stage-character { background-position-x: right; }
+@media (prefers-reduced-motion: no-preference) {
+  .resident-conversation[data-speaking="true"] .resident-stage-character { animation: resident-speech 780ms step-end infinite; }
+}
+@keyframes resident-speech {
+  0%, 64% { background-position-x: right; }
+  36%, 100% { background-position-x: left; }
+}
+.resident-stage-panel {
+  position: relative;
+  padding: 24px 28px 16px;
+  color: #3e3427;
+  background: linear-gradient(#fff6df, #f2e3c1);
+  border: 2px solid #b89559;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px #172d2838, inset 0 0 0 2px #fff9ed66;
+}
+.resident-stage-name {
+  position: absolute;
+  top: -32px;
+  left: 26px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 20px;
+  background: #704e2e;
+  border-radius: 6px;
+  color: #fff4d6;
+}
+.resident-stage-name h2 { margin: 0; font: 700 24px/1.25 var(--font-body); }
+.resident-stage-name > span { font-size: 14px; color: #ead8b8; }
+.resident-stage-speech {
+  position: relative;
+  margin: 0;
+  font: 500 26px/1.5 var(--font-body);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.resident-speech-layout { display: block; visibility: hidden; }
+.resident-speech-visual { position: absolute; inset: 0; }
+.resident-speech-readable { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.resident-stage-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; }
+.resident-stage-replies { display: flex; flex-wrap: wrap; gap: 10px; }
+.resident-stage-controls button {
+  min-height: 48px;
+  padding: 9px 16px;
+  border: 1px solid #b89b6c;
+  border-radius: 7px;
+  color: #5b422b;
+  background: #fff9ed;
+  font: 700 19px/1.4 var(--font-body);
+  cursor: pointer;
+}
+.resident-stage-controls .is-next-reply, .resident-stage-controls button:hover { background: #f3dca7; }
+.resident-stage-controls button:focus-visible, .resident-conversation > .modal-close:focus-visible { outline: 3px solid #26867b; outline-offset: 3px; }
+.resident-stage-controls .resident-stage-return { flex: 0 0 auto; border-color: transparent; background: transparent; text-decoration: underline; }
+.resident-stage-album {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 48px);
+  max-width: 400px;
+  padding: 10px 14px;
+  border: 1px solid #ecdfbc99;
+  border-radius: 8px;
+  color: #fff8e6;
+  background: #29473dcc;
+}
+.resident-stage-album [data-friend-album] { display: flex; align-items: center; gap: 14px; }
+.resident-stage-album strong { font-size: 15px; }
+.resident-stage-album .friend-seals { display: flex; gap: 5px; }
+.resident-stage-album .friend-seal { width: 25px; height: 25px; }
+.resident-stage-album .resident-stage-receipt { margin: 6px 0 0; font: 500 14px/1.4 var(--font-body); }
+@media (max-width: 900px) {
+  .resident-stage-name > span { display: none; }
+  .resident-stage-character { right: 1%; }
+  .resident-stage-album { max-width: 310px; padding: 8px 10px; }
+  .resident-stage-album [data-friend-album] { flex-wrap: wrap; gap: 4px 10px; }
+  .resident-stage-speech { font-size: 24px; }
+  .resident-stage-controls { flex-wrap: wrap; gap: 6px; }
+  .resident-stage-controls button { font-size: 17px; }
+}
+@media (max-width: 600px) {
+  .resident-stage { left: 4%; width: 92%; bottom: max(14px, env(safe-area-inset-bottom)); }
+  .resident-stage-character { --portrait-width: min(68vw, 45dvh, 360px); }
+  .resident-stage-panel { padding: 22px 18px 12px; }
+  .resident-stage-speech { font-size: 22px; }
+  .resident-stage-replies { gap: 6px; }
+  .resident-stage-album { left: 0; bottom: calc(100% + 42px); max-width: 145px; }
+  .resident-stage-album .resident-stage-receipt { font-size: 12px; }
+  .resident-stage-album .friend-seal { width: 20px; height: 20px; }
+}
+@media (max-height: 600px) {
+  .resident-stage { bottom: max(12px, env(safe-area-inset-bottom)); }
+  .resident-stage-character { --portrait-width: min(55vw, 51.3dvh, 279px); }
+  .resident-stage-panel { padding: 18px 22px 10px; }
+  .resident-stage-speech { font-size: 21px; line-height: 1.4; }
+  .resident-stage-controls { margin-top: 8px; flex-wrap: nowrap; }
+  .resident-stage-controls button { padding: 7px 10px; font-size: 16px; }
+  .resident-stage-album { bottom: calc(100% + 38px); }
+}

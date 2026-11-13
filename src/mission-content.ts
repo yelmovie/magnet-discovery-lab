@@ -24,6 +24,7 @@ export const missionQuestions = [
 ];
 /** New puzzle activities ask for the obstacle; activities already in progress keep their original request. */
 export function missionQuestion(n:number,a?:{values:Record<string,unknown>}):string {
+  if(n===2&&a?.values.mailboxQuickRepair===true)return '부품을 조립해 우편함을 고쳐 줘!';
   if(a?.values.puzzleRevision===2){
     const prompts:Record<number,string>={3:'고철 더미를 치워 기계와 길을 열어 줘!',4:'틈 너머 철 열쇠를 자석으로 꺼내 줘!',5:'밀고 당기는 두 문을 모두 열어 줘!',6:'발판을 올리고 내려 두 친구를 건네 줘!',8:'중간 정차, 유리벽 배달, 돌아오기까지!'};
     if(prompts[n])return prompts[n];
@@ -65,6 +66,7 @@ export function keyRescueText(text: string): string {
 }
 
 export function missionGuide(n: number, a?: { values: Record<string, unknown> }): string {
+  if (n === 2 && a?.values.mailboxQuickRepair === true) return '몸체부터 부품을 하나씩 조립해 줘. 덮개를 닫은 뒤, 흔들어도 열리지 않는지 확인해 봐.';
   if (n === 2 && a?.values.puzzleVersion === 1) return '덮개를 닫고 흔들어 봐. 자석을 넣어도 열리면 철판 자리를 살펴봐. 자석은 그대로 두고 철판을 가까이 옮겨 다시 흔들어 봐.';
   if (a?.values.ideaVersion === 1) return n === 9
     ? '주민의 불편과 쓸 자석의 성질을 골라. 자석을 놓을 곳과 움직일 물체를 그림이나 글로 설명해 봐.'

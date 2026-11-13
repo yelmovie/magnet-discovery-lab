@@ -1,4 +1,5 @@
 import './trial-replay.css';
+import { mailboxReplayScene } from './mailbox-replay';
 import { replayInitialObjects, replayObjects, trialObjectArt, trialObjectName, trialPoleLabel, trialResultSentence, trialTitle, type Trial, type TrialObject } from './trial-records';
 
 const escape = (s: string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -14,14 +15,17 @@ export function trialReplayMarkup(trials: Trial[]) {
   }).reverse().join('');
   return `<div class="replay-layout"><div class="replay-library" role="group" aria-label="다시 볼 실험 고르기">${cards}</div>
     <section class="replay-view" aria-label="선택한 실험"><h3 data-replay-title></h3>
-      <div class="replay-scenes"><figure><figcaption><b>1</b> 처음</figcaption><svg class="replay-before" viewBox="0 0 360 188" role="img" aria-label="실험의 처음 모습"></svg></figure>
-      <figure><figcaption><b>2</b> <span data-replay-phase>결과</span></figcaption><svg class="trial-compare" viewBox="0 0 360 188" role="img" aria-label="선택한 실험의 결과"></svg></figure></div>
+      <div class="replay-scenes"><figure><figcaption><b>1</b> 처음</figcaption><svg class="replay-before" viewBox="0 0 360 188" role="img" aria-label="실험의 처음 모습"></svg><p class="replay-scene-caption" data-replay-before-caption hidden></p></figure>
+      <figure><figcaption><b>2</b> <span data-replay-phase>결과</span></figcaption><svg class="trial-compare" viewBox="0 0 360 188" role="img" aria-label="선택한 실험의 결과"></svg><p class="replay-scene-caption" data-replay-result-caption hidden></p></figure></div>
+      <p class="replay-legend" data-replay-legend hidden>① 덮개 안쪽 자석 · ② 몸체의 철판</p>
       <p class="replay-finding" role="status" aria-atomic="true"></p>
       <div class="replay-controls"><button type="button" data-replay-play>▶ 다시 재생</button><label class="replay-time"><span>처음</span><input id="trial-position" type="range" min="0" max="100" step="1" value="100" aria-label="처음부터 결과까지 장면 선택"><span>결과</span></label></div>
     </section></div>`;
 }
 
 function scene(trial:Trial) {
+  const mailbox=mailboxReplayScene(trial);
+  if(mailbox)return {before:mailbox.before,result:mailbox.frame(1).art,beforeLabel:mailbox.beforeCaption,resultLabel:mailbox.resultCaption,comparable:true,parts:[],mailbox};
   const after=replayObjects(trial),first=replayInitialObjects(trial);
   const beforeById=new Map(first.map(o=>[o.id,o]));
   const all=[...first,...after], xs=all.map(o=>o.x), ys=all.map(o=>o.y*.5625);
@@ -48,6 +52,7 @@ function scene(trial:Trial) {
   const endIds=new Set(after.map(o=>o.id));
   const onlyAtStart=first.filter(o=>!endIds.has(o.id)).map(stationary).join('');
   return {
+    mailbox:undefined,
     before:first.length?first.map(stationary).join(''):missing('처음 모습은 남아 있지 않아.'),
     result:after.length?`${traces}${onlyAtStart?`<g data-start-only visibility="hidden">${onlyAtStart}</g>`:''}${marks}`:missing('결과 모습은 남아 있지 않아.'),
     beforeLabel:first.length?`처음 모습 · ${first.map(description).join(', ')}`:'처음 모습은 남아 있지 않아.',
@@ -71,11 +76,18 @@ export function bindTrialReplay(root:HTMLElement,trials:Trial[],motion=true) {
   function display(value:number) {
     progress=value;
     const atStart=value===0,atEnd=value===1;
+    let sceneDescription=current.resultLabel;
+    if(current.mailbox){
+      const scene=current.mailbox.frame(value);
+      result.innerHTML=scene.art;
+      sceneDescription=scene.caption;
+      root.querySelector<HTMLElement>('[data-replay-result-caption]')!.textContent=scene.caption;
+    }
     slider.value=String(Math.round(value*100));
     slider.setAttribute('aria-valuetext',atStart?'처음':atEnd?'결과':`두 장면 사이 ${slider.value}%`);
     const caption=atEnd?'결과':atStart?'처음 위치':'두 장면 사이';
     if(phase.textContent!==caption)phase.textContent=caption;
-    result.setAttribute('aria-label',`${caption} · ${current.resultLabel}`);
+    result.setAttribute('aria-label',`${caption} · ${sceneDescription}`);
     startOnly?.setAttribute('visibility',atStart?'visible':'hidden');
     current.parts.forEach(({start,end},i)=>{
       const {shape,oldArt,newArt}=parts[i];
@@ -95,6 +107,11 @@ export function bindTrialReplay(root:HTMLElement,trials:Trial[],motion=true) {
     buttons.forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.trialChoice)===next)));
     root.querySelector<HTMLElement>('[data-replay-title]')!.textContent=trialTitle(trial);
     root.querySelector<HTMLElement>('.replay-finding')!.textContent=trialResultSentence(trial);
+    const beforeCaption=root.querySelector<HTMLElement>('[data-replay-before-caption]')!,resultCaption=root.querySelector<HTMLElement>('[data-replay-result-caption]')!;
+    beforeCaption.hidden=resultCaption.hidden=!current.mailbox;
+    root.querySelector<HTMLElement>('[data-replay-legend]')!.hidden=!current.mailbox;
+    beforeCaption.textContent=current.mailbox?.beforeCaption??'';
+    for(const svg of [before,result])svg.setAttribute('viewBox',current.mailbox?'0 0 360 220':'0 0 360 188');
     before.setAttribute('aria-label',current.beforeLabel);before.innerHTML=current.before;result.innerHTML=current.result;
     parts=[...result.querySelectorAll<SVGElement>('[data-replay-part]')].map(shape=>({shape,oldArt:shape.querySelector<SVGElement>('[data-old-art]'),newArt:shape.querySelector<SVGElement>('[data-new-art]')}));
     startOnly=result.querySelector('[data-start-only]');
@@ -117,9 +134,10 @@ export function bindTrialReplay(root:HTMLElement,trials:Trial[],motion=true) {
     if(playing){stop();display(progress);return;}
     if(!canAnimate()){display(progress===1?0:1);return;}
     if(progress===1)display(0);
-    playing=true;const start=browser.performance.now()-progress*1800;
+    playing=true;const duration=current.mailbox?5200:1800;
+    const start=browser.performance.now()-progress*duration;
     const tick=(now:number)=>{
-      const value=Math.min(1,(now-start)/1800);
+      const value=Math.min(1,(now-start)/duration);
       if(value===1)stop();
       display(value);if(playing)frame=browser.requestAnimationFrame(tick);
     };

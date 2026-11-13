@@ -1,6 +1,4 @@
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
-import { mountMapVillains } from './map-villains.js';
-import { playEffect } from './game-audio';
 import { icon, walkingMascot } from './art';
 import { questRewards } from './mission-content';
 import { stageNames, type Point, type Save } from './domain';
@@ -119,7 +117,6 @@ export function expeditionMarkup(s:Save,admin=false){
 export interface ExpeditionHandle {goTo(i:number):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
 export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onArrive:(i:number)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
   const viewport=root.querySelector<HTMLElement>('.expedition-viewport')!,world=root.querySelector<HTMLElement>('.expedition-world')!,player=root.querySelector<HTMLElement>('.expedition-player')!,npc=root.querySelector<HTMLElement>('.expedition-npc')!;
-  const removeVillains=mountMapVillains(world,{key:'magnet-city:map-villains:v1',power:'자석 파동',reduced:!options.save.settings.motion,preview:options.admin,stages:residents.map((r,i)=>({name:stageNames[i],x:i===0?7:i===1?62:r.feet.x+6,y:i===0?50:i===1?32:r.feet.y+6,ready:districtRestored(options.save,i),puzzle:Object.values(options.save.activities).some(a=>a.values.puzzleRevision===2),token:options.save.evidence.find(e=>e.stage===i)?.date||'pending'})),sound:()=>playEffect('bump',options.save.settings)});
   const courier=root.querySelector<HTMLElement>('.expedition-courier');let courierPhase=0;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   const drawCourier=(position:Point)=>{
@@ -261,5 +258,5 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(doorLatch>=0&&dist(p,roads[doors[doorLatch]])>5)doorLatch=-1;
     if(!route.length)for(let i=0;i<doors.length;i++)if(dist(p,roads[doors[i]])<1.5&&doorLatch!==i){doorLatch=i;options.onPosition(p);options.onArrive(i);break;}
   }draw();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
-  return{goTo,welcomeResident,direction(x,y){setFree(false);route=[];releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){removeVillains();cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
+  return{goTo,welcomeResident,direction(x,y){setFree(false);route=[];releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
 }

@@ -1,5 +1,6 @@
 import { icon } from './art';
 import { questRewards } from './mission-content';
+import { setAudioPaused } from './game-audio';
 import './story-video.css';
 
 // Full-screen story films. The rendered mp4s carry effects and short sound effects only (scripts/render-story-videos.mjs);
@@ -22,7 +23,7 @@ const films = {
     places: [[0, '긴급 수리 의뢰', '우편국 골목'], [5.2, '단서를 찾아라', '힘 실험 연구소'], [11.7, '나만의 발명', '시민 발명 공방']],
     cues: [
       [0.6, 4.9, '밀이', '큰일이야! 우편함은 안 잠기고\n택배 수레도 멈춰 버렸어.'],
-      [5.4, 8.3, '당이', '돋보기로 봐! 철 클립만\n자석에 착 붙어 있어.', 'left'],
+      [5.4, 8.2, '당이', '봐! 철 클립만\n자석에 붙었어.', 'left'],
       [8.2, 12.4, '밀이', '무엇이 붙고 무엇이 안 붙는지\n직접 실험하면 고칠 방법이 보여.', 'left'],
       [12.5, 16.1, '당이', '다섯 구역을 고치고 나면\n여기서 네 발명품을 만들 차례야!'],
     ],
@@ -36,8 +37,8 @@ const films = {
       [0.3, 3.5, '밀이', '네가 설계한 발명품이야.\n자석으로 당겨 볼게!'],
       [3.6, 6.5, '당이', '택배가 안전하게 도착했어!\n완벽한 성공이야.'],
       [6.6, 9.7, '밀이', '봐! 수조도 맑아지고\n택배 수레도 다시 달려.'],
-      [9.8, 12.7, '당이', '닫힌 우편함까지…\n네 실험이 도시를 바꿨어.'],
-      [12.9, 15.9, '밀이', '다섯 구역 복구 완료!\n오늘의 주인공은 바로 너야.'],
+      [9.8, 12.7, '당이', '네 실험이 도시를 바꿨어!'],
+      [12.9, 15.9, '밀이', '복구 완료! 주인공은 바로 너야!'],
     ],
     // One district lights up per beat of the recap; all five glow with the fanfare.
     stamps: [5.6, 6.6, 7.6, 8.6, 9.6], glowAt: 11,
@@ -62,6 +63,7 @@ const pauseIcon ='<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="t
 
 /** Opens the film over the whole screen. Returns an idempotent cleanup. */
 export function playStory(id: FilmId, options: StoryOptions): () => void {
+  setAudioPaused(false);
   const film: Film = films[id], base = `/video/story/${id}`, replay = Boolean(options.replay);
   const app = document.querySelector<HTMLElement>('#app'), appWasInert = app?.inert ?? false;
   const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -87,9 +89,11 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const video = $<HTMLVideoElement>('video'), endFrame = $<HTMLImageElement>('.story-end'), caption = $('.story-caption');
   const skip = $<HTMLButtonElement>('[data-story="skip"]'), pause = $<HTMLButtonElement>('[data-story="pause"]'), play = $<HTMLButtonElement>('[data-story="play"]');
   const controller = new AbortController(), on = { signal: controller.signal };
-  let closed = false, failed = false, cardShown = false, timeout = 0, lastCue = -2, lastPlace = -1;
+  let closed = false, failed = false, cardShown = false, timeout = 0, frameId = 0, lastCue = -2, lastPlace = -1;
   // Cue voices live here, not in playNarration: the film owns the audio while it is open.
   const voices = film.cues.map((_, i) => { const voice = new Audio(`/audio/voices/story-${id}-${i + 1}.mp3`); voice.preload = 'auto'; voice.volume = .95; return voice; });
+  // Media playback can interrupt an existing music player. Restore its saved preference.
+  for (const voice of voices) voice.addEventListener('playing', () => setAudioPaused(false), on);
   const hushVoices = () => { for (const voice of voices) voice.pause(); video.volume = .55; };
   const speakCue = (cue: number) => {
     hushVoices();
@@ -126,8 +130,14 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     }
     if (t >= film.cardAt) showCard();
   };
+  const videoFrame = () => {
+    if (closed) return;
+    tick();
+    frameId = video.requestVideoFrameCallback(videoFrame);
+  };
   const cleanup = () => {
     if (closed) return; closed = true;
+    if (frameId) video.cancelVideoFrameCallback(frameId);
     clearTimeout(timeout); controller.abort(); hushVoices();
     video.pause(); video.removeAttribute('src'); video.load();
     layer.remove();
@@ -151,7 +161,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     tick(); showCard();
   };
 
-  video.addEventListener('playing', () => { clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
+  video.addEventListener('playing', () => { setAudioPaused(false); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
   video.addEventListener('pause', () => { for (const voice of voices) voice.pause(); if (!video.ended) { pause.setAttribute('aria-label', '계속 보기'); pause.innerHTML = icon('play', 26); } }, on);
   video.addEventListener('waiting', watchdog, on);
   video.addEventListener('timeupdate', tick, on);
@@ -176,5 +186,6 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   skip.focus({ preventScroll: true });
   if (options.motion) start(); else play.hidden = false;
   tick();
+  if (typeof video.requestVideoFrameCallback === 'function') frameId = video.requestVideoFrameCallback(videoFrame);
   return cleanup;
 }
