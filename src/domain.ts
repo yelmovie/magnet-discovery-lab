@@ -23,6 +23,7 @@ export interface Save {
   version: 1 | 2; revision: number; started: boolean; updated: string;
   completed: number[]; evidence: Evidence[]; activities: Record<number, Activity>;
   greetedResidents?: number[];
+  mapEncounters?: Record<string, number>;
   design: Design; designs: Partial<Record<'box' | 'remote', Design>>;
   idea?: Idea;
   resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number; autoplay?: boolean; autoplaySpeed?: 1 | 2 };
@@ -207,6 +208,9 @@ export function migrateSave(input: unknown): Save | null {
   const next = structuredClone(input);
   next.version = 2;
   next.designs ||= {};
+  next.mapEncounters = Object.fromEntries(['clip','parts','pole','latch','workshop','plaza'].flatMap(id => {
+    const hits=next.mapEncounters?.[id];return typeof hits==='number'&&Number.isInteger(hits)&&hits>=1&&hits<=3?[[id,hits]]:[];
+  }));
   if (next.idea && !validIdea(next.idea)) delete next.idea;
   next.greetedResidents = Array.isArray(next.greetedResidents)
     ? next.evidence.map(e => e.stage).filter(stage => next.greetedResidents!.includes(stage))

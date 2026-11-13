@@ -129,7 +129,7 @@ function render() {
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onArrive:showPlace,onResident:showResident});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
 }
 function showResident(stage:number, completion?: { reward: string; destination: number }) {
   const {name}=residents[stage];

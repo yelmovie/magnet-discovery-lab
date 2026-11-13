@@ -6,7 +6,7 @@ export interface AudioSettings {
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
   musicVolume?: number;
 }
-export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate';
+export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | 'encounter-one' | 'encounter-two' | 'encounter-exit' | 'encounter-contact';
 
 const EFFECT_GAIN = 0.16;
 const DEFAULT_VOLUME = 0.35;
@@ -213,6 +213,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
     source.onended=()=>{sampleVoices.delete(source);source.disconnect();gain.disconnect();};source.start();return;
   }
   const notes: Record<EffectKind, number[]> = {
+    'encounter-one':[980,510], 'encounter-two':[790,510,312], 'encounter-exit':[630,520,390,250], 'encounter-contact':[880,422],
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
     bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285],
