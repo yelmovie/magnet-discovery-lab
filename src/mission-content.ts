@@ -26,12 +26,11 @@ export const missionQuestions = [
 export function missionQuestion(n:number,a?:{values:Record<string,unknown>}):string {
   if(n===2&&a?.values.mailboxQuickRepair===true)return '부품을 조립해 우편함을 고쳐 줘!';
   if(a?.values.puzzleRevision===2){
-    const prompts:Record<number,string>={3:'고철 더미를 치워 기계와 길을 열어 줘!',4:'틈 너머 철 열쇠를 자석으로 꺼내 줘!',5:'밀고 당기는 두 문을 모두 열어 줘!',6:'발판을 올리고 내려 두 친구를 건네 줘!',8:'중간 정차, 유리벽 배달, 돌아오기까지!'};
+    const prompts:Record<number,string>={4:'틈 너머 철 열쇠를 자석으로 꺼내 줘!',5:'밀고 당기는 두 문을 모두 열어 줘!',6:'발판을 올리고 내려 두 친구를 건네 줘!',8:'중간 깃발에 멈춘 뒤 유리벽 너머로 배달해 줘!'};
     if(prompts[n])return prompts[n];
   }
   return n===8&&a?.values.puzzleVersion===1?'유리벽 너머 깃발까지 택배를 보내 줘!':missionQuestions[n-1];
 }
-export const puzzleAutoHint = '어려우면 위의 자동재생으로 먼저 살펴봐도 좋아.';
 export const latchHints = ['자석이 붙잡을 철판이 어디에 있는지 살펴봐.','자석과 철판이 멀면 붙잡지 못해. 철판을 자석 맞은편 점선 자리로 옮겨 봐.'];
 export const sortHints = ['방금 자석을 가까이 댔을 때 따라왔는지 떠올려 봐.','자석을 따라온 물건만 위 수리함이야. 따라오지 않은 물건은 손으로 아래 분류함에 넣어 줘.'];
 export const reachHints = ['자석과 물체 사이가 몇 칸인지 눈금을 살펴봐.','가까울수록 자석의 힘이 세. 더 가까운 칸을 골라 봐.'];
@@ -66,6 +65,7 @@ export function keyRescueText(text: string): string {
 }
 
 export function missionGuide(n: number, a?: { values: Record<string, unknown> }): string {
+  if (n === 4 && a?.values.liveKeyRescue === true) return '막대자석을 오른쪽으로 끌어 철 열쇠에 가까이 대 봐. 열쇠가 붙으면 왼쪽으로 끌어 좁은 틈 밖으로 꺼내 줘.';
   if (n === 2 && a?.values.mailboxQuickRepair === true) return '몸체부터 부품을 하나씩 조립해 줘. 덮개를 닫은 뒤, 흔들어도 열리지 않는지 확인해 봐.';
   if (n === 2 && a?.values.puzzleVersion === 1) return '덮개를 닫고 흔들어 봐. 자석을 넣어도 열리면 철판 자리를 살펴봐. 자석은 그대로 두고 철판을 가까이 옮겨 다시 흔들어 봐.';
   if (a?.values.ideaVersion === 1) return n === 9

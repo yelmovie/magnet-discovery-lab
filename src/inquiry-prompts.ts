@@ -18,9 +18,9 @@ export const mailboxResult = '자석과 철판이 붙었어';
 
 /** After watching, the learner still answers from what they saw. Even activities use their discovery question instead. */
 export const watchChecks: Record<number, WatchCheck> = {
-  1: { question: '덮개를 닫자 무슨 일이 있었어?', choices: ['덮개의 자석이 몸체의 철판에 붙었어', '자석과 철판이 서로 밀어냈어', '덮개가 다시 저절로 열렸어'], answer: 0, retry: '내 실험 다시 보기로 닫히는 장면을 살펴봐. 오른쪽 안쪽 그림에서 두 부품이 어떻게 됐지?', finding: '봤구나! 자석이 철판을 붙잡아서 덮개가 닫혀 있었어.' },
-  3: { question: '자석을 가까이 댔을 때 따라온 물건은?', choices: ['반짝이는 물건 전부', '철로 된 물건', '알루미늄과 플라스틱'], answer: 1, retry: '내 실험 다시 보기로 수리함에 들어간 물건을 살펴봐. 알루미늄은 어디로 갔지?', finding: '봤구나! 철로 된 물건은 따라왔고, 반짝여도 알루미늄은 따라오지 않았어.' },
-  7: { question: '물속 패드는 어떻게 얼룩을 닦았어?', choices: ['물이 흘러서 패드를 밀었어', '손이 유리를 지나 패드를 잡았어', '유리 밖 자석을 따라 패드가 움직였어'], answer: 2, retry: '내 실험 다시 보기로 손잡이와 패드가 함께 움직이는 장면을 살펴봐.', finding: '봤구나! 유리를 사이에 두고 밖의 자석이 안쪽 패드를 끌고 다녔어.' },
+  1: { question: '덮개를 닫자 무슨 일이 있었어?', choices: ['덮개의 자석이 몸체의 철판에 붙었어', '자석과 철판이 서로 밀어냈어', '덮개가 다시 저절로 열렸어'], answer: 0, retry: '설정의 연구 가방을 열어 닫히는 장면을 살펴봐. 오른쪽 안쪽 그림에서 두 부품이 어떻게 됐지?', finding: '봤구나! 자석이 철판을 붙잡아서 덮개가 닫혀 있었어.' },
+  3: { question: '자석을 가까이 댔을 때 따라온 물건은?', choices: ['반짝이는 물건 전부', '철로 된 물건', '알루미늄과 플라스틱'], answer: 1, retry: '설정의 연구 가방을 열어 수리함에 들어간 물건을 살펴봐. 알루미늄은 어디로 갔지?', finding: '봤구나! 철로 된 물건은 따라왔고, 반짝여도 알루미늄은 따라오지 않았어.' },
+  7: { question: '물속 패드는 어떻게 얼룩을 닦았어?', choices: ['물이 흘러서 패드를 밀었어', '손이 유리를 지나 패드를 잡았어', '유리 밖 자석을 따라 패드가 움직였어'], answer: 2, retry: '설정의 연구 가방을 열어 손잡이와 패드가 함께 움직이는 장면을 살펴봐.', finding: '봤구나! 유리를 사이에 두고 밖의 자석이 안쪽 패드를 끌고 다녔어.' },
 };
 
 const mailboxPrompts = (a: Activity) => a.values.assemblyVersion === 1 && mailboxAssembled(a);

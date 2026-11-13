@@ -116,8 +116,8 @@ async function experiments(n) {
     }
   }
   if(n===8){
-    for(let r=0;r<3;r++){
-      const goal=[44,60,30][r];
+    for(let r=0;r<2;r++){
+      const goal=[44,60][r];
       if(r===1)await mission('flip');
       for(let j=0;j<240;j++){
         const car=Number((await save()).activities[8].values.car??27);
@@ -127,7 +127,7 @@ async function experiments(n) {
       assert.ok(Math.abs(Number((await save()).activities[8].values.car)-goal)<3,'cart reaches each destination');
       await mission('detach');
       await page.waitForFunction(round=>window.__lab.save.activities[8].values['segment'+round]===true,r,{timeout:4000});
-      if(r<2){assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await mission('delivery-next');}
+      if(r===0){assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await mission('delivery-next');}
     }
   }
   await page.waitForFunction(()=>!document.querySelector('#experiment-root').inert);
@@ -135,13 +135,15 @@ async function experiments(n) {
 }
 async function finish(n) {
   if(n>=2&&n<=8){
-    const expected=await page.evaluate(async n=>{
-      const {puzzleStars}=await import('/src/mission-model.ts');
-      return puzzleStars(window.__lab.save.activities[n]);
-    },n);
-    assert.equal(await page.locator('.mission-board > .puzzle-stars .on').count(),expected,'earned stars appear immediately for activity '+n);
+    assert.equal(await page.locator('.mission-board > .puzzle-stars').count(),0,'stars stay out of the experiment for activity '+n);
   }
   await action('complete');
+  if(n===8){
+    const next=page.locator('[data-video="continue"]');
+    await next.waitFor();
+    await page.waitForFunction(()=>!document.querySelector('[data-video="continue"]')?.disabled,null,{timeout:20000});
+    await next.click();
+  }
   if(n%2===1)await page.waitForFunction(n=>window.__lab.screen===n+1,n);
   if(n%2===0){
     assert.equal(await page.locator('.quiz-scenes img[src^="data:image/webp;"]').count(),2,'both completed experiments have snapshots');
@@ -154,19 +156,15 @@ async function finish(n) {
     await page.locator('[data-inquiry-group="reflection"]').nth(answer).click();
     await action('complete');
     assert.equal(await page.locator('.concept-video').count(),0,'no automatic video');
-    const expected=await page.evaluate(async n=>{
-      const {puzzleStars}=await import('/src/mission-model.ts');
-      return window.__lab.save.evidence.find(e=>e.stage===n/2-1).activities.filter(a=>a.values.puzzleVersion===1).map(puzzleStars);
-    },n);
-    const stars=page.locator('.reward-stars .puzzle-stars');
-    assert.equal(await stars.count(),expected.length,'reward keeps each star group with its label');
-    const labels=await page.locator('.reward-stars > span').allTextContents();
-    assert.equal(new Set(labels).size,labels.length,'each puzzle reward has its own label');
-    assert.ok(labels.every(label=>label!=='퍼즐 별'),'reward identifies the puzzle instead of repeating a generic label');
-    for(let i=0;i<expected.length;i++)assert.equal(await stars.nth(i).locator('.on').count(),expected[i],'reward matches the saved puzzle evidence');
+    const reward=page.locator('.resident-stage-reward');
+    assert.match(await reward.innerText(),/획득\s+도시 복구 \d+%/);
+    assert.equal(await page.locator('.modal-backdrop :is(.reward-stars, .puzzle-stars)').count(),0);
     await wait(700);
     await page.screenshot({path:out+`/reward-${n/2}.png`});
+    assert.equal(await page.locator('.resident-conversation .resident-stage').getAttribute('data-resident-stage'),String(n/2-1));
     await action('next-zone');
+    assert.equal(await page.locator('.expedition-building.current').getAttribute('data-place'),String(n/2));
+    await action('enter');
   }
   assert.equal((await save()).completed.includes(n),true);check('activity '+n+' complete with real evidence');
 }
@@ -268,11 +266,16 @@ async function workshop() {
   assert.equal((await save()).evidence.length,5);
   assert.equal((await save()).completed.includes(10),true);
   check('activities 9 and 10: resident, draft reload, presentation, PNG and workshop completion');
+  assert.equal(await page.locator('.resident-conversation .resident-stage').getAttribute('data-resident-stage'),'4');
   await action('next-zone');
+  assert.equal(await page.locator('.expedition-building.current').getAttribute('data-place'),'5');
+  await action('enter');
 }
 async function student() {
   const context=await fresh({width:1024,height:768});
   const began=Date.now();
+  assert.equal(await page.locator('[data-place="0"].current .expedition-destination-arrow').count(),1);
+  assert.ok(await page.locator('[data-action="walk-next"] .expedition-destination-arrow').isVisible());
   await action('walk-next');await action('enter');
   for(let n=1;n<=8;n++){assert.equal(await page.evaluate(()=>window.__lab.screen),n);await experiments(n);await page.screenshot({path:out+`/activity-${n}.png`});await finish(n);if(n%2===0){await reload();assert.equal((await save()).evidence.length,n/2,'district '+n/2+' survives reconnecting');}}
   await workshop();

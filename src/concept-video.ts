@@ -18,7 +18,7 @@ export function conceptMarkup(stage: number, replay: boolean) {
 }
 
 /** All media listeners and playback belong to the modal lifetime. Only the mailbox wrap-up waits for the clip to end. */
-export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void, finishVideo = false) {
+export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void, finishVideo = false, continueLabel = '도구 받고 도시로 →') {
   const video = dialog.querySelector<HTMLVideoElement>('video')!, controller = new AbortController();
   const signal = controller.signal;
   const stage=Number(dialog.querySelector<HTMLElement>('[data-concept-stage]')!.dataset.conceptStage);
@@ -36,10 +36,10 @@ export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boole
   if(finishVideo){
     next.disabled=true;
     next.textContent='영상이 끝나면 마무리';
-    video.addEventListener('ended',()=>{next.disabled=false;next.textContent='도구 받고 도시로 →';},{signal});
+    video.addEventListener('ended',()=>{next.disabled=false;next.textContent=continueLabel;},{signal});
   }
   next.addEventListener('click', onContinue, { signal });
-  const fail=()=>{video.pause();next.disabled=false;if(finishVideo)next.textContent='내용 읽고 도시로 →';dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);};
+  const fail=()=>{video.pause();next.disabled=false;if(finishVideo)next.textContent=continueLabel==='도구 받고 도시로 →'?'내용 읽고 도시로 →':continueLabel;dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);};
   video.addEventListener('error',fail,{signal});
   video.querySelector('source')?.addEventListener('error',fail,{signal});
   document.addEventListener('visibilitychange', () => { if (document.hidden) video.pause(); }, { signal });

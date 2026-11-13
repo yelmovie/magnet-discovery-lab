@@ -1,81 +1,93 @@
-/* Puzzle course: emergency card and earned stars, drawn over the shared experiment board. */
-#app .mission-board > .puzzle-stars {
-  position: absolute; z-index: var(--layer-props); top: 25.5%; right: 4%; display: flex; gap: 4px;
-  padding: 6px 10px; border: 2px solid #c5ac76; border-radius: 999px; background: #fff9ebf2;
-  pointer-events: none;
-}
-.puzzle-stars span { display: grid; width: clamp(24px, 2.6vw, 36px); aspect-ratio: 1; }
-.puzzle-stars svg { width: 100%; height: 100%; fill: none; stroke: #8b7a55; stroke-width: 1.6; stroke-linejoin: round; }
-.puzzle-stars .on svg { fill: var(--quest-gold); stroke: var(--quest-gold-edge); }
-.puzzle-stars.is-solved .on { animation: puzzle-star-pop .42s cubic-bezier(.3, 1.5, .5, 1) both; }
-.puzzle-stars.is-solved .on:nth-child(2) { animation-delay: .12s; }
-.puzzle-stars.is-solved .on:nth-child(3) { animation-delay: .24s; }
-/* The same stars close the zone in the reward window. */
-.reward-stars { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0 0; font: 400 var(--font-size-caption)/1.2 var(--font-display); }
-.reward-stars .puzzle-stars { display: inline-flex; gap: 4px; }
-@keyframes puzzle-star-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 #app .mission-board > .puzzle-crisis {
   position: absolute; z-index: calc(var(--layer-controls) + 2); inset: 0; display: grid; place-items: center; padding: 3%;
   border-radius: inherit; background: #173f47b3;
 }
 #app .puzzle-crisis-card {
-  max-width: min(760px, 94%); max-height: 100%; overflow: auto;
+  display: grid; grid-template-columns: clamp(62px, 11vw, 142px) minmax(0, 1fr);
+  align-items: center; gap: clamp(10px, 2vw, 24px);
+  width: min(840px, 100%); max-height: 100%; overflow: auto;
   padding: clamp(14px, 2.2vw, 28px); border: 3px solid var(--quest-gold-edge); border-radius: var(--radius-md);
   background: var(--quest-paper); box-shadow: var(--shadow-popover); color: var(--color-text-main);
   animation: puzzle-crisis-in .32s ease-out both;
 }
-#app .puzzle-crisis-card > div { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+#app .puzzle-crisis-portrait {
+  position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 50%;
+  background: #e6eee0; border: 2px solid #b5c7af;
+}
+#app .puzzle-crisis-portrait span {
+  position: absolute; inset: -6% -22% auto; aspect-ratio: 9 / 10;
+  background: var(--crisis-portrait) left top / 200% 100% no-repeat;
+}
+#app .puzzle-crisis-copy { display: grid; gap: 8px; justify-items: center; min-width: 0; text-align: center; }
 #app .puzzle-crisis-card small { padding: 3px 10px; border-radius: 999px; background: var(--quest-magnet-red); color: #fff; font-size: var(--font-size-caption); font-weight: 800; }
 #app .puzzle-crisis-card strong { font-family: var(--font-display); font-size: clamp(22px, 2.3vw, 34px); line-height: var(--line-height-tight); word-break: keep-all; }
 #app .puzzle-crisis-card p { margin: 0; font-size: var(--font-size-body); line-height: var(--line-height-normal); word-break: keep-all; }
 #app .puzzle-crisis-card .mission-action { position: static; transform: none; min-height: 56px; margin-top: 6px; padding: 8px 28px; font-size: var(--font-size-button); }
 @keyframes puzzle-crisis-in { from { transform: translateY(14px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-height: 520px), (max-width: 620px) {
+  #app .puzzle-crisis-card strong { font-size: clamp(18px, 2.3vw, 24px); }
   #app .puzzle-crisis-card p { font-size: var(--font-size-caption); }
+  #app .puzzle-crisis-card .mission-action { min-height: 48px; margin-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .puzzle-stars.is-solved .on, #app .puzzle-crisis-card { animation: none; }
+  #app .puzzle-crisis-card { animation: none; }
 }
 
 #app .puzzle-platform { position:absolute; z-index:2; display:flex; align-items:flex-end; transform:translate(-50%,-100%); pointer-events:none; width:17%; }
 #app .puzzle-platform .mascot { width:50%!important; height:auto!important; aspect-ratio:3/4; }
 #app .puzzle-platform > span:last-child { position:absolute; left:-10%; right:-10%; bottom:0; height:10px; border:2px solid #765332; border-radius:5px; background:#d9b477; }
 
-#app .plaza-puzzle { width:100%; margin:auto; }
-#app .plaza-puzzle header { position:relative; z-index:2; padding:12px 5%; text-align:center; }
-#app .plaza-puzzle h1 { margin:6px 0; font-size:clamp(22px,2.6vw,34px); }
-#app .plaza-puzzle header p { margin:6px 0; }
-#app .plaza-puzzle ol { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:0; list-style:none; }
-#app .plaza-puzzle li { padding:5px 10px; border-radius:12px; background:#e9dfc7; }
-#app .plaza-puzzle [aria-current=step] { background:#235f58; color:white; }
-#app .plaza-puzzle .mission-world { background-image:url('/assets/quest/stage-remote.webp'); }
-#app .plaza-puzzle .mission-board { aspect-ratio:1280/720; width:100%; min-height:0; }
-#app .plaza-puzzle .mission-feedback { display:block; top:22%; bottom:auto; }
-@media(max-height:520px) {
-  #app .plaza-puzzle header { padding:4px 5%; }
-  #app .plaza-puzzle header h1 { font-size:20px; }
-  #app .plaza-puzzle ol { margin:4px 0; font-size:13px; }
+body.quest-mode #app .plaza-puzzle {
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto; width:100%; height:100dvh;
+  padding:0; background:linear-gradient(#132c33a0,#132c3314 52%,#132c3366),url('/assets/quest/stage-plaza-device.webp') center / cover;
 }
-
-
-body.quest-mode #app .plaza-puzzle { display:flex; flex-direction:column; height:100dvh; }
-body.quest-mode #app .plaza-puzzle header { flex:none; }
-body.quest-mode #app #plaza-experiment { flex:1; display:block; min-height:0; height:auto; padding:0; }
-body.quest-mode #app #plaza-experiment .mission-world { container-type:size; position:relative; width:100%; height:100%; min-height:0; margin:0; }
-body.quest-mode #app #plaza-experiment .mission-board { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(100cqw,177.777cqh); height:auto; aspect-ratio:16/9; }
-body.quest-mode #app #plaza-experiment .mission-access { position:absolute; left:12px; bottom:8px; z-index:5; }
-@media(max-height:520px) {
-  body.quest-mode #app .plaza-puzzle header { padding:3px 120px; }
-  body.quest-mode #app .plaza-puzzle header small { display:none; }
-  body.quest-mode #app .plaza-puzzle header p { font-size:14px; margin:4px 0; }
-  body.quest-mode #app .plaza-puzzle header h1 { margin:0; }
-  body.quest-mode #app .plaza-puzzle li { padding:3px 6px; }
-  body.quest-mode #app #plaza-experiment .mission-action { min-height:44px; font-size:16px; }
+#app .plaza-puzzle header { z-index:2; padding:clamp(8px,2vh,18px) 126px 0; text-align:center; color:#fff5dd; text-shadow:0 2px 8px #142c32; }
+#app .plaza-puzzle header small { font-weight:800; }
+#app .plaza-puzzle h1 { margin:3px 0; font-size:clamp(20px,2.65vw,36px); }
+#app .plaza-puzzle header p { margin:4px 0; font-size:clamp(14px,1.45vw,20px); }
+#app .plaza-puzzle ol { display:flex; flex-wrap:wrap; justify-content:center; gap:5px; padding:0; margin:8px 0 0; list-style:none; }
+#app .plaza-puzzle li { padding:4px 9px; border:1px solid #f4e4b678; border-radius:7px; background:#12363ae0; font-size:clamp(12px,1.25vw,17px); }
+#app .plaza-puzzle li b { color:#f4d793; }
+#app .plaza-puzzle [aria-current=step] { background:#fff1d2; color:#19474a; text-shadow:none; font-weight:800; }
+#app .plaza-puzzle [aria-current=step] b { color:#745224; }
+body.quest-mode #app #plaza-experiment { display:block; min-height:0; height:auto; padding:0; }
+body.quest-mode #app #plaza-experiment .mission-world { container-type:size; position:relative; width:100%; height:100%; min-height:0; margin:0; background:none; }
+body.quest-mode #app #plaza-experiment .mission-board {
+  position:absolute; inset:auto; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(96cqw,214cqh,1440px); height:auto; min-height:0; aspect-ratio:1280 / 596;
+  overflow:visible; border:1px solid #d8bd84; border-radius:18px;
+  background:linear-gradient(155deg,#fff7dfed,#e8d5b1e8);
+  box-shadow:0 12px 38px #172c3363,inset 0 0 0 4px #fff6dc9c;
 }
-body.quest-mode #app #plaza-experiment .mission-board > .mission-actions { top:auto; bottom:4%; left:50%; right:auto; transform:translateX(-50%); }
-body.quest-mode #app #plaza-experiment .mission-board > .mission-feedback { display:block; top:12%; bottom:auto; left:50%; transform:translateX(-50%); width:max-content; max-width:80%; }
+body.quest-mode #app #plaza-experiment .mission-board > canvas { width:100%; height:100%; }
+body.quest-mode #app #plaza-experiment .mission-board > .mission-feedback {
+  display:block; top:4%; bottom:auto; left:50%; transform:translateX(-50%); width:max-content; max-width:90%;
+  background:#fff8e5; color:#204b4e; font-size:clamp(12px,1.35vw,18px);
+}
+body.quest-mode #app #plaza-experiment .mission-board > .mission-feedback:empty { display:none; }
+#app .plaza-actions {
+  display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 14px;
+  min-height:52px; padding:4px 10px max(8px,env(safe-area-inset-bottom)); color:#fff6df; background:#133238de;
+}
+#app .plaza-actions p { margin:0; text-align:center; font-size:clamp(13px,1.5vw,18px); }
+#app .plaza-actions .mission-action { position:relative; left:auto; bottom:auto; transform:none; min-height:44px; padding:5px 16px; }
+@media(max-height:540px) {
+  #app .plaza-puzzle header { padding-top:3px; }
+  #app .plaza-puzzle header small { display:none; }
+  #app .plaza-puzzle h1 { margin:0; }
+  #app .plaza-puzzle ol { margin-top:3px; }
+  #app .plaza-puzzle li { padding:2px 5px; }
+}
+@media(max-width:620px) {
+  #app .plaza-puzzle header { padding:57px 8px 0; }
+  #app .plaza-puzzle h1 { font-size:20px; }
+  body.quest-mode #app #plaza-experiment .mission-board { border-radius:9px; }
+}
 #app .puzzle-platform { transition:left .45s ease; }
+body.quest-mode #app .quest-activity:has(.screen-6 .puzzle-platform) > [data-action="complete"]:disabled {
+  display: inline-flex;
+}
 body.quest-mode #app .screen-6 .mission-board:has(.puzzle-platform.is-crossed) > .mission-3d {
   left:24%; right:auto; top:62%; bottom:auto; transform:none;
 }

@@ -109,6 +109,14 @@ body.quest-mode .modal-backdrop.resident-conversation-backdrop {
 .resident-stage-controls .is-next-reply, .resident-stage-controls button:hover { background: #f3dca7; }
 .resident-stage-controls button:focus-visible, .resident-conversation > .modal-close:focus-visible { outline: 3px solid #26867b; outline-offset: 3px; }
 .resident-stage-controls .resident-stage-return { flex: 0 0 auto; border-color: transparent; background: transparent; text-decoration: underline; }
+.resident-stage-controls .is-next-zone {
+  border-color: #a9712f; background: #ffe7a2; text-decoration: none;
+}
+.resident-stage-reward {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+  margin-top: 8px; color: #5b422b; font-size: 15px;
+}
+.resident-stage-reward strong { display: inline-flex; align-items: center; gap: 5px; }
 .resident-stage-album {
   position: absolute;
   left: 0;

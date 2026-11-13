@@ -105,7 +105,7 @@ function experimentSteps(stage: number, save: Save): Step[] {
       return steps;
     }
     case 8: {
-      if(a.values.puzzleRevision===2&&f(`segment${round}`)&&round<2)return [press('delivery-next','다음 택배 구간으로 이동')];
+      if(a.values.puzzleRevision===2&&round===0&&f('segment0'))return [press('delivery-next','유리벽 배달로 이동')];
       if(a.values.puzzleVersion!==1)return [{kind:'drive',label:'자석으로 카트를 배달하고 목적지에서 멈추기'}];
       const drive:Step={kind:'drive',label:'유리벽 앞까지 당기고, 뒤집어 뒤에서 밀어 깃발에 세우기'};
       return [drive];

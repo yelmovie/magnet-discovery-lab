@@ -68,7 +68,9 @@ function replayStrip(n:number,s:Save){
 export function inquirySteps(n:number,a:Activity):string {
   if(a.values.inquiryVersion===2){
     const phase=inquiryPhase(a),playing=phase==='experiment';
-    return `<nav class="inquiry-steps play-steps" aria-label="탐구 단계"><span class="${playing?'active':'done'}" ${playing?'aria-current="step"':''}>${playing?'1':'✓'} 직접 해 보기</span>${n%2?'':`<span class="${playing?'':phase==='complete'?'done':'active'}" ${phase==='explain'?'aria-current="step"':''}>${phase==='complete'?'✓':'2'} 발견 정리</span>`}${playing?`<details class="play-question"><summary>예상해 보기</summary><div class="play-question-copy"><p>${playQuestions[n-1]}</p><small>${n===1?'덮개를 닫기 전에 내 예상을 골라 볼 거야. 틀려도 괜찮아.':'마음속으로 예상하고 바로 실험해 봐. 틀려도 괜찮아.'}</small></div></details>`:''}</nav>`;
+    if(!playing)return '';
+    const question=a.values.liveKeyRescue===true?'자석을 가까이 가져가면 철 열쇠는 어떻게 움직일까?':playQuestions[n-1];
+    return `<div class="inquiry-steps play-steps"><details class="play-question"><summary>예상해 보기</summary><div class="play-question-copy"><p>${question}</p></div></details></div>`;
   }
   const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?2:3}[phase];
   const labels=n%2?['예상하기','직접 실험','증거로 설명']:['예상하기','직접 실험','증거로 설명','현장 의뢰'];

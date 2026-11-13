@@ -16,7 +16,10 @@ assets/source/**/meshy/*.glb
 graphify-out/
 .tmp/
 .npm-cache/
+output/npc-dialogue-pilot-20261112/
 assets/source/learning-20261029/
+assets/source/plaza-device/
+assets/source/workshop-dialogue/
 ._*
 
 # Story film originals stay local (large); edited copies live in public/video/story/

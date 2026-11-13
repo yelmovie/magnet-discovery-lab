@@ -81,6 +81,11 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       }
       clues = ['붙지 않는 재료도 가까이 대서 검사해야 해.', '겉모습이 반짝인다고 모두 자석에 붙을까? 직접 비교해 봐.']; break;
     case 4:
+      if(f('liveKeyRescue')){
+        total=1;done=Number(f('keyRescued'));
+        action=f('keyAttached')?'자석에 붙은 열쇠를 왼쪽으로 꺼내 줘':'막대자석을 오른쪽으로 끌어 열쇠에 가까이 대 봐';
+        focus='distance-magnet';clues=['자석이 열쇠에 닿기 전에 움직이기 시작하는지 봐.'];break;
+      }
       total = 4; done = [0, 1, 2, 3].filter(i => f(`done${i}`)).length;
       if(paced){total=3;done=[0,1,2].filter(i=>f(`done${i}`)).length;}
       action = ['먼저 5칸에서 손을 놓고 관찰해 봐', '붙을 것 같은 자리를 골라 자석을 놓아 봐', '자석은 그대로! 종이만 두 물체 사이에 넣어 봐', '자석을 가까이 옮겨 철 열쇠를 구조해'][r];
@@ -121,9 +126,9 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       if(paced){
         const unplaced=[0,1].find(i=>{const p=a.points[`ring${i}`]||{x:23+i*16,y:73};return Math.abs(p.x-68)>=7||Math.abs(p.y-(71-i*15))>=7;});
         if(!f('ringReleased')&&unplaced!==undefined){action=`${unplaced+1}번 고리를 기둥의 ${unplaced===0?'아래':'위'} 점선에 놓아 줘`;focus=`ring${unplaced}`;}
-        else if(f('ringReleased')){action='2번 뒤집기로 마주 보는 극을 바꾸고 다시 관찰해 봐';focus='2번 고리 뒤집기';}
-        else if(r===2&&ringFloating(a.values.ringPole0==='S'?'S':'N',a.values.ringPole1==='S'?'S':'N')){action='이번엔 붙여 보자. 2번 뒤집기로 마주 보는 극을 바꿔 줘';focus='2번 고리 뒤집기';}
-        else{action='고리를 놓았어! 손을 떼고 고리 관찰 버튼을 눌러 봐';focus='check';}
+        else if(f('ringReleased')){action=r===2&&f('platformRaised')?'발판이 떠 있어. 2번 뒤집기를 누른 뒤 손 놓고 고리 관찰을 눌러 줘':'2번 뒤집기로 마주 보는 극을 바꾸고 다시 관찰해 봐';focus='2번 고리 뒤집기';}
+        else if(r===2&&ringFloating(a.values.ringPole0==='S'?'S':'N',a.values.ringPole1==='S'?'S':'N')){action='발판을 내리려면 2번 뒤집기로 다른 극이 마주 보게 해 줘';focus='2번 고리 뒤집기';}
+        else{action=r===2&&f('platformRaised')?'손 놓고 고리 관찰을 눌러 발판이 내려가는지 봐':'고리를 놓았어! 손을 떼고 고리 관찰 버튼을 눌러 봐';focus='check';}
       }
       clues = ['아래 고리의 윗면과 위 고리의 아랫면이 마주 봐.', '두 면의 글자가 같으면 밀어내고, 다르면 끌어당겨 붙어.']; break;
     case 7:
@@ -157,18 +162,19 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       } break;
   }
   if(n===10&&a.values.adjusting===true){action='두 부품의 거리와 높이를 맞추고, 조작 손잡이로 돌아가자';focus='design-magnet';}
-  if (a.values.inquiryVersion===2 && missionReady(n,a,s)) { action=n%2?'발견 완료! 아래 버튼으로 다음 탐구를 시작하자':'실험 완료! 아래 버튼으로 오늘의 발견을 골라 보자';clues=['직접 움직인 결과가 내 실험 다시 보기에 남아 있어.'];focus='';done=total; }
+  if (a.values.inquiryVersion===2 && missionReady(n,a,s)) { action=n%2?'발견 완료! 아래 버튼으로 다음 탐구를 시작하자':'실험 완료! 아래 버튼으로 오늘의 발견을 골라 보자';clues=['설정의 연구 가방에서 직접 움직인 결과를 다시 볼 수 있어.'];focus='';done=total; }
   else if (a.values.inquiryVersion===1 && missionReady(n,a,s)) { action='실험 완료! 아래에서 내 실험 증거로 설명해 보자'; clues=['실험 결과가 처음 예상과 같았는지 떠올려 봐.']; focus=''; done=total; }
   else if (ready(n, a, s)) { action = n % 2 ? '발견 완료! 오른쪽 아래에서 다음 의뢰로 가자' : '발견 완료! 내 실험을 이야기하고 개념 영상을 보자'; focus = ''; done = total; }
   else if (a.values[`done${r}`] || a.values[`solved${r}`] && (n!==5||f(`test${r}N`)&&f(`test${r}S`)) || a.values[`segment${r}`] || n === 1 && f(`found${r}`) && (a.values.mechanicsVersion!==1||f(`latch${r}`)) || n === 2 && f(`with${r}`) && f(`without${r}`) || n === 10 && !paced && r === 0 && f('use0')) { action = '관찰했어! 실험대 아래의 다음 의뢰 버튼을 눌러 줘'; focus = ''; }
   if(a.values.puzzleRevision===2){
-    if(n===4){
+    if(n===4&&!f('liveKeyRescue')){
       action=keyRescueText(action);
       if(focus==='release')action='열쇠 움직임 관찰 버튼을 눌러 결과를 살펴봐';
     }
     if(n===5&&f('doorOpen')&&!a.values.doorIndex&&!f('doorPullOpen')){action='첫 문이 열렸어! 당겨 여는 다음 문으로 가자';focus='door-next';}
     else if(n===5&&a.values.doorIndex===1&&!f('doorPullOpen')){action='이번 문은 빗장을 당겨야 열려. 다른 극을 마주 보게 해 줘';focus='probe';}
-    if(n===8){total=3;done=[0,1,2].filter(i=>f(`segment${i}`)).length;if(f(`segment${r}`)&&r<2){action='정차 완료! 다음 택배 구간으로 가자';focus='delivery-next';}}
+    if(n===6&&r<2&&(paced||r===1)&&f(`done${r}`)&&f('platformRaised')){action='친구들이 발판에 올라탔어! 다음: 발판 내리기 버튼을 눌러 줘';focus='next';}
+    if(n===8){total=2;done=[0,1].filter(i=>f(`segment${i}`)).length;if(r===0&&f('segment0')){action='정차 완료! 유리벽 너머로 배달하자';focus='delivery-next';}else if(missionReady(n,a,s)&&inquiryPhase(a)==='experiment'){action='배달 완료! 개념 영상으로 방금 본 힘을 살펴보자';focus='complete';}}
   }
   if(!focus&&done===total)focus='complete';
   else if(!focus&&action.includes('다음 의뢰 버튼'))focus='next';
@@ -176,7 +182,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
 }
 
 export function coachMarkup(n=1) {
-  return `<aside class="lab-coach" aria-label="보조 캐릭터 자꾸의 도움"><button class="coach-toggle" type="button" aria-expanded="false" aria-controls="coach-bubble">${coachArt()}<span>자꾸 · 힌트</span></button><div class="coach-bubble" id="coach-bubble" hidden><div class="coach-heading"><strong>수리 도우미 자꾸</strong><button type="button" class="coach-close" aria-label="힌트 닫기">×</button></div><p class="coach-clue" aria-live="polite"></p><button class="coach-more" type="button">다른 단서 보기</button><button class="coach-more" type="button" data-concept="${Math.floor((n-1)/2)}">▶ 개념 다시보기</button><button class="coach-more coach-visual-guide" type="button" data-action="science-guide">장치·핵심 개념 보기</button></div></aside>`;
+  return `<aside class="lab-coach" aria-label="보조 캐릭터 자꾸의 도움"><button class="coach-toggle" type="button" aria-expanded="false" aria-controls="coach-bubble">${coachArt()}<span>자꾸 · 힌트</span></button><div class="coach-bubble" id="coach-bubble" hidden><div class="coach-heading"><strong>수리 도우미 자꾸</strong><button type="button" class="coach-close" aria-label="힌트 닫기">×</button></div><p class="coach-clue" aria-live="polite"></p><button class="coach-more" type="button">다른 단서 보기</button><button class="coach-more" type="button" data-concept="${Math.floor((n-1)/2)}">▶ 개념 다시보기</button></div></aside>`;
 }
 
 export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
@@ -197,15 +203,11 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
       if(result)resultTimer=window.setTimeout(()=>{showResult=false;update();},4300);
     }
     if(action){
-      const message=shared&&showResult?result:state.action;
+      const message=shared&&showResult?result:state.focus==='complete'?'':state.action;
       if(action.textContent!==message)action.textContent=message;
       action.toggleAttribute('data-result',shared&&showResult);
     }
-    const progress=root.querySelector<HTMLElement>('.discovery-count');
-    if(progress)progress.textContent=`${a.trials?.length||0}개`;
     helper.querySelector('.coach-clue')!.textContent = level === 0 || !state.clues.length ? state.action : state.clues[(level-1)%state.clues.length];
-    const cause=helper.querySelector<HTMLElement>('.coach-heading strong');
-    if(cause)cause.textContent=helper.dataset.reason==='true'?'아직 남은 실험이 있어':'수리 도우미 자꾸';
     root.querySelectorAll('.coach-focus').forEach(el => el.classList.remove('coach-focus'));
     if(!bubble.hidden)nextTarget(state.focus)?.classList.add('coach-focus');
     root.querySelectorAll('.next-action-target').forEach(el => el.classList.remove('next-action-target'));
@@ -215,26 +217,11 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
     }
   };
   const setOpen = (open: boolean) => { bubble.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); update(); };
-  root.querySelector('[data-action="missing-step"]')?.addEventListener('click',()=>{helper.dataset.reason='true';level=0;setOpen(true);helper.querySelector<HTMLButtonElement>('.coach-close')?.focus({preventScroll:true});},{signal:signal.signal});
-  toggle.addEventListener('click', () => {delete helper.dataset.reason;setOpen(bubble.hidden);} , { signal: signal.signal });
+  toggle.addEventListener('click', () => setOpen(bubble.hidden), { signal: signal.signal });
   helper.querySelector('.coach-close')!.addEventListener('click', () => { setOpen(false); toggle.focus(); }, { signal: signal.signal });
   helper.querySelector('.coach-more')!.addEventListener('click', () => { level=(level+1)%(coaching(n,a,s).clues.length+1);update(); }, { signal: signal.signal });
   helper.addEventListener('keydown', e => { if (e.key === 'Escape') { setOpen(false); toggle.focus(); } }, { signal: signal.signal });
   root.addEventListener('coach-update', update, { signal: signal.signal }); update();
   root.addEventListener('click', update, { signal: signal.signal });
-  const blocked=root.querySelector<HTMLButtonElement>('[data-action="missing-step"]');
-  let timer=0;
-  const remind=()=>{
-    clearTimeout(timer);
-    if(!blocked)return;
-    root.querySelector('.hint-next-target')?.classList.remove('hint-next-target');
-    timer=window.setTimeout(()=>{
-      if(blocked.hidden||!bubble.hidden||document.hidden||root.closest('[inert]')||root.querySelector('#experiment-root[inert], details[open]')||document.querySelector('dialog[open],.modal-backdrop'))return;
-      nextTarget(coaching(n,a,s).focus)?.classList.add('hint-next-target');
-    },11000);
-  };
-  if(blocked){
-    remind();for(const event of ['pointerdown','pointerup','keydown','coach-update'])root.addEventListener(event,remind,{signal:signal.signal});
-  }
-  return () => {clearTimeout(timer);clearTimeout(resultTimer);signal.abort();};
+  return () => {clearTimeout(resultTimer);signal.abort();};
 }

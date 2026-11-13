@@ -1,6 +1,5 @@
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { icon, walkingMascot } from './art';
-import { questRewards } from './mission-content';
 import { stageNames, type Point, type Save } from './domain';
 import { districtRestored, townLights } from './town-lights';
 import { aquariumOnMap, courierOnMap } from './town-restoration';
@@ -112,10 +111,16 @@ export function roadRoute(start:Point,target:number|Point):Point[]{
 }
 export function expeditionMarkup(s:Save,admin=false){
   const next=Math.min(5,s.evidence.length);
-  return `<section class="quest-city"><div class="expedition-viewport" aria-label="길을 따라 걷는 자석 도시"><div class="expedition-world"><img class="expedition-map" src="/assets/quest/city-expedition.webp" alt="넓은 돌길로 이어진 우편국, 재료 연구소, 극의 탑, 수조, 공방, 중앙 광장" draggable="false">${aquariumOnMap(s)}${townLights(s)}${doors.map((node,i)=>{const p=roads[node],open=admin||i<=next,done=i<5&&districtRestored(s,i);return `<button class="expedition-building ${done?'restored':open?'available':'locked'} ${!admin&&i===next?'current':''}" data-place="${i}" style="left:${p.x}%;top:${p.y-11}%" aria-label="${i===5?'중앙 광장':stageNames[i]}${!admin&&i===next?' 현재 목적지':''}${done?' 복구 완료':open?' 입구로 걷기':' 잠김'}">${icon(done?'check':open?'map':'lock',20)}<span>${i===5?'중앙 광장':stageNames[i]}</span>${done?'<small>복구 완료</small>':admin?'<small>열림</small>':i===next?'<small>현재 목적지</small>':''}</button>`;}).join('')}${residentMarkers(s)}${courierOnMap(s)}<div class="expedition-player" aria-label="탐험가 밀이">${walkingMascot('mili',104)}</div><div class="expedition-npc" role="img" aria-label="길을 따라오는 당이">${walkingMascot('dangi',96)}</div></div></div><div class="expedition-map-tools"><button type="button" class="quest-icon" data-map-pan aria-pressed="false" aria-label="손으로 지도를 밀어 둘러봐요" title="손으로 지도 밀기">${icon('hand',27)}</button><button type="button" class="quest-icon" data-map-overview aria-pressed="false" aria-label="지도 전체 보기" title="지도 전체 보기">${icon('expand',27)}</button></div><div class="expedition-dpad" aria-label="도시에서 걷기">${[['0,-1','↑','위'],['-1,0','←','왼쪽'],['0,1','↓','아래'],['1,0','→','오른쪽']].map(([d,arrow,label])=>`<button data-dir="${d}" aria-label="${label}${label.endsWith('쪽')?'으':''}로 걷기">${arrow}</button>`).join('')}</div>${admin?'<div class="expedition-next quest-cta" role="status">모든 스테이지 열림 · 건물로 가 봐</div>':`<button class="expedition-next quest-cta" data-action="walk-next">${next===5?'중앙 광장으로':`${stageNames[next]} 입구로`}${icon('arrow',24)}</button>`}<div class="expedition-tool-display" aria-label="찾은 탐구 도구">${questRewards.slice(0,s.evidence.length).map(r=>`<span role="img" aria-label="${r.name}" title="${r.use}">${icon(r.icon,24)}<small>${r.name}</small></span>`).join('')}</div></section>`;
+  const destinationArrow = `<span class="expedition-destination-arrow${s.settings.motion?'':' no-motion'}" aria-hidden="true">${icon('arrow', 24)}</span>`;
+  const buildings = doors.map((node, i) => {
+    const p = roads[node], open = admin || i <= next, done = i < 5 && districtRestored(s, i);
+    const current = !admin && i === next;
+    return `<button class="expedition-building ${done ? 'restored' : open ? 'available' : 'locked'}${current ? ' current' : ''}" data-place="${i}" style="left:${p.x}%;top:${p.y-11}%" aria-label="${i === 5 ? '중앙 광장' : stageNames[i]}${current ? ' 현재 목적지' : ''}${done ? ' 복구 완료' : open ? ' 입구로 걷기' : ' 잠김'}"><svg class="map-lock-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="${open?'M8 11V7a4 4 0 0 1 7.5-2':'M8 11V7a4 4 0 0 1 8 0v4'}"/></svg><span>${i === 5 ? '중앙 광장' : stageNames[i]}</span></button>`;
+  }).join('');
+  return `<section class="quest-city"><div class="expedition-viewport" aria-label="길을 따라 걷는 자석 도시"><div class="expedition-world"><img class="expedition-map" src="/assets/quest/city-expedition.webp" alt="넓은 돌길로 이어진 우편국, 재료 연구소, 극의 탑, 수조, 공방, 중앙 광장" draggable="false">${aquariumOnMap(s)}${townLights(s)}${buildings}${residentMarkers(s)}${courierOnMap(s)}<div class="expedition-player" aria-label="탐험가 밀이">${walkingMascot('mili',104)}</div><div class="expedition-npc" role="img" aria-label="길을 따라오는 당이">${walkingMascot('dangi',96)}</div></div></div><div class="expedition-map-tools"><button type="button" class="quest-icon" data-map-pan aria-pressed="false" aria-label="손으로 지도를 밀어 둘러봐요" title="손으로 지도 밀기">${icon('hand',27)}</button><button type="button" class="quest-icon" data-map-overview aria-pressed="false" aria-label="지도 전체 보기" title="지도 전체 보기">${icon('expand',27)}</button></div><div class="expedition-dpad" aria-label="도시에서 걷기">${[['0,-1','↑','위'],['-1,0','←','왼쪽'],['0,1','↓','아래'],['1,0','→','오른쪽']].map(([d,arrow,label])=>`<button data-dir="${d}" aria-label="${label}${label.endsWith('쪽')?'으':''}로 걷기">${arrow}</button>`).join('')}</div>${admin?'':`<button class="expedition-next quest-cta" data-action="walk-next">${next===5?'중앙 광장으로 가기':`${stageNames[next]} 입구로 가기`}${destinationArrow}</button>`}</section>`;
 }
-export interface ExpeditionHandle {goTo(i:number):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
-export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onArrive:(i:number)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
+export interface ExpeditionHandle {goTo(i:number,guided?:boolean):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
+export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onArrive:(i:number,guided:boolean)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
   const viewport=root.querySelector<HTMLElement>('.expedition-viewport')!,world=root.querySelector<HTMLElement>('.expedition-world')!,player=root.querySelector<HTMLElement>('.expedition-player')!,npc=root.querySelector<HTMLElement>('.expedition-npc')!;
   const courier=root.querySelector<HTMLElement>('.expedition-courier');let courierPhase=0;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -127,6 +132,15 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   };
   if(courier)drawCourier(courierPosition(0));
   let p=options.save.city.x<=100&&options.save.city.y<=100?onPavement(options.save.city):{...roads[0]},route:Point[]=[],dir={x:0,y:0},paused=false,raf=0,last=performance.now(),saveAt=0,doorLatch=-1;
+  const nextButton=root.querySelector<HTMLButtonElement>('[data-action="walk-next"]');
+  const residentButtons=[...root.querySelectorAll<HTMLButtonElement>('[data-resident]')];
+  let guidedDoor:number|null=null;
+  function setGuidedDoor(value:number|null){
+    guidedDoor=value;
+    nextButton?.setAttribute('aria-busy',String(value!==null));
+    nextButton?.setAttribute('aria-disabled',String(value!==null));
+  }
+  function cancelRoute(){route=[];setGuidedDoor(null);}
   // Restoring at a doorway must never reopen it until the player leaves and crosses again.
   doors.forEach((node,i)=>{if(dist(p,roads[node])<4)doorLatch=i;});
   const npcGap=4.8,spawn=projectRoad(p),[a,b]=spawn.edge;
@@ -159,7 +173,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   let returnView={free:false,cam:{x:0,y:0}};
   const setOverview=(value:boolean)=>{
     if(value===overview)return;
-    if(value){returnView={free,cam:{...cam}};route=[];releaseDirections();}
+    if(value){returnView={free,cam:{...cam}};cancelRoute();releaseDirections();}
     overview=value;
     const button=root.querySelector<HTMLButtonElement>('[data-map-overview]')!;
     const label=value?'이전 지도 보기':'지도 전체 보기';
@@ -173,7 +187,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(overview)setOverview(false);
     else if(free){setFree(false);draw();return;}
     draw();const m=new DOMMatrix(getComputedStyle(world).transform);cam={x:m.e,y:m.f};
-    route=[];releaseDirections();setFree(true);draw();
+    cancelRoute();releaseDirections();setFree(true);draw();
   },{signal});
   root.querySelector('[data-map-overview]')?.addEventListener('click',()=>{if(!paused)setOverview(!overview);},{signal});
   const draw=()=>{
@@ -190,6 +204,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(scale!==lastScale){world.style.setProperty('--map-scale',String(scale));lastScale=scale;}
     const follower=trailPoint(trail,npcGap);drawWalker(walkers[0],p);drawWalker(walkers[1],follower);
     player.style.zIndex=p.y>=follower.y?'7':'6';npc.style.zIndex=p.y>=follower.y?'6':'7';
+    residentButtons.forEach(b=>b.classList.toggle('is-near',dist(p,residents[Number(b.dataset.resident)].feet)<13));
   };
   viewportSize.observe(viewport);
   const held=new Map<string,Point>();
@@ -200,11 +215,16 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   function releaseDirections(){held.clear();readDirection();}
   function pressDirection(key:string,d:Point){
     if(paused||held.has(key))return;
-    setFree(false);route=[];held.set(key,d);readDirection();
+    setFree(false);cancelRoute();held.set(key,d);readDirection();
     // A quick tap can start and end between frames. Give it one visible step.
     p=walkRoad(p,dir,.55);
   }
-  const goTo=(i:number)=>{if(i<0||i>5)return;setFree(false);releaseDirections();route=roadRoute(p,doors[i]);doorLatch=-1;};
+  const goTo=(i:number,guided=false)=>{
+    if(paused||i<0||i>5||(guided&&guidedDoor!==null))return;
+    if(guided&&i>options.save.evidence.length&&!options.admin)return;
+    if(overview)setOverview(false);
+    setFree(false);releaseDirections();route=roadRoute(p,doors[i]);doorLatch=-1;setGuidedDoor(guided?i:null);
+  };
   function frameResident(stage:number) {
     if(overview)return;
     draw();
@@ -223,12 +243,12 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     frameResident(stage);
     button.focus({preventScroll:true});
   }
-  root.querySelectorAll<HTMLButtonElement>('[data-resident]').forEach(button=>{
+  residentButtons.forEach(button=>{
     const stage=Number(button.dataset.resident);
     button.addEventListener('focus',()=>{if(button.matches(':focus-visible'))frameResident(stage);},{signal});
     button.addEventListener('click',()=>{
       if(paused)return;
-      route=[];releaseDirections();
+      cancelRoute();releaseDirections();
       button.classList.remove('just-returned');
       button.focus({preventScroll:true});
       options.onResident(stage);
@@ -237,17 +257,17 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   root.querySelectorAll<HTMLElement>('[data-place]').forEach(b=>b.addEventListener('click',()=>goTo(Number(b.dataset.place)),{signal}));
   bindDirectionPad(root,'[data-dir]',b=>{const [x,y]=b.dataset.dir!.split(',').map(Number);return x<0?'left':x>0?'right':y<0?'up':'down';},{signal,blocked:()=>paused||document.hidden||!!document.querySelector('dialog[open]'),
     press:d=>{held.delete('pad');pressDirection('pad',{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0});},release:()=>{held.delete('pad');readDirection();},
-    tap:d=>{setFree(false);route=[];p=walkRoad(p,{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0},1.2);}
+    tap:d=>{setFree(false);cancelRoute();p=walkRoad(p,{x:d==='left'?-1:d==='right'?1:0,y:d==='up'?-1:d==='down'?1:0},1.2);}
   });
   const keyDirs:Record<string,Point>={ArrowUp:{x:0,y:-1},KeyW:{x:0,y:-1},ArrowDown:{x:0,y:1},KeyS:{x:0,y:1},ArrowLeft:{x:-1,y:0},KeyA:{x:-1,y:0},ArrowRight:{x:1,y:0},KeyD:{x:1,y:0}};
   window.addEventListener('keydown',e=>{if(paused||!keyDirs[e.code]||e.ctrlKey||e.metaKey||e.altKey||(e.target instanceof HTMLElement&&(e.target.isContentEditable||e.target.closest('dialog,[role="dialog"],input,textarea,select'))))return;e.preventDefault();if(!e.repeat)pressDirection(e.code,keyDirs[e.code]);},{signal});
   window.addEventListener('keyup',e=>{if(held.delete(e.code))readDirection();},{signal});window.addEventListener('blur',releaseDirections,{signal});
   viewport.addEventListener('pointerdown',e=>{if(paused||drag||!e.isPrimary||e.button!==0)return;swallowClick=false;if(overview)return;const m=new DOMMatrix(getComputedStyle(world).transform);drag={id:e.pointerId,x:e.clientX,y:e.clientY,camX:m.e,camY:m.f,moved:false};},{signal});
-  viewport.addEventListener('pointermove',e=>{if(paused||!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;route=[];releaseDirections();viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};},{signal});
+  viewport.addEventListener('pointermove',e=>{if(paused||!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<8)return;if(!drag.moved){drag.moved=true;cancelRoute();releaseDirections();viewport.setPointerCapture(e.pointerId);viewport.classList.add('is-dragging');setFree(true);}cam={x:drag.camX+dx,y:drag.camY+dy};},{signal});
   for(const event of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(event,e=>{if(!drag||drag.id!==(e as PointerEvent).pointerId)return;swallowClick=event==='pointerup'&&drag.moved;drag=null;viewport.classList.remove('is-dragging');},{signal});
   // A drag that ends over a building must not also walk there.
   viewport.addEventListener('click',e=>{if(swallowClick){swallowClick=false;e.stopPropagation();e.preventDefault();}},{signal,capture:true});
-  viewport.addEventListener('click',e=>{if(paused||free||(e.target as HTMLElement).closest('button'))return;setFree(false);releaseDirections();const r=world.getBoundingClientRect(),q={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};route=roadRoute(p,q);},{signal});
+  viewport.addEventListener('click',e=>{if(paused||free||(e.target as HTMLElement).closest('button'))return;setFree(false);cancelRoute();releaseDirections();const r=world.getBoundingClientRect(),q={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};route=roadRoute(p,q);},{signal});
   const tick=(now:number)=>{const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;if(!paused&&!document.hidden){
     if(route.length){const q=route[0],d=dist(q,p),step=dt*12;if(d<=step){p=q;route.shift();}else{p={x:p.x+(q.x-p.x)*step/d,y:p.y+(q.y-p.y)*step/d};}}
     else if(dir.x||dir.y)p=walkRoad(p,dir,dt*12);
@@ -256,7 +276,11 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(moving){const last=trail[trail.length-1];if(dist(last,p)>.3){trail.push({...p});if(trail.length>80)trail.splice(0,trail.length-80);}}
     if(moving&&now-saveAt>700){options.onPosition(p);saveAt=now;}
     if(doorLatch>=0&&dist(p,roads[doors[doorLatch]])>5)doorLatch=-1;
-    if(!route.length)for(let i=0;i<doors.length;i++)if(dist(p,roads[doors[i]])<1.5&&doorLatch!==i){doorLatch=i;options.onPosition(p);options.onArrive(i);break;}
+    if(!route.length)for(let i=0;i<doors.length;i++)if(dist(p,roads[doors[i]])<1.5&&doorLatch!==i){
+      const guided=guidedDoor===i;doorLatch=i;setGuidedDoor(null);options.onPosition(p);options.onArrive(i,guided);
+      if(signal.aborted)return;
+      break;
+    }
   }draw();raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
-  return{goTo,welcomeResident,direction(x,y){setFree(false);route=[];releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
+  return{goTo,welcomeResident,direction(x,y){setFree(false);cancelRoute();releaseDirections();dir={x,y};},pause(value){paused=value;releaseDirections();if(value){cancelRoute();drag=null;swallowClick=false;viewport.classList.remove('is-dragging');}},motion(){},destroy(){cancelAnimationFrame(raf);viewportSize.disconnect();abort.abort();options.onPosition(p);}};
 }

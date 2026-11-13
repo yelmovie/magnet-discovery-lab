@@ -123,17 +123,16 @@ export function poles(v: Surface){
       g.fillStyle='#cda873';g.strokeStyle='#85663d';g.lineWidth=3;g.beginPath();g.roundRect(q.x*W/100-coveredWidth/2,q.y*H/100-25,coveredWidth,50,6);g.fill();g.stroke();
     }
     if(puzzle){
-      // The bolt's right end reaches the release at the door only when it is pushed away.
-      const open=doorOpen(),phase=doorPhase(),x=1104,y=292,w=74,h=182,cy=dock.y*H/100;
-      g.save();
-      g.fillStyle=open?'#ffeab0':'#3b2f25';g.beginPath();g.roundRect(x,y,w,h,8);g.fill();
-      g.fillStyle='#2f8f8a';g.strokeStyle='#b8892f';g.lineWidth=5;
-      g.beginPath();if(open)g.roundRect(x+w-20,y,20,h,6);else g.roundRect(x,y,w,h,8);g.fill();g.stroke();
-      g.strokeStyle='#8a6a2c';g.lineWidth=6;g.strokeRect(x-6,y-6,w+12,h+12);
-      g.fillStyle=open?'#58b368':phase?'#f4c35c':'#9a8f80';g.strokeStyle='#5d4a22';g.lineWidth=3;
-      g.beginPath();g.arc(x-8,cy,11,0,2*Math.PI);g.fill();g.stroke();
-      g.restore();
-      v.label(open?'문이 열렸어':phase?(pulling?'빗장을 당기면 열려':'빗장을 밀면 열려'):'잠긴 문',pt((x+w/2)*100/W,36),true,open?'#20765e':'#203e40');
+      const open=doorOpen(),phase=doorPhase(),door=pt(90,55);
+      const closedArt=v.asset('pole-door-closed','/assets/quest/pole-door-closed.webp');
+      const openArt=v.asset('pole-door-open','/assets/quest/pole-door-open.webp');
+      const image=open&&openArt.complete&&openArt.naturalWidth?openArt:closedArt;
+      if(image.complete&&image.naturalWidth){
+        const height=208,width=height*image.naturalWidth/image.naturalHeight;
+        g.save();g.shadowColor='#31251f42';g.shadowBlur=9;g.shadowOffsetY=5;
+        g.drawImage(image,door.x*W/100-width/2,door.y*H/100-height/2,width,height);g.restore();
+      }
+      v.label(open?'열린 문':phase?(pulling?'당겨 여는 문':'밀어 여는 문'):'잠긴 문',pt(door.x,38),true,open?'#20765e':'#203e40');
       if(phase&&!open&&!reaction&&!v.animating)v.arrow(pt(q.x+(pulling?-3:3),43),pt(q.x+(pulling?-11:11),43),'#b8892f');
     }
     v.label(puzzle&&doorPhase()?'문 빗장 자석':'종이로 가린 자석',pt(q.x,q.y-10),true);
@@ -150,9 +149,10 @@ export function poles(v: Surface){
     }
     if(reaction){
       const before=v.a.points['initial:unknown-magnet']||rest;
-      if(Math.abs(before.x-q.x)>1)v.arrow(pt(before.x,66),pt(q.x,66));
+      const arrowY=puzzle?63:66;
+      if(Math.abs(before.x-q.x)>1)v.arrow(pt(before.x,arrowY),pt(q.x,arrowY));
       if(v.has('lens'))v.target(pt(before.x,39),'처음 위치',60,23);
-      v.label(reaction,pt(q.x,73),true);
+      v.label(reaction,pt(q.x,puzzle?68:73),true);
     }
   };
   v.drag('probe',probeHome,p=>doorPhase()&&v.has('doorReady')?tryDoor(p):test(p));
@@ -268,7 +268,7 @@ export function rings(v: Surface){
     }
     if(!platform)v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:`${count}개 고리를 서로 붙게!`,pt(50,29),true);
   };
-  for(let i=0;i<count;i++){
+  for(let i=0;i<count&&!v.has('platformCrossed');i++){
     v.drag(`ring${i}`,tray(i),p=>{v.a.values.ringReleased=false;release=0;if(distance(p,slot(i))<11)v.set(`ring${i}`,slot(i));v.draw();},()=>{v.a.values.ringReleased=false;release=0;});
     const b=v.c.root.querySelector<HTMLElement>(`[data-drag="ring${i}"]`);b?.addEventListener('dblclick',()=>flipRing(i));
     const flip=document.createElement('button');flip.className='ring-flip';flip.textContent=`${i+1}번 뒤집기`;flip.setAttribute('aria-label',`${i+1}번 고리 뒤집기`);flip.style.left=`${tray(i).x}%`;flip.style.top='84%';flip.addEventListener('click',()=>flipRing(i));v.c.root.querySelector('.mission-board')!.append(flip);
@@ -286,7 +286,7 @@ export function rings(v: Surface){
       trial.initialObjects=initial;trial.objects=snapshot();
       playEffect(allFloat?'compare':'snap',v.s.settings);
       if(!correct){
-        const wrong=r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.';
+        const wrong=r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':platform&&count===2?'발판이 떠 있어. 2번 뒤집기를 누른 뒤 손 놓고 고리 관찰을 눌러 줘.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.';
         if(v.a.values.puzzleVersion===1)v.miss(wrong,ringHints);else v.tell(wrong);v.draw();return;
       }
       if(platform)v.a.values[r<2?'platformRaised':'platformCrossed']=true;

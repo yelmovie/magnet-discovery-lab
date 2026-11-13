@@ -15,6 +15,12 @@ export const discoveries = [
 
 export function discoveryFor(n: number, a: { values: Record<string, unknown> }) {
   const item = discoveries[Math.floor((n - 1) / 2)];
+  if(n===4&&a.values.liveKeyRescue===true)return {
+    question:'자석을 철 열쇠에 가까이 가져가면 어떻게 될까?',
+    choices:['멀리 있을 때와 똑같이 가만히 있어','닿기 전부터 자석 쪽으로 끌려와','자석을 피해 반대쪽으로 움직여'],
+    answer:1,feedback:'자석을 멀리 뒀을 때와 가까이 가져갔을 때 열쇠의 움직임을 비교해 봐.',
+    finding:'자석을 가까이 가져가니 철 열쇠가 닿기 전부터 끌려왔어.',
+  };
   if (n !== 4 || a.values.puzzleRevision !== 2) return item;
   return { ...item, question: keyRescueText(item.question),
     choices: item.choices.map(keyRescueText), finding: keyRescueText(item.finding) };

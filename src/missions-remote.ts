@@ -133,7 +133,7 @@ export function delivery(v: Surface){
     const path=v.path;
     stopProof(`stop${r}`,'배달 장소에서 카트가 멈춘 뒤 확인');v.path=path;
     stopProof(`delivery${r}`,'극의 힘으로 운반하고 정차');
-    if(puzzle||v.a.values.puzzleRevision===2&&r===2)playEffect('reward',v.s.settings);
+    if(puzzle)playEffect('reward',v.s.settings);
     v.tell(puzzle?'배달 완료! 유리벽 너머 깃발에 딱 멈췄어.':'배달 완료! 카트가 배달 장소에 멈췄어.',true,'crate');v.refresh();return true;
   };
   // Puzzle course: a miss is a visible result plus the next clue, never a penalty screen.
@@ -225,7 +225,7 @@ export function delivery(v: Surface){
   v.drag('controller',pt(20,40),()=>{finishStopped();},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
   v.button('detach',()=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(puzzle?20:q.x,38)));v.c.touch();if(finishStopped())return;v.tell(speed!==0?'자석을 멀리했어. 카트가 조금 더 굴러 멈추는지 봐.':'조종 자석을 멀리했어.');v.draw();});
   v.button('delivery-next',()=>{
-    if(v.a.values.puzzleRevision!==2||!v.has(`segment${r}`)||r>=2)return;
+    if(v.a.values.puzzleRevision!==2||r!==0||!v.has('segment0'))return;
     v.a.values.round=r+1;v.a.values.car=goal;v.a.values.cartSpeed=0;v.a.values.controllerPole='N';
     delete v.a.values.driveFacing;delete v.a.values.driveCartFacing;v.a.points={};v.refresh();
   });

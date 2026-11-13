@@ -4,11 +4,11 @@ import { mailboxParts, partKey, partInstalled } from '../src/mailbox-assembly';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyActivity, freshSave, validSave, type Activity, type Point, type Save } from '../src/domain';
 import { missionView, prepareQuickMailbox } from '../src/mission-play';
-import { deliveryCourse, missionReady, puzzleHint, puzzleSolved, puzzleStars } from '../src/mission-model';
+import { deliveryCourse, missionReady, puzzleHint, puzzleSolved } from '../src/mission-model';
 import type { Context } from '../src/activity-types';
 import { bindPlacement } from '../src/manipulation';
 import { glassStains } from '../src/aquarium-glass';
-import { padHints, puzzleAutoHint, reachHints, ringHints, sortHints } from '../src/mission-content';
+import { padHints, reachHints, ringHints, sortHints } from '../src/mission-content';
 
 // Exercise the public manipulation events, including the animation clock, without
 // depending on canvas pixels. Visual layout is checked in the actual browser.
@@ -84,7 +84,7 @@ function mount(n: number, values: Record<string, string | number | boolean> = {}
   Object.assign(canvas, { getContext: () => draw });
   root.elements.set('canvas', canvas); root.elements.set('.mission-board', board);
   root.elements.set('.mission-feedback', new ElementStub());
-  if(plaza){s.final.puzzle=a;root.elements.set('#plaza-experiment',root);}
+  if(plaza){s.final.puzzle=a;root.elements.set('.plaza-puzzle',root);}
   const view = plaza?plazaPuzzleView(s)!:missionView(n, a, s);
   for (const match of view.html.matchAll(/data-(drag|mission)="([^"]+)"/g)) {
     const el = new ElementStub(); el.board = board;
@@ -478,6 +478,16 @@ describe('반복을 줄인 새 탐구 흐름', () => {
     expect(new Set([0,1,6].map(i=>m.a.points[`material-${i}`].x)).size).toBe(3);
     expect(new Set([2,3,4].map(i=>m.a.points[`material-${i}`].x)).size).toBe(3);
   });
+  it('철 클립, 철못, 너트를 한 자석에 붙인 채 수리함에 같이 옮긴다',()=>{
+    let m=short(3);
+    for(const [x,y] of [[36,42],[52,42],[66,65]])m.place('sweep-magnet',{x,y});
+    for(const id of ['clip','nail','nut'])expect(m.a.values[`carry-${id}`]).toBeTruthy();
+    m=mount(3,{},m);m.place('sweep-magnet',{x:86,y:44});
+    for(const id of ['clip','nail','nut']){
+      expect(m.a.values[`carry-${id}`]).toBeUndefined();
+      expect(m.a.values[`delivered-${id}`]).toBe(true);
+    }
+  });
   it('비자성 검사를 마치면 손으로 분류할 재료를 자석이 가리지 않는다',()=>{
     const m=short(3);m.place('sweep-magnet',{x:66,y:43});
     expect(m.c.root.querySelector('.mission-feedback')!.textContent).toContain('손으로 잡아 오른쪽 아래');
@@ -485,6 +495,15 @@ describe('반복을 줄인 새 탐구 흐름', () => {
     m.place('material-2',{x:86,y:70});
     const sorted=m.c.root.querySelector<HTMLButtonElement>('[data-drag="material-2"]')!;
     expect(sorted.disabled).toBe(true);expect(sorted.style.pointerEvents).toBe('none');
+  });
+  it.each([['wood',3],['plastic',4]])('손으로 %s 재료를 자석에 대고 아래 분류함에 넣을 수 있다',(id,index)=>{
+    const m=short(3);
+    m.place(`material-${index}`,{x:86,y:70});
+    expect(m.a.values[`sorted-${id}`]).toBeUndefined();
+    m.place(`material-${index}`,m.a.points['sweep-magnet']);
+    expect(m.a.values[`tested-${id}`]).toBe(true);
+    m.place(`material-${index}`,{x:86,y:70});
+    expect(m.a.values[`sorted-${id}`]).toBe(true);
   });
   it('먼 곳·가까운 곳·종이 비교를 마치면 같은 개념의 구조 활동을 요구하지 않는다',()=>{
     let m=short(4);m.click('release');m=reopen(4,m);m.click('next');
@@ -691,17 +710,13 @@ describe('먼 거리 관찰 뒤 직접 고르는 거리',()=>{
     const t=m.a.trials!.find(t=>t.key==='near')!;
     expect(t.objects.find(o=>o.id==='clip')!.x).toBeLessThan(t.initialObjects.find(o=>o.id==='clip')!.x);
   });
-  it('새 열쇠 퍼즐에서는 움직이지 않은 거리도 유효한 관찰로 남기며 별을 깎지 않는다',()=>{
+  it('진행 중이던 열쇠 실험을 이어도 가까이 끄는 조작으로 시작하고 별을 깎지 않는다',()=>{
     const m=mount(4,{paceVersion:1,mechanicsVersion:1,puzzleVersion:1,puzzleRevision:2,round:1,done0:true});
-    for(const gap of [3,2]){
-      m.place('distance-magnet',{x:55-gap*6,y:55});m.click('release');tick(1);
-      expect(m.a.values.puzzleMisses||0).toBe(0);
-      expect(m.a.trials?.find(t=>t.key===`distance-choice-${gap}`)?.outcome).toBe('none');
-    }
-    expect(m.a.values.done1).not.toBe(true);
-    m.place('distance-magnet',{x:49,y:55});m.click('release');tick(1.2);
-    expect(m.a.values.done1).toBe(true);
-    expect(m.a.trials?.find(t=>t.key==='near')?.objects.some(o=>o.id==='key')).toBe(true);
+    expect(m.a.values.liveKeyRescue).toBe(true);
+    m.place('distance-magnet',{x:35,y:55});
+    expect(m.a.values.puzzleMisses||0).toBe(0);
+    expect(m.a.values.keyAttached).toBeUndefined();
+    expect(missionReady(4,m.a,m.s)).toBe(false);
   });
   it('움직임 줄이기에서도 놓은 손과 관찰 결과가 남는다',()=>{
     const m=mount(4,{paceVersion:1,round:1});m.s.settings.motion=false;
@@ -776,7 +791,6 @@ describe('택배 퍼즐 코스 · 유리벽 보관실',()=>{
     const delivered=m.a.trials!.find(t=>t.key==='delivery0')!;
     expect(delivered.conditions).toMatchObject({method:'push',course:'glass-room',manual:true});
     expect(Math.abs(Number(delivered.conditions.car)-deliveryCourse.goal)).toBeLessThan(deliveryCourse.tolerance);
-    expect(puzzleStars(m.a)).toBe(3);
   });
   it('깃발을 지나치면 한 번 빗나간 것으로 세고, 다른 극으로 당겨 되돌릴 수 있다',()=>{
     const m=puzzle();m.click('flip');
@@ -790,24 +804,15 @@ describe('택배 퍼즐 코스 · 유리벽 보관실',()=>{
     for(let i=0;i<300&&car(m)>deliveryCourse.goal+1;i++)tick(.1);
     m.click('detach');tick(1.5);
     expect(m.a.values.segment0).toBe(true);expect(m.a.values.puzzleMisses).toBe(1);
-    expect(puzzleStars(m.a)).toBe(2);
   });
-  it('별은 직접 풀었을 때만 받고, 빗나간 횟수에 따라 줄어든다',()=>{
-    const a=emptyActivity();a.values={puzzleVersion:1};
-    expect(puzzleStars(a)).toBe(0);
-    a.values.segment0=true;a.trials=[{id:'8:delivery0',key:'delivery0',activity:8,modelVersion:1,conditions:{manual:true},initialObjects:[],objects:[],input:[],outcome:'success',pinned:true}];
-    expect(puzzleStars(a)).toBe(3);
-    a.values.puzzleMisses=1;expect(puzzleStars(a)).toBe(2);
-    a.values.puzzleMisses=2;expect(puzzleStars(a)).toBe(1);
-    a.values.puzzleMisses=9;expect(puzzleStars(a)).toBe(1);
-    a.trials[0].conditions={autoplay:true};expect(puzzleStars(a)).toBe(0);
+  it('퍼즐별 성공 기록을 구분하고, 빗나간 횟수에 맞춰 힌트를 준다',()=>{
     // Each course ends on its own stored proof; other trials never count as solving it.
     for(const [activity,key] of [[2,'repair0'],[3,'materials'],[4,'paper'],[5,'door0'],[6,'join2'],[7,'clean'],[8,'delivery0']] as const){
       const b=emptyActivity();b.values={puzzleVersion:1,puzzleMisses:1};
       b.trials=[{id:`${activity}:near`,key:'near',activity,modelVersion:1,conditions:{manual:true},initialObjects:[],objects:[],input:[],outcome:'success',pinned:true}];
-      expect(puzzleSolved(b)).toBe(false);expect(puzzleStars(b)).toBe(0);
+      expect(puzzleSolved(b)).toBe(false);
       b.trials.push({...b.trials[0],id:`${activity}:${key}`,key});
-      expect(puzzleSolved(b)).toBe(true);expect(puzzleStars(b)).toBe(2);
+      expect(puzzleSolved(b)).toBe(true);
       delete b.values.puzzleVersion;expect(puzzleSolved(b)).toBe(false);
     }
     expect(puzzleHint(0)).toBe(0);expect(puzzleHint(1)).toBe(0);expect(puzzleHint(2)).toBe(1);expect(puzzleHint(3)).toBe(2);expect(puzzleHint(7)).toBe(3);
@@ -844,12 +849,12 @@ describe('우편함 퍼즐 코스 · 어긋난 철판',()=>{
     shake(m);
     expect(m.a.values.with0).toBe(true);expect(missionReady(2,m.a,m.s)).toBe(true);
     expect(m.a.trials!.find(t=>t.key==='repair0')!.conditions).toMatchObject({manual:true,course:'loose-plate'});
-    expect(puzzleSolved(m.a)).toBe(true);expect(puzzleStars(m.a)).toBe(2);
+    expect(puzzleSolved(m.a)).toBe(true);
   });
   it('철판이 어긋난 것을 먼저 알아채고 고치면 한 번에 풀린다',()=>{
     const m=puzzle();shake(m);
     m.place('repair-plate',mailbox.plate);m.place('repair-magnet',mailbox.socket);shake(m);
-    expect(missionReady(2,m.a,m.s)).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();expect(puzzleStars(m.a)).toBe(3);
+    expect(missionReady(2,m.a,m.s)).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();
   });
 });
 
@@ -866,8 +871,7 @@ describe('퍼즐 빗나감과 단계별 단서',()=>{
       expect(m.a.values['sorted-aluminum']).not.toBe(true);
       if(miss===1)expect(feedback(m)).not.toContain(sortHints[0]);
       if(miss===2)expect(feedback(m)).toContain(sortHints[0]);
-      if(miss===3)expect(feedback(m)).toContain(sortHints[1]);
-      if(miss===4)expect(feedback(m)).toContain(puzzleAutoHint);
+      if(miss>=3)expect(feedback(m)).toContain(sortHints[1]);
     }
     m.place('material-2',{x:86,y:70});
     expect(m.a.values['sorted-aluminum']).toBe(true);
@@ -946,12 +950,11 @@ describe('극 퍼즐 코스 · 같은 극으로 여는 문',()=>{
     expect(m.a.values.doorOpen).toBe(true);expect(m.a.points['unknown-magnet'].x).toBe(77);
     expect(missionReady(5,m.a,m.s)).toBe(true);
     expect(m.a.trials!.find(t=>t.key==='door0')!.conditions).toMatchObject({facing:'S',hidden:'S',course:'pole-door',manual:true});
-    expect(puzzleStars(m.a)).toBe(2);
   });
   it('스티커를 보고 먼저 뒤집어 같은 극을 대면 한 번에 열린다',()=>{
     const m=restoreLabels(puzzle());
     m.click('flip');tick(1);m.place('probe',dock);tick(1);
-    expect(m.a.values.doorOpen).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();expect(puzzleStars(m.a)).toBe(3);
+    expect(m.a.values.doorOpen).toBe(true);expect(m.a.values.puzzleMisses).toBeUndefined();
   });
   it('스티커를 먼저 붙이고 반대 극을 확인한 경우에도 반응을 본 뒤 문 단계가 시작된다',()=>{
     const m=puzzle();m.place('probe',dock);tick(1);
@@ -972,18 +975,18 @@ describe('승인된 확장 퍼즐 경로',()=>{
     const old=emptyActivity();old.values={playVersion:4,puzzleVersion:1};
     missionView(4,old,s);expect(old.values.puzzleRevision).toBeUndefined();
   });
-  it('열쇠는 먼 거리에서 그대로 있고 같은 가까운 거리의 종이 비교로 구조한다',()=>{
-    let m=expanded(4);m.click('release');tick(1);
-    expect(m.a.trials!.find(t=>t.key==='far')!.objects.some(o=>o.id==='key')).toBe(true);
-    m=mount(4,{},m);m.click('next');m=mount(4,{},m);
-    m.place('distance-magnet',{x:49,y:55});m.click('release');tick(1.2);
-    const near=m.a.trials!.find(t=>t.key==='near')!;
-    m=mount(4,{},m);m.click('next');m=mount(4,{},m);
-    m.place('paper',{x:56,y:55});m.click('release');tick(1.2);
-    const paper=m.a.trials!.find(t=>t.key==='paper')!;
-    expect(paper.initialObjects).toEqual(near.initialObjects);
-    expect(paper.conditions.course).toBe('key-rescue');
+  it('열쇠를 가까이 끌어당겨 붙인 뒤 틈 밖으로 꺼내야 완료한다',()=>{
+    let m=expanded(4);
+    expect(m.c.root.querySelector('[data-mission=release]')).toBeNull();
+    m.place('distance-magnet',{x:35,y:55});
+    expect(m.a.values.keyAttached).toBeUndefined();
+    m.place('distance-magnet',{x:48,y:55});
+    expect(m.a.values.keyAttached).toBe(true);
+    expect(missionReady(4,m.a,m.s)).toBe(false);
+    m=mount(4,{},m);m.place('distance-magnet',{x:40,y:55});
+    expect(m.a.trials!.find(t=>t.key==='key-pull')?.objects).toContainEqual({id:'key',x:46,y:55});
     expect(missionReady(4,m.a,m.s)).toBe(true);
+    expect(puzzleSolved(m.a)).toBe(true);
   });
   it('밀어 여는 문 뒤에 당겨 여는 문도 통과해야 완료한다',()=>{
     let m=expanded(5);m.place('probe',{x:48,y:53});tick(1);m.click('flip');tick(1);m.place('probe',{x:48,y:53});tick(1);
@@ -1020,9 +1023,12 @@ describe('광장 연결 퍼즐 실제 조작',()=>{
     expect(m.a.trials!.map(t=>t.key)).toEqual(['plaza-iron']);
     m=mount(8,{},m,true);m.click('plaza-next');m=mount(8,{},m,true);
     m.place('plaza-magnet',{x:30,y:55});expect(m.a.trials).toHaveLength(1);
-    m.place('plaza-magnet',{x:54,y:55});tick(1);m=mount(8,{},m,true);m.click('plaza-next');m=mount(8,{},m,true);
+    m.place('plaza-magnet',{x:54,y:55});tick(1);expect(m.a.trials).toHaveLength(1);
+    m=mount(8,{},m,true);m.place('plaza-magnet',{x:32,y:55});
+    expect(m.a.trials!.map(t=>t.key)).toEqual(['plaza-iron','plaza-distance']);
+    m=mount(8,{},m,true);m.click('plaza-next');m=mount(8,{},m,true);
     m.place('plaza-magnet',{x:54,y:55});tick(1);expect(m.a.trials).toHaveLength(2);
-    m.click('plaza-flip');m.place('plaza-magnet',{x:54,y:55});tick(1);
+    m.click('plaza-flip');tick(1);
     m=mount(8,{},m,true);m.click('plaza-next');m=mount(8,{},m,true);
     m.place('plaza-magnet',{x:80,y:55});expect(m.a.points['plaza-magnet'].x).toBe(47);
     m.place('plaza-magnet',{x:46,y:40});expect(m.a.trials).toHaveLength(4);
@@ -1030,9 +1036,9 @@ describe('광장 연결 퍼즐 실제 조작',()=>{
     expect(m.a.values.notebook).toBe(true);expect(plazaPuzzleView(m.s)).toBeUndefined();
     expect(m.a.trials!.every(t=>t.conditions.manual===true)).toBe(true);
   });
-  it('자동 관찰은 물체 이동을 거쳐 완료하고 직접 해결로 기록하지 않는다',()=>{
-    const m=mount(8,{},undefined,true);m.click('plaza-demo');tick(2);
-    expect(m.a.trials![0].key).toBe('plaza-iron');expect(m.a.trials![0].conditions.autoplay).toBe(true);
-    expect(m.a.points['plaza-object'].x).toBe(42);
+  it('광장은 직접 조작하기 전에는 연결 기록을 만들지 않는다',()=>{
+    const m=mount(8,{},undefined,true);tick(2);
+    expect(m.c.root.querySelector('[data-mission="plaza-demo"]')).toBeNull();
+    expect(m.a.trials ?? []).toHaveLength(0);
   });
 });

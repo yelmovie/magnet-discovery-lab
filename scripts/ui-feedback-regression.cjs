@@ -28,16 +28,13 @@ const results = [], errors = [];
    await page.evaluate(s=>{s.settings={...s.settings,sound:false,music:false,effects:false};window.__qa.setSave(s);},fixture);
    for (let stage=0;stage<4;stage++) {
     await page.evaluate(stage=>window.__qa.showReward(stage,true),stage);
-    const labels=await page.locator('.reward-stars > span').allTextContents();
-    assert.equal(labels.length,stage===0?1:2);
-    assert.equal(new Set(labels).size,labels.length);
-    assert.ok(labels.every(s=>s!=='퍼즐 별'&&s!=='undefined'));
-    const expected=await page.evaluate(async stage=>{const {puzzleStars}=await import('/src/mission-model.ts');return window.__qa.save.evidence.find(e=>e.stage===stage).activities.filter(a=>a.values.puzzleVersion===1).map(puzzleStars);},stage);
-    for(let i=0;i<expected.length;i++)assert.equal(await page.locator('.reward-stars').nth(i).locator('.on').count(),expected[i]);
-    if(stage===3){assert.deepEqual(labels,['수조 청소','택배 운반']);await page.waitForTimeout(800);await page.screenshot({path:`${out}/reward-${width}.png`});}
+    const reward=page.locator('.resident-stage-reward');
+    assert.match(await reward.innerText(),/획득\s+도시 복구 \d+%/);
+    assert.equal(await page.locator('.modal-backdrop :is(.reward-stars, .puzzle-stars)').count(),0);
+    if(stage===3){await page.waitForTimeout(800);await page.screenshot({path:`${out}/reward-${width}.png`});}
     await page.locator('.modal-close').click();
    }
-   results.push(`reward labels at ${width}`);
+   results.push(`kit and restoration progress without a rating at ${width}`);
   }
   await page.setViewportSize({width:1280,height:800});
   for (const effects of [false,true]) {

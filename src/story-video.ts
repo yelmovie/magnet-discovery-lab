@@ -1,6 +1,6 @@
 import { icon } from './art';
 import { questRewards } from './mission-content';
-import { setAudioPaused } from './game-audio';
+import { setAudioPaused, setIntroMusicMix } from './game-audio';
 import './story-video.css';
 
 // Full-screen story films. The rendered mp4s carry effects and short sound effects only (scripts/render-story-videos.mjs);
@@ -139,6 +139,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     if (closed) return; closed = true;
     if (frameId) video.cancelVideoFrameCallback(frameId);
     clearTimeout(timeout); controller.abort(); hushVoices();
+    if (id === 'intro') setIntroMusicMix(false);
     video.pause(); video.removeAttribute('src'); video.load();
     layer.remove();
     if (app) app.inert = appWasInert;
@@ -150,6 +151,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const watchdog = () => { clearTimeout(timeout); timeout = window.setTimeout(fallback, 8000); };
   const start = () => {
     if (closed || failed) return; play.hidden = true; watchdog();
+    if (id === 'intro') setIntroMusicMix(true);
     // Unmuted autoplay can be refused when the click is too far back; the film still plays silently.
     video.play().catch(() => { if (closed || video.muted) throw new Error('blocked'); video.muted = true; return video.play(); })
       .catch(() => { if (closed || failed) return; clearTimeout(timeout); play.hidden = false; play.focus(); });

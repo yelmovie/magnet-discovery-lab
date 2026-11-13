@@ -7,21 +7,36 @@ import { pullEase } from './clip-comparison';
 import { handRelease, afterHandRelease } from './experiment-hand';
 
 import { Surface, W, H, pt, paperStart, clamp } from './mission-surface';
+import './key-rescue.css';
 
 export function salvage(v: Surface){
-  let held=-1, heldSide=1;
   const magnet=v.p('sweep-magnet',pt(20,39)),bins=materialBins;
-  const atPole=(p:Point)=>pt(p.x+heldSide*5,p.y+3.3);
+  const carried=()=>sortingSpecimens.filter(m=>m.magnetic&&!v.has(`sorted-${m.id}`)&&v.a.values[`carry-${m.id}`]);
+  const followMagnet=(p:Point)=>{
+    const poleSlots={left:0,right:0};
+    for(const m of carried()){
+      const left=v.a.values[`carry-${m.id}`]===-1;
+      const slot=poleSlots[left?'left':'right']++;
+      v.set(`material-${m.index}`,pt(p.x+(left?-1:1)*(5+slot*2.5),p.y+3.3+slot*5));
+    }
+  };
   const sorted=()=>sortingSpecimens.filter(m=>materialClassified(v.a,m.id)).length;
+  const scanRange=10;
   for(const m of sortingSpecimens)if(v.has(`sorted-${m.id}`))v.set(`material-${m.index}`,sortedMaterialPosition(m));
+  const observe=(m:typeof sortingSpecimens[number])=>{
+    if(v.has(`tested-${m.id}`))return;
+    v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');
+    v.tell(m.magnetic?'자석에 붙었어! 자석으로 오른쪽 위 수리함까지 옮겨 줘.':`${m.name}: 자석에 붙지 않았어. 손으로 잡아 오른쪽 아래 분류함에 넣어 줘.`);
+  };
   const sort=(m:typeof sortingSpecimens[number],p:Point,byMagnet=false)=>{
     const i=m.index,bin=bins.findIndex(q=>distance(p,q)<10);
     if(bin<0)return false;
-    if(!v.has(`tested-${m.id}`)){v.set(`material-${i}`,pt(m.x,m.y));v.tell(`${m.name}: 먼저 자석을 가까이 대고 반응을 확인해 줘.`);return false;}
-    if((bin===0)!==m.magnetic){v.set(`material-${i}`,pt(m.x,m.y));held=-1;const wrong=m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':'자석을 따라왔는지 떠올리고 알맞은 분류함에 옮겨 줘.';if(v.a.values.puzzleVersion===1)v.miss(wrong,sortHints);else{v.tell(wrong);playEffect('bump',v.s.settings);}return false;}
+    if(!v.has(`tested-${m.id}`)){v.set(`material-${i}`,pt(m.x,m.y));v.tell(`${m.name}: 분류하기 전에 자석을 물건에 가까이 대거나, 물건을 자석 가까이 가져가 봐.`);return false;}
+    if((bin===0)!==m.magnetic){v.set(`material-${i}`,pt(m.x,m.y));const wrong=m.id==='aluminum'?'알루미늄도 금속이지만 이번 자석에는 붙지 않았어. 관찰한 반응에 맞게 옮겨 줘.':'자석을 따라왔는지 떠올리고 알맞은 분류함에 옮겨 줘.';if(v.a.values.puzzleVersion===1)v.miss(wrong,sortHints);else{v.tell(wrong);playEffect('bump',v.s.settings);}return false;}
     v.mark(`sorted-${m.id}`,`${m.name} 분류`,bin===0?'붙는 재료로 분류했어.':'붙지 않는 재료로 분류했어.');
     if(m.magnetic&&byMagnet)v.mark(`delivered-${m.id}`,`${m.name} 운반`,'자석에 붙은 철 부품을 수리함으로 옮겼어.');
-    v.set(`material-${i}`,sortedMaterialPosition(m));held=-1;
+    delete v.a.values[`carry-${m.id}`];
+    v.set(`material-${i}`,sortedMaterialPosition(m));
     const el=v.c.root.querySelector<HTMLButtonElement>(`[data-drag="material-${i}"]`);if(el){el.disabled=true;el.style.pointerEvents='none';}
     v.proof(`sort-${m.id}`,`${m.name} 관찰 후 분류`,'success',{material:m.id,magnetic:m.magnetic,byMagnet});
     const done=sorted(),total=sortingSpecimens.length;
@@ -30,54 +45,105 @@ export function salvage(v: Surface){
     return true;
   };
   const scan=(p:Point)=>{
-    if(held>=0){
-      const m=sortingSpecimens.find(item=>item.index===held)!;
-      const end=atPole(p);v.set(`material-${held}`,end);sort(m,end,true);return;
-    }
-    let nearest:typeof sortingSpecimens[number]|undefined,range=10;
     for(const m of sortingSpecimens){
-      if(v.has(`sorted-${m.id}`))continue;
-      const gap=distance(p,v.p(`material-${m.index}`,pt(m.x,m.y)));
-      if(gap<range){nearest=m;range=gap;}
+      if(v.has(`sorted-${m.id}`)||v.a.values[`carry-${m.id}`])continue;
+      const q=v.p(`material-${m.index}`,pt(m.x,m.y));
+      if(distance(p,q)>=scanRange)continue;
+      observe(m);
+      if(m.magnetic)v.a.values[`carry-${m.id}`]=q.x<p.x?-1:1;
     }
-    if(!nearest)return;
-    const m=nearest,i=m.index,q=v.p(`material-${i}`,pt(m.x,m.y));
-    if(!v.has(`tested-${m.id}`)){
-      v.mark(`tested-${m.id}`,m.name,m.magnetic?'자석 가까이에서 붙었어.':'가까이 대도 따라오지 않았어.');
-      v.tell(m.magnetic?'자석에 붙었어! 자석으로 오른쪽 위 수리함까지 옮겨 줘.':`${m.name}: 자석을 따라오지 않았어. 물건을 손으로 잡아 오른쪽 아래 분류함에 넣어 줘.`);
-    }
-    if(m.magnetic){held=i;heldSide=q.x>=p.x?1:-1;v.set(`material-${i}`,atPole(p));}
+    followMagnet(p);
+    if(distance(p,bins[0])<scanRange)for(const m of carried())sort(m,p,true);
   };
   v.draw=()=>{
     v.base();
-    if(v.a.values.puzzleRevision===2){
-      const g=v.ctx,clear=sorted()===sortingSpecimens.length;g.save();g.fillStyle=clear?'#65b69d':'#a78e6e';g.fillRect(25*W/100,80*H/100,48*W/100,9);g.restore();
-      v.label(clear?'철 부품을 되찾았어 · 길이 열렸어':'부품을 치워 길을 열어 줘',pt(49,84),true);
-    }
     v.target(bins[0],'붙는 재료 · 수리함',190,125);v.target(bins[1],'붙지 않는 재료 · 손으로',190,120);
     sortingSpecimens.forEach(m=>{
       const p=v.p(`material-${m.index}`,pt(m.x,m.y));
       if(v.has(`sorted-${m.id}`)){v.material(m.index,p,54,false);return;}
       v.material(m.index,p);
-      if(v.has(`tested-${m.id}`))v.label(m.magnetic?'자석에 착!':'손으로 옮기기',pt(p.x,p.y-9),true);
     });
     v.magnet(v.p('sweep-magnet',magnet),'N',.9);
-    v.label(`자석으로 조사하고 분류하기  ${sorted()}/${sortingSpecimens.length}`,pt(50,29),true);
   };
   v.drag('sweep-magnet',magnet,p=>{
     scan(p);
-    if(held<0){
+    if(!carried().length){
       const beside=sortingSpecimens.filter(m=>!m.magnetic&&!v.has(`sorted-${m.id}`)&&v.has(`tested-${m.id}`))
         .map(m=>v.p(`material-${m.index}`,pt(m.x,m.y))).sort((a,b)=>distance(p,a)-distance(p,b))[0];
-      if(beside&&distance(p,beside)<10)v.set('sweep-magnet',pt(Math.max(4,beside.x-12),beside.y));
+      if(beside&&distance(p,beside)<scanRange)v.set('sweep-magnet',pt(Math.max(4,beside.x-12),beside.y));
     }
     v.draw();
   },scan);
   sortingSpecimens.forEach(m=>{
     const i=m.index;if(v.has(`sorted-${m.id}`))return;
-    v.drag(`material-${i}`,pt(m.x,m.y),p=>{if(held===i)held=-1;sort(m,p);v.draw();});
+    const nearMagnet=(p:Point)=>!m.magnetic&&distance(p,v.p('sweep-magnet',magnet))<scanRange;
+    v.drag(`material-${i}`,pt(m.x,m.y),p=>{
+      delete v.a.values[`carry-${m.id}`];
+      if(nearMagnet(p)){
+        observe(m);
+        // Leave both pieces separately grabbable after testing by hand.
+        v.set(`material-${i}`,pt(m.x,m.y));
+      }else sort(m,p);
+      v.draw();
+    },p=>{if(nearMagnet(p))observe(m);});
   });
 }
+
+export function liveKeyLab(v: Surface){
+  const railY=55, home=pt(61,railY), start=pt(25,railY);
+  const magnet=()=>v.p('distance-magnet',start);
+  const gapAtContact=6, pickup=48, exit=43;
+  let attached=v.has('keyAttached'), rescued=v.has('keyRescued');
+  const key=()=>{
+    const m=magnet(),contact=m.x+gapAtContact;
+    // Weak movement starts at a distance and steepens near the pole.
+    const pull=clamp((m.x-38)/(pickup-38),0,1)**2;
+    return pt(attached?contact:home.x+(pickup+gapAtContact-home.x)*pull,railY);
+  };
+  const sensor=v.c.root.querySelector<HTMLElement>('.force-sensor span');
+  v.draw=()=>{
+    const m=magnet(), q=key(), g=v.ctx;
+    const bench=v.asset('key-rescue-workbench','/assets/quest/key-rescue-workbench.webp');
+    const ironKey=v.asset('key-rescue-iron-key','/assets/quest/key-rescue-iron-key.webp');
+    if(bench.complete&&bench.naturalWidth){
+      // The illustrated opening starts just beyond the tip of the rescued key.
+      g.clearRect(0,0,W,H);
+      g.save();g.shadowColor='#1c22177a';g.shadowBlur=16;g.shadowOffsetY=7;
+      g.beginPath();g.roundRect(102,241,1076,333,16);g.fillStyle='#ae7749';g.fill();
+      g.shadowBlur=0;g.shadowOffsetY=0;g.clip();g.drawImage(bench,102,241,1076,333);g.restore();
+      if(!rescued){
+        const y=H*.64, left=W*.25, right=W*.46, tip=attached?left:right, direction=attached?-1:1;
+        g.save();g.strokeStyle='#684628';g.lineWidth=2.5;g.lineCap='round';g.lineJoin='round';
+        g.setLineDash([4,8]);g.beginPath();g.moveTo(left,y);g.lineTo(right,y);g.stroke();
+        g.setLineDash([]);g.beginPath();g.moveTo(tip-direction*13,y-9);g.lineTo(tip,y);g.lineTo(tip-direction*13,y+9);g.stroke();g.restore();
+      }
+    }else v.base();
+    if(ironKey.complete&&ironKey.naturalWidth){
+      const width=68, height=width*ironKey.naturalHeight/ironKey.naturalWidth;
+      g.save();g.shadowColor='#170f0bd9';g.shadowBlur=5;g.shadowOffsetY=6;
+      g.drawImage(ironKey,q.x*W/100-width/2,q.y*H/100-height/2,width,height);g.restore();
+    }else if(!v.equipment('key',q,57,57))v.iron(q,'',40);
+    v.magnet(m,'N',.58);
+    const reading=rescued?'철 열쇠를 꺼냈어!':attached?'철 열쇠가 자석에 붙었어':q.x<home.x-.2?'철 열쇠가 자석 쪽으로 움직여':'철 열쇠가 틈 안에 있어';
+    if(sensor&&sensor.textContent!==reading)sensor.textContent=reading;
+  };
+  const move=(p:Point)=>{
+    if(!attached&&p.x>=pickup){
+      attached=true;v.a.values.keyAttached=true;
+      playEffect('snap',v.s.settings);
+      v.c.touch();v.c.meta();
+    }
+    if(!rescued&&attached&&p.x<=exit){
+      rescued=true;v.a.values.keyRescued=true;
+      const trial=v.proof('key-pull','철 열쇠를 자석으로 꺼내기','success',{material:'iron',course:'live-key'});
+      trial.initialObjects=[{id:'magnet',...start},{id:'key',...home}];
+      trial.objects=[{id:'magnet',...p},{id:'key',...key()}];
+      v.tell('철 열쇠를 꺼냈어!',true);
+    }
+  };
+  v.drag('distance-magnet',start,p=>{move(p);v.draw();},move,p=>pt(clamp(p.x,19,rescued?exit:pickup),railY));
+}
+
 export function distanceLab(v: Surface){
   const r=Number(v.a.values.round||0),target=r===3?pt(69,42):pt(61,55);
   const rescue=v.a.values.puzzleRevision===2,objectId=rescue||r===3?'key':'clip',objectName=rescue||r===3?'철 열쇠':'클립';

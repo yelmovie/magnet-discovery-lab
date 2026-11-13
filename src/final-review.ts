@@ -57,6 +57,13 @@ const workshopQuestion = {
 
 export function reviewQuestion(s: Save, index: number) {
   const distanceActivity = s.evidence.find(e => e.stage === 1)?.activities[1] ?? s.activities[4];
+  if(index===1&&distanceActivity?.values.liveKeyRescue===true)return {
+    ...finalQuestions[1],tab:'철 열쇠',note:'자석을 가까이 가져가 틈 속 철 열쇠를 꺼냈어.',
+    question:'철 열쇠가 자석 쪽으로 움직이기 시작한 때는?',
+    choices:['자석을 가까이 가져갔을 때','자석이 멀리 떨어져 있을 때','자석과 열쇠가 닿고 난 뒤에만'],
+    reason:'가까이 가져가니 닿기 전부터 열쇠가 자석 쪽으로 움직였어.',
+    retry:'자석이 멀리 있을 때와 가까이 왔을 때 열쇠가 움직였는지 떠올려 봐.',
+  };
   if (index === 1 && distanceActivity?.values.puzzleRevision === 2) {
     const q = finalQuestions[1];
     return { ...q, tab: '철 열쇠', question: keyRescueText(q.question),

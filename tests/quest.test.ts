@@ -56,7 +56,7 @@ describe('자석 모형과 실제 지도 길',()=>{
     expect(map.match(/expedition-building available/g)).toHaveLength(6);
     expect(map).not.toContain('expedition-building locked');
     expect(map).not.toContain('teacher-picker');
-    expect(map).toContain('모든 스테이지 열림');
+    expect(map).not.toContain('모든 스테이지 열림');
     expect(s).toEqual(before);
     const student=expeditionMarkup(s,false);
     expect(student.match(/expedition-building locked/g)).toHaveLength(5);

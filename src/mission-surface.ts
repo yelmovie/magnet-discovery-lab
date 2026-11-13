@@ -5,7 +5,6 @@ import type { Context } from './activity-types';
 import { bindDrag } from './manipulation';
 import { addTrial, trialOutcome } from './trial-records';
 import { distance, puzzleHint } from './mission-model';
-import { puzzleAutoHint } from './mission-content';
 import { playEffect, type EffectKind } from './game-audio';
 import { mailbox, lidPosition, mountedMagnet } from './mailbox';
 import { drawMailbox } from './mailbox-art';
@@ -67,7 +66,7 @@ export class Surface {
   /** Puzzle courses: a miss is a visible result plus the next clue, never a penalty screen. */
   miss(text: string, clues: readonly string[]) {
     const count=Number(this.a.values.puzzleMisses||0)+1,level=puzzleHint(count);this.a.values.puzzleMisses=count;
-    this.tell([text,level===3&&this.s.settings.autoplay!==false?puzzleAutoHint:level?clues[Math.min(level,2)-1]:''].filter(Boolean).join(' '));
+    this.tell([text,level?clues[Math.min(level,2)-1]:''].filter(Boolean).join(' '));
     playEffect('bump',this.s.settings);this.c.touch();this.c.meta();
   }
   button(id: string, fn: () => void) { this.c.root.querySelector(`[data-mission="${id}"]`)?.addEventListener('click', fn); }

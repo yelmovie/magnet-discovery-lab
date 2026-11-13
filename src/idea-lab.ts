@@ -42,10 +42,11 @@ const residentPortrait = (id: string, size: number) =>
   `<img src="/assets/quest/workshop-resident-${id}.webp" alt="" width="${size}" height="${size}" draggable="false">`;
 const startingResident = (i: Idea) => ideaProblems.find(p => p.id === i.problem) ?? ideaProblems[0];
 function residentDialogue(p: WorkshopResident, chosen: boolean) {
-  return `<div class="idea-resident-portrait">${residentPortrait(p.id, 200)}</div>
-    <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><span>${p.who}</span><h2>${p.text}</h2><p>${chosen ? '도와준다니 고마워요! 어떤 자석의 성질을 쓸지 생각해 봐요.' : p.detail}</p></div>
+  return `<div class="idea-resident-portrait" aria-hidden="true" style="--resident-portrait:url('/assets/quest/workshop-dialogue-${p.id}.webp')"></div>
+    <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><span class="idea-resident-name">${p.who}</span><h2>${p.text}</h2><p>${chosen ? '도와준다니 고마워요! 어떤 자석의 성질을 쓸지 생각해 봐요.' : p.detail}</p></div>
       <div class="idea-resident-actions">
         ${chosen ? `<button type="button" class="btn idea-resident-chosen" data-resident-example aria-haspopup="dialog">${icon('check', 18)} 도와주기로 했어 <small>예시 다시 보기</small></button>` : `<button type="button" class="btn idea-resident-accept" data-problem="${p.id}" aria-haspopup="dialog">이 불편을 해결할래 ${icon('arrow', 18)}</button>`}
+        <button type="button" class="btn idea-resident-listen" data-resident-listen aria-label="${p.who} 이야기 다시 듣기">${icon('play', 16)} 다시 듣기</button>
       </div>
     </div>`;
 }
@@ -304,7 +305,9 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     let stopVoice = () => {};
     const speak = () => {
       stopVoice();
-      stopVoice = playNarration(`/audio/voices/workshop-${speaker.id}.mp3`, s.settings);
+      stopVoice = playNarration(`/audio/voices/workshop-${speaker.id}.mp3`, s.settings, state => {
+        if (scene) scene.dataset.speaking = String(state === 'playing' && s.settings.motion);
+      });
     };
     const showResident = () => {
       if (!scene) return;
@@ -337,6 +340,7 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     }, { signal }));
     scene?.addEventListener('click', e => {
       const target = e.target as Element;
+      if (target.closest('[data-resident-listen]')) { speak(); return; }
       if (target.closest('[data-resident-example]')) { openExample(); return; }
       if (!target.closest('[data-problem]')) return;
       i.problem = speaker.id;

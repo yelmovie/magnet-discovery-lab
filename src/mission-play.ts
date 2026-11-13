@@ -1,7 +1,6 @@
 import { emptyActivity, type Activity, type Point, type Save } from './domain';
 import { sortingSpecimens } from './material-sorting';
 import type { View } from './activity-types';
-import { placementControls } from './manipulation';
 import { missionGuide, missionQuestion, questRewards } from './mission-content';
 import { bindPuzzleHud, puzzleHud } from './puzzle-hud';
 import { mailbox, updateMailboxLayout } from './mailbox';
@@ -11,12 +10,12 @@ import { mailboxParts, partKey, nextMailboxPart, mailboxAssembled, prepareMailbo
 
 import { Surface, W, H, pt, paperStart, e, themes, type Hit } from './mission-surface';
 import { inspect, inspectionNote, repair } from './missions-mailbox';
-import { salvage, distanceLab } from './missions-force';
+import { salvage, distanceLab, liveKeyLab } from './missions-force';
 import { poles, rings } from './missions-poles';
 import { aquarium, delivery } from './missions-remote';
 import { design, useDesign } from './missions-workshop';
 import { validTrial } from './trial-records';
-import { missionReady } from './mission-model';
+import { deliveryCourse, missionReady } from './mission-model';
 import { bindInquiryPrompts } from './inquiry-prompts';
 
 function hit(h: Hit) {
@@ -55,8 +54,21 @@ export function prepareQuickMailbox(a: Activity) {
 }
 export function missionView(n: number, a: Activity, s: Save): View {
   initialize(a,n);
+  // Resume attempts saved on the removed return leg at the glass delivery result.
+  if(n===8&&a.values.puzzleRevision===2&&a.values.round===2){
+    const delivered=a.trials?.find(t=>t.key==='delivery1'&&validTrial(t)&&t.outcome==='success');
+    a.values.round=1;a.values.car=delivered?.objects.find(o=>o.id==='cart-magnet')?.x??(delivered?deliveryCourse.goal:44);
+    a.values.cartSpeed=0;a.values.controllerPole=delivered?.objects.find(o=>o.id==='controller')?.pole??'N';
+    a.points=Object.fromEntries((delivered?.objects??[]).map(o=>[o.id,pt(o.x,o.y)]));
+  }
   if(n===2&&a.values.mailboxQuickRepair===true)prepareQuickMailbox(a);
+  if(n===4&&a.values.puzzleRevision===2&&!a.values.liveKeyRescue&&!missionReady(n,a,s)){
+    a.values.liveKeyRescue=true;
+    a.points['distance-magnet']=pt(25,55);
+    a.points['initial:distance-magnet']=pt(25,55);
+  }
   const round=Number(a.values.round||0), compact=a.values.paceVersion===1, quick=n===2&&a.values.mailboxQuickRepair===true, hits:Hit[]=[];let actions='', comparison='';
+  const keyRescue=n===4&&a.values.liveKeyRescue===true;
   if(n<=2)updateMailboxLayout(a);
   const p=(id:string, fallback:Point)=>a.points[id]||fallback;
   if(n===1||quick&&!mailboxAssembled(a)){
@@ -83,14 +95,17 @@ export function missionView(n: number, a: Activity, s: Save): View {
   if(n===2&&round===2&&!a.values.diagnosis2)actions+=`<div class="mission-diagnosis">${action('fault-distance','철판 위치를 고칠래')}${action('fault-color','자석 색을 바꿀래')}</div>`;
   if(n===3){hits.push({id:'sweep-magnet',p:p('sweep-magnet',pt(20,39)),label:'수리 키트의 자석'});sortingSpecimens.forEach(m=>{if(!a.values[`sorted-${m.id}`])hits.push({id:`material-${m.index}`,p:p(`material-${m.index}`,m),label:`${m.name}. 자석 반응을 확인한 뒤 알맞은 분류함으로 옮기기`});});}
   if(n===4){
-    hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:'눈금 위에서 좌우로 움직이는 조사 자석'});
-    if(round===2){
+    hits.push({id:'distance-magnet',p:p('distance-magnet',pt(25,55)),label:keyRescue?'틈 밖에서 좌우로 움직이는 막대자석':'눈금 위에서 좌우로 움직이는 조사 자석'});
+    if(keyRescue)comparison='<span class="key-rescue-gap-label">손이 닿지 않는 틈</span>';
+    if(round===2&&!a.values.liveKeyRescue){
       if(a.points.paper?.x===23&&a.points.paper.y===76)a.points.paper={...paperStart};
       hits.push({id:'paper',p:p('paper',paperStart),label:'얇은 종이 한 장'});
     }
-    actions=action('release',a.values.puzzleRevision===2?'열쇠 움직임 관찰':`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 관찰`,a.values[`done${round}`]===true);
-    if(round===1&&!a.values.done1&&a.values.puzzleRevision!==2)comparison=`<div class="distance-choices" role="group" aria-label="붙을 것 같은 자리 고르기"><span>붙을 것 같은 곳은?</span>${[4,3,2,1].map(mark=>action(`gap-${mark}`,`${mark}칸`)).join('')}</div>`;
-    if(a.values[`done${round}`]&&round<(compact?2:3))actions=action('next',round===0?'붙을 것 같은 자리 고르기 →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');
+    if(!a.values.liveKeyRescue){
+      actions=action('release',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 관찰`,a.values[`done${round}`]===true);
+      if(round===1&&!a.values.done1&&a.values.puzzleRevision!==2)comparison=`<div class="distance-choices" role="group" aria-label="붙을 것 같은 자리 고르기"><span>붙을 것 같은 곳은?</span>${[4,3,2,1].map(mark=>action(`gap-${mark}`,`${mark}칸`)).join('')}</div>`;
+      if(a.values[`done${round}`]&&round<(compact?2:3))actions=action('next',round===0?'붙을 것 같은 자리 고르기 →':round===1?'같은 배치에 종이만 넣어 보기 →':'이번엔 철 열쇠를 구하자 →');
+    }
   }
   if(n===4&&round===2&&a.values.done2&&a.values.puzzleRevision!==2){
     const stops=clipStops(a.trials);
@@ -98,10 +113,14 @@ export function missionView(n: number, a: Activity, s: Save): View {
   }
   if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,78)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,78)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&a.values.test0N&&a.values.test0S&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
   if(n===5&&a.values.puzzleRevision===2&&a.values.doorOpen&&!a.values.doorPullOpen&&!a.values.doorIndex)actions=action('door-next','이번에는 당겨 여는 문 →');
-  if(n===6){for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);if(a.values[`done${round}`]&&round<2)actions=action('next',compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');}
+  if(n===6){
+    if(!a.values.platformCrossed)for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});
+    if(a.values[`done${round}`]&&round<2)actions=action('next',a.values.platformRaised&&(compact||round===1)?'다음: 발판 내리기 →':compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');
+    else if(!a.values.platformCrossed)actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);
+  }
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
   if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('detach','자석 떼기');}
-  if(n===8&&a.values.puzzleRevision===2&&a.values[`segment${round}`]&&round<2)actions=action('delivery-next',round===0?'유리벽 너머로 배달 →':'돌아오는 택배를 운반 →');
+  if(n===8&&a.values.puzzleRevision===2&&round===0&&a.values.segment0)actions=action('delivery-next','유리벽 너머로 배달 →');
   if(n===9){
     if(!a.values.chosen)actions=`<div class="mission-requests workshop-requests">${action('box','<img src="/assets/learning/mailbox.webp" alt="">우편함이 자꾸 열려요')}${action('remote','<img src="/assets/learning/aquarium.webp" alt="">유리 너머 패드를 옮겨 주세요')}</div>`;
     else {hits.push({id:'base',p:p('base',pt(18,65)),label:'장치 몸체'},{id:'design-magnet',p:p('design-magnet',pt(22,44)),label:'설계 자석'},{id:'design-target',p:p('design-target',pt(77,45)),label:'마주 볼 철판 또는 자석'});actions=action('pair',s.design.pair==='iron'?'자석으로 바꾸기':'철판으로 바꾸기')+action('flip','자석 뒤집기')+action('prototype','시제품 반응 시험');}
@@ -121,7 +140,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
   const canExpand=n===8||n===9||n===10;
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
   const viewToggle=canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>`:'';
-  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span>출발 간격</span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}${quick?'':`<details class="mission-access"><summary>눌러서 이동</summary>${placementControls}</details>`}</div>`,bind(c){
+  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board${keyRescue?' key-rescue-board':''}" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span></span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}</div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuide(n,a));});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;
@@ -129,6 +148,6 @@ export function missionView(n: number, a: Activity, s: Save): View {
       button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?'기본 보기':'조작 화면 전체보기';
       a.values.benchWide=expanded;c.touch();surface.draw();
     });
-    const binders=[inspect,repair,salvage,distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();surface.cleanups.push(bindInquiryPrompts(c,n,()=>surface.draw()));bindPuzzleHud(c);return()=>surface.cleanup();
+    const binders=[inspect,repair,salvage,a.values.liveKeyRescue?liveKeyLab:distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();surface.cleanups.push(bindInquiryPrompts(c,n,()=>surface.draw()));bindPuzzleHud(c);return()=>surface.cleanup();
   }};
 }

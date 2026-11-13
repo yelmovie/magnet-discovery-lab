@@ -1,0 +1,37 @@
+#app .mission-board.key-rescue-board > .key-rescue-gap-label {
+  position: absolute;
+  top: 45%;
+  left: 72%;
+  translate: -50% -50%;
+  color: #fff1ce;
+  text-shadow: 0 1px 3px #122b35;
+  font: 800 clamp(13px, 1.45vw, 22px)/1.2 var(--font-body);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+body.quest-mode #app .mission-board.key-rescue-board > .force-sensor {
+  top: 73%;
+  left: 63%;
+  translate: -50% -50%;
+  padding: 4px 12px;
+  max-width: 72%;
+  color: #263b34;
+  background: #fff4dc;
+  border-color: #ae8057;
+  box-shadow: 0 2px 4px #4c301e32;
+}
+
+#app .mission-board.key-rescue-board > .force-sensor span {
+  white-space: normal;
+  text-align: center;
+  font-size: clamp(13px, 1.35vw, 19px);
+}
+
+@media (max-aspect-ratio: 1/1) {
+  body.quest-mode #app .mission-board.key-rescue-board > .force-sensor {
+    top: 82%;
+    left: 50%;
+    width: max-content;
+  }
+}

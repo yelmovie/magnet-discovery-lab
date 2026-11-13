@@ -54,7 +54,7 @@ async function start(n, viewport = { width: 1280, height: 800 }) {
   return context;
 }
 const mission = id => page.locator(`[data-mission="${id}"]`).click();
-const idle = () => page.waitForFunction(() => !document.querySelector('#experiment-root, #plaza-experiment').inert);
+const idle = () => page.waitForFunction(() => !document.querySelector('#experiment-root, .plaza-puzzle').inert);
 const shot = name => page.screenshot({ path: `${out}/${name}.png` });
 function pass(name) { results.push({ name, status: 'pass' }); console.log('PASS ' + name); }
 async function drag(id, x, y) {
@@ -86,18 +86,17 @@ async function autoplay(n) {
     await page.waitForTimeout(800);
   }
   const state = await saved(), a = state.activities[n];
-  const key = { 2: 'repair0', 4: 'paper', 5: 'door1', 6: 'join2', 8: 'delivery2' }[n];
+  const key = { 2: 'repair0', 4: 'paper', 5: 'door1', 6: 'join2', 8: 'delivery1' }[n];
   assert.equal(a.values.puzzleVersion, 1);
   assert.ok(a.trials.some(t => t.key === key && t.outcome === 'success' && t.conditions.autoplay));
-  assert.equal(await page.locator('.puzzle-stars .on').count(), 0);
-  assert.match(await page.locator('.puzzle-stars').getAttribute('aria-label'), /자동재생/);
+  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(), 0);
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(), true);
   if (n === 2) {
     assert.equal(a.values.with0, true);
     assert.ok(Math.hypot(a.points['repair-plate'].x - 46.5, a.points['repair-plate'].y - 63) < 1);
   }
   await shot(`autoplay-${n}`);
-  pass(`activity ${n} autoplay solves the new puzzle and awards no manual stars`);
+  pass(`activity ${n} autoplay solves the new puzzle and unlocks continuation`);
   await context.close();
 }
 async function door(viewport) {
@@ -120,12 +119,12 @@ async function door(viewport) {
   await page.waitForTimeout(800);
   const a = (await saved()).activities[5];
   assert.equal(a.values.doorOpen, true);
-  assert.equal(await page.locator('.puzzle-stars .on').count(), 0);
+  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(), 0);
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(), false);
   await mission('door-next');await mission('flip');await idle();await drag('probe',48,53);await page.waitForTimeout(800);
   assert.equal((await saved()).activities[5].values.doorPullOpen,true);
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(), true);
-  assert.equal(await page.locator('.puzzle-stars .on').count(),2);
+  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(),0);
   await shot(`door-${viewport.width}-open`);
   pass(`${viewport.width}x${viewport.height} actual pointer drag restores labels, retries and opens the door`);
   await context.close();
@@ -146,9 +145,9 @@ async function distanceObservations() {
   assert.equal((await saved()).activities[4].values.puzzleMisses || 0, 0);
   await drag('distance-magnet', 49, 55); await mission('release'); await idle();
   await mission('next'); await drag('paper', 56, 55); await mission('release'); await idle();
-  assert.equal(await page.locator('.puzzle-stars .on').count(), 3);
+  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(), 0);
   await shot('distance-observations');
-  pass('distance exploration preserves observations across reload and earns three manual stars');
+  pass('distance exploration preserves observations across reload');
   await context.close();
 }
 async function misses(n) {
@@ -229,10 +228,10 @@ async function plaza(viewport){
   await drag('plaza-magnet',54,55);await drag('plaza-magnet',34,55);await mission('plaza-next');
   await drag('plaza-magnet',30,55);await page.waitForTimeout(800);
   assert.equal((await saved()).final.puzzle.trials.some(t=>t.key==='plaza-distance'),false);
-  await drag('plaza-magnet',54,55);await page.waitForTimeout(800);await shot(`plaza-${viewport.width}-key`);await mission('plaza-next');await page.waitForTimeout(800);
+  await drag('plaza-magnet',54,55);await page.waitForTimeout(800);await drag('plaza-magnet',32,55);await shot(`plaza-${viewport.width}-key`);await mission('plaza-next');await page.waitForTimeout(800);
   await page.reload();await page.locator('[data-action="start"]').click();await page.locator('#plaza-experiment').waitFor();
   assert.equal((await saved()).final.puzzle.values.round,2);
-  await mission('plaza-flip');await drag('plaza-magnet',54,55);await page.waitForTimeout(800);await shot(`plaza-${viewport.width}-pole`);await mission('plaza-next');
+  await drag('plaza-magnet',54,55);await mission('plaza-flip');await page.waitForTimeout(800);await shot(`plaza-${viewport.width}-pole`);await mission('plaza-next');
   await drag('plaza-magnet',70,55);await page.waitForTimeout(800);assert.ok((await saved()).final.puzzle.points['plaza-magnet'].x<=47);
   await drag('plaza-magnet',46,40);await page.waitForTimeout(800);await shot(`plaza-${viewport.width}-glass`);
   assert.equal((await saved()).final.puzzle.trials.filter(t=>t.outcome==='success').length,4);

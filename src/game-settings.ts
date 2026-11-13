@@ -28,11 +28,9 @@ const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12
 function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
   const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
-  const autoplay = options.save.settings.autoplay !== false;
-  const autoplayControl = `<div class="settings-sound-row"><span id="settings-autoplay-label">실험 자동재생 허용</span><button type="button" class="settings-switch" data-settings-action="autoplay" aria-labelledby="settings-autoplay-label settings-autoplay-state" aria-pressed="${autoplay}"><span id="settings-autoplay-state">${autoplay ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div><p>끄면 실험·광장·장치 살펴보기의 자동재생을 숨기고 직접 조작으로 탐구해요. 선택은 이 기기에 저장돼요.</p>`;
   const teacher = fold(copy.standards, `<dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.goals, `<dl class="settings-standards">${activityMeta.map(meta => `<div><dt>활동 ${meta.activity} · [${meta.standards.join(', ')}]</dt><dd>${meta.objective}${meta.needsReview ? ` <small>${copy.goalsDraft}</small>` : ''}</dd></div>`).join('')}</dl>`, true)
-    + fold(copy.tools, `${autoplayControl}<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
+    + fold(copy.tools, `<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
   const copyright = paragraphs(copy.copyrightGuide)
     + fold(copy.sources, `<p>${copy.sourcesIntroduction}</p><dl class="settings-sources">${copy.sourceGroups.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + paragraphs([copy.copyrightOwner, copy.ownRights, copy.externalRights, copy.educationSources]);
@@ -119,14 +117,6 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
       return;
     }
     switch (target.dataset.settingsAction) {
-      case 'autoplay': {
-        const enabled = options.save.settings.autoplay === false;
-        options.save.settings.autoplay = enabled;
-        target.setAttribute('aria-pressed', String(enabled));
-        target.querySelector('span')!.textContent = enabled ? copy.on : copy.off;
-        changed();
-        break;
-      }
       case 'close': cleanup(); break;
       case 'story': closeAndRun(options.onStory); break;
       case 'ending': if (options.save.final.complete || options.admin) closeAndRun(options.onEnding); break;

@@ -13,6 +13,7 @@ const DEFAULT_VOLUME = 0.35;
 export type MusicTheme = 'main' | 'final';
 const musicFiles: Record<MusicTheme, string> = { main: '/audio/music/main-theme.mp3', final: '/audio/music/finale-theme.mp3' };
 let theme: MusicTheme = 'main';
+let introMix = false;
 let music: HTMLAudioElement | undefined;
 let musicPlayPending = false, musicRevision = 0;
 export type NarrationState = 'loading' | 'playing' | 'ended' | 'stopped' | 'blocked' | 'unavailable' | 'muted';
@@ -82,13 +83,16 @@ function applyMusic() {
     music.src = musicFiles[theme]; music.loop = theme === 'main'; document.body.append(music);
   }
   if (!music) return;
-  music.volume = settings.musicVolume * (narration ? 0.25 : 1);
+  music.volume = Math.min(1, settings.musicVolume * (introMix ? 1.5 : 1) * (narration ? 0.25 : 1));
   if (!music.paused || music.ended || musicPlayPending) return;
   musicPlayPending = true;
   const revision = musicRevision;
   // Autoplay denial is retried on the next pointer/key gesture.
   void music.play().catch(() => {}).finally(() => { if (revision === musicRevision) musicPlayPending = false; });
 }
+
+/** Balance the main theme against the intro voices while keeping the saved volume intact. */
+export function setIntroMusicMix(active: boolean) { introMix = active; applyMusic(); }
 
 /** One persistent player keeps the main theme continuous across pages. */
 export function setMusicTheme(next: MusicTheme, restart = false) {
@@ -226,7 +230,7 @@ export function setAudioPaused(value: boolean) {
 
 export function disposeAudio() {
   explicitlyPaused = true; narration?.stop('stopped');
-  music?.pause(); music?.remove(); music = undefined; theme = 'main'; musicRevision++; musicPlayPending = false;
+  music?.pause(); music?.remove(); music = undefined; theme = 'main'; introMix = false; musicRevision++; musicPlayPending = false;
   silence(effectVoices); stopSamples(); sampleBuffers.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {
     document.removeEventListener('pointerdown', activate);

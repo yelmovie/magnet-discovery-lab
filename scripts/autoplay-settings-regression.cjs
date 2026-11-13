@@ -73,7 +73,7 @@ async function timed(n,speed) {
   await page.locator('[data-demo="toggle"]').click();
   await page.waitForFunction(()=>document.querySelector('[data-demo="toggle"]')?.textContent.includes('관찰 완료'),null,{timeout:120000});
   const elapsed=Date.now()-began;
-  const trial=await page.evaluate(n=>window.__qa.save.activities[n].trials.find(t=>t.key===(n===2?'repair0':'delivery2')),n);
+  const trial=await page.evaluate(n=>window.__qa.save.activities[n].trials.find(t=>t.key===(n===2?'repair0':'delivery1')),n);
   assert.ok(trial?.conditions.autoplay);
   assert.equal(await page.locator('.puzzle-stars .on').count(),0);
   pass(`activity ${n} at ${speed}x completes with autoplay evidence in ${elapsed}ms`);
