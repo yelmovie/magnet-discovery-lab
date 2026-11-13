@@ -4,7 +4,7 @@ import { join, relative, resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 // Saved on install so a reload still works when the Wi-Fi drops. Everything else is saved on first use.
-const OFFLINE_SHELL = /^favicon\.svg$|^assets\/(index|three-view)-|^fonts\/.+\.woff2$|^audio\/[a-z-]+\.mp3$|^assets\/quest\/(logo|city-expedition)\.webp$|^assets\/adventure\/(mili|dangi)-(poses|walk)-pixel\.webp$/;
+const OFFLINE_SHELL = /^favicon\.svg$|^assets\/(index|three-view)-|^fonts\/.+\.woff2$|^audio\/[a-z-]+\.mp3$|^assets\/quest\/(logo|city-title|city-expedition)\.webp$|^assets\/adventure\/(mili|dangi)-(poses|walk)-pixel\.webp$/;
 
 export default defineConfig({
   plugins: [{

@@ -194,7 +194,7 @@ body.quest-mode #app .sprite-mascot {
 #app .quest-title {
   position: relative; width: 100%; height: 100%; min-height: 100dvh;
   overflow: hidden; isolation: isolate;
-  background: url('/assets/quest/city-expedition.webp') center 52% / cover;
+  background: #17383f url('/assets/quest/city-title.webp') center 52% / cover;
 }
 #app .quest-title::before {
   content: ''; position: absolute; inset: 0; z-index: -1;
@@ -717,3 +717,6 @@ body.quest-mode #app .quest-city .expedition-next {
   max-width:min(480px, calc(100% - var(--map-left) - var(--map-right) - var(--map-pad-width) - 10px));
 }
 body.quest-mode #app .quest-city .expedition-next[aria-busy="true"]:hover { translate:none; }
+
+/* The title uses two text weights; keep the heavier face for the game screens. */
+#app .quest-title :is(h1,button,strong) { font-weight: 700; }
