@@ -27,6 +27,7 @@ const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12
 
 function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
+  const musicLevel = Math.round(settings.musicVolume * 100);
   const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
   const teacher = fold(copy.standards, `<dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.goals, `<dl class="settings-standards">${activityMeta.map(meta => `<div><dt>활동 ${meta.activity} · [${meta.standards.join(', ')}]</dt><dd>${meta.objective}${meta.needsReview ? ` <small>${copy.goalsDraft}</small>` : ''}</dd></div>`).join('')}</dl>`, true)
@@ -35,22 +36,24 @@ function markup(options: GameSettingsOptions) {
     + fold(copy.sources, `<p>${copy.sourcesIntroduction}</p><dl class="settings-sources">${copy.sourceGroups.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + paragraphs([copy.copyrightOwner, copy.ownRights, copy.externalRights, copy.educationSources]);
   return `<header class="settings-dialog-heading"><h2 id="settings-dialog-title">${copy.title}</h2><button type="button" class="settings-close-icon" data-settings-action="close" aria-label="${copy.close}">${closeIcon}</button></header>
-    <div class="settings-dialog-body">
-      <section class="settings-sound" aria-label="소리 설정">
+    <div class="settings-dialog-body science-settings-body">
+      <section class="settings-sound science-settings-audio" aria-label="소리 설정">
         ${switchRow('music', copy.music, settings.music)}
         ${switchRow('effects', copy.effects, settings.effects)}
+        <label class="settings-volume science-settings-volume" for="settings-music-volume"><span>배경 음악 크기</span><output for="settings-music-volume">${musicLevel}%</output><input id="settings-music-volume" type="range" min="0" max="100" step="5" value="${musicLevel}" ${settings.music?'':'disabled'}></label>
       </section>
-      <div class="settings-replays">
-        <button type="button" class="settings-button settings-story" data-settings-action="story">${copy.story}${arrowIcon}</button>
+      <div class="settings-replays science-settings-actions">
+        <button type="button" class="settings-button settings-records science-settings-full" data-settings-action="records">${copy.records}${arrowIcon}</button>
+        <button type="button" class="settings-button settings-story science-settings-full" data-settings-action="story">${copy.story}${arrowIcon}</button>
         <div class="settings-replay-row"><button type="button" class="settings-button" data-settings-action="ending" ${complete ? '' : 'disabled aria-describedby="settings-ending-lock"'}>${copy.ending}</button>${complete ? '' : `<p id="settings-ending-lock">${copy.endingLocked}</p>`}</div>
         <div class="settings-replay-row"><button type="button" class="settings-button" data-settings-action="certificate" ${complete ? '' : 'disabled aria-describedby="settings-certificate-lock"'}>${copy.certificate}</button>${complete ? '' : `<p id="settings-certificate-lock">${copy.certificateLocked}</p>`}</div>
       </div>
-      ${fold(copy.information, `<dl class="settings-about">${copy.about.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl><button type="button" class="settings-button settings-records" data-settings-action="records">${copy.records}${arrowIcon}</button><p>${copy.recordsNote}</p><p class="settings-signature">${copy.signature}</p>`)}
+      ${fold(copy.information, `<dl class="settings-about">${copy.about.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl><p>${copy.recordsNote}</p><p class="settings-signature">${copy.signature}</p>`)}
       ${fold(copy.student, paragraphs(copy.studentGuide))}
       ${fold(copy.teacher, teacher)}
       ${fold(copy.copyright, copyright)}
     </div>
-    <footer class="settings-dialog-footer"><button type="button" class="settings-button settings-reset" data-settings-action="reset">${options.admin ? copy.teacherReset : copy.reset}</button><button type="button" class="settings-button settings-primary" data-settings-action="close">${copy.close}</button></footer>`;
+    <footer class="settings-dialog-footer science-settings-footer"><button type="button" class="settings-button settings-reset" data-settings-action="reset">${options.admin ? copy.teacherReset : copy.reset}</button><button type="button" class="settings-button settings-primary" data-settings-action="close">${copy.close}</button></footer>`;
 }
 
 /** Uses native modal focus handling and Escape. Returns an idempotent cleanup. */
@@ -58,6 +61,7 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
   const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const dialog = document.createElement('dialog');
   dialog.className = 'game-settings';
+  dialog.setAttribute('data-science-settings', '');
   dialog.setAttribute('aria-labelledby', 'settings-dialog-title');
   dialog.innerHTML = markup(options);
   document.body.append(dialog);
@@ -102,6 +106,12 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
       dialog.querySelectorAll<HTMLDetailsElement>('.settings-dialog-body > .settings-fold').forEach(other=>{if(other!==fold)other.open=false;});
     });
   });
+  const musicInput = dialog.querySelector<HTMLInputElement>('#settings-music-volume')!;
+  musicInput.addEventListener('input', () => {
+    options.save.settings.musicVolume = Number(musicInput.value) / 100;
+    dialog.querySelector<HTMLOutputElement>('output[for="settings-music-volume"]')!.value = `${musicInput.value}%`;
+    changed();
+  });
   dialog.addEventListener('click', event => {
     const target = (event.target as Element).closest<HTMLElement>('button');
     if (!target || (target as HTMLButtonElement).disabled) return;
@@ -111,6 +121,7 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
       const next = !normalizedAudioSettings(audio)[soundKey]; audio[soundKey] = next;
       const enabled = normalizedAudioSettings(audio); audio.sound = enabled.music || enabled.effects;
       target.setAttribute('aria-pressed', String(next));
+      if (soundKey === 'music') musicInput.disabled = !next;
       target.querySelector('span')!.textContent = next ? copy.on : copy.off;
       changed();
       if (soundKey === 'effects' && next) playEffect('click', audio);

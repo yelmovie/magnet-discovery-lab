@@ -2,9 +2,9 @@ import { version } from '../package.json';
 
 /** All learner-facing settings copy lives here so the common structure stays reusable. */
 export const settingsContent = {
-  title: '탐험 설정',
+  title: '설정',
   close: '닫기',
-  music: '배경음',
+  music: '배경 음악',
   effects: '효과음·캐릭터 목소리',
   on: '켜짐',
   off: '꺼짐',
@@ -17,7 +17,7 @@ export const settingsContent = {
   recordsNote: '직접 실험한 기록과 얻은 도구를 살펴봐요.',
   information: '앱 정보 · 배움과 보상',
   about: [
-    ['탐험의 목적', '자석을 직접 옮기고, 뒤집고, 실험하며 멈춘 도시의 장치를 고쳐요. 관찰한 결과로 내 생각을 설명하는 힘을 길러요.'],
+    ['탐험 목적', '자석을 직접 옮기고, 뒤집고, 실험하며 멈춘 도시의 장치를 고쳐요. 관찰한 결과로 내 생각을 설명하는 힘을 길러요.'],
     ['미션 보상', '자석 수리 키트, 힘 관찰 렌즈, 극 표시 스티커, 원격 조작 손잡이, 나의 발명 설계도를 얻어요. 다음 구역에서 도구를 쓰고, 시민 시설을 고쳐 축제 광장을 열어요.'],
     ['남는 배움', '물체의 처음 위치, 직접 움직인 경로와 조건별 결과가 연구 기록으로 남아요. 도구와 기록은 속도나 정답률이 아니라 관찰·비교·새 조건 적용으로 모아요.'],
   ] as const,

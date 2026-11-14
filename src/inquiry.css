@@ -16,7 +16,7 @@
 #app .mission-world:has([data-drag='controller']) .mission-actions { max-width: calc(100% - 40px); width: max-content; flex-wrap: wrap; gap: 8px; bottom: 12%; }
 #app .mission-world:has([data-drag='controller']) .mission-actions .mission-action { font-size: 17px; padding: 8px 12px; }
 #app .delivery-state { position: absolute; top: 42%; left: 50%; translate: -50% -50%; z-index: 10; pointer-events: none; padding: 6px 12px; border-radius: 10px; background: #fffdf0e8; color: #234f4b; font-size: 17px; }
-#app .expedition-map-tools { position: absolute; top: var(--hud-inset); left: calc(var(--hud-inset) + 2 * var(--hud-icon-size) + 2 * var(--space-sm)); z-index: var(--layer-hud); display: flex; gap: var(--space-sm); }
+#app .expedition-map-tools { position: absolute; right: var(--map-right); bottom: calc(var(--map-bottom) + var(--map-cta-h) + 14px); z-index: var(--layer-hud); display: flex; gap: var(--map-key-gap); }
 #app .expedition-map-tools .quest-icon[aria-pressed="true"] { background: var(--quest-gold-light); border-color: var(--quest-gold-edge); box-shadow: 0 4px 0 var(--quest-gold-edge), inset 0 2px 0 #fff; }
 #app .expedition-viewport { cursor: grab; }
 #app .expedition-viewport.is-dragging, #app .expedition-viewport.is-dragging * { cursor: grabbing; }
@@ -41,4 +41,9 @@
 @media(max-width:700px) {
   #app .quest-activity .play-discovery .play-discovery-options { grid-template-columns: 1fr; }
   #app .quest-activity .play-discovery .inquiry-option { min-height: 56px; }
+}
+
+/* Keep the city controls on-screen even when the surrounding lesson uses its 860px reading width. */
+@media (orientation: landscape) and (max-width:859px) {
+  body.quest-mode #app:has(.quest-city) { min-width:0; }
 }
