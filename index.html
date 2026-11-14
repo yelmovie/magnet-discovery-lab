@@ -18,11 +18,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" as="image" href="/assets/quest/city-title.webp" />
     <link rel="preload" as="image" href="/assets/quest/logo.webp" />
+    <link rel="preload" href="/fonts/NanumSquareNeoTTF-cBd.woff2" as="font" type="font/woff2" crossorigin />
     <style>
-      .boot { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; background: #17383f; color: #f8f5eb; font: 600 20px/1.5 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; word-break: keep-all; }
+      @font-face { font-family: NanumSquareNeo; src: url(/fonts/NanumSquareNeoTTF-cBd.woff2) format("woff2"); font-style: normal; font-weight: 600 700; font-display: swap; }
+      .boot { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; background: #17383f; color: #f8f5eb; font: 600 20px/1.5 NanumSquareNeo, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; text-align: center; word-break: keep-all; }
       .boot p { margin: 0; }
       .boot-magnet { font-size: 44px; line-height: 1; color: #f2c14e; animation: boot-pulse 1.1s ease-in-out infinite alternate; }
-      .boot .boot-slow { font-size: 16px; font-weight: 400; opacity: 0; animation: boot-show .3s 6s forwards; }
+      .boot .boot-slow { font-size: 16px; opacity: 0; animation: boot-show .3s 6s forwards; }
       @keyframes boot-pulse { to { opacity: .45; } }
       @keyframes boot-show { to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) { .boot-magnet { animation: none; } }
