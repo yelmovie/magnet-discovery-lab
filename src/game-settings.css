@@ -60,3 +60,12 @@
 @media(max-height:650px){.game-settings{max-height:94dvh}.settings-dialog-heading{padding-top:12px;padding-bottom:10px}.settings-dialog-body{padding-top:14px;padding-bottom:14px}.settings-dialog-footer{padding-top:10px;padding-bottom:13px}}
 @media(max-width:540px){.game-settings{max-width:calc(100vw - 16px);border-radius:20px}.settings-dialog-heading{padding-left:17px;padding-right:17px}.settings-dialog-body{padding-left:14px;padding-right:14px}.settings-dialog-footer{padding-left:14px;padding-right:14px;gap:8px}.settings-replay-row{grid-template-columns:1fr;gap:6px}.settings-replay-row p{padding-left:6px}.settings-fold summary{font-size:19px}.settings-reset{padding-left:5px;padding-right:5px}.settings-primary{min-width:92px}.game-settings-reset{padding:20px}}
 @media(prefers-reduced-motion:reduce){.settings-button,.settings-fold summary svg{transition:none}}
+
+
+/* The dialog uses the shared outer padding; keep the internal heading aligned with its rows. */
+html body dialog.game-settings[data-science-settings]>.settings-dialog-heading {padding:0 0 1px;border:0;background:none}
+html body dialog[data-science-settings] .science-settings-audio>.science-settings-volume {grid-column:1}
+
+html body.quest-mode dialog.game-settings[data-science-settings] {
+ width:min(940px,calc(100vw - 28px));max-width:calc(100vw - 28px);max-height:94dvh;
+}

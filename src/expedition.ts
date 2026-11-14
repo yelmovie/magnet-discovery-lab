@@ -200,7 +200,9 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(!(i===5?options.save.final.complete:districtRestored(options.save,i)))return null;
     const door=roads[node],edge=roadEdges.find(pair=>pair.includes(node));
     const path=roads[edge?.find(index=>index!==node)??node];
-    const point=toWorld({x:door.x+(path.x-door.x)*.25,y:door.y+(path.y-door.y)*.25});
+    // The tower keeper stands to the east; use the west half of the entry path.
+    const step=i===2?.65:.25;
+    const point=toWorld({x:door.x+(path.x-door.x)*step,y:door.y+(path.y-door.y)*step});
     return {...point,name:stageNames[i]??'중앙 광장'};
   }),progress:options.save.mapEncounters,onSave:options.onEncounterSave,
   blocked:()=>paused||overview||!!root.ownerDocument.querySelector('.modal-backdrop'),reduced:()=>!options.save.settings.motion,
