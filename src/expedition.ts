@@ -1,5 +1,5 @@
 import {bindMapZoom} from './map-gestures.js';
-import {mountVillageEncounters} from './village-encounters.js';
+import {mountVillageEncounters,villageEncounterHits} from './village-encounters.js';
 import {playEffect} from './game-audio';
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { icon, walkingMascot } from './art';
@@ -22,6 +22,17 @@ export const roadEdges: [number,number][] = [
   [11,24],[24,25],[25,15],[3,18],[18,26],[26,16],[2,19],[19,17],
 ];
 export const doors=[12,13,14,15,16,17];
+// Keep each foe on the side of the walking route, away from the resident and door sign.
+const encountersByDoor: {foe:Point; approach:Point}[] = [
+  {foe:{x:27.9,y:45.8},approach:{x:34.5,y:49}},
+  {foe:{x:42.4,y:33},approach:{x:48.6,y:28}},
+  {foe:{x:71.6,y:48.2},approach:{x:65.85,y:46.9}},
+  {foe:{x:56.1,y:71},approach:roads[24]},
+  {foe:{x:42.2,y:68.8},approach:roads[18]},
+  {foe:{x:56,y:58.9},approach:roads[19]},
+];
+const hasVillageEncounter=(save:Save,stage:number)=>stage===5?save.final.complete:districtRestored(save,stage);
+export const pendingVillageEncounter=(save:Save)=>encountersByDoor.findIndex((_,stage)=>hasVillageEncounter(save,stage)&&villageEncounterHits(save.mapEncounters,stage)<3);
 // Feet stand on the side terraces of the illustrated map, clear of doors and walking routes.
 export const residents = [
   { name: '우체부', feet: { x: 11.6, y: 37.4 }, speech: '착, 닫혔지? 덮개 안쪽 자석이 몸체의 철판을 끌어당겨 붙잡아 줘. 덕분에 배달길에서도 편지를 지킬 수 있어!' },
@@ -114,16 +125,17 @@ export function roadRoute(start:Point,target:number|Point):Point[]{
 }
 export function expeditionMarkup(s:Save,admin=false){
   const next=Math.min(5,s.evidence.length);
+  const destination = `${next===5?'중앙 광장':stageNames[next]} 자동으로 들어가기`;
   const destinationArrow = `<span class="expedition-destination-arrow${s.settings.motion?'':' no-motion'}" aria-hidden="true">${icon('arrow', 24)}</span>`;
   const buildings = doors.map((node, i) => {
     const p = roads[node], open = admin || i <= next, done = i < 5 && districtRestored(s, i);
     const current = !admin && i === next;
     return `<button class="expedition-building ${done ? 'restored' : open ? 'available' : 'locked'}${current ? ' current' : ''}" data-place="${i}" style="left:${p.x}%;top:${p.y-11}%" aria-label="${i === 5 ? '중앙 광장' : stageNames[i]}${current ? ' 현재 목적지' : ''}${done ? ' 복구 완료' : open ? ' 입구로 걷기' : ' 잠김'}"><svg class="map-lock-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="${open?'M8 11V7a4 4 0 0 1 7.5-2':'M8 11V7a4 4 0 0 1 8 0v4'}"/></svg><span>${i === 5 ? '중앙 광장' : stageNames[i]}</span></button>`;
   }).join('');
-  return `<section class="quest-city"><div class="expedition-viewport" aria-label="길을 따라 걷는 자석 도시"><div class="expedition-world"><img class="expedition-map" src="/assets/quest/city-expedition.webp" alt="넓은 돌길로 이어진 우편국, 재료 연구소, 극의 탑, 수조, 공방, 중앙 광장" draggable="false">${aquariumOnMap(s)}${townLights(s)}${buildings}${residentMarkers(s)}${courierOnMap(s)}<div class="expedition-player" aria-label="탐험가 밀이">${walkingMascot('mili',104)}</div><div class="expedition-npc" role="img" aria-label="길을 따라오는 당이">${walkingMascot('dangi',96)}</div></div></div><div class="expedition-dpad" aria-label="도시에서 걷기">${[['0,-1','↑','위'],['-1,0','←','왼쪽'],['0,1','↓','아래'],['1,0','→','오른쪽']].map(([d,arrow,label])=>`<button data-dir="${d}" aria-label="${label}${label.endsWith('쪽')?'으':''}로 걷기">${arrow}</button>`).join('')}</div><div class="expedition-destination"><div class="expedition-map-tools" role="group" aria-label="지도 보기"><button type="button" class="quest-icon" data-map-overview aria-pressed="false" aria-label="지도 전체 보기" title="지도 전체 보기">${icon('expand',27)}</button><button type="button" class="quest-icon" data-map-pan aria-pressed="false" aria-label="손으로 지도 이동" title="손으로 지도 이동">${icon('hand',27)}</button></div>${admin?'':`<button type="button" class="expedition-next quest-cta" data-action="walk-next">${next===5?'중앙 광장':stageNames[next]} 자동으로 들어가기${destinationArrow}</button>`}</div></section>`;
+  return `<section class="quest-city"><div class="expedition-viewport" aria-label="길을 따라 걷는 자석 도시"><div class="expedition-world"><img class="expedition-map" src="/assets/quest/city-expedition.webp" alt="넓은 돌길로 이어진 우편국, 재료 연구소, 극의 탑, 수조, 공방, 중앙 광장" draggable="false">${aquariumOnMap(s)}${townLights(s)}${buildings}${residentMarkers(s)}${courierOnMap(s)}<div class="expedition-player" aria-label="탐험가 밀이">${walkingMascot('mili',104)}</div><div class="expedition-npc" role="img" aria-label="길을 따라오는 당이">${walkingMascot('dangi',96)}</div></div></div><div class="expedition-dpad" aria-label="도시에서 걷기">${[['0,-1','↑','위'],['-1,0','←','왼쪽'],['0,1','↓','아래'],['1,0','→','오른쪽']].map(([d,arrow,label])=>`<button data-dir="${d}" aria-label="${label}${label.endsWith('쪽')?'으':''}로 걷기">${arrow}</button>`).join('')}</div><div class="expedition-destination"><div class="expedition-map-tools" role="group" aria-label="지도 보기"><button type="button" class="quest-icon" data-map-overview aria-pressed="false" aria-label="지도 전체 보기" title="지도 전체 보기">${icon('expand',27)}</button><button type="button" class="quest-icon" data-map-pan aria-pressed="false" aria-label="손으로 지도 이동" title="손으로 지도 이동">${icon('hand',27)}</button></div>${admin?'':`<button type="button" class="expedition-next quest-cta" data-action="walk-next"><span data-map-next-label>${pendingVillageEncounter(s)>=0?'악당에게 가기':destination}</span>${destinationArrow}</button>`}</div></section>`;
 }
 export interface ExpeditionHandle {goTo(i:number,guided?:boolean):void;welcomeResident(i:number):void;direction(x:number,y:number):void;pause(p:boolean):void;motion(p:boolean):void;destroy():void}
-export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;clearIndex?:number|null;onPosition:(p:Point)=>void;onEncounterSave:(hits:Record<string,number>)=>void;onArrive:(i:number,guided:boolean)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
+export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boolean;onPosition:(p:Point)=>void;onEncounterSave:(hits:Record<string,number>)=>void;onArrive:(i:number,guided:boolean)=>void;onResident:(i:number)=>void}):ExpeditionHandle{
   const viewport=root.querySelector<HTMLElement>('.expedition-viewport')!,world=root.querySelector<HTMLElement>('.expedition-world')!,player=root.querySelector<HTMLElement>('.expedition-player')!,npc=root.querySelector<HTMLElement>('.expedition-npc')!;
   const courier=root.querySelector<HTMLElement>('.expedition-courier');let courierPhase=0;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -136,14 +148,28 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   if(courier)drawCourier(courierPosition(0));
   let p=options.save.city.x<=100&&options.save.city.y<=100?onPavement(options.save.city):{...roads[0]},route:Point[]=[],dir={x:0,y:0},paused=false,raf=0,last=performance.now(),saveAt=0,doorLatch=-1;
   const nextButton=root.querySelector<HTMLButtonElement>('[data-action="walk-next"]');
+  const nextLabel=nextButton?.querySelector<HTMLElement>('[data-map-next-label]');
+  const nextStage=Math.min(5,options.save.evidence.length);
+  const destination=`${nextStage===5?'중앙 광장':stageNames[nextStage]} 자동으로 들어가기`;
+  const pending=()=>options.admin?-1:pendingVillageEncounter(options.save);
+  const attackButton=()=>root.querySelector<HTMLButtonElement>('[data-map-attack-dock]:not([hidden])');
+  let approachingFoe=false;
+  function describeNext(){
+    if(!nextLabel)return;
+    const foe=pending();
+    const label=approachingFoe?'악당에게 가는 중…':foe<0?destination:attackButton()
+      ?`악당 공격 · ${3-villageEncounterHits(options.save.mapEncounters,foe)}번 남음`:'악당에게 가기';
+    if(nextLabel.textContent!==label)nextLabel.textContent=label;
+  }
   const residentButtons=[...root.querySelectorAll<HTMLButtonElement>('[data-resident]')];
   let guidedDoor:number|null=null;
   function setGuidedDoor(value:number|null){
     guidedDoor=value;
-    nextButton?.setAttribute('aria-busy',String(value!==null));
-    nextButton?.setAttribute('aria-disabled',String(value!==null));
+    nextButton?.setAttribute('aria-busy',String(value!==null||approachingFoe));
+    nextButton?.setAttribute('aria-disabled',String(value!==null||approachingFoe));
+    describeNext();
   }
-  function cancelRoute(){route=[];setGuidedDoor(null);}
+  function cancelRoute(){route=[];approachingFoe=false;setGuidedDoor(null);}
   // Restoring at a doorway must never reopen it until the player leaves and crosses again.
   doors.forEach((node,i)=>{if(dist(p,roads[node])<4)doorLatch=i;});
   const npcGap=4.8,spawn=projectRoad(p),[a,b]=spawn.edge;
@@ -196,15 +222,9 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   },{signal});
   root.querySelector('[data-map-overview]')?.addEventListener('click',()=>{if(!paused)setOverview(!overview);},{signal});
   const toWorld=({x,y}:Point)=>({x:x*16,y:y*9});
-  const encounters=options.admin?null:mountVillageEncounters({host:viewport,clearIndex:options.clearIndex,stages:doors.map((node,i)=>{
-    if(!(i===5?options.save.final.complete:districtRestored(options.save,i)))return null;
-    const door=roads[node],edge=roadEdges.find(pair=>pair.includes(node));
-    const path=roads[edge?.find(index=>index!==node)??node];
-    // The tower keeper stands to the east; use the west half of the entry path.
-    const step=i===2?.65:.25;
-    const point=toWorld({x:door.x+(path.x-door.x)*step,y:door.y+(path.y-door.y)*step});
-    return {...point,name:stageNames[i]??'중앙 광장'};
-  }),progress:options.save.mapEncounters,onSave:options.onEncounterSave,
+  const encounters=options.admin?null:mountVillageEncounters({host:viewport,stages:encountersByDoor.map(({foe},i)=>
+    hasVillageEncounter(options.save,i)?{...toWorld(foe),name:stageNames[i]??'중앙 광장'}:null),
+  progress:options.save.mapEncounters,activeStage:pending,onSave:hits=>{options.onEncounterSave(hits);describeNext();},
   blocked:()=>paused||overview||!!root.ownerDocument.querySelector('.modal-backdrop'),reduced:()=>!options.save.settings.motion,
   tone:(kind,hits)=>playEffect(kind==='finish'?'encounter-exit':kind==='contact'?'encounter-contact':hits===2?'encounter-two':'encounter-one',options.save.settings),
   actors:[player,npc]});
@@ -226,6 +246,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     const follower=trailPoint(trail,npcGap);drawWalker(walkers[0],p);drawWalker(walkers[1],follower);
     player.style.zIndex=p.y>=follower.y?'7':'6';npc.style.zIndex=p.y>=follower.y?'6':'7';
     encounters?.update({hero:toWorld(p),ally:toWorld(follower),now,scale,project:({x,y})=>({x:tx+x*scale,y:ty+y*scale})});
+    if(encounters)describeNext();
     residentButtons.forEach(b=>b.classList.toggle('is-near',dist(p,residents[Number(b.dataset.resident)].feet)<13));
   };
   viewportSize.observe(viewport);
@@ -246,10 +267,23 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     // A quick tap can start and end between frames. Give it one visible step.
     p=walkRoad(p,dir,.55);
   }
+  function guideToFoe(stage:number){
+    if(approachingFoe)return;
+    resumeFollow();releaseDirections();zoom=1;
+    route=roadRoute(p,encountersByDoor[stage].approach);
+    approachingFoe=true;setGuidedDoor(null);
+  }
   const goTo=(i:number,guided=false)=>{
     if(paused||i<0||i>5||(guided&&guidedDoor!==null))return;
     if(guided&&i>options.save.evidence.length&&!options.admin)return;
-    resumeFollow();releaseDirections();route=roadRoute(p,doors[i]);doorLatch=-1;setGuidedDoor(guided?i:null);
+    const foe=pending();
+    if(foe>=0&&i<=options.save.evidence.length){
+      const attack=guided&&attackButton();
+      if(attack&&!approachingFoe)attack.click();else guideToFoe(foe);
+      return;
+    }
+    resumeFollow();releaseDirections();approachingFoe=false;
+    route=roadRoute(p,doors[i]);doorLatch=-1;setGuidedDoor(guided?i:null);
   };
   function frameResident(stage:number) {
     if(overview)return;
@@ -309,8 +343,12 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     if(moving){const last=trail[trail.length-1];if(dist(last,p)>.3){trail.push({...p});if(trail.length>80)trail.splice(0,trail.length-80);}}
     if(moving&&now-saveAt>700){options.onPosition(p);saveAt=now;}
     if(doorLatch>=0&&dist(p,roads[doors[doorLatch]])>5)doorLatch=-1;
+    if(!route.length&&approachingFoe){approachingFoe=false;setGuidedDoor(null);}
     if(!route.length)for(let i=0;i<doors.length;i++)if(dist(p,roads[doors[i]])<1.5&&doorLatch!==i){
-      const guided=guidedDoor===i;doorLatch=i;setGuidedDoor(null);options.onPosition(p);options.onArrive(i,guided);
+      const guided=guidedDoor===i;doorLatch=i;setGuidedDoor(null);options.onPosition(p);
+      const foe=pending();
+      if(foe>=0&&i<=options.save.evidence.length){guideToFoe(foe);break;}
+      options.onArrive(i,guided);
       if(signal.aborted)return;
       break;
     }

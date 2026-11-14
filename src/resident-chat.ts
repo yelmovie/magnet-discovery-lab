@@ -64,7 +64,7 @@ function stampRow(s:Save) {
   return `<strong>마을 친구 도장 <b>${met.length} / 5</b></strong><span class="friend-seals">${stamps}</span>`;
 }
 
-export function chatMarkup(s:Save, stage:number, completion?: { reward: string; destination: number }) {
+export function chatMarkup(s:Save, stage:number, completion?: { reward: string; label: string }) {
   const {name}=residents[stage], story=stories[stage];
   const speech=s.greetedResidents?.includes(stage)?story.again:story.hello;
   const receipt=s.greetedResidents?.includes(stage)?'이 친구의 도장을 모았어.':'궁금한 걸 물어보고 친구 도장을 받아 봐.';
@@ -75,7 +75,7 @@ export function chatMarkup(s:Save, stage:number, completion?: { reward: string; 
       <div class="resident-stage-name"><h2>${name}</h2><span>${stageNames[stage]} · 돌아온 주민</span></div>
       <p class="resident-stage-speech" data-town-speech><span class="resident-speech-layout" aria-hidden="true">${speech}</span><span class="resident-speech-visual" aria-hidden="true">${speech}</span><span class="resident-speech-readable" role="status">${speech}</span></p>
       ${completion?.reward ?? ''}
-      <div class="resident-stage-controls"><div class="resident-stage-replies" aria-label="주민에게 물어보기"><button data-town-reply="news">${story.question}</button><button data-town-reply="science">${story.science}</button></div><button class="resident-stage-return${completion ? ' is-next-zone' : ''}" data-action="${completion ? 'next-zone' : 'modal-close'}">${completion ? completion.destination === 5 ? '중앙 광장으로 →' : '다음 구역으로 →' : '지도로 돌아가기'}</button></div>
+      <div class="resident-stage-controls"><div class="resident-stage-replies" aria-label="주민에게 물어보기"><button data-town-reply="news">${story.question}</button><button data-town-reply="science">${story.science}</button></div><button class="resident-stage-return${completion ? ' is-next-zone' : ''}" data-action="${completion ? 'next-zone' : 'modal-close'}">${completion?.label ?? '지도로 돌아가기'}</button></div>
       <span class="sr-only" data-town-queue role="status"></span>
     </div>
   </div>`;

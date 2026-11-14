@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyActivity, freshSave } from '../src/domain';
 import { addTrial } from '../src/trial-records';
 import { aquariumOnMap, courierOnMap, townRestoration } from '../src/town-restoration';
-import { courierPosition, expeditionMarkup, nearestRoad } from '../src/expedition';
+import { courierPosition, expeditionMarkup, nearestRoad, pendingVillageEncounter } from '../src/expedition';
 
 describe('지도에서 보이는 수조와 배달 복구', () => {
   it('새 탐험과 교사용 전체 열기에는 더러운 유리만 있고 배송 수레는 없다', () => {
@@ -50,5 +50,23 @@ describe('지도에서 보이는 수조와 배달 복구', () => {
     }
     expect(courierPosition(0)).toEqual(courierPosition(10));
     expect(courierPosition(5).x).toBeCloseTo(29.3);
+  });
+});
+
+describe('다음 구역으로 가기 전 지도 악당', () => {
+  it('복구한 구역만 열고, 저장된 세 번째 명중 뒤에만 다음 악당을 고른다', () => {
+    const save = freshSave();
+    expect(pendingVillageEncounter(save)).toBe(-1);
+    save.completed = [1,2,3,4];
+    save.evidence = [0,1].map(stage => ({stage,date:save.updated,activities:[],summary:[]}));
+    save.mapEncounters = {clip:2,parts:1};
+    expect(pendingVillageEncounter(save)).toBe(0);
+    expect(expeditionMarkup(save)).toContain('악당에게 가기');
+    expect(expeditionMarkup(save,true)).not.toContain('data-action="walk-next"');
+    save.mapEncounters.clip = 3;
+    expect(pendingVillageEncounter(save)).toBe(1);
+    save.mapEncounters.parts = 3;
+    expect(pendingVillageEncounter(save)).toBe(-1);
+    expect(expeditionMarkup(save)).toContain('자동으로 들어가기');
   });
 });

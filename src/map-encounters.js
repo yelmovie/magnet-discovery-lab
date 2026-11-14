@@ -11,7 +11,7 @@ function layoutSpeech(host, entries){
  const sx=bounds.width/w,sy=bounds.height/h;
  const rect=r=>({l:(r.left-bounds.left)/sx,t:(r.top-bounds.top)/sy,r:(r.right-bounds.left)/sx,b:(r.bottom-bounds.top)/sy});
  const occupied=[];
- const selectors='button,a[href],.map-encounter-body,.map-encounter-prop,.map-encounter-meter,.villain-line,.village-sprite,.map-walker,.expedition-player,.expedition-companion,[data-map-resident],[data-hub-resident],.npc-bubble,.companion-bubble,[role="status"],.map-resident,.world-pin,.map-label,.map-node,.building-label,.map-encounter-reaction';
+ const selectors='button,a[href],.map-encounter-body,.map-encounter-prop,.map-encounter-meter,.villain-line,.village-sprite,.map-walker,.expedition-player,.expedition-npc,.expedition-courier,.resident-bubble,[data-map-resident],[data-hub-resident],.npc-bubble,.companion-bubble,[role="status"],.map-resident,.world-pin,.map-label,.map-node,.building-label,.map-encounter-reaction';
  for(const part of host.ownerDocument.querySelectorAll(selectors)){
   if(visible.some(({el})=>el===part||part.contains(el))||part.closest('[hidden],[aria-hidden="true"][inert]'))continue;
   const box=part.getBoundingClientRect();
@@ -67,7 +67,7 @@ export function normalizeMapHits(value,ids) {
  */
 export function mountMapEncounters({
   host,controls=host,stages,progress={},onSave=()=>{},blocked=()=>false,reduced=()=>false,
-  clearStage=()=>null,requiredFoes=0,art,tone=()=>{},palette='#a855f7',reach=90,contact=22,
+  activeId,requiredFoes=0,art,tone=()=>{},palette='#a855f7',reach=90,contact=22,
 }) {
   const handles=new AbortController(),{signal}=handles;
   const doc=host.ownerDocument,view=doc.defaultView;
@@ -82,9 +82,7 @@ export function mountMapEncounters({
   layer.append(style);
   const live=doc.createElement('span');
   live.className='map-encounter-sr';live.role='status';live.setAttribute('aria-live','polite');layer.append(live);
-  const callback=doc.createElement('p');
-  callback.className='map-encounter-clear';callback.hidden=true;callback.setAttribute('role','status');layer.append(callback);
-  let clearReady=null,clearUntil=0,clearId=null,lastSpeechLayout=-Infinity;
+  let lastSpeechLayout=-Infinity;
   const attack=doc.createElement('button');
   attack.type='button';attack.className='map-encounter-attack';attack.hidden=true;
   attack.setAttribute('aria-keyshortcuts','J Space');
@@ -126,7 +124,6 @@ export function mountMapEncounters({
     const time=view?.performance.now()??performance.now();
     if(time-lastHit<REPEAT||current.hits>=HITS||distance(last.hero,current.point)>reach)return;
     const foe=current,n=++foe.hits;lastHit=time;
-    clearUntil=0;callback.hidden=true;
     if(Math.abs(foe.point.x-last.hero.x)>3)foe.facing=last.hero.x<foe.point.x?-1:1;
     const calm=still(),duration=calm?170:n===HITS?660:360;
     foe.poseUntil=time+duration;foe.hitAt=time;foe.hurtAt=undefined;
@@ -176,12 +173,13 @@ export function mountMapEncounters({
     const {hero,ally,project,scale=1,now=view?.performance.now()??performance.now()}=input;
     const calm=still(),stop=paused(),size=Math.max(29,Math.min(90,57*scale));
     let nearest=null,best=Infinity;
-    const width=host.clientWidth,height=host.clientHeight;
+    const width=host.clientWidth,height=host.clientHeight,active=activeId?.();
     for(const foe of foes){
+      if(foe.hits<HITS&&activeId&&foe.s.id!==active){foe.el.hidden=true;foe.bubble.hidden=true;continue;}
       if(foe.hits>=HITS&&now>=Math.max(foe.poseUntil,foe.saidUntil)){foe.el.hidden=true;continue;}
       const dHome=distance(hero,foe.s),patrol=villainPatrol(now,foe.i);
       const animate=!stop&&!calm&&foe.hits<HITS&&now>=foe.poseUntil;
-      const radius=Math.min(34,reach*.40);
+      const radius=8;
       // Slow the movement near the learner, then hold the actual position on a hit.
       const span=dHome<=reach*.75?radius*.32:radius;
       if(calm)foe.point=foe.s;
@@ -240,24 +238,9 @@ export function mountMapEncounters({
       if(foe.meter.textContent!==marks)foe.meter.textContent=marks;
       foe.bubble.hidden=now>=foe.saidUntil||stop;
     }
-    if(stop){
-      clearReady=null;
-      if(now<clearUntil){clearUntil=0;clearId=null;}
-      callback.hidden=true;
-    }else{
-      clearReady??=now;
-      const id=clearStage();
-      if(id!=null&&id!==clearId&&now-clearReady>=1250){
-        const stage=stages.find(s=>String(s.id)===String(id));
-        if(stage?.lines?.[0]){
-          clearId=id;clearUntil=now+4200;lastSpeechLayout=-Infinity;callback.textContent=`${stage.speaker??stage.name} · “${stage.lines[0]}”`;
-        }
-      }
-      callback.hidden=now>=clearUntil;
-    }
     if(finaleAt&&now>=finaleAt&&!stop){finaleAt=0;openMapFinale(host,"/video/story/final.mp4");}
     current=nearest;
-    if(current&&current!==lastNear&&current.saidUntil<=now&&now-lastHit>REPEAT&&now>=clearUntil){
+    if(current&&current!==lastNear&&current.saidUntil<=now&&now-lastHit>REPEAT){
       const message=current.say[current.sayIndex++%current.say.length]??'다가왔구나!';
       speak(current,message,now+2200);
     }
@@ -269,10 +252,10 @@ export function mountMapEncounters({
       const description=`${current.s.name}의 악당 공격, ${remaining}번 남음`;
       if(attack.getAttribute('aria-label')!==description)attack.setAttribute('aria-label',description);
     }
-    if(attack.hidden&&hasFocus){host.querySelector('canvas,[tabindex="0"]')?.focus({preventScroll:true});}
+    if(attack.hidden&&hasFocus){host.closest('.quest-city')?.querySelector('[data-action="walk-next"]')?.focus({preventScroll:true});}
     if(now-lastSpeechLayout>=110){
       lastSpeechLayout=now;
-      layoutSpeech(host,[{el:callback},...foes.map(foe=>({el:foe.bubble,anchor:foe.actor}))]);
+      layoutSpeech(host,foes.map(foe=>({el:foe.bubble,anchor:foe.actor})));
     }
     return {hero:output('hero',now),ally:output('ally',now)};
   }
@@ -287,7 +270,6 @@ const STYLES=`
 .map-encounter-body{position:absolute;bottom:0;width:var(--encounter-size);height:var(--encounter-size);left:calc(-.5 * var(--encounter-size));background-repeat:no-repeat;background-position:center;background-size:contain;transform:scaleX(var(--encounter-face,1));transform-origin:50% 90%;filter:drop-shadow(0 2px 2px #17132985)}
 .map-encounter-meter{position:absolute;left:0;bottom:calc(var(--encounter-size) - 1px);transform:translateX(-50%);color:#fff;background:#251833ec;border:1px solid #ffffffa8;border-radius:9px;padding:1px 4px;font:700 10px/1.4 NanumSquareNeo,system-ui;letter-spacing:2px;white-space:nowrap}
 .map-encounter-foe[data-pose="exit"][data-exited="true"] > :not(.map-encounter-say){visibility:hidden}
-.map-encounter-clear{position:absolute;top:12px;left:50%;width:max-content;max-width:min(320px,calc(100% - 24px));transform:translateX(-50%);z-index:3;margin:0;padding:9px 13px;border:2px solid var(--encounter-color);border-radius:12px;background:#282138;color:white;box-shadow:0 2px 8px #16102477;text-align:center;pointer-events:none;font:700 14px/1.45 NanumSquareNeo,system-ui;word-break:keep-all}
 .map-encounter-say{position:absolute;left:0;bottom:calc(var(--encounter-size) + 18px);transform:translateX(-50%);width:max-content;max-width:184px;word-break:keep-all;background:#fff;color:#292137;border:1px solid #514364;border-radius:9px;padding:5px 8px;text-align:center;font:700 13px/1.3 NanumSquareNeo,system-ui;box-shadow:0 2px 5px #15111950}
 .map-encounter-prop{position:absolute;width:calc(.36 * var(--encounter-size));height:calc(.36 * var(--encounter-size));bottom:4px;left:calc(.28 * var(--encounter-size));color:var(--encounter-color);fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 1px #161024) drop-shadow(0 0 2px #161024)}
 .map-encounter-fx{position:absolute;bottom:6px;left:calc(-.35 * var(--encounter-size));width:calc(.7 * var(--encounter-size));height:calc(.58 * var(--encounter-size));border:3px solid var(--encounter-color);border-radius:45% 58% 52% 43%;opacity:0}

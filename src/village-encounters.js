@@ -28,15 +28,17 @@ export function normalizeVillageEncounters(value,legacy) {
   return {...normalizeMapHits(previous,STAGES.map(([id])=>id)),...normalizeMapHits(value,STAGES.map(([id])=>id))};
 }
 
-export function mountVillageEncounters({host,stages,progress,onSave,blocked,reduced,tone,actors,clearIndex}) {
+export const villageEncounterHits=(progress,stage)=>progress?.[STAGES[stage]?.[0]]??0;
+
+export function mountVillageEncounters({host,stages,progress,activeStage,onSave,blocked,reduced,tone,actors}) {
   const points=stages.flatMap((stage,i)=>{
     if(!stage||!STAGES[i])return [];
     const [id,prop,first,again,hitOne,hitTwo,finish]=STAGES[i];
     return [{id,prop,lines:[first,again],hit:[hitOne,hitTwo],finish,speaker:"자석 뿔 악당",...stage}];
   });
   if(!points.some(({id})=>(progress?.[id]||0)<3))return null;
-  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,onSave,blocked,reduced,tone,art,palette,clearStage:()=>STAGES[clearIndex]?.[0],
-    reach:92,contact:23});
+  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,activeId:()=>STAGES[activeStage()]?.[0],onSave,blocked,reduced,tone,art,palette,
+    reach:118,contact:23});
   const layer=host.querySelector('.map-encounter-layer');
   const poses=reactions.map((src,i)=>{
     const el=document.createElement('span');

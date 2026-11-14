@@ -22,7 +22,7 @@ import { missionView, prepareQuickMailbox } from './mission-play';
 import { missionReady } from './mission-model';
 import { rememberExperiment } from './experiment-scenes';
 import { missionQuestion, missionGuide, questRewards, abilityStatements } from './mission-content';
-import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
+import { expeditionMarkup, mountExpedition, pendingVillageEncounter, residents, type ExpeditionHandle } from './expedition';
 import { bindResidentChat, chatMarkup } from './resident-chat';
 import { openGameSettings } from './game-settings';
 import { playStory, type FilmId } from './story-video';
@@ -139,24 +139,20 @@ function render() {
 }
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
-let dialogueStage:number|null=null;
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),clearIndex:dialogueStage,onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
-  dialogueStage=null;
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
 }
-function showResident(stage:number, completion?: { reward: string; destination: number }) {
+function showResident(stage:number, completion?: { reward: string; destination: number; label: string }) {
   const {name}=residents[stage];
   const expedition = city;
   let dispose=()=>{};
-  const modal=showModal(chatMarkup(s,stage,completion),`${name} 이야기`,()=>{
-    dispose();
-    if (completion) queueMicrotask(()=>{
-      if (city === expedition && !app.inert) expedition?.goTo(completion.destination);
-    });
-  });
+  const modal=showModal(chatMarkup(s,stage,completion),`${name} 이야기`,()=>dispose());
   modal.dialog.className='resident-conversation';
   modal.dialog.parentElement!.classList.add('resident-conversation-backdrop');
-  modal.dialog.querySelector('[data-action="next-zone"]')?.addEventListener('click', modal.close);
+  modal.dialog.querySelector('[data-action="next-zone"]')?.addEventListener('click',()=>{
+    modal.close();
+    if(completion&&city===expedition)expedition?.goTo(completion.destination);
+  });
   dispose=bindResidentChat(modal.dialog,s,stage,()=>{
     const marker=app.querySelector<HTMLButtonElement>(`[data-resident="${stage}"]`);
     if(marker){
@@ -306,7 +302,6 @@ async function finishActivityOnce(conceptDone: boolean) {
   if (screen % 2) {
     startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
   }
-  if(newResident)dialogueStage=stage;
   go('city');
   if(newResident&&city){
     const expedition=city;
@@ -324,12 +319,13 @@ async function finishActivityOnce(conceptDone: boolean) {
 function showReward(stage: number,newResident: boolean) {
   playEffect('reward',s.settings);
   const kit = questRewards[stage];
+  const nextLabel=pendingVillageEncounter(s)>=0?'악당에게 가기 →':stage<4?'다음 구역으로 →':'중앙 광장으로 →';
   if (newResident) {
     const reward = `<div class="resident-stage-reward"><strong>${icon(kit.icon,20)} ${kit.name} 획득</strong><span>도시 복구 ${progress(s)}%</span></div>`;
-    showResident(stage, { reward, destination: s.evidence.length });
+    showResident(stage, { reward, destination: s.evidence.length, label: nextLabel });
     return;
   }
-  const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(kit.icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${kit.name} 획득!</h2><p>${kit.change}<br><strong>${kit.use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', stage < 4 ? '다음 구역으로 →' : '광장에서 발견 정리 →', 'primary')}${button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
+  const classic=`<div class="reward-celebration">${mascot('mili', 150, 3)}<div class="award-icon">${icon(kit.icon, 38)}</div>${mascot('dangi', 150, 3)}</div><span class="eyebrow">DISCOVERY ${String(stage + 1).padStart(2, '0')}</span><h2>${kit.name} 획득!</h2><p>${kit.change}<br><strong>${kit.use}</strong></p><p class="reward-evidence">${evidenceNames[stage]}도 연구 가방에 보관했어.</p><div class="award-progress">도시 복구 <strong>${progress(s)}%</strong></div><div class="modal-actions">${button('next-zone', nextLabel, 'primary')}${button('modal-close', '도시 둘러보기')}<button class="quest-text-button" data-concept="${stage}">개념 영상 보기 · 선택</button></div>`;
   const modal=showModal(classic,'연구 기록 완성');
   modal.dialog.querySelector('[data-action="next-zone"]')?.addEventListener('click', () => {
     modal.close();
@@ -367,7 +363,7 @@ function bindCore() {
   root.addEventListener('activate-final', () => { void activate(); });
   cleanup = () => { dispose?.(); };
 }
-async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; dialogueStage=5; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
+async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
 // The ending page is the finale film; its closing card leads to the certificate.
 function endingPage() { return '<section class="ending-film" aria-label="도시 축제 영상"></section>'; }
 function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, onDone: () => go('certificate') }); }
