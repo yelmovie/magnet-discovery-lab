@@ -1,3 +1,5 @@
+import {villainPatrol} from './map-villain-patrol.js';
+import {dockMapAttack} from './map-attack-control.js';
 import {openMapFinale} from './map-finale.js';
 const HITS=3;
 // Place speech in map space without covering interactive signs, icons or other speech.
@@ -86,7 +88,8 @@ export function mountMapEncounters({
   const attack=doc.createElement('button');
   attack.type='button';attack.className='map-encounter-attack';attack.hidden=true;
   attack.setAttribute('aria-keyshortcuts','J Space');
-  (controls===host?layer:controls).append(attack);
+  layer.append(attack);
+  const syncDock=dockMapAttack(attack,()=>doc.querySelector('[data-map-pan]'));
 
   const foes=stages.filter(s=>(record[s.id]||0)<HITS).map((s,i)=>{
     const el=doc.createElement('span');
@@ -101,7 +104,7 @@ export function mountMapEncounters({
     path.setAttribute('d',CUES[s.prop]??CUES.gear);prop.append(path);
     el.append(actor,prop,fx,meter,bubble);layer.append(el);
     const say=s.lines?.filter(Boolean)??[];
-    return {s,i,el,actor,fx,meter,bubble,say,hits:record[s.id]||0,facing:-1,poseUntil:0,saidUntil:0,sayIndex:0};
+    return {s,i,point:s,lastPatrolAt:null,el,actor,fx,meter,bubble,say,hits:record[s.id]||0,facing:-1,poseUntil:0,saidUntil:0,sayIndex:0};
   });
   const motion=view?.matchMedia?.('(prefers-reduced-motion: reduce)');
   const still=()=>reduced()||Boolean(motion?.matches);
@@ -121,10 +124,10 @@ export function mountMapEncounters({
   function hit(){
     if(closed||!current||!last||paused())return;
     const time=view?.performance.now()??performance.now();
-    if(time-lastHit<REPEAT||current.hits>=HITS||distance(last.hero,current.s)>reach)return;
+    if(time-lastHit<REPEAT||current.hits>=HITS||distance(last.hero,current.point)>reach)return;
     const foe=current,n=++foe.hits;lastHit=time;
     clearUntil=0;callback.hidden=true;
-    if(Math.abs(foe.s.x-last.hero.x)>3)foe.facing=last.hero.x<foe.s.x?-1:1;
+    if(Math.abs(foe.point.x-last.hero.x)>3)foe.facing=last.hero.x<foe.point.x?-1:1;
     const calm=still(),duration=calm?170:n===HITS?660:360;
     foe.poseUntil=time+duration;foe.hitAt=time;foe.hurtAt=undefined;
     pose.hero={kind:'attack',direction:-foe.facing,start:time,end:time+(calm?140:320)};
@@ -151,11 +154,11 @@ export function mountMapEncounters({
     if(Math.hypot(event.clientX-start.x,event.clientY-start.y)<18)hit();
   },{signal});
   view?.addEventListener('keydown',event=>{
-    if(!current||event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||paused()||
+    if(!current||attack.hidden||event.defaultPrevented||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||paused()||
       !(event.code==='KeyJ'||event.code==='Space'))return;
     const el=event.target;
-    if(el instanceof view.HTMLElement&&(el.closest('input,textarea,select,[contenteditable]')||event.code==='Space'&&el.closest('button,a,summary')))return;
-    event.preventDefault();hit();
+    if(el instanceof view.HTMLElement&&(el.closest('input,textarea,select,[contenteditable]')||event.code==='Space'&&el!==attack&&el.closest('button,a,summary,[role=button]')))return;
+    event.preventDefault();if(!event.repeat)hit();
   },{signal,capture:true});
 
   function output(actor,time){
@@ -176,7 +179,19 @@ export function mountMapEncounters({
     const width=host.clientWidth,height=host.clientHeight;
     for(const foe of foes){
       if(foe.hits>=HITS&&now>=Math.max(foe.poseUntil,foe.saidUntil)){foe.el.hidden=true;continue;}
-      const point=project(foe.s);
+      const dHome=distance(hero,foe.s),patrol=villainPatrol(now,foe.i);
+      const animate=!stop&&!calm&&foe.hits<HITS&&now>=foe.poseUntil;
+      const radius=Math.min(34,reach*.40);
+      // Slow the movement near the learner, then hold the actual position on a hit.
+      const span=dHome<=reach*.75?radius*.32:radius;
+      if(calm)foe.point=foe.s;
+      else if(animate){
+        const alpha=foe.lastPatrolAt==null?.06:Math.min(.22,Math.max(.015,(now-foe.lastPatrolAt)/160));
+        const target={x:foe.s.x+patrol.x*span,y:foe.s.y+patrol.y*span*.28};
+        foe.point={x:foe.point.x+(target.x-foe.point.x)*alpha,y:foe.point.y+(target.y-foe.point.y)*alpha};
+      }
+      foe.lastPatrolAt=now;
+      const point=project(foe.point);
       if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)){foe.el.hidden=true;continue;}
       const off=point.x<-size||point.x>width+size||point.y<-size||point.y>height+size;
       foe.el.hidden=off;
@@ -184,26 +199,27 @@ export function mountMapEncounters({
       const {el,actor}=foe;
       el.style.transform=`translate(${point.x.toFixed(1)}px,${point.y.toFixed(1)}px)`;
       el.style.setProperty('--encounter-size',size.toFixed(1)+'px');
-      const d=distance(hero,foe.s);
+      const d=distance(hero,foe.point);
       if(!stop&&foe.hits<HITS&&point.x>=0&&point.x<=width&&point.y>=0&&point.y<=height&&d<=reach&&d<best){nearest=foe;best=d;}
       if(now>=foe.poseUntil){
-        if(hero&&Math.abs(hero.x-foe.s.x)>4)foe.facing=hero.x<foe.s.x?-1:1;
+        if(animate&&d>reach)foe.facing=patrol.direction;
+        else if(hero&&Math.abs(hero.x-foe.point.x)>4)foe.facing=hero.x<foe.point.x?-1:1;
         foe.hitAt=undefined;foe.hurtAt=undefined;
       }
       if(!stop&&foe.hits<HITS&&now>=foe.poseUntil){
-        const touched=[['hero',hero],['ally',ally]].filter(([key,p])=>p&&distance(p,foe.s)<=contact&&(!pose[key]||now>=pose[key].end)&&now>=(foe[key+'Contact']??0));
+        const touched=[['hero',hero],['ally',ally]].filter(([key,p])=>p&&distance(p,foe.point)<=contact&&(!pose[key]||now>=pose[key].end)&&now>=(foe[key+'Contact']??0));
         if(touched.length){
-          if(Math.abs(touched[0][1].x-foe.s.x)>3)foe.facing=touched[0][1].x<foe.s.x?-1:1;
+          if(Math.abs(touched[0][1].x-foe.point.x)>3)foe.facing=touched[0][1].x<foe.point.x?-1:1;
           foe.hurtAt=now;foe.poseUntil=now+(calm?180:350);
           for(const [key,p] of touched){
             foe[key+'Contact']=now+1050;
-            pose[key]={kind:'hurt',direction:foe.s.x<p.x?-1:1,start:now,end:now+(calm?170:320)};
+            pose[key]={kind:'hurt',direction:foe.point.x<p.x?-1:1,start:now,end:now+(calm?170:320)};
           }
           if(now-lastTone>300){lastTone=now;tone('contact',0);}
         }
       }
       const frame=foe.hits===HITS?5:foe.hitAt!=null?foe.hits+2:foe.hurtAt!=null?2:
-        calm?0:Math.floor((now+foe.i*350)/650)%4===3?1:0;
+        calm?0:patrol.step==='showoff'?1:Math.floor(now/200)%2;
       const source=foe.facing>0&&art.right?art.right:art.left;
       const bg=`url("${source}")`;
       if(actor.style.backgroundImage!==bg)actor.style.backgroundImage=bg;
@@ -212,6 +228,11 @@ export function mountMapEncounters({
       actor.style.backgroundSize=`${frames*100}% 100%`;
       actor.style.backgroundPositionX=frames>1?`${Math.min(frame,frames-1)/(frames-1)*100}%`:'50%';
       el.dataset.calm=String(calm);
+      el.dataset.patrol=animate?patrol.step:'still';
+      const bounce=animate?Math.abs(Math.sin(now/(patrol.step==='showoff'?76:113)))*(patrol.step==='showoff'?6:3):0;
+      const tilt=animate?Math.sin(now/108)*(patrol.step==='showoff'?6:2):0;
+      actor.style.translate=`0 ${(-bounce).toFixed(1)}px`;
+      actor.style.rotate=`${tilt.toFixed(1)}deg`;
       el.dataset.pose=frame===5?'exit':frame>=3?'hit':frame===2?'contact':frame===1?'mischief':'idle';
       el.dataset.hit=String(foe.hits);
       if(foe.hits===HITS)el.dataset.exited=String(now>=foe.poseUntil);
@@ -242,19 +263,13 @@ export function mountMapEncounters({
     }
     lastNear=current;
     const hasFocus=doc.activeElement===attack;
-    attack.hidden=!current;
+    attack.hidden=!(syncDock()&&current);
     if(current){
       const remaining=HITS-current.hits;
-      const label=`공격 · ${remaining}번 남음`;
-      if(attack.textContent!==label)attack.textContent=label;
       const description=`${current.s.name}의 악당 공격, ${remaining}번 남음`;
       if(attack.getAttribute('aria-label')!==description)attack.setAttribute('aria-label',description);
-      if(controls===host){
-        const p=project(current.s);
-        attack.style.left=`${Math.max(76,Math.min(width-76,p.x))}px`;
-        attack.style.top=`${Math.max(30,Math.min(height-30,p.y+42))}px`;
-      }
-    }else if(hasFocus){host.querySelector('canvas,[tabindex="0"]')?.focus({preventScroll:true});}
+    }
+    if(attack.hidden&&hasFocus){host.querySelector('canvas,[tabindex="0"]')?.focus({preventScroll:true});}
     if(now-lastSpeechLayout>=110){
       lastSpeechLayout=now;
       layoutSpeech(host,[{el:callback},...foes.map(foe=>({el:foe.bubble,anchor:foe.actor}))]);
