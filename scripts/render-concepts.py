@@ -1,11 +1,13 @@
 """Deterministic 12 s educational motion graphics; Pillow → FFmpeg/H.264.
 
-Run: python scripts/render-concepts.py (imageio-ffmpeg in .tools/python).
+Run: python scripts/render-concepts.py (Pillow, fonttools[woff], and FFmpeg).
 Only magnetic apparatus appears: no generated people or uncertain physics.
 """
 from pathlib import Path
 import math, os, shutil, subprocess, sys, tempfile, wave, struct, json, hashlib
 from functools import lru_cache
+from io import BytesIO
+from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,12 +16,13 @@ OUT = ROOT / 'public/video/concepts'
 OUT.mkdir(parents=True, exist_ok=True)
 W, H, FPS, SECONDS = 1280, 720, 24, 12
 INK, TEAL, RED, BLUE, GOLD, PAPER = '#173f47', '#397f7b', '#d95c50', '#357da5', '#e9ba53', '#fff9e9'
-font_candidates = [os.environ.get('CONCEPT_FONT'), Path(os.environ.get('WINDIR', '.'))/'Fonts/malgunbd.ttf',
-                   '/System/Library/Fonts/AppleSDGothicNeo.ttc', '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc']
-FONT = next((Path(p) for p in font_candidates if p and Path(p).is_file()), None)
-if not FONT:
-    raise RuntimeError('Set CONCEPT_FONT to a font with Korean glyphs.')
-fonts = {n: ImageFont.truetype(str(FONT), n) for n in [22, 26, 28, 30, 32, 38, 44, 48]}
+# The same official typeface as the activity screens; Pillow needs SFNT data.
+with TTFont(ROOT / 'public/fonts/NanumSquareNeoTTF-cBd.woff2') as source_font:
+    font_data = BytesIO()
+    source_font.flavor = None
+    source_font.save(font_data)
+font_bytes = font_data.getvalue()
+fonts = {n: ImageFont.truetype(BytesIO(font_bytes), n) for n in [22, 26, 28, 30, 32, 38, 44, 48]}
 TITLES = ['생활 속 자석', '닿지 않아도 작용하는 힘', '자석의 극과 움직임', '손대지 않는 원격 조종', '설계하고 시험하고 고치기']
 CAPTIONS = [
  ['덮개를 열면 빨강·파랑 자석이 함께 올라가. 몸체의 철판은 제자리에 있어.', '덮개를 내리면 자석과 철판이 맞닿아 덮개를 붙잡아.', '같은 세기로 흔들어 보니, 이 우편함은 자석을 뺀 쪽만 열렸어.'],
@@ -274,17 +277,23 @@ def render(scratch):
     manifest=[]
     for stage in range(5):
         target=scratch/f'stage-{stage+1}.mp4'
-        command=[ffmpeg,'-y','-loglevel','error','-f','rawvideo','-vcodec','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264','-preset','fast','-crf','23','-pix_fmt','yuv420p','-c:a','aac','-b:a','64k','-t',str(SECONDS),'-movflags','+faststart',str(target)]
+        published = OUT / target.name
+        # Caption/diagram edits preserve the exact existing audio stream. The
+        # synthesized chimes are needed only when rendering a new film.
+        audio_source = published if published.is_file() else audio
+        audio_format = ['-c:a', 'copy'] if audio_source == published else ['-c:a', 'aac', '-b:a', '64k']
+        command=[ffmpeg,'-y','-loglevel','error','-f','rawvideo','-vcodec','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r',str(FPS),'-i','-','-i',str(audio_source),'-map','0:v:0','-map','1:a:0','-c:v','libx264','-preset','fast','-crf','23','-pix_fmt','yuv420p',*audio_format,'-t',str(SECONDS),'-movflags','+faststart',str(target)]
         proc=subprocess.Popen(command,stdin=subprocess.PIPE)
         for frame in range(FPS*SECONDS):proc.stdin.write(scene(stage,frame/FPS).tobytes())
         proc.stdin.close()
         if proc.wait()!=0:raise RuntimeError(f'FFmpeg failed: {stage}')
         scene(stage,10.9).save(scratch/f'stage-{stage+1}.webp',quality=90)
         vtt='WEBVTT\n\n'+'\n\n'.join(f'00:0{i*4}.000 --> 00:{(i+1)*4:02}.000\n{caption}' for i,caption in enumerate(CAPTIONS[stage]))+'\n'
-        (scratch/f'stage-{stage+1}.vtt').write_text(vtt,encoding='utf-8',newline='\n')
+        with (scratch/f'stage-{stage+1}.vtt').open('w', encoding='utf-8', newline='\n') as file: file.write(vtt)
         manifest.append({'stage':stage+1,'title':TITLES[stage],'duration':SECONDS,'width':W,'height':H,'fps':FPS,'bytes':target.stat().st_size,'sha256':hashlib.sha256(target.read_bytes()).hexdigest()})
         print(f'{target.name}: {target.stat().st_size/1024:.0f} KB',flush=True)
-    (scratch/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
+    with (scratch/'manifest.json').open('w', encoding='utf-8', newline='\n') as file:
+        json.dump(manifest, file, ensure_ascii=False, indent=2)
     for item in [*scratch.glob('stage-*'),scratch/'manifest.json']:
         item.replace(OUT/item.name)
 

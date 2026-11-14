@@ -6,8 +6,8 @@
     "width": 1280,
     "height": 720,
     "fps": 24,
-    "bytes": 286039,
-    "sha256": "eac94e1d64b55081fa6c91556a933ead9d6636f202a2f086b221111987c2d22d"
+    "bytes": 286686,
+    "sha256": "8aba237f87c613eed7505301aa53962a88bdb9a1c878400c605377d3b6804406"
   },
   {
     "stage": 2,
@@ -16,8 +16,8 @@
     "width": 1280,
     "height": 720,
     "fps": 24,
-    "bytes": 162284,
-    "sha256": "fa4b38025c7a1f02345c53bed08c36dfd29ccdb42fffb5943642423cd83daa97"
+    "bytes": 161701,
+    "sha256": "5a8844bf860d88841f58532c0b64847afb24e6491304421bd9ac40d1f436e424"
   },
   {
     "stage": 3,
@@ -26,8 +26,8 @@
     "width": 1280,
     "height": 720,
     "fps": 24,
-    "bytes": 191085,
-    "sha256": "07a62b0e05bd1d8d3c31aac2853fd3354cd606a4f52f688172e3e5b4aaee93f3"
+    "bytes": 173445,
+    "sha256": "8a056ca97d19ec8f1473e551ce9b75fb81547717f888e93f26d798919b9899d1"
   },
   {
     "stage": 4,
@@ -36,8 +36,8 @@
     "width": 1280,
     "height": 720,
     "fps": 24,
-    "bytes": 183462,
-    "sha256": "8189aa568b03b718a72be64922b06e4850c7727aacf3cd34988f16a1c0740294"
+    "bytes": 182878,
+    "sha256": "e4e88a541cba0d66a6f681ba8c7fe0926b99696f8d2bab6bc004ea8e7563bbd8"
   },
   {
     "stage": 5,
@@ -46,7 +46,7 @@
     "width": 1280,
     "height": 720,
     "fps": 24,
-    "bytes": 274723,
-    "sha256": "bffb472dea6fb9429848a93968e8e19ef83818224cf3436c8cf1c1c7fe95dce9"
+    "bytes": 274493,
+    "sha256": "1615b324b03b71290b709e7be3afb8c14bf0dfa90e1f909e1c111b161178b903"
   }
 ]
