@@ -237,10 +237,12 @@ function bindActivity() {
   }
   bindConceptLinks(document.querySelector('.quest-activity')!);
   const model=s, a=model.activities[screen];
-  const saveMailbox = screen === 2 && a.values.mailboxQuickRepair === true && !practiceBackup && !adminOn();
-  const redraw = () => {
-    if (!root.isConnected) return;
-    const active = document.activeElement as HTMLElement | null, scroll = window.scrollY;
+  const saveStudentWork = !practiceBackup && !adminOn();
+  const saveMailbox = saveStudentWork && screen === 2 && a.values.mailboxQuickRepair === true;
+  const saveKeyDiscovery = saveStudentWork && screen === 4 && a.values.liveKeyRescue === true && inquiryPhase(a) !== 'experiment';
+  const redraw = (active: HTMLElement | null) => {
+    if (!root.isConnected || resetting) return;
+    const scroll = window.scrollY;
     const card = root.querySelector<HTMLElement>('.field-content') || root.querySelector<HTMLElement>('.inquiry-card'), cardTop = card?.scrollTop;
     const phase = root.querySelector<HTMLElement>('[data-phase]')?.dataset.phase;
     const focus = active?.dataset.drag ? `[data-drag="${active.dataset.drag}"]` : active?.dataset.field ? `[data-field="${active.dataset.field}"]` : active?.dataset.inquiryGroup ? `[data-inquiry-group="${active.dataset.inquiryGroup}"][data-value="${active.dataset.value}"]` : active?.dataset.inquiry ? `[data-inquiry="${active.dataset.inquiry}"]` : '';
@@ -257,10 +259,12 @@ function bindActivity() {
     window.scrollTo({ top: scroll, behavior: 'instant' });
   };
   const refresh = () => {
-    if (!saveMailbox) return redraw();
-    // The next step only appears once the finished placement or experiment is saved.
+    if (resetting) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (!saveMailbox && !saveKeyDiscovery) return redraw(active);
+    // A visible step or selected answer should survive an immediate reload.
     root.inert = true;
-    void flush().then(redraw);
+    void flush().then(() => redraw(active));
   };
   const activityTouch = saveMailbox ? () => {
     touch();
@@ -318,7 +322,15 @@ async function finishActivityOnce(conceptDone: boolean) {
   }
   if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
   if(adminOn()){if(!idea&&advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
-  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){touch();cleanup?.();cleanup=undefined;render();return;}
+  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){
+    if(!practiceBackup&&screen===4&&activity.values.liveKeyRescue===true){
+      const bench=document.querySelector<HTMLElement>('#experiment-root')!;
+      bench.inert=true;
+      await flush();
+      if(!bench.isConnected||resetting)return;
+    }else touch();
+    cleanup?.();cleanup=undefined;render();return;
+  }
   if (!ready(screen, s.activities[screen], s)) return;
   sound(true);
   if (practiceBackup) { if (screen % 2) return startActivity(screen + 1); restorePractice(); s.resume = 0; await flush(); go('city'); notify('다시 탐구했어! 처음 발견과 복구 기록은 그대로 보관돼.'); return; }

@@ -19,7 +19,9 @@ function fixture(count){
     design:{template:'box',pair:'iron',pole:'N',gap:20,aligned:true,revision:0},designs:{},resume:0,city:{x:233,y:245},
     settings:{sound:false,music:false,musicVersion:1,effects:false,musicVolume:.35,motion:true,nickname:''},
     final:{report:false,latch:'N',ring:'N',plate:80,complete:false,date:''}};
-  if(count===2){
+  if(count===1){
+    s.completed.push(3);s.resume=4;s.mapEncounters={clip:3};
+  }else if(count===2){
     s.completed.push(5);s.resume=6;
     s.activities[6]=act({playVersion:4,mechanicsVersion:1,paceVersion:1,inquiryVersion:2,inquiryActivity:6,inquiryPhase:'experiment',ringPole1:'S'});
     s.activities[6].points={ring0:{x:68,y:71},ring1:{x:68,y:56}};
@@ -31,6 +33,34 @@ function fixture(count){
   }
   return s;
 }
+async function keyRescueResume(page){
+  const resume=async()=>{
+    await page.reload();await page.getByRole('button',{name:'이어 하기'}).click();
+    await page.locator('#experiment-root.screen-4').waitFor({timeout:6000});
+  };
+  await seed(page,fixture(1));await resume();
+  const crisis=page.locator('[data-mission="crisis-go"]');
+  if(await crisis.count())await crisis.click();
+  const magnet=page.locator('[data-drag="distance-magnet"]');
+  for(const x of [48,39]){
+    await magnet.evaluate((el,x)=>el.dispatchEvent(new CustomEvent('piece-place',{detail:{x,y:55}})),x);
+  }
+  await action(page,'complete').click();
+  const phase=page.locator('[data-phase]');
+  await page.locator('[data-phase="explain"]').waitFor();
+  // Reload without polling storage or waiting out the autosave debounce.
+  await resume();
+  assert.equal(await phase.getAttribute('data-phase'),'explain','completed key rescue reopens the discovery question');
+  const answer=n=>page.locator(`[data-inquiry-group="reflection"][data-value="${n}"]`);
+  for(const [n,expected] of [[2,'explain'],[1,'complete']]){
+    await answer(n).click();
+    await page.locator(`[data-inquiry-group="reflection"][data-value="${n}"][aria-pressed="true"]`).waitFor();
+    await resume();
+    assert.equal(await phase.getAttribute('data-phase'),expected);
+    assert.equal(await answer(n).getAttribute('aria-pressed'),'true','last selected answer survives reload');
+  }
+  assert.equal(await action(page,'complete').isEnabled(),true);
+}
 const results=[];
 const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS ${name}`);};
 (async()=>{
@@ -38,7 +68,7 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
     args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try{
     for(const [width,height] of [[1280,800],[1024,768]]){
-      for(const kind of ['title','rings','notebook']){
+      for(const kind of ['key-rescue','title','rings','notebook']){
         const context=await browser.newContext({viewport:{width,height},hasTouch:true});
         try{
           const page=await context.newPage(),errors=[],failed=[],external=new Set();
@@ -81,6 +111,9 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
               await page.getByRole('button',{name:/2\. 뚜껑 연결/}).waitFor();
             }
             record(`${width}x${height} title, locked district, immediate resume on entry and after first piece`,{readyMs,bytes:initial.bytes,external:[...external]});
+          }else if(kind==='key-rescue'){
+            await keyRescueResume(page);
+            record(`${width}x${height} key rescue resumes discovery and both answer states without an autosave wait`);
           }else{
             await seed(page,fixture(kind==='rings'?2:5));await page.reload();await action(page,'start').click();
             if(kind==='rings'){
