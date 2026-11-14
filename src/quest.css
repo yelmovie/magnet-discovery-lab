@@ -713,10 +713,27 @@ body.quest-mode #app .quest-city .expedition-next:active:not(:disabled,[aria-dis
 body.quest-mode #app .quest-city .expedition-next[aria-busy="true"] { color:#463813; background:#fff3c8; border-color:#a8802f; filter:none; opacity:1; }
 body.quest-mode #app .quest-city .expedition-next:focus-visible { outline:3px solid #165fba; outline-offset:3px; }
 body.quest-mode #app .quest-city .expedition-next {
-  right:var(--map-right); bottom:var(--map-bottom);
-  max-width:min(480px, calc(100% - var(--map-left) - var(--map-right) - var(--map-pad-width) - 10px));
+  position:static; max-width:100%; pointer-events:auto;
 }
 body.quest-mode #app .quest-city .expedition-next[aria-busy="true"]:hover { translate:none; }
+
+#app .quest-city .expedition-destination {
+  position:absolute; right:var(--map-right); bottom:var(--map-bottom); z-index:var(--layer-controls);
+  display:flex; flex-direction:column; align-items:flex-end; gap:12px; pointer-events:none;
+  max-width:min(480px,calc(100% - var(--map-left) - var(--map-right) - var(--map-pad-width) - 10px));
+}
+#app .quest-city .expedition-map-tools {
+  position:static; gap:8px;
+}
+#app .quest-city .expedition-map-tools button[aria-pressed="true"] {
+  background:#245b46; color:#fff; border-color:#123e2e; box-shadow:0 3px 0 #123e2e;
+}
+
+#app .quest-city :is(.expedition-player,.expedition-npc) .map-mascot {
+  filter:drop-shadow(1.5px 0 #fff4d2) drop-shadow(-1.5px 0 #fff4d2)
+    drop-shadow(0 1.5px #fff4d2) drop-shadow(0 -1.5px #fff4d2)
+    drop-shadow(0 3px 2px #142d3f65);
+}
 
 /* The title uses two text weights; keep the heavier face for the game screens. */
 #app .quest-title :is(h1,button,strong) { font-weight: 700; }

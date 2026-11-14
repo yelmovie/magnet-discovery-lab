@@ -106,7 +106,7 @@ describe('짧은 탐구 흐름의 안내',()=>{
   });
   it('붙지 않는 재료를 검사했으면 자석 대신 그 재료를 직접 집도록 안내한다',()=>{
     const a=paced(),s=freshSave();a.values['sorted-clip']=true;a.values['tested-clip']=true;a.values['tested-aluminum']=true;
-    expect(coaching(3,a,s)).toMatchObject({focus:'material-2'});expect(coaching(3,a,s).action).toContain('손으로 오른쪽 아래');
+    expect(coaching(3,a,s)).toMatchObject({focus:'material-2'});expect(coaching(3,a,s).action).toContain('재료를 직접 집어');expect(coaching(3,a,s).action).not.toMatch(/오른쪽|아래 분류함/);
     a.values['sorted-aluminum']=true;expect(coaching(3,a,s).focus).toBe('sweep-magnet');expect(coaching(3,a,s).action).toContain('철못');
     a.values['tested-wood']=true;expect(coaching(3,a,s).focus).toBe('material-3');
   });

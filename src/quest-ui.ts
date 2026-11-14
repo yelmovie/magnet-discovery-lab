@@ -9,13 +9,15 @@ export interface QuestHudOptions {
   canBack?: boolean;
   first?: boolean;
   teacher?: boolean;
+  sound?: boolean;
 }
 
 /** Shared navigation and settings float over the world. */
-export function questHud({ home = true, homeLabel = '지도로 가요', back = true, canBack = true, first = false, teacher = false }: QuestHudOptions = {}): string {
+export function questHud({ home = true, homeLabel = '지도로 가요', back = true, canBack = true, first = false, teacher = false, sound }: QuestHudOptions = {}): string {
   const control = (action: string, label: string, graphic: string, extra = '', caption = '') => `<button type="button" class="quest-icon" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(graphic, 27)}${caption}</button>`;
-  const settings=control('settings',teacher?'교사용 해금 중 · 설정을 열어요':'설정을 열어요','gear','',teacher?'<span class="teacher-hud-label">교사</span>':'');
-  return `<nav class="quest-hud" aria-label="화면 이동과 설정"><div class="quest-hud-left">${!first && home ? control('home', homeLabel, 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${settings}</div></nav>`;
+  const settings=control('settings',teacher?'교사용 해금 중 · 설정을 열어요':'설정을 열어요','gear','',teacher&&sound===undefined?'<span class="teacher-hud-label">교사</span>':'');
+  const audio=sound===undefined?'':control('sound','소리',sound?'sound':'mute',`aria-pressed="${sound}"`);
+  return `<nav class="quest-hud" aria-label="화면 이동과 설정"><div class="quest-hud-left">${!first && home ? control('home', homeLabel, 'home') : ''}${!first && back ? control('back', '이전 화면으로 가요', 'back', canBack ? '' : 'disabled') : ''}</div><div class="quest-hud-right">${audio}${settings}</div></nav>`;
 }
 
 export interface QuestCompanionOptions {

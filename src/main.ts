@@ -67,6 +67,17 @@ const canActivate = () => coreReady(s, adminOn());
 const esc = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 function sound(success = false) { ensureAudio(s.settings); playEffect(success ? 'success' : 'click', s.settings); }
+function mapSoundOn() {
+  const audio=normalizedAudioSettings(s.settings);
+  return audio.music||audio.effects;
+}
+function syncMapSoundButton() {
+  const control=app.querySelector<HTMLButtonElement>('[data-action="sound"]');
+  if(!control)return;
+  const enabled=mapSoundOn();
+  control.setAttribute('aria-pressed',String(enabled));
+  control.innerHTML=icon(enabled?'sound':'mute',27);
+}
 function notify(text: string) { document.querySelector('.toast')?.remove(); const toast = document.createElement('div'); toast.className = 'toast'; toast.setAttribute('role', 'status'); toast.textContent = text; document.body.append(toast); window.setTimeout(() => toast.remove(), 4200); }
 function saveView() {
   const el=document.querySelector('#save-status');if(el){el.textContent=adminOn()?'미리보기 · 원래 기록은 보존돼':saving?'기록 중…':saveMessage||'이 기기에 자동 저장';el.classList.toggle('save-error',Boolean(saveMessage));}
@@ -115,7 +126,7 @@ function render() {
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
   }
-  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', canBack: backStack.length > 0, teacher:adminOn() })}<main id="main-content" class="page page-${page}">${html}</main>`;
+  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', canBack: backStack.length > 0, teacher:adminOn(), sound:page==='city'?mapSoundOn():undefined })}<main id="main-content" class="page page-${page}">${html}</main>`;
   bindCommon();
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
@@ -469,7 +480,7 @@ async function restartExploration(startNow: boolean) {
 }
 function openSettings() {
   modalCleanup?.();
-  modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{touch();syncAudioSettings(s.settings);},
+  modalCleanup=openGameSettings({save:s,admin:adminOn(),onChange:()=>{touch();syncAudioSettings(s.settings);syncMapSoundButton();},
     onPause:paused=>{city?.pause(paused);document.querySelector<HTMLElement>('#experiment-root')?.toggleAttribute('inert',paused);window.dispatchEvent(new CustomEvent('experiment-pause',{detail:paused}));},
     onAdminToggle:setTeacherPreview,
     onStory:()=>openFilm('intro',()=>{},true),onEnding:()=>{if(s.final.complete||adminOn())go('ending');},onCertificate:()=>{if(s.final.complete||adminOn())go('certificate');},onRecords:()=>page==='activity'?openRecords():notebook(),
@@ -477,13 +488,19 @@ function openSettings() {
   });
 }
 function bindCommon() {
-  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b => b.addEventListener('click', () => { const action = b.dataset.action; sound();
+  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b => b.addEventListener('click', () => { const action = b.dataset.action; if(action!=='sound')sound();
     switch (action) {
       case 'home': void flush(); go(page === 'city' ? 'title' : 'city'); break;
       case 'back': void flush(); if (history.state?.depth) history.back(); else goBack(); break;
       case 'start': if (!s.started) { s.started = true; touch(); openFilm('intro', () => go('city')); } else if (s.resume && accessible(s, s.resume)) startActivity(s.resume); else if (s.final.report && !s.final.complete && s.evidence.length === 5) go('core'); else go('city'); break;
       case 'new': if (adminOn()) { notify('전체 해금을 끈 뒤 새 탐험을 시작해줘.'); break; } showModal(`<h2>새로운 탐험을 시작할까?</h2><p>이 기기에 저장된 실험 기록과 도시 복구 진행이 초기화돼.</p><div class="modal-actions">${button('modal-close', '돌아가기')}<button class="btn danger" id="confirm-new">기록 지우고 새로 시작</button></div>`, '새로 시작 확인'); document.querySelector('#confirm-new')?.addEventListener('click', () => void restartExploration(true)); break;
       case 'city': void flush(); go('city'); break;
+      case 'sound': {
+        const enabled=!mapSoundOn();
+        s.settings.sound=enabled;s.settings.music=enabled;s.settings.effects=enabled;
+        syncAudioSettings(s.settings);syncMapSoundButton();touch();
+        break;
+      }
       case 'settings': openSettings(); break;
       case 'companion': {const parent=b.closest('.quest-companion')!,speech=parent.querySelector<HTMLElement>('.quest-speech')!,open=speech.hidden;speech.hidden=!open;b.setAttribute('aria-expanded',String(open));parent.classList.toggle('is-speaking',open);stopCompanionVoice();if(open)stopCompanionVoice=playNarration(`/audio/voices/mascot-${b.dataset.companionType}-title.mp3`,s.settings);break;}
       case 'retry-save': void flush(); break;

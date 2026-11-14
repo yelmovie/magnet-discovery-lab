@@ -16,19 +16,19 @@ export type Coaching = { action: string; clues: string[]; focus: string; done: n
 export function coaching(n: number, a: Activity, s: Save): Coaching {
   if(n===2&&a.values.mailboxQuickRepair===true){
     const next=nextMailboxPart(a);
-    if(next)return {action:next.action,focus:partKey(next),done:mailboxParts.filter(part=>partInstalled(a,part)).length,total:8,clues:['분리된 부품을 하나씩 초록 점선 자리에 놓아 줘.','자석은 덮개 안쪽에, 철판은 몸체 안쪽에 달아.']};
+    if(next)return {action:next.action,focus:partKey(next),done:mailboxParts.filter(part=>partInstalled(a,part)).length,total:8,clues:['분리된 부품을 하나씩 초록 점선 자리에 놓아 줘.','부품의 모양과 비어 있는 점선을 비교해. 지금 놓을 부품을 끼워 봐.']};
     const installed=magnetInstalled(a.points['repair-magnet']??mailbox.looseMagnet);
     const closed=a.values.repairClosed===true;
     const verified=missionReady(n,a,s);
     const [action,focus]=verified?['수리 완료! 개념영상으로 자석의 역할을 확인해 봐','complete']
       :!installed?closed?['손잡이를 위로 올려 덮개를 열어 봐','lid']:['덮개 안쪽 홈에 자석을 끼워 봐','repair-magnet']
       :!closed?['손잡이를 아래로 내려 덮개를 닫아 봐','lid']:['흔들어서 덮개가 열리지 않는지 확인해 봐','shake'];
-    return {action,focus,done:verified?8:closed?7:6,total:8,clues:['덮개 안쪽에 자석이 들어갈 홈이 있어.','덮개를 닫으면 자석과 몸체에 고정된 철판이 만나.']};
+    return {action,focus,done:verified?8:closed?7:6,total:8,clues:['덮개 안쪽에 자석이 들어갈 홈이 있어.','덮개를 열고 닫아서 안쪽 부품 사이가 어떻게 달라지는지 비교해.']};
   }
   const paced = a.values.paceVersion === 1;
   if(a.values.inquiryVersion===2 && inquiryPhase(a)!=='experiment'){
     const complete=inquiryPhase(a)==='complete';
-    return {action:complete?'발견 정리 완료! 아래 버튼으로 구역을 고치자':'직접 본 움직임과 맞는 답 하나를 골라 줘',clues:['문제 옆 개념 다시보기를 누르면 실험 원리를 볼 수 있어.'],focus:complete?'complete':'',done:complete?2:1,total:2};
+    return {action:complete?'발견 정리 완료! 아래 버튼으로 구역을 고치자':'직접 본 움직임과 맞는 답 하나를 골라 줘',clues:complete?['문제 옆 개념 다시보기에서 실험을 정리할 수 있어.']:['실험으로 돌아가 움직임을 다시 봐. 고른 설명과 멈추거나 움직인 모습을 비교해 줘.'],focus:complete?'complete':'',done:complete?2:1,total:2};
   }
   if(a.values.inquiryVersion===1){
     const phase=inquiryPhase(a), index={predict:0,experiment:1,explain:2,apply:3,complete:n%2?3:4}[phase];
@@ -39,7 +39,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
   const f = (key: string) => a.values[key] === true, r = Number(a.values.round || 0);
   if(n===1&&a.values.assemblyVersion===1){
     const next=nextMailboxPart(a);
-    if(next)return {action:next.action,focus:partKey(next),done:mailboxParts.filter(part=>partInstalled(a,part)).length,total:7,clues:['지금 반짝이는 부품을 초록 점선으로 끌어 줘. 아래 끼우기 버튼으로도 조립할 수 있어.','자석은 뚜껑 안쪽에, 철판은 몸체 안쪽에 달아. 덮개를 닫으면 두 부품이 만나.']};
+    if(next)return {action:next.action,focus:partKey(next),done:mailboxParts.filter(part=>partInstalled(a,part)).length,total:7,clues:['지금 반짝이는 부품을 초록 점선으로 끌어 줘. 아래 끼우기 버튼으로도 조립할 수 있어.','부품의 모양과 조립 그림의 점선을 비교해. 아래 버튼으로 놓고 움직임을 확인해 봐.']};
   }
   let action = '', focus = '', clues: string[] = [], done = 0, total = 1;
   switch (n) {
@@ -64,7 +64,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
         else if(!closed){action='덮개 손잡이를 아래로 내려 닫아 봐';focus='lid';}
         else{action=shakePrompt(f(installed?'without0':'with0'));focus='shake';}
       }
-      clues = [a.values.puzzleVersion===1?'자석을 넣어도 열리면 철판 자리를 살펴봐. 자석은 그대로 두고 철판을 가까이 옮겨 봐.':'자석이 덮개를 붙잡는지 보려면 자석만 넣거나 빼고, 상자는 같은 세기로 흔들어 봐.', '자석과 철판이 가까이 마주 보는지 살펴봐.']; break;
+      clues = [a.values.puzzleVersion===1?'덮개를 다시 닫고 흔들어 봐. 앞서 닫혔을 때와 부품 사이 위치가 어떻게 다른지 비교해.':'자석이 덮개를 붙잡는지 보려면 자석만 넣거나 빼고, 상자는 같은 세기로 흔들어 봐.', '자석과 철판이 가까이 마주 보는지 살펴봐.']; break;
     case 3:
       total=sortingSpecimens.length;done=sortingSpecimens.filter(m=>materialClassified(a,m.id)).length;
       action='자석을 물건에 가까이 대고, 반응에 따라 여섯 물건을 나눠 담아 줘';focus='sweep-magnet';
@@ -72,7 +72,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
         const pending=sortingSpecimens.filter(m=>f(`tested-${m.id}`)&&!f(`sorted-${m.id}`));
         const awaiting=pending.find(m=>!m.magnetic)||pending[0];
         if(awaiting){
-          action=awaiting.magnetic?`${awaiting.name}: 붙었어! 오른쪽 위 수리함에 담아 줘`:`${awaiting.name}: 붙지 않았어. 물건을 손으로 오른쪽 아래 분류함에 넣어 줘`;
+          action=`${awaiting.name}의 반응을 다시 보고, 두 분류함의 기준과 비교해 골라 줘. ${awaiting.magnetic?'자석을 움직여 옮겨도 돼.':'재료를 직접 집어 옮겨도 돼.'}`;
           focus=awaiting.magnetic?'sweep-magnet':`material-${awaiting.index}`;
         }else{
           const next=sortingSpecimens.find(m=>!f(`tested-${m.id}`));
@@ -117,7 +117,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       else if((f(`test${r}N`)||f(`test${r}S`))&&!labelled){action=both?'두 반응을 근거로 종이 양끝의 물음표에 극 스티커를 붙여 봐':'지금 본 움직임으로 양끝에 극 스티커를 붙여 봐';focus=f(`label${r}N`)?'stickerS':'stickerN';}
       else if(f(`test${r}${facing}`)){action='기준 자석 뒤집기를 눌러 반대 극도 시험해 봐';focus='flip';}
       else{action=`기준 자석의 ${facing}극을 오른쪽 점선에 대 봐`;focus='probe';}
-      clues = ['한 번 관찰한 뒤부터 스티커를 붙이거나 바꿀 수 있어. 붙였으면 반대 극으로도 확인해.', '같은 극끼리는 밀어내고, 다른 극끼리는 끌어당겨.']; break;
+      clues = ['한 번 관찰한 뒤부터 스티커를 붙이거나 바꿀 수 있어. 붙였으면 반대 극으로도 확인해.', '앞 실험과 비교해 움직임이 달라진 것은 어느 쪽이었는지 봐.']; break;
     }
     case 6:
       total = 3; done = [0, 1, 2].filter(i => f(`done${i}`)).length;
@@ -130,7 +130,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
         else if(r===2&&ringFloating(a.values.ringPole0==='S'?'S':'N',a.values.ringPole1==='S'?'S':'N')){action='발판을 내리려면 2번 뒤집기로 다른 극이 마주 보게 해 줘';focus='2번 고리 뒤집기';}
         else{action=r===2&&f('platformRaised')?'손 놓고 고리 관찰을 눌러 발판이 내려가는지 봐':'고리를 놓았어! 손을 떼고 고리 관찰 버튼을 눌러 봐';focus='check';}
       }
-      clues = ['아래 고리의 윗면과 위 고리의 아랫면이 마주 봐.', '두 면의 글자가 같으면 밀어내고, 다르면 끌어당겨 붙어.']; break;
+      clues = ['아래 고리의 윗면과 위 고리의 아랫면이 마주 봐.', '같은 고리에서 한 면을 바꿔 보고, 고리 사이 간격과 앞의 모습을 비교해.']; break;
     case 7:
       total = 3; done = [0, 1, 2].filter(i => f(`clean${i}`)).length;
       action = paced?'빨간 손잡이로 얼룩을 쓸어 봐. 물속 패드가 따라와!':'빨간 손잡이를 얼룩 위에서 천천히 좌우로 움직여 봐'; focus = 'cleaner';
@@ -207,6 +207,8 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
       if(action.textContent!==message)action.textContent=message;
       action.toggleAttribute('data-result',shared&&showResult);
     }
+    helper.querySelector<HTMLButtonElement>('.coach-more')!.disabled=level>=state.clues.length;
+    helper.querySelector<HTMLButtonElement>('[data-concept]')!.hidden=!missionReady(n,a,s);
     helper.querySelector('.coach-clue')!.textContent = level === 0 || !state.clues.length ? state.action : state.clues[(level-1)%state.clues.length];
     root.querySelectorAll('.coach-focus').forEach(el => el.classList.remove('coach-focus'));
     if(!bubble.hidden)nextTarget(state.focus)?.classList.add('coach-focus');
@@ -216,10 +218,10 @@ export function bindCoach(root: HTMLElement, n: number, a: Activity, s: Save) {
       target.classList.add('next-action-target');
     }
   };
-  const setOpen = (open: boolean) => { bubble.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); update(); };
+  const setOpen = (open: boolean) => { if(open)level=0; bubble.hidden = !open; toggle.setAttribute('aria-expanded', String(open)); update(); };
   toggle.addEventListener('click', () => setOpen(bubble.hidden), { signal: signal.signal });
   helper.querySelector('.coach-close')!.addEventListener('click', () => { setOpen(false); toggle.focus(); }, { signal: signal.signal });
-  helper.querySelector('.coach-more')!.addEventListener('click', () => { level=(level+1)%(coaching(n,a,s).clues.length+1);update(); }, { signal: signal.signal });
+  helper.querySelector('.coach-more')!.addEventListener('click', () => { level=Math.min(level+1,coaching(n,a,s).clues.length);update(); }, { signal: signal.signal });
   helper.addEventListener('keydown', e => { if (e.key === 'Escape') { setOpen(false); toggle.focus(); } }, { signal: signal.signal });
   root.addEventListener('coach-update', update, { signal: signal.signal }); update();
   root.addEventListener('click', update, { signal: signal.signal });
