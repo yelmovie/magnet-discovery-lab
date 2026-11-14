@@ -44,7 +44,7 @@ type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'cert
 let s: Save = freshSave(), page: Page = 'title';
 let screen = 1, city: ExpeditionHandle | undefined, cleanup: (() => void) | undefined;
 let saveTimer = 0, saving = false, saveMessage = '', modalCleanup: (() => void) | undefined;
-let resetting = false;
+let resetting = false, openingActivity = false;
 const resetChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('push-pull-city:reset') : null;
 resetChannel?.addEventListener('message', event => {
   if (event.data !== 'reset' || resetting) return;
@@ -104,11 +104,26 @@ function goBack() {
   if (previous.page === 'activity' && canEnter(previous.screen)) startActivity(previous.screen, s.evidence.length > Math.floor((previous.screen - 1) / 2), false);
   else go(previous.page === 'activity' ? 'city' : previous.page, false);
 }
-function startActivity(n: number, practice = false, remember = true) {
+async function startActivity(n: number, practice = false, remember = true) {
+  if (openingActivity || resetting) return;
   if (!canEnter(n)) return notify('앞의 탐구를 마치면 이 활동이 열려.');
   if ((practice || adminOn()) && !practiceBackup) { practiceBackup = { activities: structuredClone(s.activities), design: structuredClone(s.design), designs: structuredClone(s.designs), idea: structuredClone(s.idea) }; const first = Math.floor((n - 1) / 2) * 2 + 1; s.activities[first] = emptyActivity(); s.activities[first + 1] = emptyActivity(); if (first === 9) s.idea = undefined; }
   if(n<=2){n=2;prepareQuickMailbox(s.activities[n] ||= emptyActivity());}
-  screen = n; s.activities[n] ||= emptyActivity(); s.resume = practiceBackup ? 0 : n; go('activity', remember); touch();
+  screen = n; s.activities[n] ||= emptyActivity(); s.resume = practiceBackup ? 0 : n;
+  if (n === 2 && !practiceBackup && !adminOn()) {
+    // Save the entry checkpoint before showing a bench the learner can refresh.
+    openingActivity = true;
+    const from = currentRoute;
+    app.inert = true;
+    city?.pause(true);
+    await flush();
+    openingActivity = false;
+    if (resetting) return;
+    app.inert = false;
+    if (currentRoute === from) go('activity', remember);
+    return;
+  }
+  go('activity', remember); touch();
 }
 function button(action: string, label: string, style = 'soft', disabled = false) { return `<button class="btn ${style}" data-action="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`; }
 function render() {
@@ -221,7 +236,10 @@ function bindActivity() {
     return;
   }
   bindConceptLinks(document.querySelector('.quest-activity')!);
-  const refresh = () => {
+  const model=s, a=model.activities[screen];
+  const saveMailbox = screen === 2 && a.values.mailboxQuickRepair === true && !practiceBackup && !adminOn();
+  const redraw = () => {
+    if (!root.isConnected) return;
     const active = document.activeElement as HTMLElement | null, scroll = window.scrollY;
     const card = root.querySelector<HTMLElement>('.field-content') || root.querySelector<HTMLElement>('.inquiry-card'), cardTop = card?.scrollTop;
     const phase = root.querySelector<HTMLElement>('[data-phase]')?.dataset.phase;
@@ -238,8 +256,18 @@ function bindActivity() {
     }
     window.scrollTo({ top: scroll, behavior: 'instant' });
   };
-  const model=s, a=model.activities[screen];
-  const viewCleanup = currentView.bind({ screen, a, s:model, root, refresh, touch, meta, notify });
+  const refresh = () => {
+    if (!saveMailbox) return redraw();
+    // The next step only appears once the finished placement or experiment is saved.
+    root.inert = true;
+    void flush().then(redraw);
+  };
+  const activityTouch = saveMailbox ? () => {
+    touch();
+    // Batch a single interaction's changes and save them as soon as it settles.
+    queueMicrotask(() => { if (saveTimer && root.isConnected && !root.inert) void flush(); });
+  } : touch;
+  const viewCleanup = currentView.bind({ screen, a, s:model, root, refresh, touch: activityTouch, meta, notify });
   const placementCleanup = bindPlacement(root);
   const coachCleanup = bindCoach(document.querySelector('.quest-activity')!, screen, a, model);
   // Cards and feedback start below the mission head, whatever its wrapped height.

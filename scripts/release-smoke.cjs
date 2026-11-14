@@ -63,29 +63,24 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
             await page.evaluate(()=>localStorage.setItem('unlockedStages',JSON.stringify([true,true,true,true,true])));
             await page.locator('[data-map-overview]').click();
             assert.match(await page.locator('[data-place="4"]').getAttribute('class'),/locked/);
-            await action(page,'walk-next').click();await action(page,'enter').click();
-            await page.locator('[data-mission="fit-part"]').click();
-            await page.getByRole('button',{name:/2\. 뚜껑 연결/}).waitFor();
-            const pieceSaved=()=>page.evaluate(()=>new Promise(resolve=>{
-              const r=indexedDB.open('push-pull-city');
-              r.onsuccess=()=>{const db=r.result,q=db.transaction('saves').objectStore('saves').get('main');q.onsuccess=()=>{db.close();resolve(q.result?.activities[1]?.values['assembly-body']===true);};q.onerror=()=>{db.close();resolve(false);};};
-              r.onerror=()=>resolve(false);
-            }));
-            let saved=false;
-            for(let attempt=0;attempt<35&&!saved;attempt++){
-              saved=await pieceSaved();
-              if(!saved)await page.waitForTimeout(100);
-            }
-            assert.equal(saved,true,'the piece commits to IndexedDB before the reload');
-            await page.reload();await action(page,'start').click();
-            await page.getByRole('button',{name:/2\. 뚜껑 연결/}).waitFor({timeout:8000});
+            await action(page,'walk-next').click();
+            const bench=page.locator('#experiment-root.screen-2');
+            await bench.waitFor();
+            await page.reload();await page.getByRole('button',{name:'이어 하기'}).click();
+            await bench.waitFor();
+            await page.getByRole('button',{name:/1\. 몸체 놓기/}).click();
+            const nextPart=page.getByRole('button',{name:/2\. 뚜껑 연결/});
+            await nextPart.waitFor();
+            // No debounce wait: the step visible to the learner must already be saved.
+            await page.reload();await page.getByRole('button',{name:'이어 하기'}).click();
+            await nextPart.waitFor({timeout:8000});
             if(width===1280){
               await page.setViewportSize({width:375,height:812});
               await page.getByRole('button',{name:/2\. 뚜껑 연결/}).waitFor();
               await page.setViewportSize({width,height});
               await page.getByRole('button',{name:/2\. 뚜껑 연결/}).waitFor();
             }
-            record(`${width}x${height} title, locked district, first piece, save and resume`,{readyMs,bytes:initial.bytes,external:[...external]});
+            record(`${width}x${height} title, locked district, immediate resume on entry and after first piece`,{readyMs,bytes:initial.bytes,external:[...external]});
           }else{
             await seed(page,fixture(kind==='rings'?2:5));await page.reload();await action(page,'start').click();
             if(kind==='rings'){
