@@ -31,6 +31,9 @@ class MusicDouble {
   src = ''; loop = false; volume = 1; paused = true; ended = false; currentTime = 0;
   onended: (() => void) | null = null;
   onerror: (() => void) | null = null;
+  onplaying: (() => void) | null = null;
+  onwaiting: (() => void) | null = null;
+  onpause: (() => void) | null = null;
   constructor() { MusicDouble.instances.push(this); }
   play = vi.fn(async () => { this.paused = false; });
   pause = vi.fn(() => { this.paused = true; });
@@ -236,6 +239,18 @@ describe('resident dialogue voices',()=>{
     playNarration('/audio/voices/resident-3-news.mp3');const third=MusicDouble.instances.at(-1)!;
     setAudioPaused(true);expect(third.paused).toBe(true);setAudioPaused(false);
     expect(third.play).toHaveBeenCalledOnce();
+  });
+
+  it('reports speaking only while the voice is audibly playing, not while it buffers or pauses',async()=>{
+    const doc=environment();ensureAudio({music:false,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    const state=vi.fn(),stop=playNarration('/audio/voices/resident-5-hello.mp3',undefined,state);
+    const voice=MusicDouble.instances.at(-1)!;await Promise.resolve();
+    expect(state).toHaveBeenLastCalledWith('playing');
+    voice.onwaiting!();expect(state).toHaveBeenLastCalledWith('loading');
+    voice.onplaying!();expect(state).toHaveBeenLastCalledWith('playing');
+    voice.onpause!();expect(state).toHaveBeenLastCalledWith('loading');
+    stop();expect(state).toHaveBeenLastCalledWith('stopped');
+    expect(voice.onplaying).toBeNull();expect(voice.onwaiting).toBeNull();expect(voice.onpause).toBeNull();
   });
 
   it('recovers from missing files and autoplay denial while preserving the written dialogue',async()=>{
