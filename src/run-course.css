@@ -67,3 +67,8 @@ body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions .miss
 /* When the next-step button appears in the corner, the thumb buttons move up to leave it room. */
 #app .quest-activity:has(> .mission-cta:not(:disabled)) .run-mode .run-controls { bottom: calc(3% + 84px); }
 body.quest-mode #app .quest-activity:has(> .mission-cta:not(:disabled)) .screen-8 .run-mode .mission-board > .mission-actions:not(:has([data-mission='delivery-next'])) { bottom: calc(3% + 84px + clamp(84px, 8.6vw, 112px) + 14px); }
+/* The cart is in the flag bay: the lower button asks to be pressed. */
+body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data-mission='detach'][data-ready='true'] { background: #ffe9a8; border-color: #c46e22; animation: run-ready 1.1s ease-in-out infinite; }
+@keyframes run-ready { 50% { box-shadow: 0 0 0 7px #f4b63f99, 0 4px 0 #8a4b12; } }
+@media (prefers-reduced-motion: reduce) { body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data-mission='detach'][data-ready='true'] { animation: none; } }
+body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-arrival] > .delivery-state { display: none; }

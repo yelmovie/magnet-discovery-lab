@@ -3,7 +3,7 @@ import type { Activity } from './domain';
 import type { Surface } from './mission-surface';
 import { delivery, type DeliveryRun, type DeliveryState } from './missions-remote';
 import { bindRunInput } from './run-input';
-import { practiceEnd, setRunBlocked } from './run-stage-rules';
+import { arrivalHint, practiceEnd, setRunBlocked } from './run-stage-rules';
 import type { RunStage } from './run-stage';
 import './run-course.css';
 
@@ -45,12 +45,20 @@ function release() {
 export function bindRunCourse(v: Surface) {
   const root = v.c.root, board = root.querySelector<HTMLElement>('.mission-board')!, host = root.querySelector<HTMLElement>('[data-run-stage]')!;
   const tip = root.querySelector<HTMLElement>('.run-tip')!, chip = root.querySelector<HTMLElement>('.run-magnet')!, hold = root.querySelector<HTMLButtonElement>('[data-mission="detach"]');
-  let stage: RunStage | undefined, stopped = false, shownTip = '', shownChip = '';
+  let stage: RunStage | undefined, stopped = false, shownTip = '', shownChip = '', lastCar = NaN, stillFrames = 0;
   const blocked = () => !stage || document.hidden || root.inert || !!root.querySelector('.puzzle-crisis') || !!document.querySelector('dialog[open],.modal-backdrop');
   const input = bindRunInput(root, blocked, { flip: () => root.querySelector<HTMLButtonElement>('[data-mission="flip"]')?.click(), hold: () => hold?.click() });
   const toBench = (text: string) => { setRunBlocked(true); v.c.notify(text); v.c.refresh(); };
   function paint(state: DeliveryState) {
-    const held = stage?.held ?? true, s = stage?.s ?? -99, text = stage?.message ?? '';
+    const held = stage?.held ?? true, s = stage?.s ?? -99;
+    // The bench's own status line is hidden on the 3D course, so the arrival hints come through the tip.
+    stillFrames = Math.abs(state.car - lastCar) < 1e-4 ? stillFrames + 1 : 0; lastCar = state.car;
+    const ready = held && state.atGoal && state.forceOn && !state.done;
+    const arrival = !stage?.message && s >= practiceEnd ? arrivalHint(state, held, stillFrames > 15) : '';
+    const text = stage?.message || arrival;
+    // While the tip explains the arrival, the bench status line would repeat it.
+    if (board.hasAttribute('data-run-arrival') !== !!arrival) board.toggleAttribute('data-run-arrival', !!arrival);
+    if (hold && hold.dataset.ready !== String(ready)) hold.dataset.ready = String(ready);
     board.dataset.runZone = s < practiceEnd ? 'practice' : 'delivery'; board.dataset.runAt = s.toFixed(1);
     if (text !== shownTip) { shownTip = text; tip.textContent = text; tip.hidden = !text; }
     const front = state.pole === 'N' ? 'S' : 'N', key = `${state.pole}${held}`;
@@ -89,9 +97,9 @@ export function bindRunCourse(v: Surface) {
     v.draw();
   });
   delivery(v, run);
-  acquire(v.a, () => toBench('3D 그림이 끊겨서 기존 실험대로 바꿨어. 하던 배달은 그대로 이어져.')).then(created => {
+  acquire(v.a, () => toBench('3D 그림이 끊겨서 2D 화면으로 바꿨어. 하던 배달은 그대로 이어져.')).then(created => {
     if (stopped) { release(); return; }
     stage = created; created.attach(host); host.querySelector('.run-loading')?.remove(); board.dataset.runReady = 'true'; clearHelper(); v.draw();
-  }, () => { if (!stopped) toBench('이 기기에서는 3D 길을 열 수 없어서 기존 실험대로 바꿨어.'); });
+  }, () => { if (!stopped) toBench('이 기기에서는 3D 길을 열 수 없어서 2D 화면으로 바꿨어.'); });
   v.cleanups.push(() => { stopped = true; input.destroy(); if (stage) release(); });
 }

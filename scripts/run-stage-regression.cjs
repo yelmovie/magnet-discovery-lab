@@ -151,7 +151,7 @@ async function play(page, control, shots) {
     await run.page.screenshot({ path: `${out}/bench-fallback.png` });
     await run.page.locator('[data-mission="view-run"]').click();
     await run.page.waitForSelector('.mission-board[data-run-ready]', { timeout: 20000 });
-    check('「기존 방식으로 하기」와 「3D 달리기로 하기」로 오갈 수 있다');
+    check('「2D 화면으로 보기」와 「3D 달리기로 하기」로 오갈 수 있다');
     // The bench still finishes the same delivery by dragging, as before.
     await run.page.locator('[data-mission="view-bench"]').click();
     await run.page.waitForSelector('[data-drag="controller"]');
@@ -184,6 +184,27 @@ async function play(page, control, shots) {
     await run.page.keyboard.up('ArrowUp');
     assert.equal((await activity(run.page)).trials.length, 0); assert.equal(await car(run.page), 27);
     check('틈에 떨어지면 지나온 지점으로 돌아오고, 세 번째에는 당이의 도움말이 나온다');
+    assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
+
+    // 4b. Lowering the magnet at the flag leaves the trailing cart short: the tip says to lift it and go on,
+    // then the lower button is marked once the cart is in the bay.
+    run = await open(browser, { width: 1280, height: 800 }, {}, { 8: { values: { playVersion: 4, mechanicsVersion: 1, paceVersion: 1, puzzleVersion: 1, puzzleRevision: 2, view: 'run', round: 0, crisisSeen: true }, points: { controller: { x: 20, y: 50 } }, records: [], mask: [], trials: [] } });
+    {
+      const page = run.page, control = keyboard(page), tip = () => page.evaluate(() => { const t = document.querySelector('.run-tip'); return t.hidden ? '' : t.textContent; });
+      await page.waitForSelector('.mission-board[data-run-ready]', { timeout: 20000 });
+      const crisis = page.locator('[data-mission="crisis-go"]'); if (await crisis.count()) await crisis.click();
+      await control.hold('up'); await until(page, async () => await at(page) >= 44, '깃발까지 걷기'); await control.release('up');
+      await control.lower();
+      await until(page, async () => (await tip()).includes('모자라'), '모자라 안내', 6000);
+      assert.equal(await page.locator('.delivery-state').isVisible(), false, '같은 말을 하는 상태 줄은 숨긴다');
+      assert.notEqual((await activity(page)).values.segment0, true);
+      await control.lower();
+      await control.hold('up'); await until(page, async () => (await tip()).includes('깃발 칸에 들어왔어'), '깃발 칸 안내', 15000); await control.release('up');
+      assert.equal(await page.locator('[data-mission="detach"]').getAttribute('data-ready'), 'true');
+      await control.lower();
+      await page.waitForFunction(() => window.__lab.save.activities[8].values.segment0 === true, null, { timeout: 6000 });
+    }
+    check('깃발에서 일찍 내리면 「자석 들기」 안내가 나오고, 깃발 칸에서 내리면 1구간이 끝난다');
     assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
 
     // 5. Reduced motion opens the bench and offers no 3D button.

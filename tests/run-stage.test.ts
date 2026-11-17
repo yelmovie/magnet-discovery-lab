@@ -6,7 +6,7 @@ import { delivery, type DeliveryRun, type DeliveryState } from '../src/missions-
 import { deliveryCourse, missionReady } from '../src/mission-model';
 import { missionView } from '../src/mission-play';
 import { validTrial } from '../src/trial-records';
-import { benchPoint, checkpointFor, courseEnd, hintAfterFalls, pickupSticks, practiceItems, resumeSpot, runView, setRunBlocked, UNIT } from '../src/run-stage-rules';
+import { arrivalHint, benchPoint, checkpointFor, courseEnd, hintAfterFalls, pickupSticks, practiceItems, resumeSpot, runView, setRunBlocked, UNIT } from '../src/run-stage-rules';
 
 // The 3D course is only an input device and a display. These tests feed it scripted
 // magnet positions and check that the bench model writes the usual records.
@@ -175,3 +175,20 @@ describe('3D 달리기 · 좌표와 구간 규칙', () => {
     expect(missionView(8, fresh, s).html).toContain('data-drag="controller"');
   });
 });
+
+describe('깃발 칸 도착 안내', () => {
+  const at = (car: number, extra: Partial<{ atGoal: boolean; done: boolean; forceOn: boolean }> = {}) =>
+    ({ car, start: 27, goal: 44, atGoal: Math.abs(car - 44) < 3, done: false, forceOn: true, ...extra });
+  it('수레가 깃발 칸에 있고 자석을 들고 있으면 내리라고 알려 준다', () => {
+    expect(arrivalHint(at(43), true, false)).toContain('자석 내리기');
+    expect(arrivalHint(at(43, { done: true }), true, true)).toBe('');
+    expect(arrivalHint(at(38), true, true)).toBe('');
+  });
+  it('내린 뒤 칸 밖에 멈추면 모자란지 지나쳤는지 알려 준다', () => {
+    expect(arrivalHint(at(39, { forceOn: false }), false, true)).toContain('모자라');
+    expect(arrivalHint(at(49, { forceOn: false }), false, true)).toContain('지나쳤어');
+    expect(arrivalHint(at(39, { forceOn: false }), false, false)).toBe('');
+    expect(arrivalHint(at(27, { forceOn: false }), false, true)).toBe('');
+  });
+});
+

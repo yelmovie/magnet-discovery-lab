@@ -51,7 +51,7 @@ export function practiceTip(s: number, flipped: boolean): string {
   return '';
 }
 export const fallLine = (falls: number) => hintAfterFalls(falls)
-  ? '당이: 가장자리 바로 앞에서 점프를 눌러 봐. 어려우면 위의 「기존 방식으로 하기」로 바꿔도 돼.'
+  ? '당이: 가장자리 바로 앞에서 점프를 눌러 봐. 어려우면 위의 「2D 화면으로 보기」로 바꿔도 돼.'
   : '앗, 떨어졌어! 조금 앞에서 다시 해 보자.';
 
 /** Where the runner stands when the course opens. */
@@ -68,3 +68,17 @@ export const runAvailable = (s: Save) => !blocked && s.settings.motion !== false
 /** Only the extended course has a 3D view, and only when the learner's attempt asked for it. */
 export const runView = (a: Activity, s: Save) =>
   a.values.view === 'run' && a.values.puzzleRevision === 2 && runAvailable(s);
+
+/**
+ * What to tell the runner around the flag bay. delivery() still decides whether the cart stopped in the bay;
+ * this only says when to lower the magnet and what to do after a stop outside the bay.
+ * `settled` means the cart has not moved for a moment (it may still be coasting otherwise).
+ */
+export function arrivalHint(state: { car: number; start: number; goal: number; atGoal: boolean; done: boolean; forceOn: boolean }, held: boolean, settled: boolean): string {
+  if (state.done) return '';
+  if (held && state.atGoal && state.forceOn) return '수레가 깃발 칸에 들어왔어! 지금 「자석 내리기」를 눌러 봐.';
+  if (held || !settled || state.atGoal || Math.abs(state.car - state.start) < .5) return '';
+  return state.car < state.goal
+    ? '깃발 칸까지 조금 모자라. 「자석 들기」를 누르고 수레를 조금 더 옮겨 봐.'
+    : '깃발 칸을 지나쳤어. 「자석 들기」를 누르고 수레를 깃발 쪽으로 되돌려 봐.';
+}
