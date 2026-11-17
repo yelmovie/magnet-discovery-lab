@@ -1,3 +1,99 @@
+# 새 세션 인계 — 3D 달리기 스테이지 · 2026-11-17 12:40 기준
+
+새 창(다른 모델)에서 이어서 작업할 사람이 이 절만 읽고 시작할 수 있게 썼다. 바로 아래 「활동 8 … 3D 달리기 스테이지」 절은 구조 설명이고, 설계·검증·프롬프트 전문은 `RUN-STAGE-3D-PLAN-20261117.md`에 있다.
+
+## 지금 상태 한 줄
+
+활동 8의 3D 달리기 스테이지는 구현·그림 적용·운영 배포까지 끝났다. 남은 것은 내장 임시 원본 삭제 확인 하나와, 하면 좋은 다듬기뿐이다.
+
+## 완료한 작업
+
+- 활동 8이 3D 길로 열린다(연습 길 → 1구간 중간역 → 2구간 유리 보관실). 화면 버튼과 키보드로 끝까지 플레이되고 `segment0·1`, 증거 `delivery0·1`이 기존 필드에 저장된다.
+- 기존 2D 실험대가 대체 화면으로 동작한다(「기존 방식으로 하기」 ↔ 「3D 달리기로 하기」).
+- GPT 이미지 4장(조약돌 바닥, 상점 줄, 소품 6종, 도시 원경)을 적용했다.
+- 겹침·잘림·어색한 물리 수정(표지판 기둥, 바퀴·자석 위치, 유리문·레일 길이, 작은 화면 버튼 배치)을 했다.
+- 운영 배포: https://magnet-city.pages.dev · 코드 커밋 `32a1584` · Pages 배포 `377c2ed7` · `verify-release.mjs` 217/217 일치 · 운영에서 3D 완주 확인.
+- `main` 최신은 문서만 담은 `6f48bb0`(+ 이 인계 커밋)이고 `origin/main`과 같다. 문서는 `dist`에 들어가지 않으므로 운영 코드는 `32a1584`와 대응한다.
+
+## 수정한 파일 (`git diff --stat e3871b0..HEAD` 실측, 29개)
+
+| 파일 | 변경 내용 |
+|---|---|
+| `src/missions-remote.ts` | `delivery(v, run?)`. 3D 연결구 `DeliveryRun`(`walk`: 자석 위치 받기, `show`: 상태 넘기기). 2D 계산은 그대로 |
+| `src/mission-play.ts`, `src/inquiry.ts` | 활동 8 화면 방식 `values.view`, 전환 버튼, 교사용 열기 전달 |
+| `src/run-stage-rules.ts` | 좌표 변환(실험대 1칸 = 0.5m), 복귀 지점, 연습 물건 판정, 3D를 열지 말지 |
+| `src/run-input.ts` | 방향판·버튼·키보드(WASD·방향키, Space, F, E) |
+| `src/run-course.ts`, `src/run-course.css` | 화면 겹침(버튼·안내·진행), 장면 불러오기와 보관, 2D로 되돌리기 |
+| `src/run-stage.ts` | 무대(길·벽·레일·역·유리 보관실·수레·소품·카메라). three.js 지연 묶음 |
+| `src/run-character.ts` | 세운 그림 캐릭터, 캡슐·옥트리 충돌, 발밑 그림자 |
+| `vite.config.ts` | 오프라인 미리 저장 목록에 `three.module`·`run-stage` 묶음 추가 |
+| `tests/run-stage.test.ts` | 판정 연결 4개, 규칙 5개 |
+| `scripts/run-stage-regression.cjs` | 3D 완주(두 화면 크기 × 키보드·화면 버튼), 2D 완주, 전환, 새로고침, 떨어짐, 움직임 줄이기 |
+| `scripts/run-stage-release-smoke.cjs` | 배포된 주소에서 3D 완주와 저장 확인 |
+| `scripts/prepare-run-stage-art.mjs` | 생성 원본 → 게임용 WebP |
+| `scripts/playful-regression.cjs` 외 3개 | 2D를 검사하는 기존 스크립트가 활동 8에서 「기존 방식으로 하기」를 먼저 누름 |
+| `assets/source/run-stage-20261117/*.png`, `public/assets/run-stage/*.webp` | 그림 원본 4장과 게임용 4장 |
+| `README.md`, `docs/HANDOFF.md`, `docs/RUN-STAGE-3D-PLAN-20261117.md` | 사용법, 인계, 계획·결과 |
+
+## 테스트·빌드 결과 (마지막 실행 기준)
+
+| 명령 | 결과 |
+|---|---|
+| `npm test` | 22개 파일 321개 통과 |
+| `npm run build` | 통과 |
+| `TEST_URL=http://127.0.0.1:4196/ node scripts/run-stage-regression.cjs` | 18개 통과(그림 적용 상태) |
+| 화면 겹침 점검(`.tmp/hud-audit.cjs`, 커밋 안 함) | 6개 화면 × 4개 장면 겹침·화면 밖 0건 |
+| `node scripts/verify-release.mjs https://magnet-city.pages.dev` | 217/217 일치 |
+| `node scripts/run-stage-release-smoke.cjs https://magnet-city.pages.dev` | 통과 |
+| `npm run test:browser` | **실패 — 이번 작업 이전부터.** `teacherUnlock → begin(1)`에서 `screen` 2≠1. 변경을 빼고 돌려도 같다 |
+| `scripts/puzzle-regression.cjs` 등 `TEST_FIXTURE` 필요 스크립트 | 미실행 — 완주 저장 표본이 이 맥에 없다 |
+| 학교 태블릿 실기기(터치·프레임) | 미실행 |
+
+## 확정된 결정
+
+- **판정은 `delivery()` 한 곳.** 3D는 입력 장치와 화면이다. 수레 계산·증거 기록을 3D 쪽에 복사하지 않는다.
+- **새 저장 값은 `values.view` 하나.** 값이 없는 저장, 움직임 줄이기, WebGL 불가, 교사용 열기는 2D로 시작한다.
+- **2구간은 2D 규칙 그대로.** 밀이는 실험대 47.5(`deliveryCourse.reach`)에서 멈추고 수레만 유리 보관실로 들어간다. 1구간에서는 유리문이 열려 있다.
+- **캐릭터·도깨비·연습 물건은 기존 그림 재사용.** 수레·자석·N/S 글자·깃발 칸·유리는 코드로 그린다(극 표시가 정확해야 해서).
+- **자석 힘으로 높이 뛰는 동작은 넣지 않는다.** 화면에 "설명 모형" 문구를 둔다.
+- **운영 배포는 자동 승인.** 검증 통과 → 커밋 → 푸시 → `wrangler pages deploy` → 운영 확인까지 묻지 않고 한다.
+
+## 남은 문제
+
+| 등급 | 문제 | 재현·확인 방법 | 막힌 지점 |
+|---|---|---|---|
+| 하 | 내장 임시 원본 4건 삭제가 끝났는지 미확인 | `"/Volumes/T7 Shield/AI-Skills/custom/gpt-imagegen/scripts/gpt-image.sh" -l`에 `5magnet` 줄이 남았는지 본다 | 12:40 기준 4건 남음. 삭제 명령이 공유 이미지 잠금 차례를 기다리며 뒤에서 돌고 있었다(이 세션이 끝나면 멈출 수 있다) |
+| 중 | `npm run test:browser` 실패(이전부터) | `TEST_URL=http://127.0.0.1:4196/ npm run test:browser` | 활동 1이 활동 2로 열리게 바뀐 뒤 스크립트 미갱신. 사용자가 요청하지 않아 고치지 않았다 |
+| 중 | 실기기 미확인 | 학교 태블릿·전자칠판에서 활동 8을 열어 방향판·점프·프레임 확인 | 기기 없음 |
+| 하 | 도시 원경이 거의 안 보임 | 활동 8 화면 맨 위 | 카메라가 아래를 보고 있어 길 끝 안개처럼만 보인다. 카메라를 더 눕히면 앞뒤 거리 가늠이 어려워져 그대로 뒀다 |
+| 하 | 빠르게 끝내면 "유리문이 닫혔어" 안내가 2구간 완료 화면까지 남음 | 2구간을 4초 안에 끝내기 | 안내 표시 시간이 4초. 줄여도 된다(`run-stage.ts`의 `say(..., 4)`) |
+
+## 다음에 할 일 (우선순위 순)
+
+1. 내장 임시 원본 정리 확인. 남아 있으면 아래 명령을 파일 4개(`street-tile`, `shop-row`, `props-sheet`, `city-skyline`)에 대해 실행한다. 적용 확인은 이미 끝났다.
+   `LOCK_WAIT=3000 "/Volumes/T7 Shield/iscreammedia_sc34/_shared/run-stage-lock.sh" image "/Volumes/T7 Shield/AI-Skills/custom/gpt-imagegen/scripts/gpt-image.sh" -c "/Volumes/T7 Shield/iscreammedia_sc34/5magnet/assets/source/run-stage-20261117/<이름>.png" < /dev/null`
+2. 사용자가 화면을 보고 주는 추가 요청(그림·배치·난이도)을 반영한다. 지금까지 받은 요청은 모두 반영했다.
+3. (요청이 있을 때만) `playful-regression.cjs`의 `begin(1)` 수정, 실기기 확인 결과 기록.
+
+## 이어서 작업하는 방법
+
+- 개발 서버: `.claude/launch.json`의 `magnet-dev`(127.0.0.1:4196). 3D 검사는 `TEST_URL=http://127.0.0.1:4196/ node scripts/run-stage-regression.cjs`.
+- 활동 8로 바로 들어가는 저장 만들기: `scripts/run-stage-regression.cjs`의 `seedState()`를 참고한다(활동 1~7 완료, `resume: 8`).
+- 그림을 바꾸거나 추가할 때: 원본을 `assets/source/run-stage-20261117/`에 생성 → `node scripts/prepare-run-stage-art.mjs` → 화면 확인 → 내장 원본 `-c` 삭제. 생성 명령에는 `< /dev/null`을 붙이고 공유 잠금 래퍼로 한 장씩 한다. 다른 세션과 차례가 겹치면 수십 분 기다릴 수 있다.
+- 배포: `npm test` → `npm run build` → `find . -name '._*' -delete`(node_modules 제외) → 커밋·푸시 → 아래 명령 → `verify-release.mjs` → `run-stage-release-smoke.cjs`.
+  `HOME="/Volumes/T7 Shield/DevCaches/tools/wrangler-home" TMPDIR="$PWD/.tmp" XDG_CACHE_HOME="$PWD/.tmp/cache" WRANGLER_LOG_PATH="$PWD/.tmp/wrangler-logs" node "/Volumes/T7 Shield/DevCaches/tools/wrangler-4.154.0/node_modules/wrangler/bin/wrangler.js" pages deploy dist --project-name magnet-city --branch main --commit-hash "$(git rev-parse HEAD)" --commit-dirty=true`
+- 사용자와는 한국어 반말로 대화한다. 작업 데이터는 외장 SSD에만 둔다.
+
+## 건드리면 안 되는 것
+
+- `src/delivery.ts`, `src/final-mission.ts`: 쓰이지 않는 옛 코드다. 그대로 둔다.
+- `delivery()`의 수레 계산과 `mission-model.ts`의 완료 조건: 3D를 고치려고 바꾸지 않는다. 3D는 `DeliveryRun`으로만 연결한다.
+- 저장 필드 이름과 `puzzleRevision`·`deliveryCourse` 값: 기존 저장과 2D 화면이 같이 쓴다.
+- 추적 안 된 문서 3개(`docs/MAP-VILLAIN-HANDOFF-20261114.md`, `docs/reviews/RELEASE-REVIEW-20261115.md`, `docs/reviews/SCORE-20261115.md`): 다른 작업 것이다. 커밋하지 않는다.
+- `_shared/`와 다른 프로젝트 폴더: 읽기만 한다.
+
+---
+
 # 활동 8 「자석 택배를 부탁해」 3D 달리기 스테이지 · 2026-11-17
 
 - 새로 시작한 활동 8은 3D 길로 열린다. 밀이가 막대자석을 들고 레일 옆을 걸으며 수레를 당기고 밀어 중간역과 유리 보관실 깃발 칸에 세운다. 연습 길(턱·틈·철 클립·도깨비) → 1구간 → 2구간 순서다.
