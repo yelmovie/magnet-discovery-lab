@@ -11,7 +11,7 @@ const arrow = (direction: string, label: string, glyph: string) => `<button type
 export function runCourseMarkup(): string {
   return `<div class="run-stage" data-run-stage><p class="run-loading" role="status">3D 길을 준비하고 있어…</p></div>
 <ol class="run-progress" aria-label="달리기 진행"><li data-run-step="0">연습 길</li><li data-run-step="1">1구간 · 중간역</li><li data-run-step="2">2구간 · 유리 보관실</li></ol>
-<p class="run-tip" role="status" aria-live="polite"></p>
+<p class="run-tip" role="status" aria-live="polite" hidden></p>
 <div class="run-magnet" role="img" aria-label="내 자석"><span>내 자석</span><i data-run-pole="rear"></i><i data-run-pole="front"></i><b></b></div>
 <div class="run-pad" role="group" aria-label="이동 방향판">${arrow('up', '앞으로', '▲')}${arrow('left', '왼쪽으로', '◀')}${arrow('right', '오른쪽으로', '▶')}${arrow('down', '뒤로', '▼')}</div>
 <div class="run-controls"><button type="button" class="run-jump" data-run="jump" aria-label="점프">점프</button></div>

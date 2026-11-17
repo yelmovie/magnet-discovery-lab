@@ -56,3 +56,7 @@ body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data
   #app .run-mode .run-model-note { display: none; }
   #app .run-mode .run-magnet span { display: none; }
 }
+
+/* When the next-step button appears in the corner, the thumb buttons move up to leave it room. */
+#app .quest-activity:has(> .mission-cta:not(:disabled)) .run-mode .run-controls { bottom: calc(3% + 84px); }
+body.quest-mode #app .quest-activity:has(> .mission-cta:not(:disabled)) .screen-8 .run-mode .mission-board > .mission-actions:not(:has([data-mission='delivery-next'])) { bottom: calc(3% + 84px + clamp(84px, 8.6vw, 112px) + 14px); }
