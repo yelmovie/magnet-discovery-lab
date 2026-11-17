@@ -176,13 +176,20 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     const board = sign(text); board.center.set(.5, 0); board.position.set(POST, platform + 2.7, z(s));
     scene.add(post, board);
   };
+  // Each bay is the stopping zone the bench judges (goal ± tolerance). The current one is outlined, flagged
+  // with a large waving pennant and marked by a bouncing pointer above the rail.
+  const BAY = deliveryCourse.tolerance * UNIT;
   const bays = [44, deliveryCourse.goal].map(goal => {
     const paint = new THREE.MeshBasicMaterial({ color: '#ffe197', transparent: true, opacity: .75, depthWrite: false });
-    const bay = new THREE.Mesh(new THREE.PlaneGeometry(1.7, deliveryCourse.tolerance * 2 * UNIT), paint); bay.rotation.x = -Math.PI / 2; bay.position.set(lane.rail, .16, z(goal));
-    const pennant = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.5, 0), new THREE.Vector3(-.8, -.25, 0)]), new THREE.MeshBasicMaterial({ color: '#c46e22', side: THREE.DoubleSide }));
-    pennant.position.set(POST - .05, platform + 2.1, z(goal));
-    scene.add(bay, pennant);
-    return { goal, paint, pennant: pennant.material as THREE.MeshBasicMaterial };
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(1.7, BAY * 2), paint); bay.rotation.x = -Math.PI / 2; bay.position.set(lane.rail, .16, z(goal));
+    const edge = new THREE.MeshBasicMaterial({ color: '#e0672a' }), border = new THREE.Group();
+    for (const dz of [-BAY, BAY]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(1.9, .06, .14), edge); bar.position.set(lane.rail, .18, z(goal) + dz); border.add(bar); }
+    for (const dx of [-.92, .92]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.1, .06, BAY * 2), edge); bar.position.set(lane.rail + dx, .18, z(goal)); border.add(bar); }
+    const pennant = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.8, 0), new THREE.Vector3(-1.3, -.4, 0)]), new THREE.MeshBasicMaterial({ color: '#c46e22', side: THREE.DoubleSide }));
+    pennant.position.set(POST - .05, platform + 2.55, z(goal));
+    const pointer = new THREE.Mesh(new THREE.ConeGeometry(.32, .6, 4), new THREE.MeshBasicMaterial({ color: '#e0672a' })); pointer.rotation.x = Math.PI; pointer.position.set(lane.rail, 1.45, z(goal));
+    scene.add(bay, border, pennant, pointer);
+    return { goal, paint, edge, border, pennant, pointer };
   });
   station('출발역', 27); station('중간역 · 배달 장소', 44); station('보관실 · 배달 장소', deliveryCourse.goal);
   const glass = new THREE.MeshBasicMaterial({ color: '#a9dcea', transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false });
@@ -295,8 +302,15 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     if (next.done) parcel.position.set(4.05, platform + .35, z(next.goal) + 1.1); else parcel.position.set(lane.rail, .97, z(next.car));
     bays.forEach((item, i) => {
       const live = i === next.round, here = live && (next.atGoal || next.done) || i < next.round;
-      item.paint.color.set(here ? '#89bd84' : '#ffe197'); item.paint.opacity = live || here ? .78 : .3;
-      item.pennant.color.set(here ? '#25795f' : '#c46e22');
+      item.paint.color.set(here ? '#89bd84' : live ? '#ffd34d' : '#ffe197'); item.paint.opacity = live ? .9 : here ? .78 : .3;
+      // Only the current bay is outlined and carries the large waving flag; the others stay small.
+      item.edge.color.set(here ? '#25795f' : '#e0672a'); item.border.visible = live;
+      (item.pennant.material as THREE.MeshBasicMaterial).color.set(here ? '#25795f' : live ? '#e0672a' : '#c9a27a');
+      item.pennant.scale.setScalar(live ? 1 : .5);
+      item.pennant.rotation.y = live && !next.done ? Math.sin(clock * 3) * .3 : 0;
+      item.pointer.visible = live && !next.done;
+      // Just above the cart, so the high camera shows it over the bay rather than further down the street.
+      if (item.pointer.visible) { item.pointer.position.y = 1.45 + Math.abs(Math.sin(clock * 3)) * .22; item.pointer.rotation.y = clock * 1.5; }
     });
     door.visible = next.wall; glassSign.visible = next.wall;
     const p = runner.position, lift = held ? .86 : .34;
