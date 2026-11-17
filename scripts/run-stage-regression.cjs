@@ -101,6 +101,7 @@ async function play(page, control, shots) {
   assert.equal(proof('delivery1').conditions.course, 'glass-room'); assert.equal(proof('delivery1').conditions.manual, true);
   assert.ok(Math.abs(a.values.car - 60) < 3 && a.values.controlled1 > 5 && a.values.cartMethod1 === 'push');
   await page.waitForFunction(() => document.querySelector('[data-action="complete"]')?.disabled === false);
+  assert.equal(await page.locator('.run-tip').isHidden(), true, '끝난 구간 화면에 지난 안내가 남지 않는다');
   await page.screenshot({ path: `${out}/${shots}-4-done.png` });
   check(`${shots} ${control.name}: 2구간 — 유리문 앞에서 밀어 보관실 칸에 세우고 기존 기록이 남는다`);
 }

@@ -280,9 +280,12 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     if (lastPole && lastPole !== next.pole) flipped = true;
     if (lastPole !== next.pole) { hand.set(next.pole); lastPole = next.pole; }
     const key = `${next.round}:${next.done}`;
-    if (doneKey === `${next.round}:false` && next.done) runner.celebrate();
+    const finished = doneKey === `${next.round}:false` && next.done;
+    if (finished) runner.celebrate();
     // When the second stretch starts beyond the closed door, the runner comes back in front of it.
     if (next.wall && sOf(runner.position.z) > deliveryCourse.reach + .2) { runner.place(.1, 0, z(40)); trail.length = 0; say('유리문이 닫혔어. 문 앞에서 다시 시작하자.', 4); }
+    // A finished stretch clears any leftover hint so it does not stay over the completion screen.
+    if (finished) messageFor = 0;
     if (state && next.round !== state.round) held = true;
     doneKey = key; state = next;
 
