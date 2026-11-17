@@ -69,14 +69,19 @@ export const runAvailable = (s: Save) => !blocked && s.settings.motion !== false
 export const runView = (a: Activity, s: Save) =>
   a.values.view === 'run' && a.values.puzzleRevision === 2 && runAvailable(s);
 
+type Arrival = { car: number; start: number; goal: number; atGoal: boolean; done: boolean; forceOn: boolean };
 /**
- * What to tell the runner around the flag bay. delivery() still decides whether the cart stopped in the bay;
- * this only says when to lower the magnet and what to do after a stop outside the bay.
+ * The runner lowers the magnet by herself as soon as her magnet has brought the cart into the flag bay.
+ * Lowering only takes the force away: delivery() still lets the cart coast and decides whether it stopped in the bay.
+ */
+export const shouldAutoLower = (state: Arrival, held: boolean) => held && state.atGoal && state.forceOn && !state.done;
+/**
+ * What to tell the runner around the flag bay. `lowered` is true for a moment after the automatic lowering;
  * `settled` means the cart has not moved for a moment (it may still be coasting otherwise).
  */
-export function arrivalHint(state: { car: number; start: number; goal: number; atGoal: boolean; done: boolean; forceOn: boolean }, held: boolean, settled: boolean): string {
+export function arrivalHint(state: Arrival, held: boolean, settled: boolean, lowered = false): string {
   if (state.done) return '';
-  if (held && state.atGoal && state.forceOn) return '수레가 깃발 칸에 들어왔어! 지금 「자석 내리기」를 눌러 봐.';
+  if (lowered && !held) return '깃발 칸이야! 밀이가 자석을 내렸어. 수레가 멈추는지 봐.';
   if (held || !settled || state.atGoal || Math.abs(state.car - state.start) < .5) return '';
   return state.car < state.goal
     ? '깃발 칸까지 조금 모자라. 「자석 들기」를 누르고 수레를 조금 더 옮겨 봐.'

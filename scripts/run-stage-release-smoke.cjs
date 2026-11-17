@@ -34,19 +34,18 @@ const state = {
       request.onsuccess = () => { const db = request.result, get = db.transaction('saves').objectStore('saves').get('main'); get.onsuccess = () => { db.close(); resolve(get.result.activities[8]); }; get.onerror = reject; };
     }));
     const until = async (test, label, timeout = 60000) => { const end = Date.now() + timeout; while (Date.now() < end) { if (await test()) return; await page.waitForTimeout(50); } throw new Error('timeout: ' + label + ' at ' + await at() + ' · ' + await status()); };
-    const done = round => page.waitForFunction(r => document.querySelector(`[data-run-step="${r + 1}"]`)?.dataset.state === 'done', round, { timeout: 8000 });
+    const done = round => page.waitForFunction(r => document.querySelector(`[data-run-step="${r + 1}"]`)?.dataset.state === 'done', round, { timeout: 30000 });
     await page.keyboard.down('ArrowUp');
     let jumps = 0;
     await until(async () => { const s = await at(); if (s < 1 && ++jumps % 7 === 0) await page.keyboard.press('Space'); return s >= 30; }, '출발역 지나기');
-    await until(async () => (await status()).startsWith('배달 장소야'), '1구간');
-    await page.keyboard.up('ArrowUp'); await page.keyboard.press('KeyE'); await done(0);
+    // In the flag bay the runner lowers the magnet herself; holding forward is enough.
+    await done(0); await page.keyboard.up('ArrowUp');
     await page.screenshot({ path: `${out}/stretch1.png` });
     await page.locator('[data-mission="delivery-next"]').click();
     await page.waitForSelector('.mission-board[data-run-ready]');
     await page.keyboard.down('KeyS'); await until(async () => await at() <= 37, '수레 뒤로'); await page.keyboard.up('KeyS');
     await page.keyboard.press('KeyF'); await page.keyboard.down('ArrowUp');
-    await until(async () => (await status()).startsWith('배달 장소야'), '2구간');
-    await page.keyboard.up('ArrowUp'); await page.keyboard.press('KeyE'); await done(1);
+    await done(1); await page.keyboard.up('ArrowUp');
     await page.waitForFunction(() => document.querySelector('[data-action="complete"]')?.disabled === false);
     await page.screenshot({ path: `${out}/done.png` });
     await page.waitForTimeout(1500);

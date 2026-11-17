@@ -72,12 +72,11 @@ async function play(page, control, shots) {
   await until(page, async () => { const s = await at(page); if (s < 1 && ++jumps % 7 === 0) await control.jump(); return s >= 4; }, '연습 길 통과', 60000);
   assert.ok(await car(page) === 27, '힘이 닿지 않는 연습 길에서는 수레가 움직이지 않는다');
   check(`${shots} ${control.name}: 연습 길(턱·틈)을 지나 출발역에 닿는다`);
-  // Stretch 1: get in front of the cart and pull it to the middle station.
-  await until(page, async () => await car(page) >= 42.2, '1구간 끌기');
+  // Stretch 1: get in front of the cart and keep walking. Once the cart is in the flag bay the runner lowers
+  // the magnet by herself and the cart coasts to a stop there, with no timing press.
+  await until(page, async () => (await activity(page)).values.segment0 === true, '1구간 끌기 — 깃발 칸에서 저절로 내림');
   await control.release('up');
   await page.screenshot({ path: `${out}/${shots}-2-stretch1.png` });
-  await control.lower();
-  await page.waitForFunction(() => window.__lab.save.activities[8].values.segment0 === true, null, { timeout: 6000 });
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(), false, '중간역 정차만으로는 끝나지 않는다');
   check(`${shots} ${control.name}: 1구간 — 당겨서 중간역 칸에 세운다`);
   await page.locator('[data-mission="delivery-next"]').click();
@@ -89,12 +88,10 @@ async function play(page, control, shots) {
   await control.flip();
   await page.waitForFunction(() => window.__lab.save.activities[8].values.controllerPole === 'S');
   await control.hold('up');
-  await until(page, async () => await car(page) >= 58, '2구간 밀기');
+  await until(page, async () => (await activity(page)).values.segment1 === true, '2구간 밀기 — 깃발 칸에서 저절로 내림');
   await control.release('up');
   assert.ok(await at(page) <= 47.6, '밀이는 유리문 앞에 멈춘다');
   await page.screenshot({ path: `${out}/${shots}-3-stretch2.png` });
-  await control.lower();
-  await page.waitForFunction(() => window.__lab.save.activities[8].values.segment1 === true, null, { timeout: 6000 });
   const a = await activity(page), proof = key => a.trials.find(t => t.key === key && t.outcome === 'success');
   assert.ok(proof('delivery0') && proof('delivery1'), '증거 delivery0·delivery1');
   assert.equal(proof('delivery0').conditions.method, 'pull'); assert.equal(proof('delivery1').conditions.method, 'push');
@@ -186,8 +183,8 @@ async function play(page, control, shots) {
     check('틈에 떨어지면 지나온 지점으로 돌아오고, 세 번째에는 당이의 도움말이 나온다');
     assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
 
-    // 4b. Lowering the magnet at the flag leaves the trailing cart short: the tip says to lift it and go on,
-    // then the lower button is marked once the cart is in the bay.
+    // 4b. Lowering the magnet early at the flag leaves the trailing cart short: the tip says to lift it and go on,
+    // and walking on brings the cart into the bay, where the runner lowers the magnet herself.
     run = await open(browser, { width: 1280, height: 800 }, {}, { 8: { values: { playVersion: 4, mechanicsVersion: 1, paceVersion: 1, puzzleVersion: 1, puzzleRevision: 2, view: 'run', round: 0, crisisSeen: true }, points: { controller: { x: 20, y: 50 } }, records: [], mask: [], trials: [] } });
     {
       const page = run.page, control = keyboard(page), tip = () => page.evaluate(() => { const t = document.querySelector('.run-tip'); return t.hidden ? '' : t.textContent; });
@@ -199,12 +196,9 @@ async function play(page, control, shots) {
       assert.equal(await page.locator('.delivery-state').isVisible(), false, '같은 말을 하는 상태 줄은 숨긴다');
       assert.notEqual((await activity(page)).values.segment0, true);
       await control.lower();
-      await control.hold('up'); await until(page, async () => (await tip()).includes('깃발 칸에 들어왔어'), '깃발 칸 안내', 15000); await control.release('up');
-      assert.equal(await page.locator('[data-mission="detach"]').getAttribute('data-ready'), 'true');
-      await control.lower();
-      await page.waitForFunction(() => window.__lab.save.activities[8].values.segment0 === true, null, { timeout: 6000 });
+      await control.hold('up'); await until(page, async () => (await activity(page)).values.segment0 === true, '다시 들고 깃발 칸까지', 15000); await control.release('up');
     }
-    check('깃발에서 일찍 내리면 「자석 들기」 안내가 나오고, 깃발 칸에서 내리면 1구간이 끝난다');
+    check('깃발에서 일찍 내리면 「자석 들기」 안내가 나오고, 다시 들고 당기면 깃발 칸에서 1구간이 끝난다');
     assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
 
     // 5. Reduced motion opens the bench and offers no 3D button.

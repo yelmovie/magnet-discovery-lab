@@ -6,7 +6,7 @@ import { delivery, type DeliveryRun, type DeliveryState } from '../src/missions-
 import { deliveryCourse, missionReady } from '../src/mission-model';
 import { missionView } from '../src/mission-play';
 import { validTrial } from '../src/trial-records';
-import { arrivalHint, benchPoint, checkpointFor, courseEnd, hintAfterFalls, pickupSticks, practiceItems, resumeSpot, runView, setRunBlocked, UNIT } from '../src/run-stage-rules';
+import { arrivalHint, benchPoint, shouldAutoLower, checkpointFor, courseEnd, hintAfterFalls, pickupSticks, practiceItems, resumeSpot, runView, setRunBlocked, UNIT } from '../src/run-stage-rules';
 
 // The 3D course is only an input device and a display. These tests feed it scripted
 // magnet positions and check that the bench model writes the usual records.
@@ -179,9 +179,14 @@ describe('3D 달리기 · 좌표와 구간 규칙', () => {
 describe('깃발 칸 도착 안내', () => {
   const at = (car: number, extra: Partial<{ atGoal: boolean; done: boolean; forceOn: boolean }> = {}) =>
     ({ car, start: 27, goal: 44, atGoal: Math.abs(car - 44) < 3, done: false, forceOn: true, ...extra });
-  it('수레가 깃발 칸에 있고 자석을 들고 있으면 내리라고 알려 준다', () => {
-    expect(arrivalHint(at(43), true, false)).toContain('자석 내리기');
-    expect(arrivalHint(at(43, { done: true }), true, true)).toBe('');
+  it('자석의 힘으로 수레가 깃발 칸에 들어오면 밀이가 자석을 내린다', () => {
+    expect(shouldAutoLower(at(43), true)).toBe(true);
+    expect(shouldAutoLower(at(38), true)).toBe(false);
+    expect(shouldAutoLower(at(43, { forceOn: false }), true)).toBe(false);
+    expect(shouldAutoLower(at(43), false)).toBe(false);
+    expect(shouldAutoLower(at(43, { done: true }), true)).toBe(false);
+    expect(arrivalHint(at(43, { forceOn: false }), false, false, true)).toContain('자석을 내렸어');
+    expect(arrivalHint(at(43, { done: true }), false, true, true)).toBe('');
     expect(arrivalHint(at(38), true, true)).toBe('');
   });
   it('내린 뒤 칸 밖에 멈추면 모자란지 지나쳤는지 알려 준다', () => {
