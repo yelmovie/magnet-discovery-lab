@@ -6,6 +6,8 @@
 - 파일: `src/run-stage-rules.ts`(좌표·구간 규칙), `src/run-input.ts`(방향판·버튼·키보드), `src/run-course.ts`·`run-course.css`(화면 겹침, 불러오기, 2D 전환), `src/run-stage.ts`(무대·카메라), `src/run-character.ts`(캐릭터·충돌). three.js는 `run-stage` 묶음으로 필요할 때만 받는다.
 - 검사: `tests/run-stage.test.ts`(판정 연결·좌표 규칙), `scripts/run-stage-regression.cjs`(키보드·화면 버튼 완주, 2D 대체 화면, 새로고침, 움직임 줄이기).
 - **알려진 문제(이번 작업 이전부터):** `npm run test:browser`(`playful-regression.cjs`)는 첫 단계 `begin(1)`에서 실패한다. 2026-11-12에 활동 1이 활동 2(빠른 우편함)로 열리게 바뀐 뒤 스크립트가 따라오지 않았다. 이번 변경을 빼고 돌려도 같은 자리에서 멈춘다.
+- 그림: 조약돌 바닥·상점 줄·소품 6종·도시 원경 4장을 GPT 이미지로 만들어 `public/assets/run-stage/`에 넣었다. 원본은 `assets/source/run-stage-20261117/`, 변환은 `node scripts/prepare-run-stage-art.mjs`. 그림 파일이 없어도 단색으로 열린다.
+- 화면 다듬기(같은 날): 표지판 기둥, 수레 바퀴·자석 위치, 유리문·레일 길이, 작은 화면 버튼 배치를 고쳤다. 운영은 커밋 `32a1584`, Pages 배포 `377c2ed7`(217/217 일치).
 - 자세한 설계와 결과는 `RUN-STAGE-3D-PLAN-20261117.md`에 있다.
 
 ---

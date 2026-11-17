@@ -286,3 +286,15 @@
 - **city-skyline:** `Wide panoramic backdrop of a whimsical canal city far in the distance under a soft blue morning sky with a few fluffy clouds: domed towers with teal-blue roofs, a clock tower, brass pipes, warm terracotta rooftops, a stone bridge, everything hazy and pale so it reads as far away, the lower third fades into light cream mist. Style: cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly. No people, no characters, no vehicles, no text, no letters, no numbers, no logo.`
 
 생성 차례는 다른 세션들과 겹쳐 첫 장이 나오기까지 약 80분이 걸렸다. `gpt-image.sh`를 백그라운드에서 돌릴 때는 `< /dev/null`을 붙여야 한다(안 붙이면 `codex exec`가 입력을 기다리며 멈춘다).
+
+### 다듬기 뒤 검증과 배포
+
+| 항목 | 결과 |
+|---|---|
+| `npm test` | 321개 통과 |
+| `scripts/run-stage-regression.cjs` | 18개 통과(그림 4장 적용 상태) |
+| 화면 겹침 점검 | 6개 화면 × 4개 장면 24조합 겹침·화면 밖 0건 |
+| 커밋 | `52bdd63` 겹침·물리 수정 · `32a1584` 그림 4장과 변환 스크립트 |
+| 운영 배포 | `f3fe56b0`(소스 `52bdd63`) → `377c2ed7`(소스 `32a1584`). `verify-release.mjs` 217/217 일치 |
+| 운영 동작 | `run-stage-release-smoke.cjs` 통과. 운영 캡처에서 조약돌 길·상점 줄·소품이 보이는 것을 확인 |
+| 내장 임시 원본 | 운영 확인 뒤 잠금 래퍼로 `gpt-image.sh -c` 4건 실행(결과는 인계 문서 참고) |
