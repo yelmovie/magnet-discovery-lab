@@ -94,13 +94,10 @@ const wait = (page, ms = 120) => page.waitForTimeout(ms);
       const paused = await page.locator('.expedition-player').getAttribute('style'); await wait(page, 250);
       assert.equal(await page.locator('.expedition-player').getAttribute('style'), paused); assert.equal(await sprite.getAttribute('data-step'), '1');
       pass(`${viewport.width}: reduced motion and pause`);
-      // Shared expression atlas must also reach the activity, entrance, reward and certificate.
+      // Shared expression atlas must also reach the activity, reward and certificate (the entrance opens without a card).
       await page.evaluate(() => window.__pixelTest.startActivity(1)); await wait(page, 300);
       assert.equal(await page.locator('.coach-robot').count(), 1);
       await page.screenshot({ path: `${out}/${viewport.width}-activity.png` });
-      await page.evaluate(() => { window.__pixelTest.go('city'); window.__pixelTest.showPlace(0); }); await wait(page);
-      assert.ok((await page.locator('.entrance-portrait .sprite-mascot').getAttribute('style')).includes('-poses-pixel.webp'));
-      await page.screenshot({ path: `${out}/${viewport.width}-entrance.png` });
       await page.evaluate(() => { window.__pixelTest.go('city'); window.__pixelTest.showReward(0); }); await wait(page);
       assert.equal(await page.locator('.reward-celebration .sprite-mascot').count(), 2);
       await page.screenshot({ path: `${out}/${viewport.width}-reward.png` });

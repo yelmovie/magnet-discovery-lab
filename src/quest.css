@@ -517,8 +517,8 @@ body.quest-mode #app .choice.selected { background: var(--quest-gold-light); bor
 body.quest-mode #app :is(.btn, .choice):active { translate: 0 3px; box-shadow: 0 1px 0 #7e8d73; }
 
 /* Shared outcome surfaces remain compact so the world stays visible. */
-body.quest-mode :is(.modal-backdrop, dialog)::backdrop { background: #103943b8; }
-body.quest-mode .modal-backdrop { z-index: var(--layer-modal); background: #103943b8; }
+body.quest-mode :is(.modal-backdrop, dialog)::backdrop { background: var(--scrim); }
+body.quest-mode .modal-backdrop { z-index: var(--layer-modal); background: var(--scrim); }
 body.quest-mode :is(.modal, dialog) {
   border: 2px solid #788366; border-radius: var(--radius-lg); background: var(--quest-paper);
   color: var(--color-text-main); box-shadow: var(--shadow-popover); font-family: var(--font-body);

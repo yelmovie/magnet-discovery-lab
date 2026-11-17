@@ -1,4 +1,6 @@
 /* Shared classroom layout: readable type, compact content, visible illustrated world. */
+/* One popup backdrop for every modal and <dialog> (3-second rule: at most 0.3 dark, the scene stays visible). */
+:root, ::backdrop { --scrim: #10394340; }
 body.quest-mode {
   --font-size-caption: clamp(16px, 1.25vw, 20px);
   --font-size-body: clamp(20px, 1.6vw, 28px);
@@ -6,7 +8,7 @@ body.quest-mode {
   --font-size-question: clamp(28px, 2.35vw, 42px);
 }
 body.quest-mode :is(p,button,summary,label,li) { line-break:strict; }
-body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:#103943b0; }
+body.quest-mode .modal-backdrop { display:grid; place-items:center; padding:20px; background:var(--scrim); }
 body.quest-mode .modal {
   position:relative; width:min(860px,100%); max-width:1040px;
   max-height:calc(100dvh - 40px); min-height:0; margin:0;
@@ -252,3 +254,9 @@ body.quest-mode .game-settings-reset { margin:auto; width:min(600px,calc(100vw -
   body.quest-mode .concept-actions button { width:100%; }
 }
 @media print { #app :is(.lab-coach,.mission-wayfinding,.mission-study-tools) { display:none!important; } }
+
+/* 3-second rule (2026-11-17): result, confirm and record cards cover at most half the screen.
+   Films, picture zoom, 3D and the full resident scene keep their own sizes. */
+@media (min-width:900px) and (min-aspect-ratio:1/1) {
+  body.quest-mode .modal:not(.concept-dialog,.learning-visual-dialog,.apparatus-figure-dialog,.view3d-dialog,.resident-conversation) { max-width:min(50vw,860px); }
+}

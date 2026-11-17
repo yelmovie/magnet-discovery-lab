@@ -32,7 +32,7 @@ import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
 import { rewardBelt } from './rewards';
 import { learningNotesMarkup } from './learning-notes';
-import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, missionNames, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
+import { accessible, completeActivity, coreReady, designResult, emptyActivity, evidenceNames, freshSave, progress, ready, record, stageNames, type Activity, type Evidence, type Save } from './domain';
 import { resetSave, load, persist, persistenceError, migrationNotice } from './storage';
 import { ideaView } from './idea-lab';
 import { usesIdeaLab } from './idea-model';
@@ -178,7 +178,7 @@ function showResident(stage:number, completion?: { reward: string; destination: 
     playEffect('success',s.settings);touch();
   });
 }
-function showPlace(index:number,guided=false) {
+function showPlace(index:number) {
   const open=adminOn() || index<=s.evidence.length, done=index<s.evidence.length;
   if(adminOn()){
     if(index===5){s.final.report=true;go(s.final.complete?'certificate':'core');}
@@ -189,9 +189,10 @@ function showPlace(index:number,guided=false) {
     if(index===5){s.final.report=true;touch();go(s.final.complete?'certificate':'core');}
     else startActivity(index*2+(done||!s.completed.includes(index*2+1)?1:2),done);
   };
-  if(guided&&open){enterPlace();return;}
-  showModal(`<div class="entrance-portrait">${mascot('mili',130,done?3:0)}</div><h2>${index===5?'중앙 광장':stageNames[index]}</h2><p>${open ? index===5?'실험 사진을 보며 다섯 가지 발견을 수첩에 정리해 보자.':missionNames[index] : '앞 구역의 탐구를 마치면 새 도구와 함께 이곳이 열려.'}</p>${open&&index<5?`<p class="entrance-reward-preview">고치면 <strong>${questRewards[index].name}</strong>를 받아 다음 의뢰에 쓸 수 있어.</p>`:''}${open?button('enter',index===5?s.final.complete?'내 수료증 보기':'발견 정리 시작':done?'다른 방법으로 다시 탐구':'안으로 들어가기 →','primary'):button('modal-close','길로 돌아가기','primary')}${done?'<p>처음 발견과 복구 기록은 그대로 보관돼.</p>':''}`, '시설 입구');
-  document.querySelector('[data-action="enter"]')?.addEventListener('click',()=>{modalCleanup?.();enterPlace();});
+  // Walking or tapping in behaves like the guided route: open places start at once, locked ones only say why.
+  if(open){enterPlace();return;}
+  const place=index===5?'중앙 광장':stageNames[index], last=place.charCodeAt(place.length-1)-0xac00;
+  notify(`${place}${last>=0&&last%28?'은':'는'} 앞 구역의 탐구를 마치면 열려.`);
 }
 let currentView: View;
 // Teacher unlock opens every step, so "next" always moves on without writing completion records.
@@ -210,7 +211,7 @@ function activityPage() {
   const quick=screen===2&&a.values.mailboxQuickRepair===true;
   currentView=quick?missionView(screen,a,model):inquiryView(screen,a,model,adminOn());
   const next=nextStep(a);
-  return `<section class="quest-activity${quick?' quick-mailbox':''}${adminOn() ? ' is-preview' : ''}"><header class="mission-head"><span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]}${quick?'':` · 탐구 ${screen%2?1:2}/2`}</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${quick?'':inquirySteps(screen,a)}</div><p class="mission-next-action" aria-live="polite" aria-atomic="true"></p></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button></section>`;
+  return `<section class="quest-activity${quick?' quick-mailbox':''}${adminOn() ? ' is-preview' : ''}"><header class="mission-head"><span class="stage-label">구역 ${Math.ceil(screen/2)} · ${stageNames[Math.floor((screen-1)/2)]}${quick?'':` · 탐구 ${screen%2?1:2}/2`}</span><h1 class="mission-question">${missionQuestion(screen,a)}</h1><div class="mission-head-row">${quick?'':inquirySteps(screen,a)}</div></header><div id="experiment-root" class="screen-${screen}">${currentView.html}</div>${coachMarkup(screen)}<p class="mission-next-action" aria-live="polite" aria-atomic="true"></p><button class="quest-cta mission-cta" data-action="complete" ${next.enabled?'':'disabled'}>${next.label} ${icon('arrow',24)}</button></section>`;
 }
 function openRecords() {
   const a = s.activities[screen];

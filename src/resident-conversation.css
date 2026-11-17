@@ -3,7 +3,7 @@ body.quest-mode .modal-backdrop.resident-conversation-backdrop {
   display: block;
   padding: 0;
   overflow: hidden;
-  background: #172d287a;
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }

@@ -112,3 +112,7 @@ body.quest-mode #app:has(.final-review) { min-width: 0; height: 100dvh; }
   #app .final-answer { min-height: 48px; padding-block: 7px; }
   #app .final-answer-feedback { min-height: 66px; margin: 8px 0; padding: 8px 10px; }
 }
+
+/* 3-second rule (2026-11-17): the bookmark tab marks the open page and the header counts finished
+   pages, so the page number is not repeated; the line above the buttons is the one instruction. */
+#app .final-question-label, #app .final-answer-instruction { display: none; }

@@ -1,7 +1,7 @@
 
 #app .mission-board > .puzzle-crisis {
   position: absolute; z-index: calc(var(--layer-controls) + 2); inset: 0; display: grid; place-items: center; padding: 3%;
-  border-radius: inherit; background: #173f47b3;
+  border-radius: inherit; background: var(--scrim);
 }
 #app .puzzle-crisis-card {
   display: grid; grid-template-columns: clamp(62px, 11vw, 142px) minmax(0, 1fr);

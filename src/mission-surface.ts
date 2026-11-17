@@ -105,9 +105,9 @@ export class Surface {
   }
   base() {
     this.ctx.clearRect(0, 0, W, H);
-    // Quiet the detailed room behind the actual draggable apparatus.
+    // A light mat (under half opaque) separates the apparatus while the room picture stays visible.
     const mat=this.ctx;mat.save();mat.shadowColor='#193f3a28';mat.shadowBlur=18;mat.shadowOffsetY=7;
-    mat.fillStyle='#fff9ebdf';mat.strokeStyle='#c5ac76';mat.lineWidth=2;
+    mat.fillStyle='#fff9eb73';mat.strokeStyle='#c5ac7699';mat.lineWidth=2;
     const wide=(this.n===8||this.n===9||this.n===10)&&this.c.root.querySelector('.bench-wide');
     mat.beginPath();if(wide)mat.roundRect(30,108,1220,480,26);else mat.roundRect(128,226,1080,384,26);
     mat.fill();mat.shadowBlur=0;mat.shadowOffsetY=0;mat.stroke();mat.restore();
@@ -162,7 +162,7 @@ export class Surface {
   label(text: string, p: Point, small = false, color = '#203e40') {
     // The inquiry header already gives this instruction and progress count.
     if(this.a.values.inquiryVersion&&p.x===50&&(p.y===26||p.y===29))return;
-    const g = this.ctx,scale=this.c.root.querySelector('canvas')!.getBoundingClientRect().width/W,font=Math.max(small?20:26,(small?16:20)/Math.max(.5,scale));g.save(); g.font = `${small?'600':'700'} ${font}px "NanumSquareNeo", Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const g = this.ctx,scale=this.c.root.querySelector('canvas')!.getBoundingClientRect().width/W,font=Math.max(small?20:26,(small?18:22)/Math.max(.5,scale));g.save(); g.font = `${small?'600':'700'} ${font}px "NanumSquareNeo", Pretendard, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.lineWidth = 7; g.strokeStyle = '#fff8e4ed'; g.strokeText(text, p.x / 100 * W, p.y / 100 * H); g.fillStyle = color; g.fillText(text, p.x / 100 * W, p.y / 100 * H); g.restore();
   }
   target(p: Point, name: string, w = 130, h = 90) {

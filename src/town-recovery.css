@@ -49,7 +49,7 @@
 }
 body.quest-mode .modal-backdrop.town-reunion-backdrop {
   display: grid; place-items: end center; padding: 12px 14px max(16px, env(safe-area-inset-bottom));
-  background: linear-gradient(0deg,#182b3490,transparent 38%); backdrop-filter: none;
+  background: linear-gradient(0deg,var(--scrim),transparent 38%); backdrop-filter: none;
 }
 body.quest-mode .modal.town-reunion {
   width: min(560px,100%); margin: 0; padding: 17px 19px; border: 2px solid #bb9353;
