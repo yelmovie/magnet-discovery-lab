@@ -7,17 +7,17 @@ const fs = require('node:fs');
 const base = process.env.TEST_URL || 'http://127.0.0.1:5173/';
 const out = process.argv[2] || 'test-results/run-stage';
 const empty = () => ({ values: {}, points: {}, records: [], mask: [], trials: [] });
-const seedState = (settings = {}) => ({
+const seedState = (settings = {}, activities = {}) => ({
   version: 2, revision: 1, started: true, updated: new Date().toISOString(), completed: [1, 2, 3, 4, 5, 6, 7],
   evidence: [0, 1, 2].map(stage => ({ stage, date: new Date().toISOString(), activities: [empty(), empty()], summary: [] })),
-  activities: {}, design: { template: 'box', pair: 'iron', pole: 'N', gap: 65, aligned: false, revision: 0 }, designs: {}, resume: 8, city: { x: 233, y: 245 },
+  activities, design: { template: 'box', pair: 'iron', pole: 'N', gap: 65, aligned: false, revision: 0 }, designs: {}, resume: 8, city: { x: 233, y: 245 },
   settings: { sound: false, music: false, musicVersion: 1, effects: false, musicVolume: .35, motion: true, nickname: '', autoplay: true, autoplaySpeed: 1, ...settings },
   final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' }, greetedResidents: [0, 1, 2], mapEncounters: {},
 });
 const passed = [];
 const check = name => { passed.push(name); console.log('ok -', name); };
 
-async function open(browser, viewport, settings) {
+async function open(browser, viewport, settings, activities) {
   const context = await browser.newContext({ viewport }), page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -29,7 +29,7 @@ async function open(browser, viewport, settings) {
   await page.evaluate(state => new Promise((resolve, reject) => {
     const request = indexedDB.open('push-pull-city'); request.onerror = reject;
     request.onsuccess = () => { const db = request.result, tx = db.transaction('saves', 'readwrite'); tx.objectStore('saves').put(state, 'main'); tx.oncomplete = () => { db.close(); resolve(); }; tx.onerror = reject; };
-  }), seedState(settings));
+  }), seedState(settings, activities));
   await page.reload(); await page.waitForFunction(() => !!window.__lab);
   await page.locator('[data-action="start"]').click();
   await page.waitForFunction(() => window.__lab.screen === 8 && !!document.querySelector('.mission-board'));
@@ -71,7 +71,7 @@ async function play(page, control, shots) {
   let jumps = 0;
   await until(page, async () => { const s = await at(page); if (s < 1 && ++jumps % 7 === 0) await control.jump(); return s >= 4; }, '연습 길 통과', 60000);
   assert.ok(await car(page) === 27, '힘이 닿지 않는 연습 길에서는 수레가 움직이지 않는다');
-  check(`${control.name}: 연습 길(턱·틈)을 지나 출발역에 닿는다`);
+  check(`${shots} ${control.name}: 연습 길(턱·틈)을 지나 출발역에 닿는다`);
   // Stretch 1: get in front of the cart and pull it to the middle station.
   await until(page, async () => await car(page) >= 42.2, '1구간 끌기');
   await control.release('up');
@@ -79,7 +79,7 @@ async function play(page, control, shots) {
   await control.lower();
   await page.waitForFunction(() => window.__lab.save.activities[8].values.segment0 === true, null, { timeout: 6000 });
   assert.equal(await page.locator('[data-action="complete"]').isEnabled(), false, '중간역 정차만으로는 끝나지 않는다');
-  check(`${control.name}: 1구간 — 당겨서 중간역 칸에 세운다`);
+  check(`${shots} ${control.name}: 1구간 — 당겨서 중간역 칸에 세운다`);
   await page.locator('[data-mission="delivery-next"]').click();
   await page.waitForFunction(() => window.__lab.save.activities[8].values.round === 1);
   await page.waitForSelector('.mission-board[data-run-ready]');
@@ -102,7 +102,7 @@ async function play(page, control, shots) {
   assert.ok(Math.abs(a.values.car - 60) < 3 && a.values.controlled1 > 5 && a.values.cartMethod1 === 'push');
   await page.waitForFunction(() => document.querySelector('[data-action="complete"]')?.disabled === false);
   await page.screenshot({ path: `${out}/${shots}-4-done.png` });
-  check(`${control.name}: 2구간 — 유리문 앞에서 밀어 보관실 칸에 세우고 기존 기록이 남는다`);
+  check(`${shots} ${control.name}: 2구간 — 유리문 앞에서 밀어 보관실 칸에 세우고 기존 기록이 남는다`);
 }
 
 (async () => {
@@ -133,6 +133,12 @@ async function play(page, control, shots) {
     check('1024×768: 조작 버튼이 화면 안에 있고 52px 이상이며 이름이 있다');
     await play(page, buttons(page), 'buttons-1024');
     assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
+    // The other two pairings of screen size and controls.
+    for (const [viewport, control, shots] of [[{ width: 1024, height: 768 }, keyboard, 'keys-1024'], [{ width: 1280, height: 800 }, buttons, 'buttons-1280']]) {
+      run = await open(browser, viewport);
+      await play(run.page, control(run.page), shots);
+      assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
+    }
 
     // 3. The bench stays available: switch in the middle of the first stretch and back.
     run = await open(browser, { width: 1280, height: 800 });
@@ -163,7 +169,23 @@ async function play(page, control, shots) {
     check('기존 2D 실험대로도 두 구간을 끝까지 배달하고 같은 기록이 남는다');
     assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
 
-    // 4. Reduced motion opens the bench and offers no 3D button.
+    // 4. Falling into the gap: back to the last point passed, no penalty, and a hint after the third fall.
+    run = await open(browser, { width: 1280, height: 800 }, {}, { 8: { values: { playVersion: 4, mechanicsVersion: 1, paceVersion: 1, puzzleVersion: 1, puzzleRevision: 2, view: 'run', round: 0, crisisSeen: true }, points: { controller: { x: -9, y: 50 } }, records: [], mask: [], trials: [] } });
+    await run.page.waitForSelector('.mission-board[data-run-ready]', { timeout: 20000 });
+    const tip = () => run.page.evaluate(() => document.querySelector('.run-tip').textContent);
+    await run.page.keyboard.down('ArrowUp');
+    for (let fall = 1, last = await at(run.page); fall <= 3; fall++) {
+      // A fall shows as the runner jumping back along the course.
+      await until(run.page, async () => { const now = await at(run.page), back = now < last - 4; last = now; return back; }, `${fall}번째 떨어짐`, 15000);
+      assert.ok(Math.abs(last - -11) < 2, `틈 앞 지점으로 돌아온다: ${last}`);
+      assert.ok((await tip()).includes(fall < 3 ? '떨어졌어' : '당이:'), await tip());
+    }
+    await run.page.keyboard.up('ArrowUp');
+    assert.equal((await activity(run.page)).trials.length, 0); assert.equal(await car(run.page), 27);
+    check('틈에 떨어지면 지나온 지점으로 돌아오고, 세 번째에는 당이의 도움말이 나온다');
+    assert.deepEqual(run.errors, [], 'console errors'); await run.context.close();
+
+    // 5. Reduced motion opens the bench and offers no 3D button.
     run = await open(browser, { width: 1280, height: 800 }, { motion: false });
     await run.page.waitForSelector('[data-drag="controller"]');
     assert.equal(await run.page.locator('.run-mode').count(), 0); assert.equal(await run.page.locator('[data-mission="view-run"]').count(), 0);
