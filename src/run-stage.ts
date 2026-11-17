@@ -105,8 +105,9 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
 
   // --- Course: basic shapes. The ground and the practice step are the only things the runner collides with.
   if (ground) { ground.wrapS = ground.wrapT = THREE.RepeatWrapping; ground.anisotropy = 4; }
-  const street = new THREE.MeshLambertMaterial(ground ? { map: ground } : { color: '#c9b891' });
-  const stone = new THREE.MeshLambertMaterial(ground ? { map: ground, color: '#e9d9bd' } : { color: '#b79f78' });
+  // The stones are toned down a little so the characters and the magnets stand out.
+  const street = new THREE.MeshLambertMaterial(ground ? { map: ground, color: '#efe4d6' } : { color: '#c9b891' });
+  const stone = new THREE.MeshLambertMaterial(ground ? { map: ground, color: '#d9c9b4' } : { color: '#b79f78' });
   const solid = new THREE.Group(), BACK = courseStart - 34, FAR = 150, [stepFrom, stepTo] = practice.step, [gapFrom, gapTo] = practice.gap;
   solid.add(slab(BACK, stepFrom, -2.95, 4.75, 0, 1.2, street, 2), slab(stepFrom, stepTo, -2.95, 4.75, practice.stepHeight, 1.2 + practice.stepHeight, stone, 2),
     slab(stepTo, gapFrom, -2.95, 4.75, 0, 1.2, street, 2), slab(gapTo, FAR, -2.95, 4.75, 0, 1.2, street, 2));
@@ -129,13 +130,13 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
   for (const [inner, way] of [[-2.9, -1], [4.7, 1]] as const) {
     // One long block of shops per side: the picture faces the street, plain plaster everywhere else.
     const geometry = new THREE.BoxGeometry(3.6, WALL, length), face = way < 0 ? 0 : 1;
-    if (shops) { const uv = geometry.attributes.uv; for (let n = face * 4; n < face * 4 + 4; n++) uv.setX(n, uv.getX(n) * length / (WALL * 1.5)); }
+    if (shops) { const uv = geometry.attributes.uv; for (let n = face * 4; n < face * 4 + 4; n++) uv.setX(n, uv.getX(n) * length / (WALL * 2)); }
     const sides = Array.from({ length: 6 }, (_, n) => n === face && shops ? new THREE.MeshLambertMaterial({ map: shops }) : plaster);
     const block = new THREE.Mesh(geometry, sides); block.position.set(inner + way * 1.8, WALL / 2, middle); scene.add(block);
     const eaves = new THREE.Mesh(new THREE.BoxGeometry(4, .3, length), roof); eaves.position.set(inner + way * 1.75, WALL + .15, middle); scene.add(eaves);
     for (let s = BACK + 6, n = way < 0 ? 0 : 2; s < FAR; s += 26, n++) {
       // A few round towers with teal domes break the roof line.
-      const tall = 2.2 + n % 3 * .7, at = z(s + (way < 0 ? 0 : 13));
+      const tall = .5 + n % 3 * .35, at = z(s + (way < 0 ? 0 : 13));
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, tall, 14), plaster); tower.position.set(inner + way * 2, WALL + .3 + tall / 2, at);
       const dome = new THREE.Mesh(new THREE.SphereGeometry(1.3, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), teal); dome.position.set(inner + way * 2, WALL + .3 + tall, at);
       scene.add(tower, dome);
@@ -148,7 +149,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
   scene.add(slab(BACK, gapFrom, -2.9, -1.52, PAVE, PAVE, stone, 2), slab(gapTo, FAR, -2.9, -1.52, PAVE, PAVE, stone, 2), slab(railFrom - 4, railTo + 4, 3, 4.7, PLATFORM, PLATFORM, planks));
   for (const x of [-2.86, 4.66]) scene.add(slab(gapFrom, gapTo, x - .04, x + .04, 0, 2.6, dark));
   // The far end of the street closes on the city view.
-  if (skyline) { const vista = new THREE.Mesh(new THREE.PlaneGeometry(42, 28), new THREE.MeshBasicMaterial({ map: skyline, fog: false })); vista.position.set(.9, 12.5, z(FAR) + .2); scene.add(vista); }
+  if (skyline) { const vista = new THREE.Mesh(new THREE.PlaneGeometry(72, 24), new THREE.MeshBasicMaterial({ map: skyline, fog: false })); vista.position.set(.9, 8.5, z(FAR) + .2); scene.add(vista); }
   else scene.add(slab(FAR, FAR + 1, -2.9, 4.7, WALL, WALL, plaster));
   // Standing props: lamps, trees, flowers, crates, benches and signals from one sheet.
   if (props) {
@@ -160,10 +161,10 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     for (let s = BACK + 4, n = 0; s < FAR - 20; s += 9, n++) {
       if (overGap(s)) continue;
       const lift = onStep(s) ? practice.stepHeight : PAVE;
-      if (n % 3 === 0) stand(0, 0, 2.9, -2.2, lift, s); else if (n % 3 === 1) stand(1, 0, 2.3, -2.25, lift, s); else stand(n % 2 ? 2 : 1, n % 2 ? 0 : 1, 1.25, -2.2, lift, s);
+      if (n % 3 === 0) stand(0, 0, 2.9, -2.2, lift, s); else if (n % 3 === 1) stand(1, 0, 2.3, -2.25, lift, s); else if (n % 2) stand(2, 0, 1.3, -2.2, lift, s); else stand(1, 1, 1.5, -2.2, lift, s);
     }
     // Before the rail starts, the right side of the street is a small market corner.
-    for (const [column, row, tall, x, s] of [[2, 0, 1.4, 3.4, -27], [1, 0, 2.4, 4, -22], [0, 1, 1.25, 3.2, -9], [0, 0, 2.9, 4.1, -1], [1, 1, 1.15, 3.3, 6], [2, 0, 1.4, 3.6, 12]] as const) stand(column, row, tall, x, onStep(s) ? practice.stepHeight : 0, s);
+    for (const [column, row, tall, x, s] of [[2, 0, 1.4, 3.4, -27], [1, 0, 2.4, 4, -22], [0, 1, 1.25, 3.2, -9], [0, 0, 2.9, 4.1, -1], [1, 1, 1.5, 3.3, 6], [2, 0, 1.4, 3.6, 12]] as const) stand(column, row, tall, x, onStep(s) ? practice.stepHeight : 0, s);
     for (const [column, row, tall, x, s] of [[2, 1, 2.3, 4.2, railFrom - 1.5], [0, 1, 1.2, 4.1, 23.5], [0, 1, 1.2, 4.15, 31], [0, 0, 2.9, 4.3, 38], [0, 1, 1.2, 4.1, 49], [0, 0, 2.9, 4.3, 66], [2, 1, 2.3, 4.2, railTo + 1.5]] as const) stand(column, row, tall, x, PLATFORM, s);
   }
 
@@ -321,7 +322,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     // Fixed chase camera. Near the cart it looks between the runner and the cart, so who is in front stays visible.
     const s = sOf(p.z), near = Math.abs(next.car - s) < 22 ? Math.max(-7, Math.min(2.5, (next.car - s) * .45)) : 0;
     focusZ += (z(s + near) - focusZ) * .12;
-    camera.position.set(.9, 6, focusZ + 8.8); camera.lookAt(1.05, .9, focusZ - 1.8);
+    camera.position.set(.9, 5.9, focusZ + 9); camera.lookAt(1.05, 1.15, focusZ - 2.6);
     renderer.render(scene, camera);
   }
 

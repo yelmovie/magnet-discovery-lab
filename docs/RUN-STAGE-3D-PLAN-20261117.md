@@ -233,3 +233,56 @@
 | 파일 대조 | `node scripts/verify-release.mjs https://magnet-city.pages.dev` → 213/213 일치 |
 | 운영 동작 | `node scripts/run-stage-release-smoke.cjs https://magnet-city.pages.dev` → 운영 주소에서 활동 8이 3D로 열리고, 키보드로 두 구간을 끝까지 배달했고, IndexedDB에 `view: run`, `segment0·1`, 증거 `delivery0·1`이 남았으며, 「기존 방식으로 하기」로 2D가 열렸다 |
 | 미추적 문서 3개 | 커밋하지 않았다 |
+
+---
+
+## 화면 다듬기 · 2026-11-17 (사용자 요청: 그림 고도화, 겹침·잘림·어색한 물리 점검)
+
+### 점검 방법
+
+`.tmp/hud-audit.cjs`(커밋하지 않는 점검용)로 1920×1080, 1280×800, 1024×768, 915×412, 830×515, 768×1024의 6개 화면에서 장면 4개(연습 길, 1구간 끌기, 1구간 완료, 2구간 유리문)를 열어 화면 요소 14종의 사각형이 서로 겹치거나 화면 밖으로 나가는지 계산하고 캡처를 직접 봤다. 고친 뒤 24개 조합 모두 겹침 0건이다.
+
+### 고친 것
+
+| 종류 | 무엇이 이상했나 | 고친 방법 |
+|---|---|---|
+| 겹침 | 1920×1080에서 방향판과 도우미 「자꾸」가 겹침 | 도우미가 방향판 옆에 있을 때만 그 폭만큼 비켜남(`--run-pad-left`) |
+| 겹침 | 작은 가로 화면에서 안내 문구와 자석 표시가 겹침 | 자석 표시를 N·S 두 칸으로 줄여 진행 줄로 올림 |
+| 겹침 | 작은 화면에서 「유리벽 너머로 배달」이 방향판을 덮음 | 작은 화면에서는 오른쪽 버튼 줄에 둠. 큰 화면에서는 안내 문구 아래에 둬 수레를 가리지 않게 함 |
+| 겹침 | 완료 뒤 「개념 영상 보기」가 점프 버튼을 덮음 | 다음 단계 버튼이 보이면 오른쪽 버튼들이 위로 올라감 |
+| 잘림 | 빈 안내 칩이 떠 있음, 길과 벽 사이로 하늘이 비침 | 칩을 숨김, 바닥을 벽 안쪽까지 넓힘 |
+| 물리 | 역 표지판과 깃발이 공중에 떠 있음 | 승강장 위 기둥에 달음 |
+| 물리 | 수레 바퀴가 레일 바깥에 있음, 수레 자석이 유리 옆면에 닿음 | 바퀴를 레일 위로, 자석을 7cm 안쪽으로 |
+| 물리 | 밀이가 유리문 앞 끝에 서면 자석 끝이 유리를 뚫음 | 유리문을 자석 길이만큼 뒤로 물림(실험대 49.0) |
+| 물리 | 1구간에서 수레를 끝까지 밀면 보관실 끝벽과 레일 끝을 뚫음 | 레일을 84, 보관실을 82까지 늘림(수레가 갈 수 있는 끝은 79) |
+| 물리 | 막대자석이 밀이 옆에 떠 있음 | 나무 손잡이를 달고 손 높이로 내림. 내린 자석은 반투명 |
+| 물리 | 배달한 택배가 레일 옆 바닥에 놓임 | 승강장 받침대 위에 내려놓음 |
+| 물리 | 유리문이 닫히거나 떨어져 돌아올 때 당이가 문을 지나 미끄러짐 | 따라오는 경로를 그 자리에서 다시 시작. 문이 닫히면 "유리문이 닫혔어" 안내 |
+
+수레가 밀이 자석에서 3m(실험대 6칸) 뒤까지만 따라오는 것과 힘이 9m(18칸)까지 닿는 것은 2D 실험대의 규칙 그대로다. 화면의 "설명 모형" 문구가 이 과장을 알린다.
+
+### 그림을 넣을 자리
+
+길 양옆을 상점 줄 벽(높이 4.3m)과 지붕·청록 돔 탑으로 바꾸고, 왼쪽 보도와 오른쪽 승강장을 만들고, 소품 자리 30여 곳을 정했다. 그림 파일이 없으면 단색 벽과 빈 보도로 보이고 오류는 나지 않는다.
+
+### 생성한 그림 (GPT 이미지, `gpt-imagegen` 스킬, 잠금 래퍼로 한 장씩)
+
+원본은 `assets/source/run-stage-20261117/`, 게임용 파일은 `public/assets/run-stage/`에 있다. 변환은 `node scripts/prepare-run-stage-art.mjs`(크기 조정과 WebP 인코딩, 소품은 투명 픽셀 비율 확인)로 한다.
+
+| 그림 | 원본 | 게임용 | 쓰이는 곳 | 검수 |
+|---|---|---|---|---|
+| 조약돌 바닥 | `street-tile.png` 1254×1254 | `street-tile.webp` 512×512, 45KB | 길, 턱, 왼쪽 보도(2m마다 반복) | 글자·로고 없음, 네 변이 이어짐, 물체·그림자 없음 |
+| 상점 줄 정면 | `shop-row.png` 1774×887 | `shop-row.webp` 1536×768, 243KB | 길 양옆 벽(8.6m마다 반복) | 글자 없음(시계는 눈금만), 좌우가 이어짐, 사람 없음 |
+| 소품 6종 | `props-sheet.png` 1536×1024 | `props-sheet.webp` 1536×1024, 266KB | 가로등·나무·꽃수레(보도·길가), 상자 더미·신호기(승강장), 벤치 | 진짜 투명 배경(완전 투명 74.2%), 3×2 칸 정렬, 바닥선이 칸 높이 93%로 같음 |
+| 도시 원경 | `city-skyline.png` 2172×724 | `city-skyline.webp` 1536×512, 27KB | 길 끝 | 글자·사람 없음. 카메라가 아래를 보고 있어 화면에는 길 끝 안개처럼 조금만 보인다 |
+
+추가 다운로드는 그림 4장 약 0.58MB와 코드 약 0.61MB로 합계 약 1.2MB다(목표 3MB 이내).
+
+공통 그림체 문구: `cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly`
+
+- **street-tile:** `Seamless tileable top-down texture of a town street paved with rounded cobblestones in warm cream, honey and soft sand colors with thin darker mortar lines and a few tiny moss tufts, perfectly flat even lighting, no shadows, no objects, no perspective, the pattern continues perfectly across all four edges, square image. Style: cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly. No text, no letters, no numbers, no logo.`
+- **shop-row:** `Flat front elevation, orthographic, no perspective: one continuous row of four adjoining cute two-storey town shops seen straight on, filling the whole image from the left edge to the right edge and from the bottom edge to the top edge. Ground floor: arched wooden doors, round and square shop windows, striped awnings, hanging lanterns, flower boxes, barrels. Upper floor: shuttered windows, small balconies, brass pipes and one little gear clock. The wall ends in a straight stone cornice exactly at the top edge, no roofs and no sky visible. The left edge and right edge match so the row tiles seamlessly sideways. Style: cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly. No people, no characters, no signs with writing, no text, no letters, no numbers, no logo.`
+- **props-sheet:** `TRANSPARENT game object sprites in a strictly aligned sprite atlas with exactly 3 columns and 2 rows, canvas 1536x1024, six equal 512x512 cells, one object centered in each cell with clear empty margin, REAL transparent alpha background, no painted backdrop, no ground shadows. Row 1: a brass street lamp with a warm glowing lantern on a slim post; a small round tree in a wooden planter tub; a wooden flower cart planter full of red and yellow flowers. Row 2: a neat stack of two wooden crates with a brown paper parcel tied with string on top; a wooden park bench with brass armrests; a small station signal post with a round brass bell and a teal pennant. All objects are drawn from the same slightly raised front view, standing upright with their base on the same baseline near the bottom of each cell. Style: cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly. No people, no characters, no text, no letters, no numbers, no logo.`
+- **city-skyline:** `Wide panoramic backdrop of a whimsical canal city far in the distance under a soft blue morning sky with a few fluffy clouds: domed towers with teal-blue roofs, a clock tower, brass pipes, warm terracotta rooftops, a stone bridge, everything hazy and pale so it reads as far away, the lower third fades into light cream mist. Style: cozy storybook steampunk canal town for an elementary science game, cream stone walls, teal-blue domes and shutters, warm terracotta roof tiles, small brass pipes and gears, hand-painted 2.5D game art with soft clean outlines and gentle warm light, cute and friendly. No people, no characters, no vehicles, no text, no letters, no numbers, no logo.`
+
+생성 차례는 다른 세션들과 겹쳐 첫 장이 나오기까지 약 80분이 걸렸다. `gpt-image.sh`를 백그라운드에서 돌릴 때는 `< /dev/null`을 붙여야 한다(안 붙이면 `codex exec`가 입력을 기다리며 멈춘다).
