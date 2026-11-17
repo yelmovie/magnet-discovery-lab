@@ -60,6 +60,8 @@ async function experiments(n) {
   await bounds(n);
   // Puzzle courses open with an emergency card that the learner dismisses once.
   if(n>=2&&n<=8){await page.locator('[data-mission="crisis-go"]').click();assert.equal(await page.locator('.puzzle-crisis').count(),0,'emergency card closes');}
+  // A new delivery opens as the 3D course (scripts/run-stage-regression.cjs). This journey checks the bench it can fall back to.
+  if(n===8){await page.locator('[data-mission="view-bench"]').click();await page.locator('[data-drag="controller"]').waitFor();}
   if(n===1){await assembleMailbox(page);await page.locator('[data-prompt-choice="stick"]').click();await put('lid',50,37);await put('lid',44,59);await page.waitForFunction(()=>window.__lab.save.activities[1].values.latch0);await page.locator('[data-prompt-choice="same"]').click();}
   if(n===2){
     // Puzzle course: the magnet alone does not hold while the strike plate is out of place.

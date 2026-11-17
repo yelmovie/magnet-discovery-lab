@@ -17,6 +17,8 @@ import { design, useDesign } from './missions-workshop';
 import { validTrial } from './trial-records';
 import { deliveryCourse, missionReady } from './mission-model';
 import { bindInquiryPrompts } from './inquiry-prompts';
+import { bindRunCourse, runCourseMarkup } from './run-course';
+import { runAvailable, runView } from './run-stage-rules';
 
 function hit(h: Hit) {
   // Match the whole pictured object, including its ends, rather than only its centre.
@@ -30,16 +32,18 @@ function hit(h: Hit) {
   return `<button class="canvas-hit ${h.kind ? `canvas-${h.kind}` : ''} ${handle?'canvas-handle':''} ${magnet?'canvas-magnet-hit':''}" data-drag="${h.id}" style="left:${h.p.x}%;top:${h.p.y}%;width:${size[0]/W*100}%;height:${size[1]/H*100}%" aria-label="${e(h.label)}. 끌어서 이동, 방향키로 이동 후 Enter로 놓기.">${grip}<span class="sr-only">${e(h.label)}</span></button>`;
 }
 function action(id: string, text: string, disabled = false) { return `<button class="mission-action" data-mission="${id}" ${disabled?'disabled':''}>${text}</button>`; }
-function initialize(a: Activity, n: number) {
+function initialize(a: Activity, n: number, preview: boolean) {
   if(a.values.playVersion===4)return;
   // Completed historical evidence is immutable. New attempts start a coherent new experiment.
   const fresh=emptyActivity();a.points=fresh.points;a.values={playVersion:4,mechanicsVersion:1,paceVersion:1};a.records=fresh.records;a.trials=[];a.mask=[];
   a.values.round=0;
   // Puzzle courses start with new attempts only; an activity already in progress keeps its rules.
   if(n>=2&&n<=8){a.values.puzzleVersion=1;a.values.puzzleRevision=2;}
+  // New deliveries open as the 3D course. A teacher's walkthrough starts on the bench and can switch.
+  if(n===8)a.values.view=preview?'bench':'run';
 }
 export function prepareQuickMailbox(a: Activity) {
-  initialize(a,2);
+  initialize(a,2,false);
   updateMailboxLayout(a);
   const verified=a.values.with0===true&&a.trials?.some(t=>t.key==='repair0'&&validTrial(t)&&t.outcome==='success');
   if(a.values.assemblyVersion!==1){
@@ -52,8 +56,8 @@ export function prepareQuickMailbox(a: Activity) {
   a.values.round=0;
   a.values.mailboxQuickRepair=true;
 }
-export function missionView(n: number, a: Activity, s: Save): View {
-  initialize(a,n);
+export function missionView(n: number, a: Activity, s: Save, preview = false): View {
+  initialize(a,n,preview);
   // Resume attempts saved on the removed return leg at the glass delivery result.
   if(n===8&&a.values.puzzleRevision===2&&a.values.round===2){
     const delivered=a.trials?.find(t=>t.key==='delivery1'&&validTrial(t)&&t.outcome==='success');
@@ -119,7 +123,10 @@ export function missionView(n: number, a: Activity, s: Save): View {
     else if(!a.values.platformCrossed)actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);
   }
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
-  if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('detach','자석 떼기');}
+  // Activity 8 has two views of one delivery: the 3D course and the bench it grew from.
+  const run=n===8&&runView(a,s);
+  if(run)actions=action('flip','극 뒤집기')+action('detach','자석 내리기');
+  else if(n===8){hits.push({id:'controller',p:p('controller',pt(20,40)),label:'택배 조종 자석'});actions=action('flip','조종 자석 뒤집기')+action('detach','자석 떼기');}
   if(n===8&&a.values.puzzleRevision===2&&round===0&&a.values.segment0)actions=action('delivery-next','유리벽 너머로 배달 →');
   if(n===9){
     if(!a.values.chosen)actions=`<div class="mission-requests workshop-requests">${action('box','<img src="/assets/learning/mailbox.webp" alt="">우편함이 자꾸 열려요')}${action('remote','<img src="/assets/learning/aquarium.webp" alt="">유리 너머 패드를 옮겨 주세요')}</div>`;
@@ -139,8 +146,9 @@ export function missionView(n: number, a: Activity, s: Save): View {
   const stage=Math.floor((n-1)/2), tool=stage&&n!==8?questRewards[stage-1]:null;
   const canExpand=n===8||n===9||n===10;
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
-  const viewToggle=canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>`:'';
-  return {html:`<div class="mission-world stage-${stage+1}${wide?' bench-wide':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board${keyRescue?' key-rescue-board':''}" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span></span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}</div>`,bind(c){
+  const viewToggle=run?'<button type="button" class="quest-text-button bench-view-toggle run-view-toggle" data-mission="view-bench">기존 방식으로 하기</button>'
+    :canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>${n===8&&a.values.puzzleRevision===2&&runAvailable(s)?'<button type="button" class="quest-text-button bench-view-toggle run-view-toggle" data-mission="view-run">3D 달리기로 하기</button>':''}`:'';
+  return {html:`<div class="mission-world stage-${stage+1}${wide||run?' bench-wide':''}${run?' run-mode':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board${keyRescue?' key-rescue-board':''}" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${run?runCourseMarkup():''}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span></span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}</div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuide(n,a));});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;
@@ -148,6 +156,7 @@ export function missionView(n: number, a: Activity, s: Save): View {
       button.setAttribute('aria-pressed',String(expanded));button.textContent=expanded?'기본 보기':'조작 화면 전체보기';
       a.values.benchWide=expanded;c.touch();surface.draw();
     });
-    const binders=[inspect,repair,salvage,a.values.liveKeyRescue?liveKeyLab:distanceLab,poles,rings,aquarium,delivery,design,useDesign];binders[n-1](surface);surface.draw();surface.cleanups.push(bindInquiryPrompts(c,n,()=>surface.draw()));bindPuzzleHud(c);return()=>surface.cleanup();
+    for(const view of ['bench','run'] as const)surface.button(`view-${view}`,()=>{a.values.view=view;surface.refresh();});
+    const binders=[inspect,repair,salvage,a.values.liveKeyRescue?liveKeyLab:distanceLab,poles,rings,aquarium,run?bindRunCourse:delivery,design,useDesign];binders[n-1](surface);surface.draw();surface.cleanups.push(bindInquiryPrompts(c,n,()=>surface.draw()));bindPuzzleHud(c);return()=>surface.cleanup();
   }};
 }

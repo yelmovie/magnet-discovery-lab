@@ -104,16 +104,26 @@ export function aquarium(v: Surface){
   v.drag('cleaner',handleStart,moveHandle,moveHandle,p=>pt(clamp(p.x,26,77),clamp(p.y,35,74)));
   v.cleanups.push(()=>cancelAnimationFrame(raf));
 }
-export function delivery(v: Surface){
+/** What the 3D course draws. The loop in delivery() stays the only judge of the cart. */
+export interface DeliveryState { round:number; car:number; start:number; goal:number; wall:boolean; pole:Pole; held:boolean; forceOn:boolean; attract:boolean; cartMoving:boolean; direction:number; atGoal:boolean; done:boolean; guide:number|null; status:string }
+/** The 3D course as an input device and a display for the bench model. */
+export interface DeliveryRun {
+  /** Move the runner, then give the hand magnet in bench coordinates (a lowered magnet sits on the bench's far row). Null until the course has loaded. */
+  walk(dt:number):Point|null;
+  show(state:DeliveryState):void;
+}
+export function delivery(v: Surface, run?: DeliveryRun){
   const r=Number(v.a.values.round||0),{wall:puzzle,start,goal}=deliveryRoute(v.a); let car=Number(v.a.values.car??start),pole=(v.a.values.controllerPole||'N') as Pole,raf=0,prev=performance.now(),moved=false,lastSave=0,controlled=Number(v.a.values[`controlled${r}`]||0);
   const carPoint=()=>pt(car,59);
-  const forceOn=()=>{const q=v.p('controller',pt(20,40));return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
+  // The bench keeps a dragged magnet; on the 3D course the point follows the runner and is not invented before she arrives.
+  const hand=()=>run?v.a.points.controller||pt(20,40):v.p('controller',pt(20,40));
+  const forceOn=()=>{const q=hand();return distance(q,carPoint())<18&&Math.abs(q.y-59)<12;};
   let speed=Number(v.a.values.cartSpeed||0);
   moved=speed!==0;
   const setSpeed=(value:number)=>{speed=value;v.a.values.cartSpeed=value;};
   let driveMethod=String(v.a.values[`cartMethod${r}`]||'');
   const stopProof=(key:string,label:string)=>{
-    const trial=v.proof(key,label,'success',{car,goal,pole,method:driveMethod,controllerY:v.p('controller',pt(20,40)).y,controlledDistance:Math.round(controlled),...(puzzle?{course:'glass-room'}:{})});
+    const trial=v.proof(key,label,'success',{car,goal,pole,method:driveMethod,controllerY:hand().y,controlledDistance:Math.round(controlled),...(puzzle?{course:'glass-room'}:{})});
     const startPole=v.a.values.startControllerPole;
     trial.initialObjects.forEach(o=>{if(o.id==='cart-magnet')o.pole='N';if(o.id==='controller'&&(startPole==='N'||startPole==='S'))o.pole=startPole;});
     trial.objects.forEach(o=>{if(o.id==='cart-magnet')o.pole='N';if(o.id==='controller')o.pole=pole;});
@@ -156,9 +166,21 @@ export function delivery(v: Surface){
   };
   const board=v.c.root.querySelector<HTMLElement>('.mission-board')!;
   const controller=v.c.root.querySelector<HTMLElement>('[data-drag="controller"]')!;
+  // On the 3D course the runner carries the magnet: the same point the bench lets the learner drag.
+  let held=false;
+  const carry=(m:Point|null)=>{
+    if(!m)return;
+    const q=pt(puzzle?Math.min(m.x,deliveryCourse.reach):m.x,m.y);
+    v.a.points.controller=q;held=Math.abs(q.y-59)<12;
+    // Walking the practice lane is not part of the delivery: the attempt starts when the force first reaches the cart.
+    if(!held||!moved&&!forceOn())return;
+    moved=true;
+    if(!v.a.points['initial:controller']){v.a.points['initial:controller']={...q};v.a.values.startControllerPole=pole;}
+    if(v.path.length<240&&(!v.path.length||distance(q,v.path[v.path.length-1])>1))v.path.push({...q});
+  };
   const carInfo=document.createElement('span');carInfo.className='sr-only';carInfo.dataset.object='cart-magnet';
   carInfo.textContent='왼쪽 N극, 오른쪽 S극을 가진 택배 카트';board.append(carInfo);
-  if(!v.a.points['initial:controller']&&!v.a.points.controller){
+  if(!run&&!v.a.points['initial:controller']&&!v.a.points.controller){
     v.a.points['initial:controller']=pt(20,40);v.a.values.startControllerPole=pole;
   }
   v.a.points['initial:cart-magnet']||=pt(start,59);v.set('cart-magnet',carPoint());
@@ -169,8 +191,8 @@ export function delivery(v: Surface){
   };
   let shownFeedback='',feedbackUntil=0,cartMoving=false;
   v.draw=()=>{
-    v.base();
-    const g=v.ctx,q=v.p('controller',pt(20,40)),{side,attract}=facing(q);
+    if(!run)v.base();
+    const g=v.ctx,q=hand(),{side,attract}=facing(q);
     const connected=forceOn(),done=v.has(`segment${r}`),atGoal=Math.abs(car-goal)<3;
     const direction=side*(attract?1:-1);
     if(v.feedback!==shownFeedback){shownFeedback=v.feedback;feedbackUntil=performance.now()+2200;}
@@ -186,6 +208,9 @@ export function delivery(v: Surface){
     if(atGoal&&connected&&!done)status='배달 장소야. 자석을 떼고 카트가 멈추는지 봐.';
     if(done)status='배달 완료 · 카트가 목적지에 멈췄어.';
     if(state.textContent!==status)state.textContent=status;
+    const guide=pt(car+Math.sign(goal-car)*(pole==='N'?12:-12),59);
+    const guided=!done&&(!connected||!moved)&&(!puzzle||guide.x<=deliveryCourse.reach&&(pole==='S'?puzzleHint(Number(v.a.values.puzzleMisses||0))>=2:car<deliveryCourse.reach-8));
+    if(run){run.show({round:r,car,start,goal,wall:puzzle,pole,held,forceOn:connected,attract,cartMoving,direction,atGoal,done,guide:guided?guide.x:null,status});return;}
 
     // Wheels sit on the rails. The dashed bay marks the same three-unit stopping tolerance as the model.
     if(!v.sprite('rail',140,462,1000,82)){
@@ -213,8 +238,7 @@ export function delivery(v: Surface){
     else v.sprite('parcel',cx-53,cy-92,102,89);
     v.magnet(carPoint(),'N',.51);
     if(!done){
-      const guide=pt(car+Math.sign(goal-car)*(pole==='N'?12:-12),59);
-      if((!connected||!moved)&&(!puzzle||guide.x<=deliveryCourse.reach&&(pole==='S'?puzzleHint(Number(v.a.values.puzzleMisses||0))>=2:car<deliveryCourse.reach-8)))v.target(guide,'',128,64);
+      if(guided)v.target(guide,'',128,64);
       if(connected&&cartMoving)v.arrow(pt(car-direction*3,42),pt(car+direction*5,42),attract?'#167d76':'#ac642c');
     }
     // A handle above the bar keeps the movable magnet distinguishable from the cart-mounted one.
@@ -222,8 +246,8 @@ export function delivery(v: Surface){
     g.save();g.fillStyle='#e5bb73';g.strokeStyle='#614725';g.lineWidth=4;g.beginPath();g.roundRect(x-23,y-42,46,36,9);g.fill();g.stroke();g.restore();
     v.magnet(q,pole,.72);
   };
-  v.drag('controller',pt(20,40),()=>{finishStopped();},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
-  v.button('detach',()=>{const q=v.p('controller',pt(20,40));v.set('controller',safePosition(pt(puzzle?20:q.x,38)));v.c.touch();if(finishStopped())return;v.tell(speed!==0?'자석을 멀리했어. 카트가 조금 더 굴러 멈추는지 봐.':'조종 자석을 멀리했어.');v.draw();});
+  if(!run)v.drag('controller',pt(20,40),()=>{finishStopped();},()=>{moved=true;},safePosition);v.button('flip',()=>{pole=opposite(pole);v.a.values.controllerPole=pole;v.c.touch();v.draw();});
+  if(!run)v.button('detach',()=>{const q=hand();v.set('controller',safePosition(pt(puzzle?20:q.x,38)));v.c.touch();if(finishStopped())return;v.tell(speed!==0?'자석을 멀리했어. 카트가 조금 더 굴러 멈추는지 봐.':'조종 자석을 멀리했어.');v.draw();});
   v.button('delivery-next',()=>{
     if(v.a.values.puzzleRevision!==2||r!==0||!v.has('segment0'))return;
     v.a.values.round=r+1;v.a.values.car=goal;v.a.values.cartSpeed=0;v.a.values.controllerPole='N';
@@ -232,8 +256,9 @@ export function delivery(v: Surface){
   const frame=(now:number)=>{if(v.stopped)return;const dt=Math.max(0,Math.min(.045,(now-prev)/1000))*(v.c.root.dataset.demoRun!==undefined?autoplaySpeed(v.s.settings):1);prev=now;
     if(document.hidden||v.c.root.inert||v.c.root.dataset.demoPaused!==undefined||document.querySelector('dialog[open],.modal-backdrop')){raf=requestAnimationFrame(frame);return;}
     cartMoving=false;
+    if(run)carry(run.walk(dt));
     if(moved&&!v.has(`segment${r}`)){
-      const q=v.p('controller',pt(20,40)),d=distance(q,carPoint());if(forceOn()){
+      const q=hand(),d=distance(q,carPoint());if(forceOn()){
         const {side,attract,cartPole,controlPole}=facing(q);
         const dir=side*(attract?1:-1),before=car;
         let next=car+dir*(18-d)/18*dt*12;
@@ -256,7 +281,7 @@ export function delivery(v: Surface){
         v.a.values.car=car;v.set('cart-magnet',carPoint());
       }
       if(puzzle){
-        const q=v.p('controller',pt(20,40)),pulling=forceOn()&&q.x>=car&&facing(q).attract;
+        const q=hand(),pulling=forceOn()&&q.x>=car&&facing(q).attract;
         blocked=pulling&&!cartMoving&&q.x>=deliveryCourse.reach-.6&&car<deliveryCourse.wall?blocked+dt:0;
         if(blocked>1.2&&!v.has('puzzleWallHit')){v.a.values.puzzleWallHit=true;miss('wall','당기는 자석이 유리벽에 막혀서 카트가 멈췄어.');}
         const past=car>goal+deliveryCourse.tolerance;
@@ -266,7 +291,8 @@ export function delivery(v: Surface){
       if(now-lastSave>1000){v.c.touch();lastSave=now;}
     }if(finishStopped())return;v.draw();raf=requestAnimationFrame(frame);
   };raf=requestAnimationFrame(frame);v.cleanups.push(()=>cancelAnimationFrame(raf));
-  const fitController=()=>v.set('controller',safePosition(v.p('controller',pt(20,40))));
+  if(run)return;
+  const fitController=()=>v.set('controller',safePosition(hand()));
   window.addEventListener('resize',fitController);v.cleanups.push(()=>window.removeEventListener('resize',fitController));
   v.button('bench-view',fitController);
 }

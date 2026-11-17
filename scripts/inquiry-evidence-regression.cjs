@@ -29,6 +29,7 @@ function at(n){
 async function resume(p,s){
   await seed(p,s);await p.reload();await action(p,'start').click();await p.locator('#experiment-root').waitFor();
   const crisis=p.locator('[data-mission="crisis-go"]');if(await crisis.count())await crisis.click();
+  const bench=p.locator('[data-mission="view-bench"]');if(await bench.count())await bench.click();
 }
 async function inside(p,selector,label){
   const v=p.viewportSize(),box=await p.locator(selector).first().boundingBox();

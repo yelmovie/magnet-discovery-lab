@@ -77,7 +77,7 @@ export function inquirySteps(n:number,a:Activity):string {
   return `<nav class="inquiry-steps" aria-label="탐구 단계"><strong class="sr-only">탐구 단계</strong>${labels.map((t,i)=>`<span class="${i===index?'active':i<index?'done':''}" ${i===index?'aria-current="step"':''}><b>${i<index?'✓':i+1}</b>${t}</span>`).join('')}</nav>`;
 }
 export function inquiryView(n:number,a:Activity,s:Save,preview=false):View {
-  const base=missionView(n,a,s); // Initialize hands-on state before adding inquiry state.
+  const base=missionView(n,a,s,preview); // Initialize hands-on state before adding inquiry state.
   if(a.values.paceVersion===1||a.values.inquiryVersion===2)return playInquiryView(n,a,s,base,preview);
   a.values.inquiryVersion=1;
   if(['explain','apply','complete'].includes(inquiryPhase(a))&&!missionReady(n,a,s)){

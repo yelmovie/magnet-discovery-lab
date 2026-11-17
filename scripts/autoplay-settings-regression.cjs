@@ -31,6 +31,7 @@ async function start(n, speed=1, viewport={width:1280,height:800}) {
     else window.__qa.startActivity(n);
   },{s:fixture,n,speed});
   if(n!==11)await page.locator('[data-mission="crisis-go"]').click();
+  if(n===8&&await page.locator('[data-mission="view-bench"]').count())await page.locator('[data-mission="view-bench"]').click();
   return context;
 }
 async function teacherToggle() {

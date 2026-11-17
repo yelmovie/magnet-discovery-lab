@@ -1,0 +1,58 @@
+/* 3D delivery course: the scene fills the bench, controls sit on top of it. */
+#app .run-mode .mission-board > canvas { visibility: hidden; }
+#app .run-mode .run-stage { position: absolute; inset: 0; z-index: 1; overflow: hidden; border-radius: 22px; background: linear-gradient(#bfe4f1, #e9dcc0); touch-action: none; }
+#app .run-mode .run-stage > .run-canvas { display: block; width: 100%; height: 100%; }
+#app .run-mode .run-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #234f4b; font-size: clamp(18px, 1.8vw, 26px); font-weight: 700; }
+
+body.quest-mode #app .screen-8 .run-mode .mission-board > :is(.run-progress, .run-tip, .run-magnet, .run-pad, .run-controls, .run-model-note, .delivery-state, .mission-actions, .puzzle-crisis, .inquiry-prompt-host) { z-index: 4; }
+#app .run-mode .run-progress { position: absolute; top: 2.2%; left: 50%; translate: -50% 0; display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+#app .run-mode .run-progress li { padding: 5px 12px; border: 2px solid #c5ac76; border-radius: 999px; background: #fffdf0d9; color: #5a6b62; font-size: clamp(14px, 1.15vw, 18px); font-weight: 700; white-space: nowrap; }
+#app .run-mode .run-progress li[data-state='now'] { border-color: #2b7068; background: #2b7068; color: #fff; }
+#app .run-mode .run-progress li[data-state='done'] { border-color: #89bd84; background: #e7f4dd; color: #25624c; }
+#app .run-mode .run-progress li[data-state='done']::before { content: '✓ '; }
+
+/* The delivery status keeps its text and its element; only its place changes. */
+body.quest-mode #app .screen-8 .run-mode .mission-board > :is(.delivery-state, .run-tip) { position: absolute; top: 10.5%; bottom: auto; left: 50%; translate: -50% 0; margin: 0; max-width: 78%; padding: 8px 16px; border: 2px solid #c5ac76; border-radius: 14px; background: #fffdf0f0; color: #234f4b; font-size: clamp(17px, 1.5vw, 23px); font-weight: 700; line-height: 1.35; text-align: center; pointer-events: none; }
+body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-zone='practice'] > .delivery-state,
+body.quest-mode #app .screen-8 .run-mode .mission-board:not([data-run-ready]) > :is(.delivery-state, .run-magnet, .run-pad, .run-controls, .mission-actions),
+#app .run-mode .run-tip[hidden] { display: none; }
+body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-zone='delivery'] > .run-tip { top: 20%; border-color: #e0b24a; background: #fff6d6f5; }
+
+#app .run-mode .run-magnet { position: absolute; top: 11%; right: 1.6%; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 2px solid #c5ac76; border-radius: 14px; background: #fffdf0e6; color: #234f4b; font-size: clamp(14px, 1.15vw, 18px); font-weight: 700; }
+#app .run-mode .run-magnet i { display: grid; place-items: center; width: 34px; height: 30px; color: #fffaf0; font-style: normal; font-weight: 800; }
+#app .run-mode .run-magnet i[data-pole='N'] { background: #be3d39; }
+#app .run-mode .run-magnet i[data-pole='S'] { background: #2368a3; }
+#app .run-mode .run-magnet i[data-run-pole='rear'] { border-radius: 8px 0 0 8px; margin-right: -6px; }
+#app .run-mode .run-magnet i[data-run-pole='front'] { border-radius: 0 8px 8px 0; }
+#app .run-mode .run-magnet i[data-run-pole='rear']::before { content: '뒤'; position: absolute; translate: 0 -150%; color: #5a6b62; font-size: 11px; display: none; }
+#app .run-mode .run-magnet[data-held='false'] i { opacity: .45; }
+#app .run-mode .run-magnet b { font-weight: 700; color: #5a6b62; }
+
+/* The helper robot keeps the corner; the pad sits beside it. */
+#app .run-mode .run-pad { position: absolute; left: max(2%, 150px); bottom: 3%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: clamp(168px, 17vw, 216px); aspect-ratio: 1; }
+#app .run-mode .run-pad button { min-width: 52px; min-height: 52px; border: 3px solid #2b5f59; border-radius: 16px; background: #fffdf0e8; color: #234f4b; font-size: clamp(22px, 2vw, 30px); box-shadow: 0 4px 0 #1e4a45; }
+#app .run-mode .run-pad button:is(:active, [data-map-held]) { background: #ffe9a8; translate: 0 3px; box-shadow: 0 1px 0 #1e4a45; }
+#app .run-mode .run-pad [data-run-dir='up'] { grid-area: 1 / 2; }
+#app .run-mode .run-pad [data-run-dir='left'] { grid-area: 2 / 1; }
+#app .run-mode .run-pad [data-run-dir='right'] { grid-area: 2 / 3; }
+#app .run-mode .run-pad [data-run-dir='down'] { grid-area: 3 / 2; }
+
+#app .run-mode .run-controls { position: absolute; right: 2%; bottom: 3%; }
+#app .run-mode .run-jump { width: clamp(84px, 8.6vw, 112px); aspect-ratio: 1; border: 4px solid #8a4b12; border-radius: 50%; background: #f4b63f; color: #4a2a08; font-size: clamp(20px, 1.9vw, 27px); font-weight: 800; box-shadow: 0 5px 0 #8a4b12; touch-action: none; }
+#app .run-mode .run-jump:active { translate: 0 4px; box-shadow: 0 1px 0 #8a4b12; }
+/* Flip and lower/raise sit above the jump button, on the same thumb. */
+body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions { position: absolute; top: auto; left: auto; right: 2%; bottom: calc(3% + clamp(84px, 8.6vw, 112px) + 14px); transform: none; translate: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: max-content; max-width: 40%; }
+body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions .mission-action { position: static; transform: none; min-height: 52px; padding: 8px 16px; font-size: clamp(17px, 1.5vw, 22px); }
+body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions:has([data-mission='delivery-next']) { right: 50%; bottom: 30%; translate: 50% 0; max-width: 70%; }
+body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data-mission='delivery-next'] { min-height: 60px; padding: 12px 26px; font-size: clamp(20px, 1.9vw, 27px); }
+
+#app .run-mode .run-model-note { position: absolute; left: 50%; bottom: 1.2%; translate: -50% 0; padding: 2px 10px; border-radius: 999px; background: #fffdf0c2; color: #4d5f58; font-size: clamp(12px, 1vw, 15px); pointer-events: none; white-space: nowrap; }
+#app .quest-activity .run-view-toggle { z-index: 6; }
+#app .quest-activity .bench-view-toggle + .run-view-toggle { translate: 0 calc(100% + 8px); }
+#app .run-mode .puzzle-crisis { z-index: 8; }
+
+@media (max-width: 899px) {
+  #app .run-mode .run-progress li { padding: 3px 8px; font-size: 13px; }
+  #app .run-mode .run-model-note { display: none; }
+  #app .run-mode .run-magnet span { display: none; }
+}

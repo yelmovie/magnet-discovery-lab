@@ -50,6 +50,8 @@ async function start(n, viewport = { width: 1280, height: 800 }) {
   await page.locator('[data-action="start"]').click();
   await page.locator(n===11?'#plaza-experiment':`#experiment-root.screen-${n}`).waitFor();
   if(n!==11)await page.locator('[data-mission="crisis-go"]').click();
+  // These checks drive the bench; the 3D course has scripts/run-stage-regression.cjs.
+  if(n===8&&await page.locator('[data-mission="view-bench"]').count())await page.locator('[data-mission="view-bench"]').click();
   await page.waitForTimeout(800);
   return context;
 }
