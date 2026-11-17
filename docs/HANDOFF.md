@@ -4,7 +4,7 @@
 
 ## 지금 상태 한 줄
 
-활동 8의 3D 달리기 스테이지는 구현·그림 적용·운영 배포까지 끝났다. 남은 것은 내장 임시 원본 삭제 확인 하나와, 하면 좋은 다듬기뿐이다.
+활동 8의 3D 달리기 스테이지는 구현·그림 적용·운영 배포·내장 임시 원본 정리까지 끝났다. 남은 것은 하면 좋은 다듬기뿐이다.
 
 ## 완료한 작업
 
@@ -62,7 +62,6 @@
 
 | 등급 | 문제 | 재현·확인 방법 | 막힌 지점 |
 |---|---|---|---|
-| 하 | 내장 임시 원본 4건 삭제가 끝났는지 미확인 | `"/Volumes/T7 Shield/AI-Skills/custom/gpt-imagegen/scripts/gpt-image.sh" -l`에 `5magnet` 줄이 남았는지 본다 | 12:40 기준 4건 남음. 삭제 명령이 공유 이미지 잠금 차례를 기다리며 뒤에서 돌고 있었다(이 세션이 끝나면 멈출 수 있다) |
 | 중 | `npm run test:browser` 실패(이전부터) | `TEST_URL=http://127.0.0.1:4196/ npm run test:browser` | 활동 1이 활동 2로 열리게 바뀐 뒤 스크립트 미갱신. 사용자가 요청하지 않아 고치지 않았다 |
 | 중 | 실기기 미확인 | 학교 태블릿·전자칠판에서 활동 8을 열어 방향판·점프·프레임 확인 | 기기 없음 |
 | 하 | 도시 원경이 거의 안 보임 | 활동 8 화면 맨 위 | 카메라가 아래를 보고 있어 길 끝 안개처럼만 보인다. 카메라를 더 눕히면 앞뒤 거리 가늠이 어려워져 그대로 뒀다 |
@@ -70,8 +69,7 @@
 
 ## 다음에 할 일 (우선순위 순)
 
-1. 내장 임시 원본 정리 확인. 남아 있으면 아래 명령을 파일 4개(`street-tile`, `shop-row`, `props-sheet`, `city-skyline`)에 대해 실행한다. 적용 확인은 이미 끝났다.
-   `LOCK_WAIT=3000 "/Volumes/T7 Shield/iscreammedia_sc34/_shared/run-stage-lock.sh" image "/Volumes/T7 Shield/AI-Skills/custom/gpt-imagegen/scripts/gpt-image.sh" -c "/Volumes/T7 Shield/iscreammedia_sc34/5magnet/assets/source/run-stage-20261117/<이름>.png" < /dev/null`
+1. (끝남) 내장 임시 원본 4건은 2026-11-17에 `gpt-image.sh -c`로 지웠고 `-l`에 `5magnet` 항목이 0건인 것을 확인했다. 외장 원본 4장은 `assets/source/run-stage-20261117/`에 그대로 있다.
 2. 사용자가 화면을 보고 주는 추가 요청(그림·배치·난이도)을 반영한다. 지금까지 받은 요청은 모두 반영했다.
 3. (요청이 있을 때만) `playful-regression.cjs`의 `begin(1)` 수정, 실기기 확인 결과 기록.
 
