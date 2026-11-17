@@ -61,7 +61,8 @@ describe('다음 구역으로 가기 전 지도 악당', () => {
     save.evidence = [0,1].map(stage => ({stage,date:save.updated,activities:[],summary:[]}));
     save.mapEncounters = {clip:2,parts:1};
     expect(pendingVillageEncounter(save)).toBe(0);
-    expect(expeditionMarkup(save)).toContain('악당에게 가기');
+    expect(expeditionMarkup(save)).not.toContain('악당에게 가기');
+    expect(expeditionMarkup(save)).toContain('자동으로 들어가기');
     expect(expeditionMarkup(save,true)).not.toContain('data-action="walk-next"');
     save.mapEncounters.clip = 3;
     expect(pendingVillageEncounter(save)).toBe(1);

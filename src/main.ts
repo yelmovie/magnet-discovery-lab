@@ -22,7 +22,7 @@ import { missionView, prepareQuickMailbox } from './mission-play';
 import { missionReady } from './mission-model';
 import { rememberExperiment } from './experiment-scenes';
 import { missionQuestion, missionGuide, questRewards, abilityStatements } from './mission-content';
-import { expeditionMarkup, mountExpedition, pendingVillageEncounter, residents, type ExpeditionHandle } from './expedition';
+import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
 import { bindResidentChat, chatMarkup } from './resident-chat';
 import { openGameSettings } from './game-settings';
 import { playStory, type FilmId } from './story-video';
@@ -359,7 +359,7 @@ async function finishActivityOnce(conceptDone: boolean) {
 function showReward(stage: number,newResident: boolean) {
   playEffect('reward',s.settings);
   const kit = questRewards[stage];
-  const nextLabel=pendingVillageEncounter(s)>=0?'악당에게 가기 →':stage<4?'다음 구역으로 →':'중앙 광장으로 →';
+  const nextLabel=stage<4?'다음 구역으로 →':'중앙 광장으로 →';
   if (newResident) {
     const reward = `<div class="resident-stage-reward"><strong>${icon(kit.icon,20)} ${kit.name} 획득</strong><span>도시 복구 ${progress(s)}%</span></div>`;
     showResident(stage, { reward, destination: s.evidence.length, label: nextLabel });

@@ -154,7 +154,9 @@ export function mountMapEncounters({
     if(!current||attack.hidden||event.defaultPrevented||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||paused()||
       !(event.code==='KeyJ'||event.code==='Space'))return;
     const el=event.target;
-    if(el instanceof view.HTMLElement&&(el.closest('input,textarea,select,[contenteditable]')||event.code==='Space'&&el!==attack&&el.closest('button,a,summary,[role=button]')))return;
+    // Space attacks even after a map button (direction pad, resident, map tools) was clicked last.
+    // Typing fields keep their keys; Enter still activates the focused button.
+    if(el instanceof view.HTMLElement&&el.closest('input,textarea,select,[contenteditable]'))return;
     event.preventDefault();if(!event.repeat)hit();
   },{signal,capture:true});
 
