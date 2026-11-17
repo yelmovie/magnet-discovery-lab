@@ -52,7 +52,7 @@ function sign(text: string, color = '#234f4b', size = .4) {
 /** A bar magnet lying along the course. `rear` is the pole on the end nearer the camera. */
 function barMagnet(length: number, thick: number, labelSize = .42) {
   const group = new THREE.Group(), geometry = new THREE.BoxGeometry(thick, thick, length / 2);
-  const rear = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial()), front = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial());
+  const rear = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ transparent: true })), front = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ transparent: true }));
   rear.position.z = length / 4; front.position.z = -length / 4; group.add(rear, front);
   const labels: THREE.Sprite[] = [];
   const set = (pole: Pole) => {
@@ -84,11 +84,12 @@ export interface RunStage {
 }
 
 export async function createRunStage(a: Activity, onLost: () => void): Promise<RunStage> {
-  const [walk, poses, friendWalk, villainLeft, villainRight, kit, ground, skyline] = await Promise.all([
+  const [walk, poses, friendWalk, villainLeft, villainRight, kit, ground, skyline, shops, props] = await Promise.all([
     picture('/assets/adventure/mili-walk-pixel.webp', true), picture('/assets/adventure/mili-poses-pixel.webp', true),
     picture('/assets/adventure/dangi-walk-pixel.webp', true), picture('/assets/adventure/map-villain-left-v2.webp', true),
     picture('/assets/adventure/map-villain-right-v2.webp', true), picture('/assets/quest/material-kit.webp'),
     optional('/assets/run-stage/street-tile.webp'), optional('/assets/run-stage/city-skyline.webp'),
+    optional('/assets/run-stage/shop-row.webp'), optional('/assets/run-stage/props-sheet.webp'),
   ]);
   await document.fonts?.ready;
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -106,68 +107,107 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
   if (ground) { ground.wrapS = ground.wrapT = THREE.RepeatWrapping; ground.anisotropy = 4; }
   const street = new THREE.MeshLambertMaterial(ground ? { map: ground } : { color: '#c9b891' });
   const stone = new THREE.MeshLambertMaterial(ground ? { map: ground, color: '#e9d9bd' } : { color: '#b79f78' });
-  const solid = new THREE.Group(), BACK = courseStart - 34, FAR = 96, [stepFrom, stepTo] = practice.step, [gapFrom, gapTo] = practice.gap;
-  solid.add(slab(BACK, stepFrom, -2.8, 4.6, 0, 1.2, street, 2), slab(stepFrom, stepTo, -2.8, 4.6, practice.stepHeight, 1.2 + practice.stepHeight, stone, 2),
-    slab(stepTo, gapFrom, -2.8, 4.6, 0, 1.2, street, 2), slab(gapTo, FAR, -2.8, 4.6, 0, 1.2, street, 2));
+  const solid = new THREE.Group(), BACK = courseStart - 34, FAR = 150, [stepFrom, stepTo] = practice.step, [gapFrom, gapTo] = practice.gap;
+  solid.add(slab(BACK, stepFrom, -2.95, 4.75, 0, 1.2, street, 2), slab(stepFrom, stepTo, -2.95, 4.75, practice.stepHeight, 1.2 + practice.stepHeight, stone, 2),
+    slab(stepTo, gapFrom, -2.95, 4.75, 0, 1.2, street, 2), slab(gapTo, FAR, -2.95, 4.75, 0, 1.2, street, 2));
   scene.add(solid);
   const world = new Octree().fromGraphNode(solid);
-  scene.add(slab(gapFrom, gapTo, -2.8, 4.6, -2.6, .2, new THREE.MeshBasicMaterial({ color: '#31424a' })));
+  scene.add(slab(gapFrom, gapTo, -2.95, 4.75, -2.6, .2, new THREE.MeshBasicMaterial({ color: '#31424a' })));
 
   const wood = new THREE.MeshLambertMaterial({ color: '#8a6a44' }), steel = new THREE.MeshLambertMaterial({ color: '#7d8a8f' }), cream = new THREE.MeshLambertMaterial({ color: '#f1e3c2' });
-  const railFrom = 20, railTo = 74;
+  // The rail and the glass room reach past the farthest point the bench model lets the cart roll (79).
+  const railFrom = 20, railTo = 84;
   for (const side of [-.45, .45]) scene.add(slab(railFrom, railTo, lane.rail + side - .05, lane.rail + side + .05, .13, .13, steel));
   const sleepers = new THREE.InstancedMesh(new THREE.BoxGeometry(1.35, .07, .24), wood, Math.floor((railTo - railFrom) * UNIT / .9));
   for (let i = 0, m = new THREE.Matrix4(); i < sleepers.count; i++) sleepers.setMatrixAt(i, m.makeTranslation(lane.rail, .035, z(railFrom) - .45 - i * .9));
-  scene.add(sleepers, slab(16, 58, 1.3, 1.46, .2, .2, cream), slab(railFrom - 1, railFrom, lane.rail - .7, lane.rail + .7, .6, .6, wood), slab(railTo, railTo + 1, lane.rail - .7, lane.rail + .7, .6, .6, wood));
-  // Street walls and houses are scenery; the walkway itself is kept by the runner's bounds.
+  scene.add(sleepers, slab(16, railTo, 1.3, 1.46, .2, .2, cream), slab(railFrom - 1, railFrom, lane.rail - .7, lane.rail + .7, .6, .6, wood), slab(railTo, railTo + 1, lane.rail - .7, lane.rail + .7, .6, .6, wood));
+  // Street sides are scenery; the walkway itself is kept by the runner's bounds.
+  const roof = new THREE.MeshLambertMaterial({ color: '#a8553f' }), plaster = new THREE.MeshLambertMaterial({ color: '#ead9b8' }), teal = new THREE.MeshLambertMaterial({ color: '#3f8f9b' });
+  const WALL = 4.3, length = (FAR - BACK) * UNIT, middle = z((BACK + FAR) / 2);
+  if (shops) { shops.wrapS = THREE.RepeatWrapping; shops.anisotropy = 4; }
   const palette = ['#e8b98a', '#d9c7a1', '#b9d2c4', '#e3a995', '#c9c2df', '#efd39a'];
-  const roof = new THREE.MeshLambertMaterial({ color: '#a8553f' });
-  for (let s = BACK, i = 0; s < FAR; i++) {
-    const wide = 8 + (i * 5) % 6, tall = 3.2 + (i * 7) % 4 * .8;
-    for (const [x, skip] of [[-4.7, false], [6.6, i % 3 === 1]] as const) {
-      if (skip) continue;
-      const house = new THREE.Mesh(new THREE.BoxGeometry(3.6, tall, wide * UNIT - .5), new THREE.MeshLambertMaterial({ color: palette[(i + (x > 0 ? 3 : 0)) % palette.length] }));
-      house.position.set(x, tall / 2, z(s + wide / 2)); scene.add(house);
-      const top = new THREE.Mesh(new THREE.BoxGeometry(3.9, .35, wide * UNIT - .3), roof); top.position.set(x, tall + .17, z(s + wide / 2)); scene.add(top);
+  for (const [inner, way] of [[-2.9, -1], [4.7, 1]] as const) {
+    // One long block of shops per side: the picture faces the street, plain plaster everywhere else.
+    const geometry = new THREE.BoxGeometry(3.6, WALL, length), face = way < 0 ? 0 : 1;
+    if (shops) { const uv = geometry.attributes.uv; for (let n = face * 4; n < face * 4 + 4; n++) uv.setX(n, uv.getX(n) * length / (WALL * 1.5)); }
+    const sides = Array.from({ length: 6 }, (_, n) => n === face && shops ? new THREE.MeshLambertMaterial({ map: shops }) : plaster);
+    const block = new THREE.Mesh(geometry, sides); block.position.set(inner + way * 1.8, WALL / 2, middle); scene.add(block);
+    const eaves = new THREE.Mesh(new THREE.BoxGeometry(4, .3, length), roof); eaves.position.set(inner + way * 1.75, WALL + .15, middle); scene.add(eaves);
+    for (let s = BACK + 6, n = way < 0 ? 0 : 2; s < FAR; s += 26, n++) {
+      // A few round towers with teal domes break the roof line.
+      const tall = 2.2 + n % 3 * .7, at = z(s + (way < 0 ? 0 : 13));
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, tall, 14), plaster); tower.position.set(inner + way * 2, WALL + .3 + tall / 2, at);
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(1.3, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), teal); dome.position.set(inner + way * 2, WALL + .3 + tall, at);
+      scene.add(tower, dome);
+      if (!shops) { const patch = new THREE.Mesh(new THREE.BoxGeometry(.06, WALL - .5, 5), new THREE.MeshLambertMaterial({ color: palette[n % palette.length] })); patch.position.set(inner - way * .02, WALL / 2, at); scene.add(patch); }
     }
-    s += wide;
   }
-  scene.add(slab(BACK, FAR, -2.9, -1.52, .5, .5, cream), slab(BACK, FAR, 4.4, 4.7, .7, .7, cream));
-  let backdrop: THREE.Mesh | undefined;
-  if (skyline) { backdrop = new THREE.Mesh(new THREE.PlaneGeometry(150, 50), new THREE.MeshBasicMaterial({ map: skyline, fog: false })); scene.add(backdrop); }
+  // Pavement on the left and the station platform on the right. Both stop at the practice gap.
+  const planks = new THREE.MeshLambertMaterial({ color: '#b7905c' }), dark = new THREE.MeshBasicMaterial({ color: '#31424a' });
+  const PAVE = .22, PLATFORM = .18;
+  scene.add(slab(BACK, gapFrom, -2.9, -1.52, PAVE, PAVE, stone, 2), slab(gapTo, FAR, -2.9, -1.52, PAVE, PAVE, stone, 2), slab(railFrom - 4, railTo + 4, 3, 4.7, PLATFORM, PLATFORM, planks));
+  for (const x of [-2.86, 4.66]) scene.add(slab(gapFrom, gapTo, x - .04, x + .04, 0, 2.6, dark));
+  // The far end of the street closes on the city view.
+  if (skyline) { const vista = new THREE.Mesh(new THREE.PlaneGeometry(42, 28), new THREE.MeshBasicMaterial({ map: skyline, fog: false })); vista.position.set(.9, 12.5, z(FAR) + .2); scene.add(vista); }
+  else scene.add(slab(FAR, FAR + 1, -2.9, 4.7, WALL, WALL, plaster));
+  // Standing props: lamps, trees, flowers, crates, benches and signals from one sheet.
+  if (props) {
+    const stand = (column: number, row: number, tall: number, x: number, y: number, s: number) => {
+      const map = props.clone(); map.needsUpdate = true; cell(map, 3, 2, column, row);
+      const sprite = standing(map, tall); sprite.position.set(x, y, z(s)); scene.add(sprite);
+    };
+    const onStep = (s: number) => s > stepFrom - 1 && s < stepTo + 1, overGap = (s: number) => s > gapFrom - 1.5 && s < gapTo + 1.5;
+    for (let s = BACK + 4, n = 0; s < FAR - 20; s += 9, n++) {
+      if (overGap(s)) continue;
+      const lift = onStep(s) ? practice.stepHeight : PAVE;
+      if (n % 3 === 0) stand(0, 0, 2.9, -2.2, lift, s); else if (n % 3 === 1) stand(1, 0, 2.3, -2.25, lift, s); else stand(n % 2 ? 2 : 1, n % 2 ? 0 : 1, 1.25, -2.2, lift, s);
+    }
+    // Before the rail starts, the right side of the street is a small market corner.
+    for (const [column, row, tall, x, s] of [[2, 0, 1.4, 3.4, -27], [1, 0, 2.4, 4, -22], [0, 1, 1.25, 3.2, -9], [0, 0, 2.9, 4.1, -1], [1, 1, 1.15, 3.3, 6], [2, 0, 1.4, 3.6, 12]] as const) stand(column, row, tall, x, onStep(s) ? practice.stepHeight : 0, s);
+    for (const [column, row, tall, x, s] of [[2, 1, 2.3, 4.2, railFrom - 1.5], [0, 1, 1.2, 4.1, 23.5], [0, 1, 1.2, 4.15, 31], [0, 0, 2.9, 4.3, 38], [0, 1, 1.2, 4.1, 49], [0, 0, 2.9, 4.3, 66], [2, 1, 2.3, 4.2, railTo + 1.5]] as const) stand(column, row, tall, x, PLATFORM, s);
+  }
 
   // --- Stations, delivery bays and the glass room.
+  const POST = 3.55, platform = .18;
+  const station = (text: string, s: number) => {
+    // Signs stand on posts on the platform. They do not float.
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 2.75, 8), wood); post.position.set(POST, platform + 1.375, z(s));
+    const board = sign(text); board.center.set(.5, 0); board.position.set(POST, platform + 2.7, z(s));
+    scene.add(post, board);
+  };
   const bays = [44, deliveryCourse.goal].map(goal => {
     const paint = new THREE.MeshBasicMaterial({ color: '#ffe197', transparent: true, opacity: .75, depthWrite: false });
     const bay = new THREE.Mesh(new THREE.PlaneGeometry(1.7, deliveryCourse.tolerance * 2 * UNIT), paint); bay.rotation.x = -Math.PI / 2; bay.position.set(lane.rail, .16, z(goal));
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 1.9, 8), wood); post.position.set(3.55, .95, z(goal));
     const pennant = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.5, 0), new THREE.Vector3(-.8, -.25, 0)]), new THREE.MeshBasicMaterial({ color: '#c46e22', side: THREE.DoubleSide }));
-    pennant.position.set(3.55, 1.88, z(goal));
-    scene.add(bay, post, pennant);
+    pennant.position.set(POST - .05, platform + 2.1, z(goal));
+    scene.add(bay, pennant);
     return { goal, paint, pennant: pennant.material as THREE.MeshBasicMaterial };
   });
-  for (const [text, s, x] of [['출발역', 27, 3.2], ['중간역 · 배달 장소', 44, 3.2], ['보관실 · 배달 장소', deliveryCourse.goal, 3.2]] as const) { const board = sign(text); board.position.set(x, 3, z(s)); scene.add(board); }
+  station('출발역', 27); station('중간역 · 배달 장소', 44); station('보관실 · 배달 장소', deliveryCourse.goal);
   const glass = new THREE.MeshBasicMaterial({ color: '#a9dcea', transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false });
   const frame = new THREE.MeshLambertMaterial({ color: '#5f9fb2' });
   const pane = (x0: number, x1: number, s0: number, s1: number, y0: number, y1: number) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(Math.max(.06, x1 - x0), y1 - y0, Math.max(.06, (s1 - s0) * UNIT)), glass);
     mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, z((s0 + s1) / 2)); mesh.renderOrder = 3; scene.add(mesh); return mesh;
   };
-  const { wall, reach } = deliveryCourse, doorS = reach + .9, roomEnd = 70, HIGH = 2.7;
-  pane(1.3, 3.5, wall, wall, 1.45, HIGH); pane(1.3, 1.3, doorS, roomEnd, 0, HIGH); pane(3.5, 3.5, wall, roomEnd, 0, HIGH); pane(1.3, 3.5, roomEnd, roomEnd, 0, HIGH);
-  for (const [x, s] of [[1.3, wall], [3.5, wall], [1.3, roomEnd], [3.5, roomEnd], [1.3, doorS], [-1.5, doorS]] as const) { const post = new THREE.Mesh(new THREE.BoxGeometry(.1, HIGH, .1), frame); post.position.set(x, HIGH / 2, z(s)); scene.add(post); }
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(2.3, .1, .1), frame); lintel.position.set(2.4, 1.45, z(wall)); scene.add(lintel);
+  // The door stands clear of the runner's magnet at her farthest point, and the room is longer than the cart can roll.
+  const { wall, reach } = deliveryCourse, doorS = reach + 1.5, roomEnd = 82, HIGH = 2.7, SIDE = 3.25;
+  pane(1.3, SIDE, wall, wall, 1.45, HIGH); pane(1.3, 1.3, doorS, roomEnd, 0, HIGH); pane(SIDE, SIDE, wall, roomEnd, 0, HIGH); pane(1.3, SIDE, roomEnd, roomEnd, 0, HIGH);
+  for (const [x, s] of [[1.3, wall], [SIDE, wall], [1.3, roomEnd], [SIDE, roomEnd], [1.3, doorS], [-1.5, doorS]] as const) { const post = new THREE.Mesh(new THREE.BoxGeometry(.1, HIGH, .1), frame); post.position.set(x, HIGH / 2, z(s)); scene.add(post); }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(SIDE - 1.2, .1, .1), frame); lintel.position.set((1.3 + SIDE) / 2, 1.45, z(wall)); scene.add(lintel);
   // The walkway door is open on the first stretch and closed on the second, as on the bench.
-  const door = pane(-1.5, 1.3, doorS, doorS, 0, HIGH), glassSign = sign('유리벽', '#1d7fa0', .46); glassSign.position.set(-.1, HIGH + .4, z(doorS)); scene.add(glassSign);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(2.9, .1, .1), frame); beam.position.set(-.1, HIGH, z(doorS)); scene.add(beam);
+  const door = pane(-1.5, 1.3, doorS, doorS, 0, HIGH), glassSign = sign('유리벽', '#1d7fa0', .46); glassSign.center.set(.5, 0); glassSign.position.set(-.1, HIGH + .06, z(doorS)); scene.add(glassSign);
 
   // --- Cart: basic shapes, so the N end and the S end are exact.
   const cart = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(1.15, .34, 1.7), new THREE.MeshLambertMaterial({ color: '#b78240' })); body.position.y = .55; cart.add(body);
   const brass = new THREE.MeshLambertMaterial({ color: '#c9973a' }), tyre = new THREE.MeshLambertMaterial({ color: '#33383a' }), wheel = new THREE.CylinderGeometry(.24, .24, .12, 16);
-  for (const x of [-.45, .45]) for (const dz of [-.55, .55]) { const w = new THREE.Mesh(wheel, tyre); w.rotation.z = Math.PI / 2; w.position.set(x * 1.25, .37, dz); cart.add(w); }
+  for (const x of [-.45, .45]) for (const dz of [-.55, .55]) { const w = new THREE.Mesh(wheel, tyre); w.rotation.z = Math.PI / 2; w.position.set(x, .37, dz); cart.add(w); }
   for (const dz of [-.86, .86]) { const rim = new THREE.Mesh(new THREE.BoxGeometry(1.2, .1, .06), brass); rim.position.set(0, .76, dz); cart.add(rim); }
-  const cartMagnet = barMagnet(1.3, .2); cartMagnet.set('N'); cartMagnet.group.position.set(-.68, .62, 0); cart.add(cartMagnet.group);
+  const MOUNT = -.62, cartMagnet = barMagnet(1.3, .16); cartMagnet.set('N'); cartMagnet.group.position.set(MOUNT, .64, 0); cart.add(cartMagnet.group);
   const parcel = new THREE.Group(), box = new THREE.Mesh(new THREE.BoxGeometry(.72, .5, .8), new THREE.MeshLambertMaterial({ color: '#cf9f62' })), tape = new THREE.Mesh(new THREE.BoxGeometry(.74, .52, .14), new THREE.MeshLambertMaterial({ color: '#f1dfb4' }));
-  parcel.add(box, tape); scene.add(parcel);
+  const pallet = new THREE.Mesh(new THREE.BoxGeometry(.95, .1, 1), wood); pallet.position.y = -.3;
+  parcel.add(box, tape, pallet); scene.add(parcel);
   cart.position.x = lane.rail; scene.add(cart);
   const arrow = new THREE.Group(), arrowPaint = new THREE.MeshBasicMaterial({ color: '#167d76' });
   const shaft = new THREE.Mesh(new THREE.BoxGeometry(.14, .14, .7), arrowPaint), head = new THREE.Mesh(new THREE.ConeGeometry(.26, .5, 4), arrowPaint);
@@ -179,6 +219,8 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
 
   // --- Runner, her hand magnet, the friend and the street goblin.
   const runner = new Runner(world, walk, poses), hand = barMagnet(1.04, .18, .36);
+  // A wooden grip on her side of the bar: she carries the magnet, it does not hover.
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(.34, .07, .07), wood); grip.position.x = -.24; hand.group.add(grip);
   scene.add(runner.group, hand.group);
   const friend = new Walker(friendWalk, 1.35), friendShadow = blobShadow(.34), trail: THREE.Vector3[] = [];
   scene.add(friend.sprite, friendShadow);
@@ -210,7 +252,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     if (runner.position.y < -4) {
       // No lives and no game over: back to the last point passed.
       const mark = checkpointFor(safeS), count = (falls.get(mark) || 0) + 1; falls.set(mark, count);
-      runner.place(.1, 0, z(mark)); s = mark; safeS = mark; say(fallLine(count), 5);
+      runner.place(.1, 0, z(mark)); trail.length = 0; s = mark; safeS = mark; say(fallLine(count), 5);
     }
     // The goblin only makes the runner stumble. The cart and the records are untouched.
     goblinRest = Math.max(0, goblinRest - dt);
@@ -239,22 +281,24 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     const key = `${next.round}:${next.done}`;
     if (doneKey === `${next.round}:false` && next.done) runner.celebrate();
     // When the second stretch starts beyond the closed door, the runner comes back in front of it.
-    if (next.wall && sOf(runner.position.z) > deliveryCourse.reach + .2) runner.place(.1, 0, z(40));
+    if (next.wall && sOf(runner.position.z) > deliveryCourse.reach + .2) { runner.place(.1, 0, z(40)); trail.length = 0; say('유리문이 닫혔어. 문 앞에서 다시 시작하자.', 4); }
     if (state && next.round !== state.round) held = true;
     doneKey = key; state = next;
 
     cart.position.z = z(next.car);
-    if (next.done) parcel.position.set(3.2, .25, z(next.goal) + .6); else parcel.position.set(lane.rail, .97, z(next.car));
+    // Delivered: the parcel is unloaded onto a pallet on the platform. Otherwise it rides in the cart.
+    pallet.visible = next.done;
+    if (next.done) parcel.position.set(4.05, platform + .35, z(next.goal) + 1.1); else parcel.position.set(lane.rail, .97, z(next.car));
     bays.forEach((item, i) => {
       const live = i === next.round, here = live && (next.atGoal || next.done) || i < next.round;
       item.paint.color.set(here ? '#89bd84' : '#ffe197'); item.paint.opacity = live || here ? .78 : .3;
       item.pennant.color.set(here ? '#25795f' : '#c46e22');
     });
     door.visible = next.wall; glassSign.visible = next.wall;
-    const p = runner.position, lift = held ? 1 : .34;
+    const p = runner.position, lift = held ? .86 : .34;
     hand.group.position.set(p.x + .52, p.y + lift, p.z);
     hand.group.rotation.x = held ? 0 : Math.PI / 2;
-    hand.materials.forEach(m => { m.transparent = !held; m.opacity = held ? 1 : .55; });
+    hand.materials.forEach(m => { m.opacity = held ? 1 : .5; });
     hand.labels.forEach(label => { label.visible = held; });
     // Iron that stuck travels with the magnet; everything else stays where it lay.
     items.forEach((item, i) => { if (item.stuck) item.sprite.position.set(hand.group.position.x + .1, hand.group.position.y - .34, hand.group.position.z + .2 - i * .1); });
@@ -263,7 +307,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     arrowPaint.color.set(next.attract ? '#167d76' : '#ac642c');
     link.visible = next.forceOn && !next.done;
     if (link.visible) {
-      link.geometry.setFromPoints([hand.group.position.clone(), new THREE.Vector3(lane.rail - .68, .62, z(next.car))]);
+      link.geometry.setFromPoints([hand.group.position.clone(), new THREE.Vector3(lane.rail + MOUNT, .64, z(next.car))]);
       link.computeLineDistances(); (link.material as THREE.LineDashedMaterial).color.set(next.attract ? '#167d76' : '#ac642c');
     }
     spot.visible = next.guide !== null && sOf(p.z) >= practiceEnd - 6;
@@ -277,8 +321,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     // Fixed chase camera. Near the cart it looks between the runner and the cart, so who is in front stays visible.
     const s = sOf(p.z), near = Math.abs(next.car - s) < 22 ? Math.max(-7, Math.min(2.5, (next.car - s) * .45)) : 0;
     focusZ += (z(s + near) - focusZ) * .12;
-    camera.position.set(.9, 6.1, focusZ + 8.6); camera.lookAt(1.05, .75, focusZ - 1.2);
-    if (backdrop) backdrop.position.set(0, 14, focusZ - 78);
+    camera.position.set(.9, 6, focusZ + 8.8); camera.lookAt(1.05, .9, focusZ - 1.8);
     renderer.render(scene, camera);
   }
 
@@ -303,7 +346,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
         mesh.geometry?.dispose();
         for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { if (!material) continue; (material as THREE.MeshBasicMaterial).map?.dispose(); material.dispose(); }
       });
-      for (const texture of [walk, poses, friendWalk, villainLeft, villainRight, kit, ground, skyline]) texture?.dispose();
+      for (const texture of [walk, poses, friendWalk, villainLeft, villainRight, kit, ground, skyline, shops, props]) texture?.dispose();
       renderer.dispose(); canvas.remove();
     },
   };

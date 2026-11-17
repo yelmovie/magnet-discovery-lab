@@ -29,7 +29,7 @@ body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-zone='delivery'
 #app .run-mode .run-magnet b { font-weight: 700; color: #5a6b62; }
 
 /* The helper robot keeps the corner; the pad sits beside it. */
-#app .run-mode .run-pad { position: absolute; left: max(2%, 150px); bottom: 3%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: clamp(168px, 17vw, 216px); aspect-ratio: 1; }
+#app .run-mode .run-pad { position: absolute; left: max(2%, var(--run-pad-left, 0px)); bottom: 3%; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: clamp(168px, 17vw, 216px); aspect-ratio: 1; }
 #app .run-mode .run-pad button { min-width: 52px; min-height: 52px; border: 3px solid #2b5f59; border-radius: 16px; background: #fffdf0e8; color: #234f4b; font-size: clamp(22px, 2vw, 30px); box-shadow: 0 4px 0 #1e4a45; }
 #app .run-mode .run-pad button:is(:active, [data-map-held]) { background: #ffe9a8; translate: 0 3px; box-shadow: 0 1px 0 #1e4a45; }
 #app .run-mode .run-pad [data-run-dir='up'] { grid-area: 1 / 2; }
@@ -43,20 +43,27 @@ body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-zone='delivery'
 /* Flip and lower/raise sit above the jump button, on the same thumb. */
 body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions { position: absolute; top: auto; left: auto; right: 2%; bottom: calc(3% + clamp(84px, 8.6vw, 112px) + 14px); transform: none; translate: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: max-content; max-width: 40%; }
 body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions .mission-action { position: static; transform: none; min-height: 52px; padding: 8px 16px; font-size: clamp(17px, 1.5vw, 22px); }
-body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions:has([data-mission='delivery-next']) { right: 50%; bottom: 30%; translate: 50% 0; max-width: 70%; }
-body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data-mission='delivery-next'] { min-height: 60px; padding: 12px 26px; font-size: clamp(20px, 1.9vw, 27px); }
+@media (min-width: 960px) and (min-height: 561px) {
+  /* On a roomy bench the next-stretch button sits in the middle; on small ones it stays in the thumb column. */
+  body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions:has([data-mission='delivery-next']) { right: 50%; top: 21%; bottom: auto; translate: 50% 0; max-width: 70%; }
+  body.quest-mode #app .screen-8 .run-mode .mission-board > .mission-actions [data-mission='delivery-next'] { min-height: 60px; padding: 12px 26px; font-size: clamp(20px, 1.9vw, 27px); }
+}
 
 #app .run-mode .run-model-note { position: absolute; left: 50%; bottom: 1.2%; translate: -50% 0; padding: 2px 10px; border-radius: 999px; background: #fffdf0c2; color: #4d5f58; font-size: clamp(12px, 1vw, 15px); pointer-events: none; white-space: nowrap; }
 #app .quest-activity .run-view-toggle { z-index: 6; }
 #app .quest-activity .bench-view-toggle + .run-view-toggle { translate: 0 calc(100% + 8px); }
 #app .run-mode .puzzle-crisis { z-index: 8; }
 
-@media (max-width: 899px) {
+@media (max-width: 959px), (max-height: 560px) {
+  /* Small benches: the magnet chip shrinks to its two poles and joins the progress row. */
   #app .run-mode .run-progress li { padding: 3px 8px; font-size: 13px; }
   #app .run-mode .run-model-note { display: none; }
-  #app .run-mode .run-magnet span { display: none; }
+  #app .run-mode .run-magnet { top: 2.2%; right: 9%; padding: 3px 6px; }
+  #app .run-mode .run-magnet :is(span, b) { display: none; }
+  #app .run-mode .run-magnet i { width: 28px; height: 24px; }
+  body.quest-mode #app .screen-8 .run-mode .mission-board > :is(.delivery-state, .run-tip) { top: 13%; max-width: 72%; font-size: 16px; padding: 6px 12px; }
+  body.quest-mode #app .screen-8 .run-mode .mission-board[data-run-zone='delivery'] > .run-tip { top: 26%; }
 }
-
 /* When the next-step button appears in the corner, the thumb buttons move up to leave it room. */
 #app .quest-activity:has(> .mission-cta:not(:disabled)) .run-mode .run-controls { bottom: calc(3% + 84px); }
 body.quest-mode #app .quest-activity:has(> .mission-cta:not(:disabled)) .screen-8 .run-mode .mission-board > .mission-actions:not(:has([data-mission='delivery-next'])) { bottom: calc(3% + 84px + clamp(84px, 8.6vw, 112px) + 14px); }

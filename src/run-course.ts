@@ -69,6 +69,15 @@ export function bindRunCourse(v: Surface) {
       if (index === step) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
     });
   }
+  // The helper robot keeps its corner: when it stands beside the pad's rows, the pad starts to its right.
+  const clearHelper = () => {
+    const helper = document.querySelector('.coach-toggle')?.getBoundingClientRect(), pad = root.querySelector('.run-pad')?.getBoundingClientRect(), bench = board.getBoundingClientRect();
+    const beside = !!helper && !!pad && helper.width > 0 && helper.bottom > pad.top && helper.top < pad.bottom && helper.right > bench.left;
+    board.style.setProperty('--run-pad-left', beside ? `${Math.ceil(helper!.right - bench.left + 14)}px` : '0px');
+  };
+  const watcher = typeof ResizeObserver === 'function' ? new ResizeObserver(clearHelper) : undefined;
+  watcher?.observe(board); window.addEventListener('resize', clearHelper);
+  v.cleanups.push(() => { watcher?.disconnect(); window.removeEventListener('resize', clearHelper); });
   const run: DeliveryRun = {
     walk: dt => stage ? stage.step(blocked() ? 0 : dt, input.read()) : null,
     show: state => { stage?.show(state); paint(state); },
@@ -82,7 +91,7 @@ export function bindRunCourse(v: Surface) {
   delivery(v, run);
   acquire(v.a, () => toBench('3D 그림이 끊겨서 기존 실험대로 바꿨어. 하던 배달은 그대로 이어져.')).then(created => {
     if (stopped) { release(); return; }
-    stage = created; created.attach(host); host.querySelector('.run-loading')?.remove(); board.dataset.runReady = 'true'; v.draw();
+    stage = created; created.attach(host); host.querySelector('.run-loading')?.remove(); board.dataset.runReady = 'true'; clearHelper(); v.draw();
   }, () => { if (!stopped) toBench('이 기기에서는 3D 길을 열 수 없어서 기존 실험대로 바꿨어.'); });
   v.cleanups.push(() => { stopped = true; input.destroy(); if (stage) release(); });
 }

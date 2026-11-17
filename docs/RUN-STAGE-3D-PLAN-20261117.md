@@ -221,3 +221,15 @@
 - 실제 학생이 60~90초 안에 지나가는지, 연습 길의 난이도가 맞는지.
 - 교사용 전체 열기에서 2D로 시작하는 것은 단위 테스트로만 확인했다(브라우저에서 눌러 보지는 않았다).
 - WebGL이 없는 기기에서의 자동 전환은 코드 경로와 단위 테스트(`setRunBlocked`)로만 확인했다.
+
+### 커밋과 배포
+
+| 항목 | 값 |
+|---|---|
+| 저장소·브랜치 | `yelmovie/magnet-discovery-lab` `main` (강제 푸시 없음) |
+| 커밋 | `53a3cf0` 3D 달리기 구현 · `9441235` 버튼 겹침 수정과 운영 확인 스크립트 · `502df1f` 검사 보강과 이 기록 |
+| 운영 주소 | https://magnet-city.pages.dev (운영 시트 G열) |
+| 배포 | Cloudflare Pages `magnet-city`, 운영 배포 `3b5365aa`(소스 `502df1f`). 앞서 `3d9f69ae`(소스 `53a3cf0`)를 먼저 올려 확인했다 |
+| 파일 대조 | `node scripts/verify-release.mjs https://magnet-city.pages.dev` → 213/213 일치 |
+| 운영 동작 | `node scripts/run-stage-release-smoke.cjs https://magnet-city.pages.dev` → 운영 주소에서 활동 8이 3D로 열리고, 키보드로 두 구간을 끝까지 배달했고, IndexedDB에 `view: run`, `segment0·1`, 증거 `delivery0·1`이 남았으며, 「기존 방식으로 하기」로 2D가 열렸다 |
+| 미추적 문서 3개 | 커밋하지 않았다 |
