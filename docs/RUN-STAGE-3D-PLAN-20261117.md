@@ -324,3 +324,20 @@
 | 파일 대조 | `node scripts/verify-release.mjs https://magnet-city.pages.dev` → 217/217 일치. 새 `run-stage` 묶음 해시가 로컬 빌드와 같다 |
 | 운영 동작 | `node scripts/run-stage-release-smoke.cjs https://magnet-city.pages.dev` 통과 |
 
+## 사용자 요청 반영 · 2026-11-17 저녁
+
+| 요청 | 원인 | 고친 것 |
+|---|---|---|
+| 깃발 근처에서 자석을 내렸는데 완료로 안 넘어감, 도착 조작을 쉽게 | 당기는 동안 수레는 밀이 자석보다 6칸 이상 뒤에 따라온다. 밀이가 깃발(44)에 서서 내리면 수레는 39쯤에 멈춰 깃발 칸(±3) 밖이다. 상태 줄은 "자석을 가까이 대서 다시 움직여 봐"라고만 해서, 내린 자석을 다시 들어야 한다는 걸 알 수 없었다 | `run-stage-rules.ts`의 `arrivalHint()`: 칸 안이면 "지금 「자석 내리기」", 내린 뒤 칸 밖에 멈추면 "「자석 들기」를 누르고 더 옮겨 / 깃발 쪽으로 되돌려". 칸 안에서는 「자석 내리기」 버튼이 빛나고, 안내가 나오는 동안 같은 말을 하는 상태 줄은 숨긴다. 판정은 `delivery()` 그대로 |
+| 「기존 방식으로 하기」 → 「2D 화면으로 보기」 | — | 버튼 이름, 떨어짐 도움말, 3D를 못 열 때 알림 문구 |
+| 지도 악당 Space 공격이 안 됨, 「악당에게 가기」 문구 없애기 | 다른 버튼에 초점이 있으면 Space를 무시했다(`map-encounters.js`) | 입력칸만 빼고 Space·J로 공격. 걷기 버튼과 보상 버튼은 다음 건물 이름을 보여 준다 |
+
+| 검증 | 결과 |
+|---|---|
+| `npm test` | 323개 통과(도착 안내 2개 추가) |
+| `npm run build` | 통과 |
+| `scripts/run-stage-regression.cjs` | 19개 통과(깃발에서 일찍 내림 → 안내 → 다시 들고 당김 → 칸에서 내려 1구간 완료 추가) |
+| `npm run test:browser` | 21개 통과 |
+| 커밋·배포 | `bbe9733` → Pages `0ecdbe04`, `2f7e86b` → Pages `789a2121`(운영 활성). `verify-release.mjs` 217/217, `run-stage-release-smoke.cjs` 통과 |
+| 확인 못 한 것 | 학교 태블릿 실기기 터치 |
+
