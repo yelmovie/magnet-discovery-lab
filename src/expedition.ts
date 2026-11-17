@@ -226,7 +226,8 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
     hasVillageEncounter(options.save,i)?{...toWorld(foe),name:stageNames[i]??'중앙 광장'}:null),
   progress:options.save.mapEncounters,activeStage:pending,onSave:hits=>{options.onEncounterSave(hits);describeNext();},
   blocked:()=>paused||overview||!!root.ownerDocument.querySelector('.modal-backdrop'),reduced:()=>!options.save.settings.motion,
-  tone:(kind,hits)=>playEffect(kind==='finish'?'encounter-exit':kind==='contact'?'encounter-contact':hits===2?'encounter-two':'encounter-one',options.save.settings),
+  tone:(kind,hits)=>playEffect(({swing:'encounter-swing',hit:hits===2?'encounter-two':'encounter-one',finish:'encounter-finish',exit:'encounter-exit',
+    contact:'encounter-contact',appear:'encounter-appear',victory:'encounter-victory'} as const)[kind],options.save.settings),
   actors:[player,npc]});
   const draw=(now=performance.now())=>{
     if(!viewWidth||!viewHeight)return;

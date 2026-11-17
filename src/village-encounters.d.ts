@@ -1,6 +1,6 @@
 type Point = {x:number;y:number};
 type HitPatch = Record<string,number>;
-type Tone = (kind:'hit'|'finish'|'contact',hits:number)=>void;
+type Tone = (kind:import('./map-encounters.js').MapTone,hits:number)=>void;
 export function normalizeVillageEncounters(value:unknown,legacy?:unknown):HitPatch;
 export function villageEncounterHits(progress:HitPatch|undefined,stage:number):number;
 export function mountVillageEncounters(options:{

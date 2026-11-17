@@ -6,7 +6,9 @@ export interface AudioSettings {
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
   musicVolume?: number;
 }
-export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | 'encounter-one' | 'encounter-two' | 'encounter-exit' | 'encounter-contact';
+export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | EncounterKind;
+/** Map villain cues. They layer on one another so a swing, its clank and the retreat are all heard. */
+export type EncounterKind = 'encounter-swing' | 'encounter-one' | 'encounter-two' | 'encounter-finish' | 'encounter-exit' | 'encounter-contact' | 'encounter-appear' | 'encounter-victory';
 
 const EFFECT_GAIN = 0.16;
 const DEFAULT_VOLUME = 0.35;
@@ -26,21 +28,33 @@ let effectVoices: Voice[] = [];
 let explicitlyPaused = false;
 let installed = false;
 let activated = false;
-const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate' };
+const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate',
+  'encounter-swing':'map-zap','encounter-one':'map-clank-one','encounter-two':'map-clank-two','encounter-finish':'map-hit-heavy',
+  'encounter-exit':'map-exit','encounter-contact':'map-bump','encounter-appear':'map-appear','encounter-victory':'map-victory' };
+// The clank lands on the villain's flinch (its squash peaks about 90 ms after the press);
+// the retreat follows the shrinking exit pose. Levels keep a hit above the swing and the arrival quiet.
+const encounterDelay: Partial<Record<EffectKind, number>> = { 'encounter-one': .07, 'encounter-two': .07, 'encounter-finish': .07, 'encounter-exit': .3 };
+const sampleGain: Partial<Record<EffectKind, number>> = { step: .25, 'encounter-swing': .5, 'encounter-one': .62, 'encounter-two': .55, 'encounter-finish': .85, 'encounter-exit': .4, 'encounter-contact': .6, 'encounter-appear': .3, 'encounter-victory': .6 };
+const isEncounter = (kind: EffectKind) => kind.startsWith('encounter-');
 const sampleBuffers = new Map<string, AudioBuffer>();
+const sampleLoads = new Map<string, Promise<void>>();
 const sampleVoices = new Set<AudioBufferSourceNode>();
+const encounterVoices = new Set<AudioBufferSourceNode>();
 let samplesRequested = false, lastEffect = 0;
 
-function stopSamples() {
-  for(const voice of sampleVoices){try{voice.stop();}catch{}voice.disconnect();}
-  sampleVoices.clear();
+function stopSamples(all = true) {
+  for(const voices of all?[sampleVoices,encounterVoices]:[sampleVoices]){
+    for(const voice of voices){try{voice.stop();}catch{}voice.disconnect();}
+    voices.clear();
+  }
 }
 function loadSamples() {
   if(samplesRequested || !context?.decodeAudioData || typeof fetch==='undefined')return;
   samplesRequested=true;
   const owner=context;
   for(const name of new Set(Object.values(sampleFiles))) {
-    void fetch(`/audio/${name}.mp3`).then(r=>{if(!r.ok)throw new Error('audio unavailable');return r.arrayBuffer();}).then(data=>owner.decodeAudioData(data)).then(buffer=>{if(context===owner)sampleBuffers.set(name,buffer);}).catch(()=>{});
+    const load=fetch(`/audio/${name}.mp3`).then(r=>{if(!r.ok)throw new Error('audio unavailable');return r.arrayBuffer();}).then(data=>owner.decodeAudioData(data)).then(buffer=>{if(context===owner)sampleBuffers.set(name,buffer);}).catch(()=>{}).finally(()=>sampleLoads.delete(name));
+    sampleLoads.set(name,load);
   }
 }
 
@@ -210,19 +224,25 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
   if (!context || !effectBus) return;
   // Repeated feedback from animation frames must never create a wall of sound.
   const nowMs=Date.now();if((kind==='step'||kind==='bump')&&nowMs-lastEffect<160)return;lastEffect=nowMs;
-  silence(effectVoices); stopSamples();
-  const buffer=sampleBuffers.get(sampleFiles[kind]||'');
+  // A new sound replaces interface feedback; map fight cues ring out together until muted or paused.
+  const layered=isEncounter(kind);
+  silence(effectVoices); stopSamples(false);
+  const name=sampleFiles[kind]||'',buffer=sampleBuffers.get(name),loading=sampleLoads.get(name);
+  // A villain seen the moment the map opens can beat its sample's decode; wait briefly instead of beeping.
+  if(!buffer&&layered&&loading){const asked=Date.now();void loading.then(()=>{if(Date.now()-asked<700)playEffect(kind);});return;}
   if(buffer&&context.createBufferSource){
-    const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=kind==='step'?.25:.72;source.connect(gain);gain.connect(effectBus);sampleVoices.add(source);
-    source.onended=()=>{sampleVoices.delete(source);source.disconnect();gain.disconnect();};source.start();return;
+    const voices=layered?encounterVoices:sampleVoices;
+    const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=sampleGain[kind]??.72;source.connect(gain);gain.connect(effectBus);voices.add(source);
+    source.onended=()=>{voices.delete(source);source.disconnect();gain.disconnect();};source.start(context.currentTime+(encounterDelay[kind]??0));return;
   }
   const notes: Record<EffectKind, number[]> = {
-    'encounter-one':[980,510], 'encounter-two':[790,510,312], 'encounter-exit':[630,520,390,250], 'encounter-contact':[880,422],
+    'encounter-swing':[1180,760], 'encounter-one':[980,510], 'encounter-two':[790,510,312], 'encounter-finish':[630,520,390,250],
+    'encounter-exit':[520,390,260], 'encounter-contact':[880,422], 'encounter-appear':[392,523], 'encounter-victory':[523,659,784,1047],
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
     bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285],
   };
-  const frequencies = notes[kind] ?? notes.click, now = context.currentTime + 0.005;
+  const frequencies = notes[kind] ?? notes.click, now = context.currentTime + 0.005 + (encounterDelay[kind] ?? 0);
   frequencies.forEach((frequency, i) => note(frequency, now + i * 0.075, kind === 'reward' ? 0.25 : 0.12, effectBus!, effectVoices, kind === 'step' ? 0.12 : 0.48, 'triangle'));
 }
 
@@ -236,7 +256,7 @@ export function setAudioPaused(value: boolean) {
 export function disposeAudio() {
   explicitlyPaused = true; narration?.stop('stopped');
   music?.pause(); music?.remove(); music = undefined; theme = 'main'; introMix = false; musicRevision++; musicPlayPending = false;
-  silence(effectVoices); stopSamples(); sampleBuffers.clear(); samplesRequested=false;lastEffect=0;
+  silence(effectVoices); stopSamples(); sampleBuffers.clear(); sampleLoads.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {
     document.removeEventListener('pointerdown', activate);
     document.removeEventListener('keydown', activate);

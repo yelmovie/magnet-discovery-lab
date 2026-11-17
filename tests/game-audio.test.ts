@@ -176,7 +176,8 @@ describe('music and game effects', () => {
     vi.stubGlobal('window',{AudioContext:SampleAudio});vi.stubGlobal('fetch',request);
     playEffect('pick',{music:false,effects:true});
     for(let i=0;i<10;i++)await Promise.resolve();
-    const files=['click','pick','drop','compare','success','reward','bump','step','snap','lid','pad','crate'];
+    const files=['click','pick','drop','compare','success','reward','bump','step','snap','lid','pad','crate',
+      'map-zap','map-clank-one','map-clank-two','map-hit-heavy','map-exit','map-bump','map-appear','map-victory'];
     expect(request.mock.calls.map(([url])=>url).sort()).toEqual(files.map(name=>`/audio/${name}.mp3`).sort());
     const experimentSounds=['snap','lid','pad','crate'] as const;
     for(const kind of experimentSounds)playEffect(kind);
@@ -188,6 +189,46 @@ describe('music and game effects', () => {
     playEffect('crate',{music:false,effects:true});expect(sources).toHaveLength(5);
     setAudioPaused(true);expect(sources[4].stop).toHaveBeenCalledOnce();
     playEffect('success');expect(sources).toHaveLength(5);expect(request).toHaveBeenCalledTimes(files.length);
+  });
+});
+
+describe('map villain cues',()=>{
+  it('layers the swing, the delayed clank and the retreat, and a later interface sound stops only itself',async()=>{
+    environment();
+    const sources:{buffer:unknown;start:ReturnType<typeof vi.fn>;stop:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>;connect:ReturnType<typeof vi.fn>;onended:null}[]=[];
+    class SampleAudio extends AudioDouble {
+      decodeAudioData = vi.fn(async (data:ArrayBuffer) => data as unknown as AudioBuffer);
+      createBufferSource() {const source={buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;}
+    }
+    vi.stubGlobal('window',{AudioContext:SampleAudio});
+    vi.stubGlobal('fetch',vi.fn(async(url:string)=>({ok:true,arrayBuffer:async()=>({url})})));
+    const on={music:false,effects:true};
+    playEffect('click',on);for(let i=0;i<10;i++)await Promise.resolve();
+    playEffect('encounter-swing',on);playEffect('encounter-finish',on);playEffect('encounter-exit',on);
+    const fight=sources.slice(-3);
+    expect(fight.map(s=>(s.buffer as {url:string}).url)).toEqual(['/audio/map-zap.mp3','/audio/map-hit-heavy.mp3','/audio/map-exit.mp3']);
+    expect(fight.map(s=>s.start.mock.calls[0][0])).toEqual([0,.07,.3]);
+    fight.forEach(s=>expect(s.stop).not.toHaveBeenCalled());
+    playEffect('pick',on);fight.forEach(s=>expect(s.stop).not.toHaveBeenCalled());
+    syncAudioSettings({music:false,effects:false});fight.forEach(s=>expect(s.stop).toHaveBeenCalledOnce());
+    const count=sources.length;playEffect('encounter-one');expect(sources).toHaveLength(count);
+  });
+});
+
+describe('map villain cue before decoding',()=>{
+  it('waits for a still-loading fight sample instead of beeping, and plays it once',async()=>{
+    environment();
+    const sources:{start:ReturnType<typeof vi.fn>}[]=[];
+    class SampleAudio extends AudioDouble {
+      decodeAudioData = vi.fn(async () => ({} as AudioBuffer));
+      createBufferSource() {const source={buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;}
+    }
+    vi.stubGlobal('window',{AudioContext:SampleAudio});
+    vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})));
+    playEffect('encounter-appear',{music:false,effects:true});
+    const context=AudioDouble.instances[0];expect(context.oscillators).toHaveLength(0);expect(sources).toHaveLength(0);
+    for(let i=0;i<12;i++)await Promise.resolve();
+    expect(sources).toHaveLength(1);expect(context.oscillators).toHaveLength(0);
   });
 });
 

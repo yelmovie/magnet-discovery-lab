@@ -40,6 +40,8 @@ function layoutSpeech(host, entries){
 }
 
 const REPEAT=380;
+// A villain announces itself once per page visit, not on every return to the map.
+const appeared=new Set();
 const CUES={
   cap:'M9 10h14v12H9zm3-4h8v4h-8z', pane:'M6 7h20v18H6zm4 4v10h12V11z',
   file:'M7 5h12l6 6v16H7zm12 2v6h5M11 17h10m-10 4h8', label:'M5 10h15l7 6-7 6H5zm5 4h5m-5 4h7',
@@ -128,7 +130,9 @@ export function mountMapEncounters({
     const calm=still(),duration=calm?170:n===HITS?660:360;
     foe.poseUntil=time+duration;foe.hitAt=time;foe.hurtAt=undefined;
     pose.hero={kind:'attack',direction:-foe.facing,start:time,end:time+(calm?140:320)};
-    saved={...saved,[foe.s.id]:n};onSave({...saved});tone(n===HITS?'finish':'hit',n);
+    saved={...saved,[foe.s.id]:n};onSave({...saved});
+    // One accepted press: the swing, the clank on the flinch, and on the third hit the retreat.
+    tone('swing',n);tone(n===HITS?'finish':'hit',n);if(n===HITS)tone('exit',n);
     speak(foe, n===HITS?foe.s.finish??'앗, 물러날게!':foe.s.hit?.[n-1]??(n===1?'앗, 들켰네!':'이번 건 제법인데!'),time+(n===HITS?2750:1800));
     live.textContent+=n===HITS?' 세 번 명중! 악당이 물러나요.':` ${n}번 명중. ${HITS-n}번 남았어요.`;
     if(n===HITS&&requiredFoes>0&&stages.length===requiredFoes&&stages.every(s=>(saved[s.id]??record[s.id])===HITS))finaleAt=time+2920;
@@ -196,6 +200,7 @@ export function mountMapEncounters({
       const off=point.x<-size||point.x>width+size||point.y<-size||point.y>height+size;
       foe.el.hidden=off;
       if(off)continue;
+      if(!stop&&foe.hits===0&&!appeared.has(foe.s.id)&&point.x>=0&&point.x<=width&&point.y>=0&&point.y<=height){appeared.add(foe.s.id);tone('appear',0);}
       const {el,actor}=foe;
       el.style.transform=`translate(${point.x.toFixed(1)}px,${point.y.toFixed(1)}px)`;
       el.style.setProperty('--encounter-size',size.toFixed(1)+'px');
@@ -240,7 +245,7 @@ export function mountMapEncounters({
       if(foe.meter.textContent!==marks)foe.meter.textContent=marks;
       foe.bubble.hidden=now>=foe.saidUntil||stop;
     }
-    if(finaleAt&&now>=finaleAt&&!stop){finaleAt=0;openMapFinale(host,"/video/story/final.mp4");}
+    if(finaleAt&&now>=finaleAt&&!stop){finaleAt=0;tone('victory',HITS);openMapFinale(host,"/video/story/final.mp4");}
     current=nearest;
     if(current&&current!==lastNear&&current.saidUntil<=now&&now-lastHit>REPEAT){
       const message=current.say[current.sayIndex++%current.say.length]??'다가왔구나!';

@@ -24,5 +24,74 @@
       "crate": "impactWood_medium_001",
       "pad": "impactSoft_medium_002"
     }
+  },
+  "mapEncounters": {
+    "note": "Map villain cues from the shared science34 CC0 library (_shared/sfx-library-20261117, licences rechecked 2026-11-17). Trimmed, faded and loudness-normalised there; no pitch or speed change.",
+    "files": {
+      "map-zap": {
+        "title": "Electricity.wav",
+        "creator": "danielpodlovics",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/danielpodlovics/sounds/530356",
+        "library": "sfx/magnet-zap-02.mp3",
+        "role": "attack swing"
+      },
+      "map-clank-one": {
+        "title": "metalLatch",
+        "creator": "Kenney",
+        "license": "CC0-1.0",
+        "url": "https://kenney.nl/assets/rpg-audio",
+        "library": "sfx/metal-clank-03.mp3",
+        "role": "first hit"
+      },
+      "map-clank-two": {
+        "title": "impactMetal_medium_000",
+        "creator": "Kenney",
+        "license": "CC0-1.0",
+        "url": "https://kenney.nl/assets/impact-sounds",
+        "library": "sfx/metal-clank-01.mp3",
+        "role": "second hit"
+      },
+      "map-hit-heavy": {
+        "title": "Loud Pillow Hit 2.wav",
+        "creator": "saturdaysoundguy",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/saturdaysoundguy/sounds/388035",
+        "library": "sfx/hit-heavy-02.mp3",
+        "role": "third hit"
+      },
+      "map-exit": {
+        "title": "classic dizzy take slide whistle.wav",
+        "creator": "martian",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/martian/sounds/403002",
+        "library": "sfx/villain-exit-01.mp3",
+        "role": "villain retreat"
+      },
+      "map-bump": {
+        "title": "68 Golpe Ardilla.wav",
+        "creator": "checholio",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/checholio/sounds/443848",
+        "library": "sfx/hurt-bump-02.mp3",
+        "role": "contact flinch"
+      },
+      "map-appear": {
+        "title": "Pop 5.ogg",
+        "creator": "javapimp",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/javapimp/sounds/439186",
+        "library": "sfx/villain-appear-01.mp3",
+        "role": "villain appears"
+      },
+      "map-victory": {
+        "title": "game-win.mp3",
+        "creator": "mickleness",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/mickleness/sounds/269198",
+        "library": "sfx/victory-jingle-04.mp3",
+        "role": "all villains defeated"
+      }
+    }
   }
 }
