@@ -137,4 +137,9 @@
 
 ## 운영 확인
 
-(배포 뒤 덧붙임)
+- 커밋 `d86b6e2` 푸시 → `_scratch/deploy-20261118/deploy.sh 05 5magnet pages magnet-city`(origin/main만 빌드) → Pages 배포 `c0edf5d9`.
+- `cmp.sh 05`: `assets/index-3-XG8rrd.js` build=live **MATCH**, index **MATCH**.
+- `node scripts/verify-release.mjs https://magnet-city.pages.dev`(배포 빌드 폴더에서): **384/384 identical**. 첫 시도는 새 CSS 1개가 엣지 전파 전이라 HTML이 돌아왔고, 바로 다시 받아 일치.
+- 운영 주소를 앱 안 브라우저로 열어 로드된 CSS가 `index-B-cfdWYc.css`이고, 그 안에 인증서 「도시 둘러보기」 숨김, 스케치 판 규칙(`min-height: 600px` 조건), 수첩 확대(1.1/1.25) 규칙이 들어 있음을 확인.
+- 첫 화면 파일 전송(curl, 압축 받기): `/` 1.2KB 58ms, 메인 JS 156KB 68ms, CSS 80KB 57ms, 로고 190KB 49ms. 브라우저 첫 그리기 시간은 이번에 못 잼(앱 안 창에 기존 캐시가 있음, 헤드리스 Chrome 불가).
+- 운영 smoke(`release-smoke.cjs`)는 헤드리스 Chrome 불가로 **미실행**.
