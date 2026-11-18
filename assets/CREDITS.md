@@ -173,3 +173,18 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 
 - [Colorfigures](https://april-zhu.com/colorfigures), April Zhu, MIT. 원본의 SVG 투영·채색·윤곽선 엔진을 게임에 맞춰 사용했다. 원래 저작권과 라이선스는 `public/licenses/colorfigures.txt`에 동봉했다.
 - 우편함 덮개와 철 걸쇠, 수조 유리 양쪽의 자석 손잡이와 청소 패드 모델 및 한글 조작 화면은 프로젝트에서 제작했다.
+
+## 성취 카드 (2026-11-18)
+
+지도 악당을 물리치면 받는 카드 6장(구역 5장 + 중앙 광장 보너스 1장). 화면 구성과 연출은 과학34 공통 모듈 `src/reward-cards.js`·`reward-cards.css`(프로젝트 자체 제작, 외부 의존성 없음)이다.
+
+| 자료 | 배포 파일 | 출처·제작 | 이용 조건 |
+|---|---|---|---|
+| 성취 카드 그림 6종 (지도 악당 격퇴 보상) | `public/assets/reward-cards/card-{1..6}-*.webp`, `thumb-{1..6}-*.webp` | 2026-11-18 ChatGPT 앱의 Codex 내장 이미지 도구(GPT 이미지)로 생성. 밀이·당이 자세 그림과 각 장소 배경을 화풍 참고로 붙임. 글자 없이 생성하고 테두리·별·이름은 코드로 올림. 640×960·96×144 WebP로 변환 | 프로젝트를 위해 생성한 이미지 |
+| 효과음 · 성취 카드 날아오기 휙 | `public/audio/card-whoosh.mp3` | qubodup — Slow Swosh 40 (freesound.org/people/qubodup/sounds/60027). 2026-11-17 과학34 공통 효과음 라이브러리(`_shared/sfx-library-20261117`의 `sfx/wind-whoosh-03.mp3`)에서 복사: 앞뒤 무음 제거·음량 정규화·모노 MP3 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+| 효과음 · 성취 카드 공개 반짝 | `public/audio/card-reveal.mp3` | ZenithInfinitiveStudios — Fantasy_ui_Button_3 (freesound.org/people/ZenithInfinitiveStudios/sounds/376745). 같은 라이브러리의 `sfx/reward-01.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+| 효과음 · 성취 카드 공개(홀로·레전드·보너스) | `public/audio/card-epic.mp3` | CogFireStudios — Achievement Happy Beeps Jingle (freesound.org/people/CogFireStudios/sounds/619838). 같은 라이브러리의 `sfx/reward-03.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+| 효과음 · 성취 카드 칸 도착 | `public/audio/card-slot.mp3` | DeltaCode — item-pickup-v1 (freesound.org/people/DeltaCode/sounds/678384). 같은 라이브러리의 `sfx/pickup-01.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+| 효과음 · 성취 카드 6장 완성 | `public/audio/card-complete.mp3` | el_boss — Game Success Fanfare Short (freesound.org/people/el_boss/sounds/677858). 같은 라이브러리의 `sfx/victory-jingle-01.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+
+효과음 출처의 기계 판독용 기록은 `public/audio/sources.json`의 `rewardCards`에 있다.

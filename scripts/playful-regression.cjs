@@ -62,9 +62,12 @@ async function quickRepair(){
 }
 // Since 2026-11-15 a map villain blocks the road after each district. The learner presses the
 // walk button until three hits clear it; the same button then walks into the next building.
+// Since 2026-11-18 the third hit shows an achievement card, which stays until it is put away.
 async function enterNext(){
   for(let k=0;k<200;k++){
     if(!await page.locator('.quest-city').count())return;
+    const card=page.locator('.rc-take.is-ready');
+    if(await card.count()){await card.click({force:true}).catch(()=>{});await wait(400);continue;}
     const enter=page.locator('.modal-backdrop [data-action="enter"]');
     if(await enter.count()){await enter.click();continue;}
     const walk=page.locator('[data-action="walk-next"]');

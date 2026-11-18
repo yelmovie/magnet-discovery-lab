@@ -93,5 +93,50 @@
         "role": "all villains defeated"
       }
     }
+  },
+  "rewardCards": {
+    "note": "Achievement card cues from the shared science34 CC0 library (_shared/sfx-library-20261117, licences rechecked 2026-11-17). Copied byte for byte under the names the game loads; trimmed, faded and loudness-normalised in the library, no pitch or speed change.",
+    "files": {
+      "card-whoosh": {
+        "title": "Slow Swosh 40",
+        "creator": "qubodup",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/qubodup/sounds/60027",
+        "library": "sfx/wind-whoosh-03.mp3",
+        "role": "card flies in and into its slot"
+      },
+      "card-reveal": {
+        "title": "Fantasy_ui_Button_3.wav",
+        "creator": "ZenithInfinitiveStudios",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/ZenithInfinitiveStudios/sounds/376745",
+        "library": "sfx/reward-01.mp3",
+        "role": "card revealed (one to three stars)"
+      },
+      "card-epic": {
+        "title": "Achievement Happy Beeps Jingle",
+        "creator": "CogFireStudios",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/CogFireStudios/sounds/619838",
+        "library": "sfx/reward-03.mp3",
+        "role": "card revealed (four and five stars, bonus)"
+      },
+      "card-slot": {
+        "title": "item-pickup-v1.wav",
+        "creator": "DeltaCode",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/DeltaCode/sounds/678384",
+        "library": "sfx/pickup-01.mp3",
+        "role": "card lands in its slot"
+      },
+      "card-complete": {
+        "title": "Game Success Fanfare Short",
+        "creator": "el_boss",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/el_boss/sounds/677858",
+        "library": "sfx/victory-jingle-01.mp3",
+        "role": "all six cards collected"
+      }
+    }
   }
 }

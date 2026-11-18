@@ -6,8 +6,10 @@ export interface AudioSettings {
   /** Background music volume, 0…1. Effects keep a separate fixed level. */
   musicVolume?: number;
 }
-export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | EncounterKind;
+export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | EncounterKind | CardKind;
 /** Map villain cues. They layer on one another so a swing, its clank and the retreat are all heard. */
+/** Achievement card cues: fly in, reveal (the rarest cards use the longer jingle), land in the slot, full set. */
+export type CardKind = 'card-whoosh' | 'card-reveal' | 'card-epic' | 'card-slot' | 'card-complete';
 export type EncounterKind = 'encounter-swing' | 'encounter-one' | 'encounter-two' | 'encounter-finish' | 'encounter-exit' | 'encounter-contact' | 'encounter-appear' | 'encounter-victory';
 
 const EFFECT_GAIN = 0.16;
@@ -30,7 +32,8 @@ let installed = false;
 let activated = false;
 const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate',
   'encounter-swing':'map-zap','encounter-one':'map-clank-one','encounter-two':'map-clank-two','encounter-finish':'map-hit-heavy',
-  'encounter-exit':'map-exit','encounter-contact':'map-bump','encounter-appear':'map-appear','encounter-victory':'map-victory' };
+  'encounter-exit':'map-exit','encounter-contact':'map-bump','encounter-appear':'map-appear','encounter-victory':'map-victory',
+  'card-whoosh':'card-whoosh','card-reveal':'card-reveal','card-epic':'card-epic','card-slot':'card-slot','card-complete':'card-complete' };
 // The clank lands on the villain's flinch (its squash peaks about 90 ms after the press);
 // the retreat follows the shrinking exit pose. Levels keep a hit above the swing and the arrival quiet.
 const encounterDelay: Partial<Record<EffectKind, number>> = { 'encounter-one': .07, 'encounter-two': .07, 'encounter-finish': .07, 'encounter-exit': .3 };
@@ -238,6 +241,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
   const notes: Record<EffectKind, number[]> = {
     'encounter-swing':[1180,760], 'encounter-one':[980,510], 'encounter-two':[790,510,312], 'encounter-finish':[630,520,390,250],
     'encounter-exit':[520,390,260], 'encounter-contact':[880,422], 'encounter-appear':[392,523], 'encounter-victory':[523,659,784,1047],
+    'card-whoosh':[660,880], 'card-reveal':[659,784,1047], 'card-epic':[523,659,784,1047,1319], 'card-slot':[880,1175], 'card-complete':[523,659,784,1047],
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
     bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285],

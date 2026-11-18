@@ -177,7 +177,8 @@ describe('music and game effects', () => {
     playEffect('pick',{music:false,effects:true});
     for(let i=0;i<10;i++)await Promise.resolve();
     const files=['click','pick','drop','compare','success','reward','bump','step','snap','lid','pad','crate',
-      'map-zap','map-clank-one','map-clank-two','map-hit-heavy','map-exit','map-bump','map-appear','map-victory'];
+      'map-zap','map-clank-one','map-clank-two','map-hit-heavy','map-exit','map-bump','map-appear','map-victory',
+      'card-whoosh','card-reveal','card-epic','card-slot','card-complete'];
     expect(request.mock.calls.map(([url])=>url).sort()).toEqual(files.map(name=>`/audio/${name}.mp3`).sort());
     const experimentSounds=['snap','lid','pad','crate'] as const;
     for(const kind of experimentSounds)playEffect(kind);

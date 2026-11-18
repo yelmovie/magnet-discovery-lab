@@ -38,6 +38,7 @@ import { ideaView } from './idea-lab';
 import { usesIdeaLab } from './idea-model';
 import { icon, mascot } from './art';
 import type { View } from './activity-types';
+import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, revealRewardCard, rewardSlotsHtml } from './map-reward-cards';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
@@ -67,6 +68,7 @@ const canActivate = () => coreReady(s, adminOn());
 const esc = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 function sound(success = false) { ensureAudio(s.settings); playEffect(success ? 'success' : 'click', s.settings); }
+bindRewardSound(name => playEffect(`card-${name}`, s.settings));
 function mapSoundOn() {
   const audio=normalizedAudioSettings(s.settings);
   return audio.music||audio.effects;
@@ -141,7 +143,7 @@ function render() {
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
   }
-  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', canBack: backStack.length > 0, teacher:adminOn(), sound:page==='city'?mapSoundOn():undefined })}<main id="main-content" class="page page-${page}">${html}</main>`;
+  app.innerHTML = `${questHud({ first: page === 'title', homeLabel: page === 'city' ? '시작 화면으로 가요' : '지도로 가요', canBack: backStack.length > 0, teacher:adminOn(), sound:page==='city'?mapSoundOn():undefined, rewards:page==='city'?rewardSlotsHtml(s):undefined })}<main id="main-content" class="page page-${page}">${html}</main>`;
   bindCommon();
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
@@ -155,8 +157,27 @@ function render() {
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();},onArrive:showPlace,onResident:showResident});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{const before=ownedRewardCards(s);s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();ownedRewardCards(s).forEach((owned,index)=>{if(owned&&!before[index])earnRewardCard(index);});},onArrive:showPlace,onResident:showResident});
 }
+/** The card follows the villain's exit. An open card pauses the map (below), so the all-villains finale waits until the card is put away. */
+function earnRewardCard(index:number) {
+  const expedition=city;
+  holdRewardCard(index);
+  const open=()=>{
+    if(page!=='city'||city!==expedition)return dropRewardCard(index,s);
+    // Settings or a resident opened in the meantime go first.
+    if(app.inert||document.querySelector('.modal-backdrop,dialog[open]')){window.setTimeout(open,300);return;}
+    void revealRewardCard(index,s);
+  };
+  window.setTimeout(open,s.settings.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches?760:520);
+}
+// The map stands still while a new card or the card album is open.
+let cardLayerOpen=false;
+new MutationObserver(()=>{
+  const open=Boolean(document.querySelector('.rc-layer'));
+  if(open===cardLayerOpen)return;
+  cardLayerOpen=open;city?.pause(open||Boolean(document.querySelector('.modal-backdrop')));
+}).observe(document.body,{childList:true});
 function showResident(stage:number, completion?: { reward: string; destination: number; label: string }) {
   const {name}=residents[stage];
   const expedition = city;
@@ -562,6 +583,6 @@ window.addEventListener('popstate', () => {
   historyDepth = depth; void flush(); goBack();
 });
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop'))); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop,.rc-layer'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });
 void boot();
