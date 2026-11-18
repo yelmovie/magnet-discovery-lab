@@ -439,3 +439,13 @@ body.quest-mode #app .quest-activity :is(.mission-head .stage-label,.mission-hea
 body.quest-mode #app .idea-lab :is(.idea-head .stage-label,.idea-steps li,.idea-resident-name,.idea-custom-conversation label,.idea-sketch-hint,.idea-body small) { font-size:18px; }
 body.quest-mode #app :is(.final-bookmark,.final-note-photos figcaption) { font-size:18px; }
 body.quest-mode :is(.tool-belt .tool-slot span,.tool-belt .tool-slot b,.resident-stage-album .resident-stage-receipt,.resident-stage-album strong,.resident-stage-album b,.game-settings p[id$="-lock"]) { font-size:18px; }
+/* The same 18px floor on the reflection quiz, record drawer, workshop cards, plaza notebook,
+   resident reward line and certificate panel (2026-11-18). */
+body.quest-mode #app .play-discovery :is(strong,small,.quiz-choice-number,.inquiry-option span,[data-inquiry="revisit"]),
+body.quest-mode .record-drawer-content :is(small,b,strong,figcaption,span),
+body.quest-mode #app .idea-lab :is(.idea-problem-line,.science-check,dt,dd,legend,.idea-empty,.idea-pitch label,.idea-resident-bubble p,.idea-feedback span),
+body.quest-mode #app .final-review :is(.final-answer,.btn,.final-notebook-heading span,.final-answer-feedback span,.final-review-summary b),
+body.quest-mode :is(.resident-stage-name span,.resident-stage-reward strong,.resident-stage-reward span),
+body.quest-mode #app .certificate-panel :is(p,small,.ability-option),
+body.quest-mode #app .certificate :is(.certificate-overline,.certificate-ability) { font-size:18px; }
+body.quest-mode .trial-picture small { font-size:18px; }

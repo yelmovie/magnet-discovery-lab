@@ -15,7 +15,7 @@ export function runCourseMarkup(): string {
 <div class="run-magnet" role="img" aria-label="내 자석"><span>내 자석</span><i data-run-pole="rear"></i><i data-run-pole="front"></i><b></b></div>
 <div class="run-pad" role="group" aria-label="이동 방향판">${arrow('up', '앞으로', '▲')}${arrow('left', '왼쪽으로', '◀')}${arrow('right', '오른쪽으로', '▶')}${arrow('down', '뒤로', '▼')}</div>
 <div class="run-controls"><button type="button" class="run-jump" data-run="jump" aria-label="점프">점프</button></div>
-<small class="run-model-note">설명 모형이야. 실제 자석의 힘은 자석과 거리에 따라 달라져.</small>`;
+<details class="run-model-note"><summary>게임과 실제 과학</summary><p>설명 모형이야. 실제 자석의 힘은 자석과 거리에 따라 달라져.</p></details>`;
 }
 
 // The scene outlives the re-render that follows each stop, so the runner stays where she was.
