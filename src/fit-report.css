@@ -116,3 +116,16 @@
     #app .page-certificate .certificate .certificate-preview { position: absolute; bottom: 100%; left: 50%; translate: -50% -4px; margin: 0; white-space: nowrap; }
   }
 }
+
+/* Layout balance (2026-11-18): the HUD home button (지도로 가요) already goes to the city, so the report and
+   certificate keep only their own actions. On large screens the report is drawn larger and the
+   certificate sheet may grow past the old 1500px stage. */
+#app .report-actions [data-action="city"], #app .certificate-actions [data-action="city"] { display: none; }
+@media screen and (min-width: 1500px) and (min-height: 900px) and (min-aspect-ratio: 1/1) {
+  #app > main.page-report > :is(.report-heading, .report-list, .report-actions) { zoom: 1.15; }
+  body.quest-mode #app > main.page-certificate { --cert-col: calc(min(1800px, var(--fit-vw) - 2 * var(--hud-inset)) - var(--cert-panel) - var(--cert-gap)); }
+  #app .page-certificate .certificate-stage { width: min(1800px, 100%); }
+}
+@media screen and (min-width: 1800px) and (min-height: 1000px) and (min-aspect-ratio: 1/1) {
+  #app > main.page-report > :is(.report-heading, .report-list, .report-actions) { zoom: 1.25; }
+}

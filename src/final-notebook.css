@@ -116,3 +116,7 @@ body.quest-mode #app:has(.final-review) { min-width: 0; height: 100dvh; }
 /* 3-second rule (2026-11-17): the bookmark tab marks the open page and the header counts finished
    pages, so the page number is not repeated; the line above the buttons is the one instruction. */
 #app .final-question-label, #app .final-answer-instruction { display: none; }
+
+/* Layout balance (2026-11-18): on large screens the notebook is drawn larger instead of floating small. */
+@media (min-width: 1500px) and (min-height: 900px) { #app .final-notebook { zoom: 1.1; } }
+@media (min-width: 1800px) and (min-height: 1000px) { #app .final-notebook { zoom: 1.25; } }

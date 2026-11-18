@@ -45,7 +45,7 @@ export function questTitle(save: { started: boolean }, teacher=false): string {
     : `<button type="button" class="quest-cta quest-start" data-action="start">시작하기${arrow}</button>`;
   const continueButton = save.started
     ? `<button type="button" class="quest-cta quest-start" data-action="start">이어 하기${arrow}</button>`
-    : '<button type="button" class="quest-cta quest-cta-secondary" disabled>이어 하기</button>';
+    : ''; // Nothing to continue yet: no greyed-out second button next to 시작하기.
   return `<section class="quest-title" aria-label="밀고 당기는 도시">
     <div class="quest-title-glow" aria-hidden="true"></div>
     <div class="quest-title-content">
