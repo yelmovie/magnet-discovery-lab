@@ -464,7 +464,9 @@ function openConcept(stage: number, replay = true, onContinue?: () => void, fini
   let dispose = () => {};
   const modal = showModal(conceptMarkup(stage,replay),concepts[stage].title,()=>dispose());
   modal.dialog.classList.add('concept-dialog');
-  setAudioPaused(true);
+  // Silence the screen underneath, then let narration back on: voice-lines.ts reads each concept caption line aloud
+  // (el-concept-N-M.mp3), and playNarration stays silent while audio is paused. The narration ducks the music.
+  setAudioPaused(true); setAudioPaused(false);
   dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();},finishVideo,continueLabel);
 }
 type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] };

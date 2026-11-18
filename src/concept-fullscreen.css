@@ -1,0 +1,90 @@
+/* Full-screen concept film (2026-11-18), the same look as the story films (story-video.css).
+   The whole 16:9 frame shows (contain, black bars). The film draws its own title and caption band
+   (scripts/render-concepts.py), so nothing covers the bottom 30% of the frame while it plays:
+   scene steps and buttons sit along the top, the question card waits for the end of the film.
+   concept-focus.js links concept-focus.css at run time after the bundle, so these selectors carry one more class. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player {
+  --film-h: min(100dvh, 100dvw * 9 / 16);
+  position: fixed; inset: 0; width: 100dvw; max-width: none; height: 100dvh; max-height: none; margin: 0;
+  padding: 12px 76px 12px 12px; border: 0; border-radius: 0; background: #000; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none; overflow: hidden; scrollbar-gutter: auto;
+  display: flex; flex-flow: row wrap; align-items: flex-start; align-content: flex-start; justify-content: space-between; gap: 8px;
+  color: #fff8e7; text-align: left;
+}
+/* The film shows the same title in its own header; the heading stays for screen readers. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-heading {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-screen {
+  position: absolute; inset: 0; z-index: 0; aspect-ratio: auto; min-height: 0; border-radius: 0; background: #000; overflow: hidden;
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-video { background: #000; object-fit: contain; cursor: pointer; }
+
+/* Top bar: scene steps on the left, restart / continue on the right, close in the corner. Dark glass like the story controls. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-rail { position: relative; z-index: 2; flex: 0 1 auto; margin: 0; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps { display: flex; gap: 6px; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-actions { position: relative; z-index: 2; display: flex; flex-wrap: nowrap; gap: 8px; margin-left: auto; padding: 0; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player :is(.science-focus-steps button, .concept-actions .btn) {
+  width: auto; min-height: 48px; margin: 0; padding: 6px 14px; border: 2px solid #fff8e780; border-radius: 12px;
+  background: #0b2328b8; color: #fff8e7; box-shadow: none; font: 400 clamp(15px, 1.5vw, 21px)/1.2 var(--font-display); white-space: nowrap;
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps button > span { background: #fff8e733; color: #fff8e7; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps button.is-seen:not(.is-current) { border-color: #9fc7b7; background: #0b2328b8; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps button.is-current { border-color: #ffe7a2; background: #f4c35c; color: #3e3217; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps button.is-current > span { background: #735820; color: #fff; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .concept-actions .btn.primary { border-color: #a9712f; background: linear-gradient(#ffe7a2, #f4c35c); color: #493a22; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-actions .btn:disabled { opacity: .8; cursor: default; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog > .modal-close { top: 12px; right: 12px; width: 52px; height: 52px; border: 2px solid #fff8e780; background: #0b2328b8; color: #fff8e7; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog :is(.science-focus-rail, .concept-actions, .modal-close) button:hover:not(:disabled) { filter: brightness(1.12); }
+
+/* Play button: only while the film is paused (or autoplay was blocked). */
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-play {
+  position: absolute; left: 50%; top: 45%; translate: -50% -50%; z-index: 3; display: inline-flex; align-items: center; gap: 10px;
+  min-height: 80px; padding: 0 32px; border: 3px solid #f4c35c; border-radius: 16px; background: #0b2328e0; color: #fff8e7;
+  box-shadow: 0 8px 30px #0008; font: 400 clamp(24px, 2.4vw, 34px)/1 var(--font-display); cursor: pointer;
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-play[hidden] { display: none; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog :is(.concept-play, .concept-actions .btn, .science-focus-steps button):focus-visible { outline: 4px solid #ffe7a2; outline-offset: 3px; }
+
+/* DOM caption: shown before the film plays and when it fails. It covers the caption band of the poster frame
+   (render-concepts.py: x 62-1218, y 594-677 of 1280x720) so the poster's own line never peeks out. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .concept-caption {
+  position: absolute; left: 50%; bottom: calc((100dvh - var(--film-h)) / 2 + var(--film-h) * .05); translate: -50% 0; z-index: 2;
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  width: min(var(--film-h) * 16 / 9 * .93, calc(100% - 16px)); min-height: calc(var(--film-h) * .135); margin: 0; padding: 8px 24px;
+  border: 3px solid #f4c35ccc; border-radius: 16px;
+  background: #0b2328; color: #fff8e7; text-align: center; word-break: keep-all;
+  font: 400 clamp(20px, 2.2vw, 34px)/1.35 var(--font-display);
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .concept-caption .science-keyword { color: #3e3217; }
+/* While the film plays its burned-in caption speaks for the DOM one: screen readers and the voice watcher still read it. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player.has-film .concept-caption {
+  width: 1px; min-height: 0; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* The question waits for the end of the film (or a failed film), over the film's title so the final diagram stays in view. */
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-summary { display: none; }
+body.quest-mode .modal-backdrop > .modal.concept-dialog:is(.is-ended, .is-failed) .concept-summary {
+  display: block; position: absolute; left: 50%; top: calc((100dvh - var(--film-h)) / 2 + var(--film-h) * .2); translate: -50% -50%; z-index: 3; width: min(760px, calc(100% - 32px)); margin: 0;
+  padding: 16px 24px; border: 3px solid #f4c35c; border-radius: 18px; background: #fffdf1f2; color: #173f47; box-shadow: 0 10px 40px #0007;
+  text-align: center; word-break: keep-all; font-size: clamp(20px, 2vw, 28px); line-height: 1.4;
+  animation: concept-question-in .5s cubic-bezier(.2, 1.3, .3, 1) both;
+}
+body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-error {
+  inset: auto; left: 50%; top: 45%; translate: -50% -50%; z-index: 3; width: min(760px, calc(100% - 32px)); margin: 0;
+  padding: 14px 20px; border-radius: 14px; background: #fff9e9; color: #173f47; text-align: center;
+}
+@keyframes concept-question-in { from { opacity: 0; translate: -50% calc(-50% + 30px); scale: .94; } }
+
+@media (max-width: 900px), (max-height: 500px) {
+  body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player { padding: 8px 64px 8px 8px; gap: 6px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog > .modal-close { top: 8px; right: 8px; width: 48px; height: 48px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player :is(.science-focus-steps button, .concept-actions .btn) { min-height: 44px; padding: 4px 10px; font-size: 15px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .science-focus-steps button > span { display: none; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog.science-focus-player .concept-caption { padding: 4px 16px; font-size: 18px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-error { padding: 10px 16px; font-size: 18px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog:is(.is-ended, .is-failed) .concept-summary { top: calc((100dvh - var(--film-h)) / 2 + var(--film-h) * .22); padding: 8px 16px; font-size: 18px; }
+  body.quest-mode .modal-backdrop > .modal.concept-dialog .concept-play { min-height: 64px; font-size: 24px; }
+}
+body.reduce-motion .modal.concept-dialog .concept-summary { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { body.quest-mode .modal.concept-dialog .concept-summary { animation: none !important; } }
