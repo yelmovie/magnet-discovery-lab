@@ -41,12 +41,18 @@ const shown = (save: Progress) => ownedRewardCards(save).map((owned, index) => o
 export const rewardSlotsHtml = (save: Progress) => rewardCards().slotsHtml(shown(save));
 /** Keeps a just-earned card out of its slot until `revealRewardCard` or `dropRewardCard`. */
 export function holdRewardCard(index: number) { flying.add(index); }
+// Cards whose turn has come (the villain's exit has played) and that are not in their slot yet.
+const due = new Set<number>();
+/** The villain has left: this card is next, even while a dialog makes it wait. */
+export function queueRewardCard(index: number) { due.add(index); }
+/** True from a card's turn until it is put away. The map holds its villains meanwhile, so the all-villains finale cannot slip in ahead of a waiting card. */
+export const rewardCardDue = () => due.size > 0;
 /** The reveal was skipped (the map closed first): the card simply sits in its slot. */
-export function dropRewardCard(index: number, save: Progress) { flying.delete(index); rewardCards().syncSlots(shown(save)); }
+export function dropRewardCard(index: number, save: Progress) { flying.delete(index); due.delete(index); rewardCards().syncSlots(shown(save)); }
 /** Flies the card in from the defeated villain, which is still on the map saying goodbye. */
 export function revealRewardCard(index: number, save: Progress) {
   const foe = document.querySelector<HTMLElement>(`.map-encounter-foe[data-encounter="${cards[index][0]}"]`);
   const box = foe && !foe.hidden ? foe.getBoundingClientRect() : undefined;
   const origin = box && { x: box.left, y: box.top - (parseFloat(foe!.style.getPropertyValue('--encounter-size')) || 0) / 2 };
-  return rewardCards().reveal(index, origin, ownedRewardCards(save)).finally(() => flying.delete(index));
+  return rewardCards().reveal(index, origin, ownedRewardCards(save)).finally(() => { flying.delete(index); due.delete(index); });
 }

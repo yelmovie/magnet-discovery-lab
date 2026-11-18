@@ -38,7 +38,7 @@ import { ideaView } from './idea-lab';
 import { usesIdeaLab } from './idea-model';
 import { icon, mascot } from './art';
 import type { View } from './activity-types';
-import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, revealRewardCard, rewardSlotsHtml } from './map-reward-cards';
+import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, queueRewardCard, revealRewardCard, rewardCardDue, rewardSlotsHtml } from './map-reward-cards';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
@@ -157,7 +157,7 @@ function render() {
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{const before=ownedRewardCards(s);s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();ownedRewardCards(s).forEach((owned,index)=>{if(owned&&!before[index])earnRewardCard(index);});},onArrive:showPlace,onResident:showResident});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{const before=ownedRewardCards(s);s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();ownedRewardCards(s).forEach((owned,index)=>{if(owned&&!before[index])earnRewardCard(index);});},encounterHold:rewardCardDue,onArrive:showPlace,onResident:showResident});
 }
 /** The card follows the villain's exit. An open card pauses the map (below), so the all-villains finale waits until the card is put away. */
 function earnRewardCard(index:number) {
@@ -165,6 +165,8 @@ function earnRewardCard(index:number) {
   holdRewardCard(index);
   const open=()=>{
     if(page!=='city'||city!==expedition)return dropRewardCard(index,s);
+    // It is the card's turn from here: the villains and the finale wait behind it (encounterHold), also while it waits for a dialog.
+    queueRewardCard(index);
     // Settings or a resident opened in the meantime go first.
     if(app.inert||document.querySelector('.modal-backdrop,dialog[open]')){window.setTimeout(open,300);return;}
     void revealRewardCard(index,s);
