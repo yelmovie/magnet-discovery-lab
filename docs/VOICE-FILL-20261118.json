@@ -1,0 +1,38 @@
+{
+ "date": "2026-11-18",
+ "provider": "ElevenLabs",
+ "model": "eleven_v4",
+ "plan": "ElevenLabs Creator (유료, 상업 이용 가능)",
+ "takes": 1,
+ "cast": [
+  {
+   "character": "재료 연구원",
+   "voiceId": "9cino9hfS3ougiPeFvp1",
+   "voiceName": "수진",
+   "why": "긴급 의뢰 카드 초상(resident-2)과 같은 주민의 기존 ElevenLabs 목소리"
+  }
+ ],
+ "note": "계획 142줄 중 1줄만 생성됨. 나머지는 ElevenLabs 429 daily_generation_limit_reached로 미생성(_scratch/voice-fill-20261118/05/remaining.json). 발명가 4줄은 아직 Qwen3-TTS.",
+ "wiring": "src/puzzle-hud.ts crisisVoices (카드 과제 문장 정확 일치 → playNarration, 출동하기로 카드 닫으면 정지)",
+ "lines": [
+  {
+   "key": "crisis-4",
+   "speaker": "재료 연구원",
+   "voiceId": "9cino9hfS3ougiPeFvp1",
+   "voiceName": "수진",
+   "model": "eleven_v4",
+   "flowId": "9ZaUOzm2bY3JJo6pmEsB",
+   "generationId": "WLarYZac7Bq5WuDABXxm",
+   "text": "자석을 열쇠 가까이 끌어 봐. 붙으면 자석과 함께 왼쪽으로 꺼내 줘.",
+   "prompt": "[urgent] 철 열쇠가 깊은 틈에 떨어졌어! 자석을 열쇠 가까이 끌어 봐. 붙으면 자석과 함께 왼쪽으로 꺼내 줘.",
+   "asr": "철 열쇠가 깊은 틈에 떨어졌어. 자석을 열쇠 가까이 끌어봐. 붙으면 자석과 함께 왼쪽으로 꺼내줘.",
+   "match": 1.0,
+   "end": 1.0,
+   "lufs": -16.78,
+   "peakDbtp": -1.7,
+   "duration": 7.29,
+   "sha256": "d94a4ecd972dd8153ac4b3515af26bea204daaf9fa84e0b78ec341970c971201",
+   "file": "public/audio/voices/el-crisis-4.mp3"
+  }
+ ]
+}

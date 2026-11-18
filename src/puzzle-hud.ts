@@ -1,7 +1,14 @@
 import type { Activity } from './domain';
 import type { Context } from './activity-types';
 import { puzzleSolved } from './mission-model';
+import { playNarration } from './game-audio';
 import './puzzle-hud.css';
+
+// ElevenLabs recordings of the crisis cards (docs/VOICE-FILL-20261118.json), keyed by the exact task sentence on the card.
+const crisisVoices: Record<string, string> = {
+  '자석을 열쇠 가까이 끌어 봐. 붙으면 자석과 함께 왼쪽으로 꺼내 줘.': '/audio/voices/el-crisis-4.mp3',
+};
+let spoken: { src: string; at: number; stop: () => void } | undefined;
 
 /** Introduce the device problem and the goal of each puzzle activity. */
 const crises: Record<number, { title: string; task: string }> = {
@@ -33,8 +40,11 @@ export function puzzleHud(n: number, a: Activity): string {
 export function bindPuzzleHud(c: Context): void {
   const card = c.root.querySelector<HTMLElement>('.puzzle-crisis');
   if (!card) return;
+  const voice = crisisVoices[card.querySelector('.puzzle-crisis-copy p')?.textContent?.trim() ?? ''];
+  // Activity re-renders rebind the card; the line starts once per card, not on every refresh.
+  if (voice && !(spoken?.src === voice && Date.now() - spoken.at < 9000)) spoken = { src: voice, at: Date.now(), stop: playNarration(voice, c.s.settings) };
   card.querySelector('[data-mission="crisis-go"]')?.addEventListener('click', () => {
-    c.a.values.crisisSeen = true; card.remove(); c.touch();
+    spoken?.stop(); spoken = undefined; c.a.values.crisisSeen = true; card.remove(); c.touch();
     c.root.querySelector<HTMLElement>('[data-drag]')?.focus({ preventScroll: true });
   });
 }
