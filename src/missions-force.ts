@@ -263,7 +263,7 @@ export function distanceLab(v: Surface){
       v.settle({},()=>{released=1;const still=`${measure}에서는 ${objectSubject} 움직이지 않았어. 더 가까운 곳 중 붙을 것 같은 자리를 골라 봐.`;if(v.a.values.puzzleVersion===1&&!rescue)v.miss(still,reachHints);else v.tell(still);v.draw();v.c.touch();},t=>{released=handRelease(t);return t;},700);
       return;
     }
-    if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${objectName}를 살펴봐.`);
+    if(r>1&&!magneticReach(m,target))return v.tell(`자석을 조금 더 가까이 옮기고 ${objectName}${objectName==='클립'?'을':'를'} 살펴봐.`);
     if(r===2&&!paperIn())return v.tell('앞 실험의 간격은 그대로야. 얇은 종이만 점선 안에 넣어 봐.');
     if(r===2)v.set('paper',paperSlot);
     const end=r===0?target:landingPoint(m);
