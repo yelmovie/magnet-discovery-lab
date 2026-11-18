@@ -4,8 +4,10 @@ import { setAudioPaused, setIntroMusicMix } from './game-audio';
 import './voice-lines';
 import './story-video.css';
 
-// Full-screen story films. The rendered mp4s carry effects and short sound effects only (scripts/render-story-videos.mjs);
-// captions, place tags, district stamps and the closing card stay in the DOM so they stay sharp and editable.
+// Full-screen story films. The mp4s carry effects, short sound effects and burned-in captions
+// (docs/film-captions-20261118: same text and timing as the cues below); the voices are separate mp3s started per cue.
+// While the film plays the DOM caption is only read by screen readers; it shows again when the film fails.
+// Place tags, district stamps and the closing card stay in the DOM, clear of the film's caption zone.
 // The game's BGM keeps playing underneath: main theme for the intro, finale theme for the ending page.
 // side 'left' keeps the caption off a clue the shot is pointing at (bottom centre-right).
 type Cue = [start: number, end: number, who: '밀이' | '당이', text: string, side?: 'left'];
@@ -19,7 +21,7 @@ type Film = {
 const districts = ['생활', '재료', '극', '원격', '발명'];
 const films = {
   intro: {
-    seconds: 17.5, cardAt: 16.2,
+    seconds: 17.5, cardAt: 17,
     label: '고장 난 자석 도시를 지나 연구소와 발명 공방으로 들어가는 인트로 영상',
     places: [[0, '긴급 수리 의뢰', '우편국 골목'], [5.2, '단서를 찾아라', '힘 실험 연구소'], [11.7, '나만의 발명', '시민 발명 공방']],
     cues: [
@@ -31,7 +33,7 @@ const films = {
     card: replay => `<span class="story-card-kicker">오늘의 수리 의뢰</span><h2 class="story-card-title">수리 대장은 바로 너!</h2><p class="story-card-line">자석을 직접 움직여 다섯 구역을 고쳐 줘.</p><ul class="story-card-rewards" aria-label="받을 수 있는 보상"><li>${icon('flask', 22)}구역마다 새 도구</li><li>${icon('spark', 22)}도시 축제</li><li>${icon('check', 22)}연구원 인증서</li></ul><button type="button" class="story-finish" data-story="finish">${replay ? '돌아가기' : `밀이·당이와 출발! ${icon('arrow', 24)}`}</button>`,
   },
   final: {
-    seconds: 17.4, cardAt: 16,
+    seconds: 17.4, cardAt: 16.8,
     label: '학생의 발명품이 성공하고 다시 움직이는 도시와 축제 광장의 메달을 보여 주는 엔딩 영상',
     places: [[0, '발명품 시험 운행', '시민 발명 공방'], [5.3, '다시 움직이는 도시', '원격 제어 구역'], [10.73, '도시 축제', '중앙 광장']],
     cues: [
@@ -148,7 +150,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   };
   const finish = () => { if (closed) return; cleanup(); options.onDone(); };
   // Missing or stalled video: show the last scene with the closing card so the story still lands.
-  const fallback = () => { if (closed || failed) return; failed = true; clearTimeout(timeout); video.pause(); video.hidden = true; endFrame.hidden = false; play.hidden = true; showCard(); tick(); };
+  const fallback = () => { if (closed || failed) return; failed = true; layer.classList.remove('has-film'); clearTimeout(timeout); video.pause(); video.hidden = true; endFrame.hidden = false; play.hidden = true; showCard(); tick(); };
   const watchdog = () => { clearTimeout(timeout); timeout = window.setTimeout(fallback, 8000); };
   const start = () => {
     if (closed || failed) return; play.hidden = true; watchdog();
@@ -164,7 +166,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     tick(); showCard();
   };
 
-  video.addEventListener('playing', () => { setAudioPaused(false); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
+  video.addEventListener('playing', () => { if (!failed) layer.classList.add('has-film'); setAudioPaused(false); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
   video.addEventListener('pause', () => { for (const voice of voices) voice.pause(); if (!video.ended) { pause.setAttribute('aria-label', '계속 보기'); pause.innerHTML = icon('play', 26); } }, on);
   video.addEventListener('waiting', watchdog, on);
   video.addEventListener('timeupdate', tick, on);

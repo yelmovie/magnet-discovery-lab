@@ -1,6 +1,7 @@
-/* Full-screen story film: video fills the screen, DOM text sits on top. */
-.story-layer { position: fixed; inset: 0; z-index: 200; overflow: hidden; background: #0b2328; color: var(--quest-cream); font-family: var(--font-body); animation: story-in .5s ease-out; }
-.story-video, .story-end { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Full-screen story film: the whole 16:9 frame shows (contain, black bars) so its burned-in captions are never cropped.
+   --film-h is the film's on-screen height; its bottom 31% holds the caption (speaker chip included) and stays clear of DOM. */
+.story-layer { --film-h: min(100dvh, 100dvw * 9 / 16); position: fixed; inset: 0; z-index: 200; overflow: hidden; background: #000; color: var(--quest-cream); font-family: var(--font-body); animation: story-in .5s ease-out; }
+.story-video, .story-end { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
 .story-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(#0b232899, #0b232800 22%, #0b232800 58%, #0b2328cc); }
 .story-layer.is-card .story-shade { background: linear-gradient(#0b232866, #0b232800 22%, #0b232800 40%, #0b2328e6); transition: background .6s; }
 
@@ -48,7 +49,7 @@
 .story-finish { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-sm); min-height: var(--button-height-lg, 64px); margin-top: var(--space-sm); padding: var(--space-sm) var(--space-xl); border: 2px solid var(--quest-gold-edge); border-radius: var(--radius-md); background: linear-gradient(var(--quest-gold-light), var(--quest-gold)); color: #493a22; font: 400 var(--font-size-button)/1.2 var(--font-display); white-space: nowrap; box-shadow: 0 5px 0 var(--quest-gold-edge); cursor: pointer; animation: story-finish-pulse 2.6s 1s ease-in-out infinite; }
 .story-finish:active { translate: 0 4px; box-shadow: 0 1px 0 var(--quest-gold-edge); }
 
-.story-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: #fff8e726; }
+.story-progress { position: absolute; left: 0; right: 0; top: 0; height: 6px; background: #fff8e726; }
 .story-progress span { display: block; height: 100%; background: var(--quest-gold); transform-origin: left; transform: scaleX(0); transition: transform .25s linear; }
 
 @keyframes story-in { from { opacity: 0; } }
@@ -92,3 +93,9 @@ body.reduce-motion .story-layer :is(.story-place, .story-caption).is-on { opacit
   .story-card-title { font-size: 26px; }
   .story-finish { min-height: 48px; }
 }
+
+/* While the film plays (has-film) its own captions speak for the DOM caption: keep the text for screen readers only,
+   lighten the shade over the film's caption and lift the district stamps above the caption zone. */
+.story-layer.has-film .story-caption { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.story-layer.has-film:not(.is-card) .story-shade { background: linear-gradient(#0b232899, #0b232800 22%); }
+.story-layer.has-film:not(.is-card) .story-bottom { top: auto; bottom: calc((100dvh - var(--film-h)) / 2 + var(--film-h) * .31 + 8px); overflow: visible; }
