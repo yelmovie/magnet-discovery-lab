@@ -318,3 +318,28 @@ describe('resident dialogue voices',()=>{
    playEffect('pick'); expect(bus.gain.value).toBeCloseTo(.048);
    stop(); expect(bus.gain.value).toBe(.16);
  });
+
+describe('map fight cues under a villain voice',()=>{
+  it('still starts the swing, the clank and the retreat at 80% or more while a voice plays',async()=>{
+    const doc=environment();
+    const sources:{connect:ReturnType<typeof vi.fn>;start:ReturnType<typeof vi.fn>;stop:ReturnType<typeof vi.fn>}[]=[];
+    class SampleAudio extends AudioDouble {
+      decodeAudioData = vi.fn(async (data:ArrayBuffer) => data as unknown as AudioBuffer);
+      createBufferSource() {const source={buffer:null,connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;}
+    }
+    vi.stubGlobal('window',{AudioContext:SampleAudio});
+    vi.stubGlobal('fetch',vi.fn(async(url:string)=>({ok:true,arrayBuffer:async()=>({url})})));
+    ensureAudio({music:false,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    for(let i=0;i<10;i++)await Promise.resolve();
+    const context=AudioDouble.instances[0],[effects,fight]=context.gains;
+    const stop=playNarration('/audio/voices/el-villain-01.mp3');
+    playEffect('encounter-swing');playEffect('encounter-finish');playEffect('encounter-exit');
+    const cues=sources.slice(-3);
+    cues.forEach(source=>{expect(source.start).toHaveBeenCalledOnce();expect(source.stop).not.toHaveBeenCalled();});
+    // Each cue's level node feeds the fight bus, which a voice lowers to 80% at most; interface sounds still duck to 30%.
+    const levels=context.gains.slice(2);expect(levels).toHaveLength(3);
+    levels.forEach(level=>{expect(level.connect).toHaveBeenCalledWith(fight);expect(level.gain.value).toBeGreaterThan(0);});
+    expect(fight.gain.value).toBeGreaterThanOrEqual(.16*.7);expect(effects.gain.value).toBeCloseTo(.048);
+    stop();expect(fight.gain.value).toBe(.16);
+  });
+});

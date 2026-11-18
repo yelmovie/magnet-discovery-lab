@@ -113,8 +113,10 @@ export function mountMapEncounters({
   const pose={hero:null,ally:null};
   let current=null,lastNear=null,lastHit=-Infinity,lastTone=-Infinity,saved={},last=null,closed=false;
 
-  function speak(foe,text,time){
+  // A line spoken on a hit waits this long so the clank and retreat are heard first (src/voice-lines.ts reads it).
+  function speak(foe,text,time,voiceDelay=0){
     for(const other of foes)if(other!==foe){other.saidUntil=0;other.bubble.hidden=true;}
+    if(voiceDelay)foe.bubble.dataset.voiceDelay=String(voiceDelay);else delete foe.bubble.dataset.voiceDelay;
     foe.bubble.textContent=text;
     foe.bubble.hidden=false;
     lastSpeechLayout=-Infinity;
@@ -133,7 +135,7 @@ export function mountMapEncounters({
     saved={...saved,[foe.s.id]:n};onSave({...saved});
     // One accepted press: the swing, the clank on the flinch, and on the third hit the retreat.
     tone('swing',n);tone(n===HITS?'finish':'hit',n);if(n===HITS)tone('exit',n);
-    speak(foe, n===HITS?foe.s.finish??'앗, 물러날게!':foe.s.hit?.[n-1]??(n===1?'앗, 들켰네!':'이번 건 제법인데!'),time+(n===HITS?2750:1800));
+    speak(foe, n===HITS?foe.s.finish??'앗, 물러날게!':foe.s.hit?.[n-1]??(n===1?'앗, 들켰네!':'이번 건 제법인데!'),time+(n===HITS?2750:1800),300);
     live.textContent+=n===HITS?' 세 번 명중! 악당이 물러나요.':` ${n}번 명중. ${HITS-n}번 남았어요.`;
     if(n===HITS&&requiredFoes>0&&stages.length===requiredFoes&&stages.every(s=>(saved[s.id]??record[s.id])===HITS))finaleAt=time+2920;
     update({...last,now:time});

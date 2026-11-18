@@ -26,6 +26,9 @@ type Voice = { oscillator: OscillatorNode; gain: GainNode };
 let current: AudioSettings = {};
 let context: AudioContext | undefined;
 let effectBus: GainNode | undefined;
+// Map fight cues have their own bus: a voice lowers them to 80% at most, never mutes them (VILLAIN-VOICE-SFX-FIX-20261118).
+let encounterBus: GainNode | undefined;
+const ENCOUNTER_UNDER_VOICE = 0.8;
 let effectVoices: Voice[] = [];
 let explicitlyPaused = false;
 let installed = false;
@@ -86,6 +89,7 @@ function makeContext() {
   try {
     context = new Constructor();
     effectBus = context.createGain(); effectBus.gain.value = EFFECT_GAIN; effectBus.connect(context.destination);
+    encounterBus = context.createGain(); encounterBus.gain.value = EFFECT_GAIN; encounterBus.connect(context.destination);
   } catch { context = undefined; /* Audio availability must never block the activity. */ }
 }
 
@@ -143,6 +147,7 @@ function apply() {
   applyMusic();
   if (!context || !effectBus) return;
   effectBus.gain.value = EFFECT_GAIN * (narration ? 0.3 : 1);
+  if (encounterBus) encounterBus.gain.value = EFFECT_GAIN * (narration ? ENCOUNTER_UNDER_VOICE : 1);
   const settings = normalizedAudioSettings(current);
   if (!settings.effects || paused()) { silence(effectVoices); stopSamples(); }
 }
@@ -235,7 +240,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
   if(!buffer&&layered&&loading){const asked=Date.now();void loading.then(()=>{if(Date.now()-asked<700)playEffect(kind);});return;}
   if(buffer&&context.createBufferSource){
     const voices=layered?encounterVoices:sampleVoices;
-    const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=sampleGain[kind]??.72;source.connect(gain);gain.connect(effectBus);voices.add(source);
+    const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;gain.gain.value=sampleGain[kind]??.72;source.connect(gain);gain.connect(layered&&encounterBus?encounterBus:effectBus);voices.add(source);
     source.onended=()=>{voices.delete(source);source.disconnect();gain.disconnect();};source.start(context.currentTime+(encounterDelay[kind]??0));return;
   }
   const notes: Record<EffectKind, number[]> = {
@@ -247,7 +252,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
     bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285],
   };
   const frequencies = notes[kind] ?? notes.click, now = context.currentTime + 0.005 + (encounterDelay[kind] ?? 0);
-  frequencies.forEach((frequency, i) => note(frequency, now + i * 0.075, kind === 'reward' ? 0.25 : 0.12, effectBus!, effectVoices, kind === 'step' ? 0.12 : 0.48, 'triangle'));
+  frequencies.forEach((frequency, i) => note(frequency, now + i * 0.075, kind === 'reward' ? 0.25 : 0.12, (layered && encounterBus) || effectBus!, effectVoices, kind === 'step' ? 0.12 : 0.48, 'triangle'));
 }
 
 /** Quiet audio during story/video playback and explicit game suspension. */
@@ -267,6 +272,6 @@ export function disposeAudio() {
     document.removeEventListener('visibilitychange', visibilityChanged);
   }
   installed = false; activated = false; explicitlyPaused = false;
-  const oldContext = context; context = undefined; effectBus = undefined;
+  const oldContext = context; context = undefined; effectBus = undefined; encounterBus = undefined;
   if (oldContext && oldContext.state !== 'closed') void oldContext.close().catch(() => {});
 }

@@ -14,7 +14,14 @@ let current: object | undefined, stop: (() => void) | undefined, owner: Element 
 const seen = new WeakMap<Element, string>();
 const visible = (el: Element) => el.isConnected && !el.closest('[hidden]') && el.getClientRects().length > 0;
 
-export function stopVoiceLine() { pending = []; const s = stop; current = undefined; stop = undefined; owner = undefined; playing = false; s?.(); }
+// A villain line said on a hit (data-voice-delay) starts after the fight cue instead of over it.
+let delayed: ReturnType<typeof setTimeout> | undefined;
+function startAfterCue(src: string, el: Element, ms: number) {
+  stopVoiceLine();
+  const text = seen.get(el);
+  delayed = setTimeout(() => { delayed = undefined; if (visible(el) && seen.get(el) === text) start(src, el); }, ms);
+}
+export function stopVoiceLine() { if (delayed) { clearTimeout(delayed); delayed = undefined; } pending = []; const s = stop; current = undefined; stop = undefined; owner = undefined; playing = false; s?.(); }
 function start(src: string, el: Element) {
   stopVoiceLine();
   const token = {};
@@ -36,7 +43,10 @@ function scan() {
     // A re-render of the same popup must not start the same line again.
     if (!src || (src === lastSrc && (playing || Date.now() - lastAt < 8000))) continue;
     if (playing && el.matches(QUEUED)) { if (!pending.some(p => p[0] === src)) pending.push([src, el]); }
-    else start(src, el);
+    else {
+      const wait = Number((el as HTMLElement).dataset?.voiceDelay) || 0;
+      if (wait > 0) startAfterCue(src, el, wait); else start(src, el);
+    }
   }
 }
 let frame = 0;
