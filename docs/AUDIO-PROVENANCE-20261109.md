@@ -1,6 +1,6 @@
 # 효과음·NPC 음성 변경과 권리 범위
 
-기존 자석 도구의 snap·lid·pad·crate 및 탐험 효과음을 유지했다. NPC가 말하는 동안 효과음을 30%로 낮추고 종료 시 원래 크기로 복원한다. (2026-11-18 갱신) 주민·공방·마스코트 음성 36개 중 32개는 ElevenLabs v4, 발명가 4개는 Qwen3-TTS이며 대사·목소리 ID·해시는 public/audio/voices/manifest.json에 있다. 긴급 의뢰 음성(el-crisis-4.mp3)은 ElevenLabs v4이며 출처는 docs/VOICE-FILL-20261118.json에 있다. 기존 효과음의 Kenney/Impact 라이선스 사본은 public/audio에 있다.
+기존 자석 도구의 snap·lid·pad·crate 및 탐험 효과음을 유지했다. NPC가 말하는 동안 효과음을 30%로 낮추고 종료 시 원래 크기로 복원한다. (2026-11-18 갱신) 주민·공방·마스코트 음성 36개는 모두 ElevenLabs v4이고(발명가 4개는 Qwen3-TTS에서 ElevenLabs로 교체), 대사·목소리 ID·해시는 public/audio/voices/manifest.json에 있다. 팝업 낭독 음성 el-*.mp3 142개의 출처는 docs/VOICE-FILL-20261118.json에 있다. 아래 Qwen3-TTS·Supertonic 설명은 이전 버전의 기록이다. 기존 효과음의 Kenney/Impact 라이선스 사본은 public/audio에 있다.
 
 ## 라이선스 구분
 

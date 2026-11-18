@@ -131,7 +131,7 @@ export function bindResidentChat(dialog:HTMLElement, s:Save, stage:number, onSta
   };
   const speak = () => {
     stopVoice();
-    stopVoice = playNarration(`/audio/voices/resident-${stage+1}-${line}.mp3`,s.settings,state=>{
+    stopVoice = playNarration(`/audio/voices/${stage===4?'el-':''}resident-${stage+1}-${line}.mp3`,s.settings,state=>{
       voiceActive = state==='loading' || state==='playing';
       dialog.dataset.speaking=String(state==='playing' && s.settings.motion);
       if (!voiceActive && queued && state !== 'stopped' && dialog.isConnected && !document.hidden) {

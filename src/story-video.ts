@@ -1,6 +1,7 @@
 import { icon } from './art';
 import { questRewards } from './mission-content';
 import { setAudioPaused, setIntroMusicMix } from './game-audio';
+import './voice-lines';
 import './story-video.css';
 
 // Full-screen story films. The rendered mp4s carry effects and short sound effects only (scripts/render-story-videos.mjs);

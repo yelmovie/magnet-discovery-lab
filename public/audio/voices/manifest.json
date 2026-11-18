@@ -32,14 +32,9 @@
     },
     {
       "name": "발명가",
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "voiceMix": {
-        "id": "inventor-confident",
-        "note": "기존 목소리 · 말 시작이 빠르고 또렷하게",
-        "tempo": 1.12,
-        "pitchRatio": 1
-      }
+      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "model": "eleven_v4"
     },
     {
       "name": "밀이",
@@ -257,16 +252,17 @@
     {
       "speaker": "발명가",
       "kind": "hello",
-      "src": "/audio/voices/resident-5-hello.mp3",
+      "src": "/audio/voices/el-resident-5-hello.mp3",
       "text": "좋아, 공방 다시 문 열었어! 네 발명품을 첫 전시대에 놓았지. 구경 온 친구 이야기를 들어 볼래?",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 8.18,
-      "bytes": 99100,
-      "sha256": "da1eae68ae098af91416131bf7f270b1a70b7b01680107f668f42370956c7558",
-      "voiceMix": "inventor-confident",
-      "source": "Momo Jarvis · local synthesis"
+      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "model": "eleven_v4",
+      "durationSeconds": 7.21,
+      "bytes": 86876,
+      "sha256": "3f790c6d6f8d0b6887ae61b8cd7c363f135383d6360334f89c5991abc19a6c97",
+      "source": "ElevenLabs API",
+      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "requestId": "A260j4H0EiYiBUHMAYUd"
     },
     {
       "speaker": "밀이",
@@ -605,44 +601,47 @@
     {
       "speaker": "발명가",
       "kind": "again",
-      "src": "/audio/voices/resident-5-again.mp3",
+      "src": "/audio/voices/el-resident-5-again.mp3",
       "text": "왔네! 새 설계도를 펼치고 있었어. 쓸모 있는 장치를 만들려면 직접 맞추고 시험해 봐야지!",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 7.177,
-      "bytes": 86875,
-      "sha256": "71ed220b2e88934445c73ba805cc6cab9eace5e5e42e249e79da1af4b274ef38",
-      "voiceMix": "inventor-confident",
-      "source": "Momo Jarvis · local synthesis"
+      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "model": "eleven_v4",
+      "durationSeconds": 7.03,
+      "bytes": 84681,
+      "sha256": "6366ad5f134f8e3985ba271abaa9aaf99279e1a5a697c1e4a5eea04e2b832a34",
+      "source": "ElevenLabs API",
+      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "requestId": "DljqDBS7Y0dxlmI0FYTZ"
     },
     {
       "speaker": "발명가",
       "kind": "news",
-      "src": "/audio/voices/resident-5-news.mp3",
+      "src": "/audio/voices/el-resident-5-news.mp3",
       "text": "옆 골목 꼬마가 네 설계도를 한참 보더라! 자기도 이웃의 불편을 고쳐 주고 싶대. 그래서 같이 부품부터 골라 보기로 했어.",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 8.083,
-      "bytes": 97846,
-      "sha256": "e2cc1473c9895530e1ca9616275e7c6544bbfbab6e35647019e823710c3b3e5b",
-      "voiceMix": "inventor-confident",
-      "source": "Momo Jarvis · local synthesis"
+      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "model": "eleven_v4",
+      "durationSeconds": 9.04,
+      "bytes": 108818,
+      "sha256": "e5e03abab4a000e2a798c1c1b8d3bbbbb39876d4e4d0f3aed5a9e5f08ee45d1e",
+      "source": "ElevenLabs API",
+      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "requestId": "avIZx2Tc5ioheAsvx1ON"
     },
     {
       "speaker": "발명가",
       "kind": "science",
-      "src": "/audio/voices/resident-5-science.mp3",
+      "src": "/audio/voices/el-resident-5-science.mp3",
       "text": "좋아, 움직일 부품과 자석이 가까이 마주 보게 달아 봐! 철판은 자석에 끌려와. 자석끼리는 마주 보는 극에 따라 당기거나 밀지. 달았으면 꼭 움직여 시험해 보자!",
       "resident": 5,
-      "voice": "preset-06",
-      "model": "qwen3tts",
-      "durationSeconds": 12.36,
-      "bytes": 149255,
-      "sha256": "ac7c3f9e91ee6a3c7938a3f99da8fbeb4e08ec43a899c423dee9fe803c55abb1",
-      "voiceMix": "inventor-confident",
-      "source": "Momo Jarvis · local synthesis"
+      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "model": "eleven_v4",
+      "durationSeconds": 12.15,
+      "bytes": 146121,
+      "sha256": "42e9e7a9e14f36b8d0d7ad9c765e94837c5b55382ffa6f8fdabd1c6f64741712",
+      "source": "ElevenLabs API",
+      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "requestId": "Ixt16c89XF20vyv1i1Lu"
     }
   ]
 }
