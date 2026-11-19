@@ -34,7 +34,7 @@
 | B 기능 | 11 | 1 | 0 | 0 | 0 |
 | C 태블릿·UI | 7 | 4 | 0 | 1 | 0 |
 | D 성능 | 4 | 1 | 0 | 1 | 0 |
-| E 코드 품질 | 4 | 3 | 0 | 0 | 1 |
+| E 코드 품질 | 5 | 2 | 0 | 0 | 1 |
 | F 데이터·안전 | 4 | 0 | 0 | 1 | 0 |
 | G 배포 | 5 | 0 | 0 | 1 | 0 |
 
@@ -119,7 +119,7 @@
 | E-lint | lint | N/A | 명령 없음 |
 | E5 | console 오류 | PASS(확인됨, 앱) | 공방 완주 중 앱 오류 0. 콘솔의 "unknown error when fetching the script"는 앱 안 창의 서비스워커 요청 실패(환경) |
 | E1·E6 | 구형 경로·하드코딩 | WARNING(인용) | 11-11 경고 유지. 학생 흐름에서 들어오는 길이 없는 보고서 화면(`reportPage`)이 남아 있음(`main.ts:418`) |
-| E-회귀 | 낡은 회귀 스크립트 | WARNING(확인됨, 기존) | 11-19 2차: 요청된 3개는 현행화해 통과(`tablet-layout` 180화면 문제 0, `ui-feedback` 지도의 소리 버튼 1개를 기대값으로, `map-controls` 위 B-지도). 같이 돌린 `autoplay-settings-regression.cjs`·`production-settings-regression.cjs`는 설정 창에서 이미 없어진 「자동 재생」 교사 토글(`data-settings-action="autoplay"`, 현재 src에 없음)과 활동 7 속도 선택을 기다리다 시간 초과 → 이번 변경 전부터 낡은 스크립트(추정, 코드 근거). 별도 작업 |
+| E-회귀 | 낡은 회귀 스크립트 | PASS(확인됨) | 11-19 2차에 3개(`tablet-layout`·`ui-feedback`·`map-controls`), 3차에 2개(`autoplay-settings`·`production-settings`)를 현행화해 모두 통과. 아래 「11-19 3차」 |
 | E-변경 | 이번 변경 크기 | PASS(확인됨) | CSS 3파일 추가 규칙 + `quest-ui.ts` 1줄 |
 
 ## F. 데이터·안전
@@ -175,8 +175,19 @@
 | `ui-feedback-regression.cjs` | **통과** | 지도 화면만 소리 버튼 1개(11-14 `c049de9`부터 의도된 빠른 소리 켜기), 나머지 0개 |
 | `map-controls-regression.cjs` | **4뷰포트 통과** | 카메라가 멈춘 뒤 비교, 0.5px 안 오차 허용 |
 | `layout-audit.cjs` 540측정 | 375×812 인증서 TEXT-OFF 사라짐 | 새로 잡힌 개념 영상 TEXT-CLIP 3개(전 뷰포트)는 다른 세션 `80f5fbe`가 넣은 스크린리더 전용 숨김 글자를 잘림으로 잡은 오탐 |
-| `autoplay-settings`·`production-settings` | 시간 초과 | 이번 변경 전부터 낡음(위 E-회귀), 별도 작업 |
+| `autoplay-settings`·`production-settings` | 시간 초과 → **3차에 현행화해 통과** | 아래 「11-19 3차」 |
 
 설정 창 닫기(16개 공통 기준 `SETTINGS-CLOSE-RULE-20261119`): 위 오른쪽 X를 없애고 아래 오른쪽 「닫기」 하나만 남김(`src/game-settings.ts`). 창을 열면 「닫기」에 첫 초점, Esc로 닫힘, 「기록 초기화」·확인 단계·저장은 그대로. 앱 안 브라우저에서 1280×800·375×812 확인.
 
 운영 반영: 커밋 `3420227`(설정 닫기 `d52ad40` 포함) → Cloudflare Pages `b5f5ece5`. JS·index·CSS 해시 운영과 MATCH(`cmp.sh`), 운영 smoke(`release-smoke.cjs https://magnet-city.pages.dev`) 9/9 PASS.
+
+## 11-19 3차: 남은 낡은 스크립트 2개 현행화
+
+`d69e19f`(11-13)에서 실험 화면 자동 재생 패널·설정 창 「자동 재생」 토글·「핵심 개념」 장치 그림(속도 선택 포함)이 모두 화면에서 빠졌다. 그래서 옛 토글·속도 선택을 누르던 두 스크립트를 지금 기능 기준으로 다시 짰다(코드는 안 바꿈, 배포 없음).
+
+| 스크립트 | 지금 확인하는 것 | 결과 |
+|---|---|---|
+| `autoplay-settings-regression.cjs`(개발 서버 훅) | 1280×800·1024×768·1920×1080·915×412·830×515에서 활동 1~10 모두 자동 재생 조작(패널·속도 선택·장치 그림 버튼)이 없음, 설정 창에 자동 재생 스위치 없음·「닫기」 하나·Esc로 닫힘. 자동 재생 꺼짐·2배속으로 저장된 옛 저장값이 새로고침 뒤에도 두 값을 그대로 지니고 활동 2·7·8을 연다 | **통과**(6항목), 페이지 오류 0 |
+| `production-settings-regression.cjs`(운영 https://magnet-city.pages.dev, 훅 없음) | 1280×800·1024×768·915×412에서 설정 창 자동 재생 스위치 없음, 「닫기」 하나·첫 초점, 버튼·Esc로 닫힘. 첫 실험대(우편함)에 자동 재생 조작 없음, 그림 모두 로드 | **통과**(3뷰포트), 페이지 오류 0 |
+
+남은 것: 화면에서 빠진 자동 재생 코드(`ExperimentAutoplay`, 장치 그림, `visualPreview`)는 부르는 곳 없이 남아 있다. 지울지 다시 붙일지는 따로 정할 일이라 이번에는 건드리지 않았다.
