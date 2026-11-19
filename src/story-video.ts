@@ -1,6 +1,6 @@
 import { icon } from './art';
 import { questRewards } from './mission-content';
-import { setAudioPaused, setIntroMusicMix } from './game-audio';
+import { setAudioPaused, setMusicDuck } from './game-audio';
 import './voice-lines';
 import './story-video.css';
 
@@ -9,6 +9,7 @@ import './story-video.css';
 // While the film plays the DOM caption is only read by screen readers; it shows again when the film fails.
 // Place tags, district stamps and the closing card stay in the DOM, clear of the film's caption zone.
 // The game's BGM keeps playing underneath: main theme for the intro, finale theme for the ending page.
+// It sits at 60% while the film's voices talk and returns to its own level for the closing card.
 // side 'left' keeps the caption off a clue the shot is pointing at (bottom centre-right).
 type Cue = [start: number, end: number, who: '밀이' | '당이', text: string, side?: 'left'];
 type Film = {
@@ -98,6 +99,9 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   // Media playback can interrupt an existing music player. Restore its saved preference.
   for (const voice of voices) voice.addEventListener('playing', () => setAudioPaused(false), on);
   const hushVoices = () => { for (const voice of voices) voice.pause(); video.volume = .55; };
+  // The cue voices do not go through playNarration, so the film lowers the music itself, under its own label.
+  // A muted film has no voices, and a paused one or the closing card has none either: the music returns.
+  const underVoices = () => setMusicDuck('story', !closed && !failed && !cardShown && !video.muted && !video.paused);
   const speakCue = (cue: number) => {
     hushVoices();
     const voice = voices[cue];
@@ -107,7 +111,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   };
 
   const showCard = () => {
-    if (cardShown) return; cardShown = true;
+    if (cardShown) return; cardShown = true; underVoices();
     layer.classList.add('is-card'); caption.hidden = true; $('.story-card').hidden = false; pause.hidden = true;
     if (!replay) skip.hidden = true;
     $<HTMLButtonElement>('[data-story="finish"]').focus({ preventScroll: true });
@@ -141,8 +145,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const cleanup = () => {
     if (closed) return; closed = true;
     if (frameId) video.cancelVideoFrameCallback(frameId);
-    clearTimeout(timeout); controller.abort(); hushVoices();
-    if (id === 'intro') setIntroMusicMix(false);
+    clearTimeout(timeout); controller.abort(); hushVoices(); underVoices();
     video.pause(); video.removeAttribute('src'); video.load();
     layer.remove();
     if (app) app.inert = appWasInert;
@@ -150,14 +153,14 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   };
   const finish = () => { if (closed) return; cleanup(); options.onDone(); };
   // Missing or stalled video: show the last scene with the closing card so the story still lands.
-  const fallback = () => { if (closed || failed) return; failed = true; layer.classList.remove('has-film'); clearTimeout(timeout); video.pause(); video.hidden = true; endFrame.hidden = false; play.hidden = true; showCard(); tick(); };
+  const fallback = () => { if (closed || failed) return; failed = true; underVoices(); layer.classList.remove('has-film'); clearTimeout(timeout); video.pause(); video.hidden = true; endFrame.hidden = false; play.hidden = true; showCard(); tick(); };
   const watchdog = () => { clearTimeout(timeout); timeout = window.setTimeout(fallback, 8000); };
   const start = () => {
     if (closed || failed) return; play.hidden = true; watchdog();
-    if (id === 'intro') setIntroMusicMix(true);
     // Unmuted autoplay can be refused when the click is too far back; the film still plays silently.
     video.play().catch(() => { if (closed || video.muted) throw new Error('blocked'); video.muted = true; return video.play(); })
       .catch(() => { if (closed || failed) return; clearTimeout(timeout); play.hidden = false; play.focus(); });
+    underVoices();
   };
   const skipAhead = () => {
     if (replay || cardShown) return finish();
@@ -166,8 +169,8 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     tick(); showCard();
   };
 
-  video.addEventListener('playing', () => { if (!failed) layer.classList.add('has-film'); setAudioPaused(false); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
-  video.addEventListener('pause', () => { for (const voice of voices) voice.pause(); if (!video.ended) { pause.setAttribute('aria-label', '계속 보기'); pause.innerHTML = icon('play', 26); } }, on);
+  video.addEventListener('playing', () => { if (!failed) layer.classList.add('has-film'); setAudioPaused(false); underVoices(); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
+  video.addEventListener('pause', () => { underVoices(); for (const voice of voices) voice.pause(); if (!video.ended) { pause.setAttribute('aria-label', '계속 보기'); pause.innerHTML = icon('play', 26); } }, on);
   video.addEventListener('waiting', watchdog, on);
   video.addEventListener('timeupdate', tick, on);
   video.addEventListener('ended', () => { video.hidden = true; endFrame.hidden = false; tick(); showCard(); }, on);

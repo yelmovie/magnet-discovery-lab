@@ -16,10 +16,12 @@ export function openMapFinale(host, source) {
  const close=doc.createElement('button');close.type='button';close.textContent='지도로 돌아가기';
  Object.assign(close.style,{position:'absolute',top:'12px',right:'12px',minHeight:'56px',padding:'6px 20px',border:'2px solid #fff8e780',borderRadius:'8px',background:'#0b2328b8',color:'#fff',fontSize:'20px',cursor:'pointer',zIndex:'1'});
  dialog.append(video,title,status,close);doc.body.append(dialog);dialog.showModal();close.focus();
+ // game-audio.ts plays the final theme while this dialog is open (the film itself stays muted) and the main theme after it closes.
+ const announce=open=>doc.dispatchEvent(new CustomEvent('map-finale',{detail:{open}}));announce(true);
  close.addEventListener('click',()=>dialog.close());
  // No native control bar (it would sit on the captions): a tap pauses, resumes or replays.
  video.addEventListener('click',()=>{if(video.paused)video.play().catch(()=>{});else video.pause();});
  video.addEventListener('error',()=>{status.hidden=false;status.textContent='지금은 영상을 열 수 없어. 지도 퇴치 기록은 저장됐어.';});
- dialog.addEventListener('close',()=>{video.pause();dialog.remove();},{once:true});
+ dialog.addEventListener('close',()=>{video.pause();dialog.remove();announce(false);},{once:true});
  video.play().catch(()=>{});
 }

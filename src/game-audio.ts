@@ -17,7 +17,13 @@ const DEFAULT_VOLUME = 0.35;
 export type MusicTheme = 'main' | 'final';
 const musicFiles: Record<MusicTheme, string> = { main: '/audio/music/main-theme.mp3', final: '/audio/music/finale-theme.mp3' };
 let theme: MusicTheme = 'main';
-let introMix = false;
+// The page asks for a theme; the map finale dialog borrows the player for the final theme while it is open.
+let pageTheme: MusicTheme = 'main', mapFinale = false;
+// Why the music sits under something else, by label. The quietest label wins and the level
+// returns only when every label is gone, so one owner can never undo another's.
+const VOICE_DUCK = 0.25, STORY_DUCK = 0.6, FADE_MS = 200;
+const ducks = new Map<string, number>();
+let fadeTimer: ReturnType<typeof setInterval> | undefined, fadeTarget = 0;
 let music: HTMLAudioElement | undefined;
 let musicPlayPending = false, musicRevision = 0;
 export type NarrationState = 'loading' | 'playing' | 'ended' | 'stopped' | 'blocked' | 'unavailable' | 'muted';
@@ -93,7 +99,26 @@ function makeContext() {
   } catch { context = undefined; /* Audio availability must never block the activity. */ }
 }
 
-function pauseMusic() { musicRevision++; musicPlayPending = false; music?.pause(); }
+function settleFade() {
+  if (fadeTimer === undefined) return;
+  clearInterval(fadeTimer); fadeTimer = undefined;
+  if (music) music.volume = fadeTarget;
+}
+/** Glide to a level over a fifth of a second so a voice never makes the music jump. */
+function fadeMusic(target: number) {
+  if (!music || (fadeTimer !== undefined && target === fadeTarget)) return;
+  if (fadeTimer !== undefined) { clearInterval(fadeTimer); fadeTimer = undefined; }
+  fadeTarget = target;
+  const player = music, from = player.volume, began = Date.now();
+  // A stopped player has nothing to glide from.
+  if (player.paused || Math.abs(from - target) < 0.005) { player.volume = target; return; }
+  fadeTimer = setInterval(() => {
+    const part = Math.min(1, (Date.now() - began) / FADE_MS);
+    if (part >= 1) settleFade(); else player.volume = from + (target - from) * part;
+  }, 25);
+}
+
+function pauseMusic() { musicRevision++; musicPlayPending = false; settleFade(); music?.pause(); }
 
 function applyMusic() {
   const settings = normalizedAudioSettings(current);
@@ -104,7 +129,7 @@ function applyMusic() {
     music.src = musicFiles[theme]; music.loop = theme === 'main'; document.body.append(music);
   }
   if (!music) return;
-  music.volume = Math.min(1, settings.musicVolume * (introMix ? 1.5 : 1) * (narration ? 0.25 : 1));
+  fadeMusic(settings.musicVolume * Math.min(1, narration ? VOICE_DUCK : 1, ...ducks.values()));
   if (!music.paused || music.ended || musicPlayPending) return;
   musicPlayPending = true;
   const revision = musicRevision;
@@ -112,16 +137,32 @@ function applyMusic() {
   void music.play().catch(() => {}).finally(() => { if (revision === musicRevision) musicPlayPending = false; });
 }
 
-/** Balance the main theme against the intro voices while keeping the saved volume intact. */
-export function setIntroMusicMix(active: boolean) { introMix = active; applyMusic(); }
+/** Keep the music under a film's voices (60% unless told otherwise) without touching the saved volume. */
+export function setMusicDuck(label: string, active: boolean, level = STORY_DUCK) {
+  if (active) ducks.set(label, Math.max(0, Math.min(1, level))); else ducks.delete(label);
+  applyMusic();
+}
 
-/** One persistent player keeps the main theme continuous across pages. */
-export function setMusicTheme(next: MusicTheme, restart = false) {
+function useTheme(next: MusicTheme, restart = false) {
   if (next !== theme || restart) {
     theme = next; pauseMusic();
     if (music) { music.src = musicFiles[theme]; music.loop = theme === 'main'; music.dataset.gameMusic = theme; music.load(); }
   }
   applyMusic();
+}
+
+/** One persistent player keeps the main theme continuous across pages. */
+export function setMusicTheme(next: MusicTheme, restart = false) {
+  pageTheme = next;
+  if (mapFinale) applyMusic(); else useTheme(next, restart);
+}
+
+// map-finale.js announces its dialog: the final theme plays from the top while it is open (its film stays muted),
+// and the page's own theme returns when it closes.
+function mapFinaleChanged(event: Event) {
+  const open = Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open);
+  if (open === mapFinale) return;
+  mapFinale = open; useTheme(open ? 'final' : pageTheme, open);
 }
 
 function note(frequency: number, when: number, duration: number, bus: GainNode, voices: Voice[], strength: number, type: OscillatorType = 'sine') {
@@ -177,6 +218,7 @@ export function ensureAudio(settings: AudioSettings) {
     document.addEventListener('pointerdown', activate, { passive: true });
     document.addEventListener('keydown', activate);
     document.addEventListener('visibilitychange', visibilityChanged);
+    document.addEventListener('map-finale', mapFinaleChanged);
   }
   if (typeof navigator !== 'undefined' && navigator.userActivation?.isActive) activate();
   else apply();
@@ -264,12 +306,14 @@ export function setAudioPaused(value: boolean) {
 
 export function disposeAudio() {
   explicitlyPaused = true; narration?.stop('stopped');
-  music?.pause(); music?.remove(); music = undefined; theme = 'main'; introMix = false; musicRevision++; musicPlayPending = false;
+  settleFade(); ducks.clear(); mapFinale = false; pageTheme = 'main';
+  music?.pause(); music?.remove(); music = undefined; theme = 'main'; musicRevision++; musicPlayPending = false;
   silence(effectVoices); stopSamples(); sampleBuffers.clear(); sampleLoads.clear(); samplesRequested=false;lastEffect=0;
   if (installed && typeof document !== 'undefined') {
     document.removeEventListener('pointerdown', activate);
     document.removeEventListener('keydown', activate);
     document.removeEventListener('visibilitychange', visibilityChanged);
+    document.removeEventListener('map-finale', mapFinaleChanged);
   }
   installed = false; activated = false; explicitlyPaused = false;
   const oldContext = context; context = undefined; effectBus = undefined; encounterBus = undefined;

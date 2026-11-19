@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { disposeAudio, ensureAudio, normalizedAudioSettings, playEffect, playNarration, setAudioPaused, setMusicTheme, syncAudioSettings } from '../src/game-audio';
+import { disposeAudio, ensureAudio, normalizedAudioSettings, playEffect, playNarration, setAudioPaused, setMusicDuck, setMusicTheme, syncAudioSettings } from '../src/game-audio';
 
 const gainDouble = () => ({ gain: { value: 0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() });
 const oscillatorDouble = () => ({ frequency: { value: 0 }, type: 'sine', connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn(), onended: undefined as (() => void) | undefined });
@@ -193,6 +193,41 @@ describe('music and game effects', () => {
   });
 });
 
+describe('music under film voices and the map finale',()=>{
+  it('sits at 60% under a film, lower under a voice, and returns only when every reason is gone',()=>{
+    const doc=environment();ensureAudio({music:true,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0];expect(music.volume).toBeCloseTo(.35);
+    setMusicDuck('story',true);vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.21);expect(music.paused).toBe(false);
+    const stop=playNarration('/audio/voices/resident-1-hello.mp3');vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.0875);
+    // The voice ending must not undo the film's own label, and the film ending must not undo a voice.
+    stop();vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.21);
+    const again=playNarration('/audio/voices/resident-1-news.mp3');setMusicDuck('story',false);vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.0875);
+    again();vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.35);
+    // Repeated renders keep the level and leave no timer behind; pausing lands on the level at once.
+    setMusicDuck('story',true);for(let i=0;i<5;i++)syncAudioSettings({music:true,effects:true});
+    setAudioPaused(true);expect(vi.getTimerCount()).toBe(0);expect(music.volume).toBeCloseTo(.21);
+    setAudioPaused(false);setMusicDuck('story',false);expect(music.play).toHaveBeenCalledTimes(2);
+    disposeAudio();ensureAudio({music:true});doc.dispatchEvent(new Event('pointerdown'));
+    expect(MusicDouble.instances.at(-1)!.volume).toBeCloseTo(.35);
+  });
+
+  it('plays the final theme from the top while the map finale dialog is open and the main theme after it closes',()=>{
+    const doc=environment();ensureAudio({music:true});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0];music.currentTime=31;
+    const announce=(open:boolean)=>doc.dispatchEvent(Object.assign(new Event('map-finale'),{detail:{open}}));
+    announce(true);
+    expect(music.src).toBe('/audio/music/finale-theme.mp3');expect(music.loop).toBe(false);expect(music.currentTime).toBe(0);expect(music.paused).toBe(false);
+    // The page keeps asking for its own theme on every render; the dialog holds the final theme without restarting it.
+    music.currentTime=9;setMusicTheme('main');announce(true);
+    expect(music.src).toBe('/audio/music/finale-theme.mp3');expect(music.currentTime).toBe(9);
+    announce(false);
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.loop).toBe(true);expect(music.paused).toBe(false);
+    expect(MusicDouble.instances).toHaveLength(1);
+    // Music switched off stays off through the dialog.
+    syncAudioSettings({music:false});announce(true);expect(music.paused).toBe(true);announce(false);expect(music.paused).toBe(true);
+  });
+});
+
 describe('map villain cues',()=>{
   it('layers the swing, the delayed clank and the retreat, and a later interface sound stops only itself',async()=>{
     environment();
@@ -244,13 +279,16 @@ describe('resident dialogue voices',()=>{
     const stopFirst=playNarration('/audio/voices/resident-1-hello.mp3',undefined,firstState);
     const first=MusicDouble.instances[1];
     expect(first.src).toBe('/audio/voices/resident-1-hello.mp3');
-    expect(music.volume).toBeCloseTo(.1);
+    // The music glides under the voice instead of jumping.
+    vi.advanceTimersByTime(100);expect(music.volume).toBeLessThan(.4);expect(music.volume).toBeGreaterThan(.1);
+    vi.advanceTimersByTime(150);expect(music.volume).toBeCloseTo(.1);
     playNarration('/audio/voices/resident-1-news.mp3');
     const second=MusicDouble.instances[2];
     expect(first.paused).toBe(true);expect(first.remove).toHaveBeenCalledOnce();
     stopFirst();expect(second.paused).toBe(false);
-    syncAudioSettings({music:true,effects:true,musicVolume:.8});expect(music.volume).toBeCloseTo(.2);
-    second.onended!();expect(second.remove).toHaveBeenCalledOnce();expect(music.volume).toBeCloseTo(.8);
+    syncAudioSettings({music:true,effects:true,musicVolume:.8});vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.2);
+    second.onended!();expect(second.remove).toHaveBeenCalledOnce();vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.8);
+    expect(vi.getTimerCount()).toBe(0);
     await Promise.resolve();expect(firstState).not.toHaveBeenCalledWith('playing');
   });
 
