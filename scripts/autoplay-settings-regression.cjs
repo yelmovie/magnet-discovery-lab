@@ -39,7 +39,7 @@ async function teacherToggle() {
   await page.locator('summary').filter({hasText:'교사용 가이드'}).click();
   await page.locator('summary').filter({hasText:'교사용 도구'}).click();
   await page.locator('[data-settings-action="autoplay"]').click();
-  await page.locator('.settings-close-icon').click();
+  await page.locator('[data-settings-action="close"]').click();
 }
 async function controls(viewport) {
   const context=await start(7,1,viewport);

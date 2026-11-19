@@ -20,7 +20,7 @@ fs.mkdirSync(out,{recursive:true});
    }
    await page.locator('[data-settings-action="autoplay"]').click();
    await page.screenshot({path:`${out}/teacher-${viewport.width}.png`});
-   await page.locator('.settings-close-icon').click();
+   await page.locator('[data-settings-action="close"]').click();
   };
   await page.goto(base);await page.locator('[data-action="start"]').waitFor();
   await toggle();await page.waitForTimeout(500);await page.reload();

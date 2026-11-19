@@ -22,7 +22,6 @@ export interface GameSettingsOptions {
 const escape = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const paragraphs = (lines: readonly string[]) => lines.map(line => `<p>${escape(line)}</p>`).join('');
 const fold = (name: string, body: string, nested = false) => `<details class="settings-fold${nested ? ' settings-fold--nested' : ''}"><summary>${escape(name)}<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></summary><div class="settings-fold-body">${body}</div></details>`;
-const closeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
 const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12m-5-5 5 5-5 5"/></svg>';
 
 function markup(options: GameSettingsOptions) {
@@ -35,7 +34,7 @@ function markup(options: GameSettingsOptions) {
   const copyright = paragraphs(copy.copyrightGuide)
     + fold(copy.sources, `<p>${copy.sourcesIntroduction}</p><dl class="settings-sources">${copy.sourceGroups.map(([name, text]) => `<div><dt>${name}</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + paragraphs([copy.copyrightOwner, copy.ownRights, copy.externalRights, copy.educationSources]);
-  return `<header class="settings-dialog-heading"><h2 id="settings-dialog-title">${copy.title}</h2><button type="button" class="settings-close-icon" data-settings-action="close" aria-label="${copy.close}">${closeIcon}</button></header>
+  return `<header class="settings-dialog-heading"><h2 id="settings-dialog-title">${copy.title}</h2></header>
     <div class="settings-dialog-body science-settings-body">
       <section class="settings-sound science-settings-audio" aria-label="소리 설정">
         ${switchRow('music', copy.music, settings.music)}
@@ -138,6 +137,7 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
     }
   });
   dialog.showModal();
-  dialog.querySelector<HTMLButtonElement>('.settings-close-icon')?.focus({ preventScroll: true });
+  // One close button only (bottom right, 2026-11-19 shared rule); it takes the first focus as the old X did.
+  dialog.querySelector<HTMLButtonElement>('.settings-primary[data-settings-action="close"]')?.focus({ preventScroll: true });
   return cleanup;
 }
