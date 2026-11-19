@@ -38,3 +38,4 @@
 - `npm run build` 통과, `npm test` 22파일 335개 통과.
 - 커밋 `fd95df3` 푸시, `deploy.sh 05 5magnet pages magnet-city`로 배포(https://5f218e4a.magnet-city.pages.dev).
 - 운영 https://magnet-city.pages.dev: `index.html`과 `assets/index-5zvaS0G1.css`가 배포 빌드와 sha256 일치(`098ad617983a047d`), CSS에 보정 규칙 포함 확인.
+- 추가 수정(2026-11-20, 지침 8절): 성취 카드 보관함 잠긴 문구 「악당을 물리치면 / 열려요」 → `src/reward-cards.css` `.rc-locked` 컨테이너 규칙 네 줄 추가로 좁은 카드에서 「악당을 / 물리치면 / 열려요」 세 줄. 로컬 1280×800·1024×768에서 세 줄·카드 넘침 없음 확인, 커밋 `7c3ce8e` 배포(https://b504f016.magnet-city.pages.dev), 운영 `index.html`·`assets/index-xE_qKnjM.css` sha256 일치(`9b1e107e4d566918`).
