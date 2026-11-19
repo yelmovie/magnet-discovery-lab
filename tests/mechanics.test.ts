@@ -1019,7 +1019,7 @@ describe('승인된 확장 퍼즐 경로',()=>{
 describe('광장 연결 퍼즐 실제 조작',()=>{
   it('네 성질을 직접 연결하고 중간에 다시 열어도 증거를 보존한다',()=>{
     let m=mount(8,{},undefined,true);
-    m.place('plaza-magnet',{x:54,y:55});m.place('plaza-magnet',{x:34,y:55});
+    m.place('plaza-magnet',{x:54,y:55});m.place('plaza-magnet',{x:29,y:55});
     expect(m.a.trials!.map(t=>t.key)).toEqual(['plaza-iron']);
     m=mount(8,{},m,true);m.click('plaza-next');m=mount(8,{},m,true);
     m.place('plaza-magnet',{x:30,y:55});expect(m.a.trials).toHaveLength(1);

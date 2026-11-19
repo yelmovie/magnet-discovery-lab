@@ -32,8 +32,8 @@
     },
     {
       "name": "발명가",
-      "voice": "bs12fnQaJCO5NPRLmdaw",
-      "voiceName": "Jandi – Natural & Friendly Korean Male",
+      "voice": "R57C1ECBzXRSHUbNYPYx",
+      "voiceName": "Sora – Modern, Versatile & Expressive (Korean female)",
       "model": "eleven_v4"
     },
     {
@@ -255,14 +255,14 @@
       "src": "/audio/voices/el-resident-5-hello.mp3",
       "text": "좋아, 공방 다시 문 열었어! 네 발명품을 첫 전시대에 놓았지. 구경 온 친구 이야기를 들어 볼래?",
       "resident": 5,
-      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "voice": "R57C1ECBzXRSHUbNYPYx",
       "model": "eleven_v4",
-      "durationSeconds": 7.21,
-      "bytes": 86876,
-      "sha256": "3f790c6d6f8d0b6887ae61b8cd7c363f135383d6360334f89c5991abc19a6c97",
+      "durationSeconds": 7.81,
+      "bytes": 94085,
+      "sha256": "d6df6ffd5ec97357820962e438a8bdd921f5b54340ad44f9cfa744696bf7352d",
       "source": "ElevenLabs API",
-      "voiceName": "Jandi – Natural & Friendly Korean Male",
-      "requestId": "A260j4H0EiYiBUHMAYUd"
+      "voiceName": "Sora – Modern, Versatile & Expressive (Korean female)",
+      "requestId": "iKqwpLy1tqXDYUYaHklV"
     },
     {
       "speaker": "밀이",
@@ -604,14 +604,14 @@
       "src": "/audio/voices/el-resident-5-again.mp3",
       "text": "왔네! 새 설계도를 펼치고 있었어. 쓸모 있는 장치를 만들려면 직접 맞추고 시험해 봐야지!",
       "resident": 5,
-      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "voice": "R57C1ECBzXRSHUbNYPYx",
       "model": "eleven_v4",
-      "durationSeconds": 7.03,
-      "bytes": 84681,
-      "sha256": "6366ad5f134f8e3985ba271abaa9aaf99279e1a5a697c1e4a5eea04e2b832a34",
+      "durationSeconds": 7.39,
+      "bytes": 89070,
+      "sha256": "4db16c196d1a7da8522fe55204a7ea90bed6a7e45b947c21412ef910e701ed4a",
       "source": "ElevenLabs API",
-      "voiceName": "Jandi – Natural & Friendly Korean Male",
-      "requestId": "DljqDBS7Y0dxlmI0FYTZ"
+      "voiceName": "Sora – Modern, Versatile & Expressive (Korean female)",
+      "requestId": "QNllCFATFXJ6iDR98yOq"
     },
     {
       "speaker": "발명가",
@@ -619,14 +619,14 @@
       "src": "/audio/voices/el-resident-5-news.mp3",
       "text": "옆 골목 꼬마가 네 설계도를 한참 보더라! 자기도 이웃의 불편을 고쳐 주고 싶대. 그래서 같이 부품부터 골라 보기로 했어.",
       "resident": 5,
-      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "voice": "R57C1ECBzXRSHUbNYPYx",
       "model": "eleven_v4",
-      "durationSeconds": 9.04,
-      "bytes": 108818,
-      "sha256": "e5e03abab4a000e2a798c1c1b8d3bbbbb39876d4e4d0f3aed5a9e5f08ee45d1e",
+      "durationSeconds": 9.33,
+      "bytes": 112267,
+      "sha256": "42adf8c520a3b0583529a1c670b0a912aca3c4e6f70c22d8f5d50eaec11d55e2",
       "source": "ElevenLabs API",
-      "voiceName": "Jandi – Natural & Friendly Korean Male",
-      "requestId": "avIZx2Tc5ioheAsvx1ON"
+      "voiceName": "Sora – Modern, Versatile & Expressive (Korean female)",
+      "requestId": "YhxT9Mo28CJNXwjyR3ub"
     },
     {
       "speaker": "발명가",
@@ -634,14 +634,14 @@
       "src": "/audio/voices/el-resident-5-science.mp3",
       "text": "좋아, 움직일 부품과 자석이 가까이 마주 보게 달아 봐! 철판은 자석에 끌려와. 자석끼리는 마주 보는 극에 따라 당기거나 밀지. 달았으면 꼭 움직여 시험해 보자!",
       "resident": 5,
-      "voice": "bs12fnQaJCO5NPRLmdaw",
+      "voice": "R57C1ECBzXRSHUbNYPYx",
       "model": "eleven_v4",
-      "durationSeconds": 12.15,
-      "bytes": 146121,
-      "sha256": "42e9e7a9e14f36b8d0d7ad9c765e94837c5b55382ffa6f8fdabd1c6f64741712",
+      "durationSeconds": 13.09,
+      "bytes": 157406,
+      "sha256": "0222d98e010ba8e131a24cba1d33a5996e8292f0af7f3ccba75ee555db6c9f51",
       "source": "ElevenLabs API",
-      "voiceName": "Jandi – Natural & Friendly Korean Male",
-      "requestId": "Ixt16c89XF20vyv1i1Lu"
+      "voiceName": "Sora – Modern, Versatile & Expressive (Korean female)",
+      "requestId": "DtzytbjCgefWKRJDCvyL"
     }
   ]
 }

@@ -206,7 +206,7 @@ async function plazaPuzzle(){
     const move=async(x,y)=>{await put('plaza-magnet',x,y);await page.waitForFunction(()=>!document.querySelector('#plaza-experiment').inert);};
     // Same order as the plaza test in tests/mechanics.test.ts (rebuilt 2026-11-13).
     const idle=()=>page.waitForFunction(()=>!document.querySelector('#plaza-experiment').inert);
-    await move(54,55);await move(34,55);await mission('plaza-next');
+    await move(54,55);await move(29,55);await mission('plaza-next');
     // The key slides to the magnet for about a second before it can be pulled out.
     await move(30,55);await move(54,55);await wait(1200);await move(32,55);await mission('plaza-next');
     await move(54,55);await mission('plaza-flip');await idle();await mission('plaza-next');

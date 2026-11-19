@@ -138,7 +138,7 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 
 ## 캐릭터 한국어 목소리
 
-(2026-11-18 갱신) 주민·공방·마스코트 대사 36개는 모두 ElevenLabs v4 한국어 라이브러리 음성이다(유료 요금제, 상업 이용 가능). 발명가 4개는 이전 로컬 Qwen3-TTS 음원을 ElevenLabs(Jandi) 음원 `el-resident-5-*.mp3`로 다시 만들었다. 긴급 의뢰·개념 영상 자막·발견/정리 문제·발명 예시·공방 말풍선·자꾸 힌트·자석 뿔 악당 말풍선을 읽는 `el-*.mp3` 142개도 ElevenLabs v4이며, 목소리·요청 ID·검수 기록은 `docs/VOICE-FILL-20261118.json`에 있다.
+(2026-11-18 갱신) 주민·공방·마스코트 대사 36개는 모두 ElevenLabs v4 한국어 라이브러리 음성이다(유료 요금제, 상업 이용 가능). 발명가 4개는 이전 로컬 Qwen3-TTS 음원을 ElevenLabs 음원 `el-resident-5-*.mp3`로 다시 만들었고, 2026-11-19에 여성 캐릭터에 맞게 남성 Jandi 목소리에서 여성 Sora 목소리로 바꿨다. 긴급 의뢰·개념 영상 자막·발견/정리 문제·발명 예시·공방 말풍선·자꾸 힌트·자석 뿔 악당 말풍선을 읽는 `el-*.mp3` 142개도 ElevenLabs v4이며, 목소리·요청 ID·검수 기록은 `docs/VOICE-FILL-20261118.json`에 있다.
 
 - 적용 파일: `public/audio/voices/`의 MP3 36개.
 - 대사·음성 ID·SHA-256: `public/audio/voices/manifest.json`. 배정과 재생 방식: `docs/resident-voices.md`.

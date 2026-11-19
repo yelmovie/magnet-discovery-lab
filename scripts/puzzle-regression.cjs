@@ -227,7 +227,7 @@ async function mechanisms(viewport){
 async function plaza(viewport){
   const context=await start(11,viewport);
   await shot(`plaza-${viewport.width}-start`);
-  await drag('plaza-magnet',54,55);await drag('plaza-magnet',34,55);await mission('plaza-next');
+  await drag('plaza-magnet',54,55);await drag('plaza-magnet',29,55);await mission('plaza-next');
   await drag('plaza-magnet',30,55);await page.waitForTimeout(800);
   assert.equal((await saved()).final.puzzle.trials.some(t=>t.key==='plaza-distance'),false);
   await drag('plaza-magnet',54,55);await page.waitForTimeout(800);await drag('plaza-magnet',32,55);await shot(`plaza-${viewport.width}-key`);await mission('plaza-next');await page.waitForTimeout(800);

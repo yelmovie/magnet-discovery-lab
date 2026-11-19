@@ -84,7 +84,8 @@ export function plazaPuzzleView(s:Save):View|undefined {
         if(solved||v.animating)return;
         if(round===0||round===1){
           if(round===0&&p.x<object().x&&magneticReach(p,object()))held=true;
-          if(held)v.set('plaza-object',pt(p.x+8,round===1?55:p.y));
+          // The wide iron plate hangs off the magnet's right end instead of hiding under it.
+          if(held)v.set('plaza-object',pt(p.x+(round===0?13.5:8),round===1?55:p.y));
           a.values.held=held;
         }
         if(round===3&&magneticReach(p,object()))v.set('plaza-object',pt(58,p.y));
@@ -116,9 +117,12 @@ export function plazaPuzzleView(s:Save):View|undefined {
         const line=(from:number,to:number,y:number)=>{g.save();g.strokeStyle='#f2cd75';g.lineWidth=5;g.setLineDash([12,9]);g.beginPath();g.moveTo(from*W/100,y*H/100);g.lineTo(to*W/100,y*H/100);g.stroke();g.restore();};
         if(round===0){
           paint(266,288,840,226);
-          if(!solved)v.target(socket,'',150,86);
+          if(!solved)v.target(socket,'',202,92);
           v.label('연결 홈',pt(42,35));
-          v.iron(q,'',102);
+          // A front-on plate sized to the slot opening (about 202x92 on this canvas).
+          const plate=v.asset('plaza-iron-part','/assets/quest/plaza-iron-part.webp');
+          if(plate.complete&&plate.naturalWidth){g.save();g.shadowColor='#263e3d55';g.shadowBlur=8;g.shadowOffsetY=4;g.drawImage(plate,q.x*W/100-94,q.y*H/100-38.5,188,77);g.restore();}
+          else v.iron(q,'',102);
           if(!solved)v.label('철 부품',pt(q.x,q.y+13),true);
         }
         if(round===1){
