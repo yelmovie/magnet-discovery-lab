@@ -69,6 +69,12 @@ body.quest-mode #app .screen-8 .mission-board > .delivery-state {
   padding:8px 16px; font-weight:700; font-size:clamp(16px,1.7vw,23px);
 }
 body.quest-mode #app .screen-8 .bench-wide .delivery-state { top:14%; }
+/* The whole delivery is done (2026-11-19): a finish banner instead of the running status, and the drive controls step aside. */
+body.quest-mode #app .screen-8 .mission-world .mission-board > .delivery-state[data-complete] {
+  border:3px solid #2f7d5c; background:#e4f4d8f7; color:#1b5a42; box-shadow:0 6px 18px #1b5a4233;
+  padding:10px 24px; font-weight:800; font-size:clamp(19px,2vw,28px);
+}
+body.quest-mode #app .screen-8 .mission-world .mission-board[data-delivery-complete] > :is(.mission-actions,.run-pad,.run-controls,[data-drag="controller"]) { display:none; }
 body.quest-mode #app .screen-8 .mission-board > .mission-feedback { display:none; }
 @media (max-width:759px) and (max-aspect-ratio:1/1) {
   body.quest-mode #app .screen-8 .mission-board > .delivery-state { top:auto; bottom:calc(100% + 8px); max-width:94%; }

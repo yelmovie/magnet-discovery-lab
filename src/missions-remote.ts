@@ -1,6 +1,6 @@
 import { autoplaySpeed } from './autoplay-controls';
 import { opposite, type Point, type Pole } from './domain';
-import { deliveryCourse, deliveryRoute, distance, puzzleHint } from './mission-model';
+import { deliveryCourse, deliveryRoute, distance, missionReady, puzzleHint } from './mission-model';
 import { deliveryHints, padHints } from './mission-content';
 import { playEffect } from './game-audio';
 import { clearedGlass, drawGlassStain, glassStains, wipeGlass } from './aquarium-glass';
@@ -206,8 +206,11 @@ export function delivery(v: Surface, run?: DeliveryRun){
     if(puzzle&&blocked>.4&&!done)status='당기는 자석이 유리벽에 막혔어. 다른 방법을 찾아봐.';
     if(puzzle&&!done&&!cartMoving&&!connected&&moved&&speed===0&&car>deliveryCourse.wall&&car<goal-deliveryCourse.tolerance)status='조금 모자라. 깃발까지 한 번 더 보내 봐.';
     if(atGoal&&connected&&!done)status='배달 장소야. 자석을 떼고 카트가 멈추는지 봐.';
-    if(done)status='배달 완료 · 카트가 목적지에 멈췄어.';
+    // The last stop finishes the whole mission: say so plainly and take the drive controls away (2026-11-19).
+    const complete=done&&missionReady(8,v.a,v.s),firstLeg=done&&!complete&&v.a.values.puzzleRevision===2&&r===0;
+    if(done)status=complete?'✔ 배달 미션 완료! 택배를 모두 배달했어.':firstLeg?'1구간 배달 완료 · 이제 유리벽 너머로 배달하자.':'배달 완료 · 카트가 목적지에 멈췄어.';
     if(state.textContent!==status)state.textContent=status;
+    if((state.dataset.complete!==undefined)!==complete){if(complete){state.dataset.complete='';board.dataset.deliveryComplete='';}else{delete state.dataset.complete;delete board.dataset.deliveryComplete;}}
     const guide=pt(car+Math.sign(goal-car)*(pole==='N'?12:-12),59);
     const guided=!done&&(!connected||!moved)&&(!puzzle||guide.x<=deliveryCourse.reach&&(pole==='S'?puzzleHint(Number(v.a.values.puzzleMisses||0))>=2:car<deliveryCourse.reach-8));
     if(run){run.show({round:r,car,start,goal,wall:puzzle,pole,held,forceOn:connected,attract,cartMoving,direction,atGoal,done,guide:guided?guide.x:null,status});return;}
