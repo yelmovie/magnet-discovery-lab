@@ -129,3 +129,14 @@
 @media screen and (min-width: 1800px) and (min-height: 1000px) and (min-aspect-ratio: 1/1) {
   #app > main.page-report > :is(.report-heading, .report-list, .report-actions) { zoom: 1.25; }
 }
+
+/* Portrait phones (2026-11-19): the sheet keeps the frame's corners but grows to its text instead of a fixed
+   1600:1062 box, so the title line no longer spills above the screen and the record lines stay inside it. */
+@media screen and (max-width: 759px) and (max-aspect-ratio: 1/1) {
+  #app .page-certificate .certificate {
+    aspect-ratio: auto; height: auto; min-height: calc(min(100vw - 32px, 900px) * 1062 / 1600);
+    background: none; border: 0 solid transparent;
+    border-image: url('/assets/quest/certificate-frame.webp') 26% 25% fill / 58px 84px stretch;
+  }
+  #app .page-certificate .certificate-border { height: auto; padding: 50px 30px 46px; word-break: keep-all; }
+}

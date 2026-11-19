@@ -75,7 +75,8 @@ const results = [], errors = [];
   await page.evaluate(s=>window.__qa.setSave(s),fixture);
   for(const destination of ['title','city','report','core','certificate','ending']) {
    await page.evaluate(destination=>window.__qa.go(destination),destination);
-   assert.equal(await page.locator('[data-action="sound"]').count(),0);
+   // The city map keeps its own quick sound toggle beside the settings icon (since c049de9); other pages do not.
+   assert.equal(await page.locator('[data-action="sound"]').count(),destination==='city'?1:0,destination);
    assert.equal(await page.locator('.quest-hud [data-action="settings"]').count(),1);
   }
   for(let n=1;n<=10;n++) {

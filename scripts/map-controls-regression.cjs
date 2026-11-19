@@ -46,7 +46,12 @@ const assert=require('node:assert/strict');
    await overview.click();await page.locator('[data-place="0"]').click();await settle();
    assert.notEqual(await player.getAttribute('style'),position,'overview stage selection still walks');
    await page.evaluate(()=>window.__mapTest.city.pause(true));
-   const paused=await transform();await pan.click();await overview.click();await settle();assert.equal(await transform(),paused,'paused map ignores controls');
+   // The camera may still be gliding to the last walked step; wait until it rests before comparing.
+   let paused=await transform();for(let i=0;i<40;i++){await page.waitForTimeout(100);const next=await transform();if(next===paused)break;paused=next;}
+   await pan.click();await overview.click();await settle();
+   // Sub-pixel tails of the follow glide are not control input: compare the camera offset within half a pixel.
+   const offset=m=>m.match(/-?[\d.]+/g).map(Number);const [after,rest]=[offset(await transform()),offset(paused)];
+   assert.ok(after.every((v,i)=>Math.abs(v-rest[i])<.5),`paused map ignores controls: ${paused} -> ${await transform()}`);
    assert.deepEqual(errors,[]);
    console.log(`PASS ${viewport.width}x${viewport.height}: icon buttons, keyboard, mouse/touch pan, cancellation, fit/restore, stage selection, pause`);
    await context.close();

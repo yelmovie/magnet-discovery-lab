@@ -118,7 +118,9 @@ async function main(){
   // Optional overlays are real UI states, opened by touch rather than fixture flags.
   for(const n of [1,3,5,6,8]){
    await show({name:'overlay',n});await page.locator('.coach-toggle').tap();await audit(`stage-${n}-hint`);
-   await page.locator('.coach-close').tap();await page.locator('.mission-access summary').tap();await audit(`stage-${n}-placement`);
+   await page.locator('.coach-close').tap();
+   // The placement disclosure (.mission-access) left the activity screens in d69e19f; audit it only if it returns.
+   if(await page.locator('.mission-access summary').count()){await page.locator('.mission-access summary').tap();await audit(`stage-${n}-placement`);}
    await show({name:'think',n});
    if(await page.locator('.bench-wide').count())await page.locator('[data-mission="bench-view"]').tap();
    await page.locator('.play-question summary').tap();await audit(`stage-${n}-question`);
