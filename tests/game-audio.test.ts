@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { disposeAudio, ensureAudio, normalizedAudioSettings, playEffect, playNarration, setAudioPaused, setMusicDuck, setMusicTheme, syncAudioSettings } from '../src/game-audio';
+import { disposeAudio, effectRinging, ensureAudio, narrationActive, normalizedAudioSettings, playEffect, playFootstep, playNarration, playUnlock, setAudioPaused, setMusicDuck, setMusicTheme, syncAudioSettings } from '../src/game-audio';
 
 const gainDouble = () => ({ gain: { value: 0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() });
 const oscillatorDouble = () => ({ frequency: { value: 0 }, type: 'sine', connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn(), onended: undefined as (() => void) | undefined });
@@ -178,7 +178,7 @@ describe('music and game effects', () => {
     for(let i=0;i<10;i++)await Promise.resolve();
     const files=['click','pick','drop','compare','success','reward','bump','step','snap','lid','pad','crate',
       'map-zap','map-clank-one','map-clank-two','map-hit-heavy','map-exit','map-bump','map-appear','map-victory',
-      'card-whoosh','card-reveal','card-epic','card-slot','card-complete'];
+      'card-whoosh','card-reveal','card-epic','card-slot','card-complete','run-jump','map-open','map-twinkle'];
     expect(request.mock.calls.map(([url])=>url).sort()).toEqual(files.map(name=>`/audio/${name}.mp3`).sort());
     const experimentSounds=['snap','lid','pad','crate'] as const;
     for(const kind of experimentSounds)playEffect(kind);
@@ -379,5 +379,139 @@ describe('map fight cues under a villain voice',()=>{
     levels.forEach(level=>{expect(level.connect).toHaveBeenCalledWith(fight);expect(level.gain.value).toBeGreaterThan(0);});
     expect(fight.gain.value).toBeGreaterThanOrEqual(.16*.7);expect(effects.gain.value).toBeCloseTo(.048);
     stop();expect(fight.gain.value).toBe(.16);
+  });
+});
+
+describe('sound families: footsteps, cards and the unlock cue (2026-11-19)',()=>{
+  type Source={buffer:{url:string;duration:number}|null;playbackRate:{value:number};connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>;start:ReturnType<typeof vi.fn>;stop:ReturnType<typeof vi.fn>;onended:(()=>void)|null};
+  const durations:Record<string,number>={'card-complete':2.43,'map-open':.18,'map-twinkle':.31};
+  async function samples(){
+    const doc=environment(),sources:Source[]=[];
+    class SampleAudio extends AudioDouble {
+      decodeAudioData = vi.fn(async (data:ArrayBuffer) => data as unknown as AudioBuffer);
+      createBufferSource() {const source:Source={buffer:null,playbackRate:{value:1},connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),onended:null};sources.push(source);return source;}
+    }
+    vi.stubGlobal('window',{AudioContext:SampleAudio});
+    vi.stubGlobal('fetch',vi.fn(async(url:string)=>({ok:true,arrayBuffer:async()=>({url,duration:durations[url.slice(7,-4)]??.2})})));
+    ensureAudio({music:true,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    for(let i=0;i<10;i++)await Promise.resolve();
+    const name=(source:Source)=>source.buffer!.url.slice(7,-4);
+    return {doc,sources,name,context:AudioDouble.instances[0]};
+  }
+
+  it('gives footsteps their own voice and bus: they cut nothing, nothing cuts them, a voice halves them',async()=>{
+    const {doc,sources,name,context}=await samples();
+    playEffect('encounter-finish');playEffect('card-reveal');playEffect('pick');
+    const [hit,card,pick]=sources;
+    playFootstep();
+    const first=sources[3];expect(name(first)).toBe('step');expect(first.start).toHaveBeenCalledOnce();
+    const bus=context.gains.at(-1)!;expect(first.connect).toHaveBeenCalledWith(bus);expect(bus.gain.value).toBeCloseTo(.12);
+    for(const other of [hit,card,pick])expect(other.stop).not.toHaveBeenCalled();
+    // Interface, fight and card sounds leave the step alone; the next step replaces only the step.
+    playEffect('click');playEffect('encounter-swing');playEffect('card-slot');expect(first.stop).not.toHaveBeenCalled();
+    playFootstep();expect(first.stop).toHaveBeenCalledOnce();
+    for(const other of [hit,card,sources[5],sources[6]])expect(other.stop).not.toHaveBeenCalled();
+    // Left and right alternate and every step stays within 6% of the recorded speed.
+    for(let i=0;i<20;i++)playFootstep();
+    const rates=sources.filter(source=>name(source)==='step').map(source=>source.playbackRate.value);
+    rates.forEach(rate=>{expect(rate).toBeGreaterThanOrEqual(.94);expect(rate).toBeLessThanOrEqual(1.06);});
+    rates.forEach((rate,i)=>i%2?expect(rate).toBeLessThanOrEqual(1):expect(rate).toBeGreaterThanOrEqual(1));
+    const stop=playNarration('/audio/voices/resident-1-hello.mp3');expect(bus.gain.value).toBeCloseTo(.06);
+    playFootstep();expect(bus.gain.value).toBeCloseTo(.06);stop();expect(bus.gain.value).toBeCloseTo(.12);
+    // The effects switch, a hidden tab and a pause silence the step and keep it silent.
+    const last=sources.at(-1)!;syncAudioSettings({music:true,effects:false});expect(last.stop).toHaveBeenCalledOnce();
+    const count=sources.length;playFootstep();expect(sources).toHaveLength(count);
+    syncAudioSettings({music:true,effects:true});playFootstep();expect(sources).toHaveLength(count+1);
+    doc.hidden=true;doc.dispatchEvent(new Event('visibilitychange'));expect(sources.at(-1)!.stop).toHaveBeenCalledOnce();
+    playFootstep();expect(sources).toHaveLength(count+1);
+    doc.hidden=false;doc.dispatchEvent(new Event('visibilitychange'));setAudioPaused(true);playFootstep();expect(sources).toHaveLength(count+1);
+  });
+
+  it('stays silent, with no beep, before the step sample has loaded or before any gesture',()=>{
+    environment();playFootstep();expect(AudioDouble.instances).toHaveLength(0);
+    playEffect('click',{music:false,effects:true});const context=AudioDouble.instances[0],notes=context.oscillators.length;
+    playFootstep();expect(context.oscillators).toHaveLength(notes);
+  });
+
+  it('lets card cues ring through interface sounds and through each other, four layered cues at most',async()=>{
+    const {sources,name}=await samples();
+    playEffect('card-whoosh');playEffect('card-epic');playEffect('click');playEffect('drop');
+    const [whoosh,epic,click]=sources;
+    expect(click.stop).toHaveBeenCalledOnce();expect(whoosh.stop).not.toHaveBeenCalled();expect(epic.stop).not.toHaveBeenCalled();
+    playEffect('card-slot');playEffect('encounter-swing');expect(whoosh.stop).not.toHaveBeenCalled();
+    playEffect('encounter-one');expect(whoosh.stop).toHaveBeenCalledOnce();expect(epic.stop).not.toHaveBeenCalled();
+    expect(name(sources.at(-1)!)).toBe('map-clank-one');
+  });
+
+  it('skips the victory jingle after the full-set card jingle and reports while that jingle rings',async()=>{
+    const {sources,name}=await samples();
+    expect(effectRinging('card-complete')).toBe(false);
+    playEffect('card-complete');expect(name(sources[0])).toBe('card-complete');expect(effectRinging('card-complete')).toBe(true);
+    vi.advanceTimersByTime(2400);expect(effectRinging('card-complete')).toBe(true);
+    vi.advanceTimersByTime(40);expect(effectRinging('card-complete')).toBe(false);
+    playEffect('encounter-victory');expect(sources).toHaveLength(1);
+    // Without a card jingle before it, the victory jingle is the fanfare.
+    playEffect('encounter-victory');expect(sources).toHaveLength(2);expect(name(sources[1])).toBe('map-victory');
+    // A muted or paused game drops the wait at once.
+    playEffect('card-complete');setAudioPaused(true);expect(effectRinging('card-complete')).toBe(false);
+  });
+
+  it('plays the unlock latch and its sparkle after the completion sound, and holds a following voice until they are out',async()=>{
+    const {sources,name,context}=await samples();
+    playEffect('success');playUnlock(undefined,550);
+    const voice=playNarration('/audio/voices/el-crisis-4.mp3'),player=MusicDouble.instances.at(-1)!;
+    expect(player.play).not.toHaveBeenCalled();expect(sources).toHaveLength(1);
+    // A waiting voice already counts as a voice (a card or the music must not act as if nobody spoke).
+    expect(narrationActive()).toBe(true);
+    vi.advanceTimersByTime(550);
+    expect(sources.slice(1).map(name)).toEqual(['map-open','map-twinkle']);
+    expect(sources.slice(1).map(source=>source.start.mock.calls[0][0])).toEqual([0,.12]);
+    expect(sources[0].stop).not.toHaveBeenCalled();
+    sources.slice(1).forEach(source=>expect(context.gains.some(level=>source.connect.mock.calls[0][0]===level)).toBe(true));
+    vi.advanceTimersByTime(440);expect(player.play).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(10);expect(player.play).toHaveBeenCalledOnce();
+    playEffect('click');sources.slice(1,3).forEach(source=>expect(source.stop).not.toHaveBeenCalled());
+    voice();expect(narrationActive()).toBe(false);
+    // A voice with no cue before it starts at once; a cancelled voice never starts late.
+    playNarration('/audio/voices/a.mp3');expect(MusicDouble.instances.at(-1)!.play).toHaveBeenCalledOnce();
+    playUnlock(undefined,550);const cancelled=playNarration('/audio/voices/b.mp3'),late=MusicDouble.instances.at(-1)!;
+    cancelled();vi.advanceTimersByTime(2000);expect(late.play).not.toHaveBeenCalled();
+    // Muted: no cue and no wait.
+    syncAudioSettings({music:true,effects:false});const count=sources.length;playUnlock({music:true,effects:false},550);
+    vi.advanceTimersByTime(2000);expect(sources).toHaveLength(count);expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('after the final theme ends (2026-11-19)',()=>{
+  it('carries on with the main theme at 45% on the final screens and returns to the plain level on leaving',()=>{
+    const doc=environment();ensureAudio({music:true});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0];setMusicTheme('final',true);
+    expect(music.src).toBe('/audio/music/finale-theme.mp3');expect(music.volume).toBeCloseTo(.35);
+    music.currentTime=74;music.ended=true;music.paused=true;music.onended!();
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.loop).toBe(true);expect(music.paused).toBe(false);expect(music.volume).toBeCloseTo(.1575);
+    // Ending to certificate keeps the quiet main theme without a restart; a voice still ducks lower.
+    music.currentTime=12;setMusicTheme('final');syncAudioSettings({music:true});
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.currentTime).toBe(12);expect(music.volume).toBeCloseTo(.1575);
+    const stop=playNarration('/audio/voices/a.mp3');vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.0875);
+    stop();vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.1575);
+    setMusicTheme('main');vi.advanceTimersByTime(250);
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.currentTime).toBe(12);expect(music.volume).toBeCloseTo(.35);
+    // Replaying the ending starts the final theme again at the plain level.
+    setMusicTheme('final',true);expect(music.src).toBe('/audio/music/finale-theme.mp3');expect(music.currentTime).toBe(0);
+    vi.advanceTimersByTime(250);expect(music.volume).toBeCloseTo(.35);
+  });
+
+  it('does the same in the map finale dialog and gives the main theme back at the plain level when it closes',()=>{
+    const doc=environment();ensureAudio({music:true});doc.dispatchEvent(new Event('pointerdown'));
+    const music=MusicDouble.instances[0];
+    const announce=(open:boolean)=>doc.dispatchEvent(Object.assign(new Event('map-finale'),{detail:{open}}));
+    announce(true);expect(music.src).toBe('/audio/music/finale-theme.mp3');
+    music.ended=true;music.paused=true;music.onended!();
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.paused).toBe(false);expect(music.volume).toBeCloseTo(.1575);
+    setMusicTheme('main');expect(music.volume).toBeCloseTo(.1575);
+    music.currentTime=5;announce(false);vi.advanceTimersByTime(250);
+    expect(music.src).toBe('/audio/music/main-theme.mp3');expect(music.currentTime).toBe(5);expect(music.volume).toBeCloseTo(.35);
+    // The next finale starts the final theme from the top again.
+    announce(true);expect(music.src).toBe('/audio/music/finale-theme.mp3');expect(music.currentTime).toBe(0);
   });
 });

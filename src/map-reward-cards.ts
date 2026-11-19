@@ -49,10 +49,13 @@ export function queueRewardCard(index: number) { due.add(index); }
 export const rewardCardDue = () => due.size > 0;
 /** The reveal was skipped (the map closed first): the card simply sits in its slot. */
 export function dropRewardCard(index: number, save: Progress) { flying.delete(index); due.delete(index); rewardCards().syncSlots(shown(save)); }
-/** Flies the card in from the defeated villain, which is still on the map saying goodbye. */
-export function revealRewardCard(index: number, save: Progress) {
+/** Where the defeated villain stands on screen while it is still on the map. */
+export function rewardCardOrigin(index: number) {
   const foe = document.querySelector<HTMLElement>(`.map-encounter-foe[data-encounter="${cards[index][0]}"]`);
   const box = foe && !foe.hidden ? foe.getBoundingClientRect() : undefined;
-  const origin = box && { x: box.left, y: box.top - (parseFloat(foe!.style.getPropertyValue('--encounter-size')) || 0) / 2 };
+  return box && { x: box.left, y: box.top - (parseFloat(foe!.style.getPropertyValue('--encounter-size')) || 0) / 2 };
+}
+/** Flies the card in from the defeated villain. `origin` is where it stood, noted before its goodbye ended. */
+export function revealRewardCard(index: number, save: Progress, origin = rewardCardOrigin(index)) {
   return rewardCards().reveal(index, origin, ownedRewardCards(save)).finally(() => { flying.delete(index); due.delete(index); });
 }

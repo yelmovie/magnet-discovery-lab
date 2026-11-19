@@ -138,5 +138,35 @@
         "role": "all six cards collected"
       }
     }
+  },
+  "mapAndRun": {
+    "note": "Entrance-lamp cue and the delivery run's jump, added 2026-11-19 from the shared science34 CC0 library (_shared/sfx-library-20261117, licences rechecked 2026-11-17). Copied byte for byte under the names the game loads; trimmed, faded and loudness-normalised in the library, no pitch or speed change. Footsteps on the map and on the run use step.mp3 (Kenney tick_001, above) at 94-106% speed.",
+    "files": {
+      "map-open": {
+        "title": "open_001",
+        "creator": "Kenney",
+        "pack": "Interface Sounds 1.0",
+        "license": "CC0-1.0",
+        "url": "https://kenney.nl/assets/interface-sounds",
+        "library": "sfx/open-02.mp3",
+        "role": "entrance lamp comes on: the latch"
+      },
+      "map-twinkle": {
+        "title": "anime.wav",
+        "creator": "1urker",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/1urker/sounds/457306",
+        "library": "sfx/twinkle-02.mp3",
+        "role": "entrance lamp comes on: the sparkle, 0.12 s after the latch"
+      },
+      "run-jump": {
+        "title": "swosh windy 36.flac",
+        "creator": "qubodup",
+        "license": "CC0-1.0",
+        "url": "https://freesound.org/people/qubodup/sounds/60023",
+        "library": "sfx/wind-whoosh-02.mp3",
+        "role": "jump on the 3D delivery run"
+      }
+    }
   }
 }

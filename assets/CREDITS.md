@@ -188,3 +188,14 @@ CSS 사각형·캔버스 단색 도형으로 그리던 소품과 틀을 같은 �
 | 효과음 · 성취 카드 6장 완성 | `public/audio/card-complete.mp3` | el_boss — Game Success Fanfare Short (freesound.org/people/el_boss/sounds/677858). 같은 라이브러리의 `sfx/victory-jingle-01.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
 
 효과음 출처의 기계 판독용 기록은 `public/audio/sources.json`의 `rewardCards`에 있다.
+
+## 지도 발자국·입구등 열림·달리기 길 소리 (2026-11-19)
+
+| 자료 | 배포 파일 | 출처·제작 | 이용 조건 |
+|---|---|---|---|
+| 효과음 · 지도와 3D 달리기 길의 발자국 | `public/audio/step.mp3` | Kenney — Interface Sounds 1.0 `tick_001`(위 표의 기존 파일). 재생 속도만 94~106%로 조금씩 바꿔 낸다 | CC0 1.0 |
+| 효과음 · 입구등 켜짐(열림) | `public/audio/map-open.mp3` | Kenney — Interface Sounds 1.0 `open_001` (kenney.nl/assets/interface-sounds). 과학34 공통 효과음 라이브러리(`_shared/sfx-library-20261117`의 `sfx/open-02.mp3`)에서 복사: 앞뒤 무음 제거·음량 정규화·모노 MP3 | CC0 1.0 (2026-11-17 재확인) |
+| 효과음 · 입구등 켜짐(반짝, 0.12초 뒤) | `public/audio/map-twinkle.mp3` | 1urker — anime.wav (freesound.org/people/1urker/sounds/457306). 같은 라이브러리의 `sfx/twinkle-02.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+| 효과음 · 3D 달리기 길 점프 | `public/audio/run-jump.mp3` | qubodup — swosh windy 36 (freesound.org/people/qubodup/sounds/60023). 같은 라이브러리의 `sfx/wind-whoosh-02.mp3`에서 복사 | CC0 1.0 (원본 페이지에서 2026-11-17 재확인) |
+
+달리기 길의 수집 소리는 `pick.mp3`, 도깨비와 부딪히는 소리는 `bump.mp3`(위 Kenney 표)를 쓴다. 기계 판독용 기록은 `public/audio/sources.json`의 `mapAndRun`에 있다.

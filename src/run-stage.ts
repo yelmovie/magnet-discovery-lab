@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Octree } from 'three/examples/jsm/math/Octree.js';
 import type { Activity, Point, Pole } from './domain';
 import { opposite } from './domain';
+import { playEffect, playFootstep } from './game-audio';
 import { deliveryCourse } from './mission-model';
 import type { DeliveryState } from './missions-remote';
 import type { RunSteer } from './run-input';
@@ -246,7 +247,7 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
   const start = resumeSpot(a);
   runner.place(.1, start >= practice.step[0] && start < practice.step[1] ? practice.stepHeight : 0, z(start));
   let held = true, state: DeliveryState | undefined, message = '', messageFor = 0, flipped = false, lastPole: Pole | undefined;
-  let safeS = start, doneKey = '', focusZ = z(start), clock = 0;
+  let safeS = start, doneKey = '', focusZ = z(start), clock = 0, stepAt = -1;
   const falls = new Map<number, number>();
   const say = (text: string, seconds = 3.2) => { message = text; messageFor = seconds; };
   const magnetPoint = () => benchPoint(sOf(runner.position.z), lane.rail - runner.position.x, held);
@@ -254,7 +255,11 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
   function step(dt: number, steer: RunSteer): Point {
     clock += dt; messageFor = Math.max(0, messageFor - dt);
     const closed = state?.wall === true;
+    const grounded = runner.onFloor;
     runner.step(dt, steer, { minX: lane.left, maxX: lane.right, minZ: z(courseEnd(closed)), maxZ: z(courseStart - 2) });
+    // Sounds of the run: a whoosh as she leaves the ground, a footfall every 0.28 s while she is steered along the floor.
+    if (steer.jump && grounded && !runner.onFloor && runner.velocity.y > 0) playEffect('jump');
+    else if (dt > 0 && (steer.x || steer.y) && runner.onFloor && !runner.busy && Math.hypot(runner.velocity.x, runner.velocity.z) > .4 && clock - stepAt >= .28) { stepAt = clock; playFootstep(); }
     let s = sOf(runner.position.z);
     if (runner.onFloor) safeS = s;
     if (runner.position.y < -4) {
@@ -270,12 +275,12 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     cell(goblin.material.map, 6, 1, goblinRest > 0 ? 4 : 0, 0);
     goblin.position.set(goblinX, Math.abs(Math.sin(clock * 5)) * .06, z(practice.villain)); goblinShadow.position.x = goblinX;
     if (!goblinRest && !runner.busy && Math.hypot(runner.position.x - goblinX, runner.position.z - goblin.position.z) < .75 && runner.position.y < .9) {
-      goblinRest = 1.6; runner.flinch(Math.sign(runner.position.z - goblin.position.z) || 1); say('도깨비와 부딪혔어! 괜찮아, 다시 지나가 보자.');
+      goblinRest = 1.6; runner.flinch(Math.sign(runner.position.z - goblin.position.z) || 1); say('도깨비와 부딪혔어! 괜찮아, 다시 지나가 보자.'); playEffect('bump');
     }
     const magnet = magnetPoint();
     for (const item of items) {
       const at = { x: item.s, y: benchPoint(0, lane.rail - item.home.x, true).y };
-      if (!item.stuck && held && pickupSticks(item.id, magnet, at)) { item.stuck = true; say(pickupLine(item.id, item.name), 4); }
+      if (!item.stuck && held && pickupSticks(item.id, magnet, at)) { item.stuck = true; say(pickupLine(item.id, item.name), 4); playEffect('pick'); }
       else if (!item.stuck && !item.told && held && Math.abs(s - item.s) < 1.6) { item.told = true; say(pickupLine(item.id, item.name), 4); }
     }
     return magnet;

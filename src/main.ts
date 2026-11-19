@@ -26,7 +26,7 @@ import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } f
 import { bindResidentChat, chatMarkup } from './resident-chat';
 import { openGameSettings } from './game-settings';
 import { playStory, type FilmId } from './story-video';
-import { ensureAudio, syncAudioSettings, playEffect, playNarration, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
+import { ensureAudio, syncAudioSettings, playEffect, playNarration, playUnlock, effectRinging, narrationActive, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
@@ -38,7 +38,7 @@ import { ideaView } from './idea-lab';
 import { usesIdeaLab } from './idea-model';
 import { icon, mascot } from './art';
 import type { View } from './activity-types';
-import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, queueRewardCard, revealRewardCard, rewardCardDue, rewardSlotsHtml } from './map-reward-cards';
+import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, queueRewardCard, revealRewardCard, rewardCardDue, rewardCardOrigin, rewardSlotsHtml } from './map-reward-cards';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
@@ -157,21 +157,32 @@ function render() {
 function titlePage() { return questTitle(s,adminOn()); }
 function cityPage() { return expeditionMarkup(s, adminOn()); }
 function bindCity() {
-  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{const before=ownedRewardCards(s);s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();ownedRewardCards(s).forEach((owned,index)=>{if(owned&&!before[index])earnRewardCard(index);});},encounterHold:rewardCardDue,onArrive:showPlace,onResident:showResident});
+  city = mountExpedition(document.querySelector('.quest-city')!, {save:s,admin:adminOn(),onPosition:p=>{if(s.city.x!==p.x||s.city.y!==p.y){s.city=p;touch();}},onEncounterSave:hits=>{const before=ownedRewardCards(s);s.mapEncounters={...s.mapEncounters,...hits};touch();void flush();ownedRewardCards(s).forEach((owned,index)=>{if(owned&&!before[index])earnRewardCard(index);});},encounterHold:()=>rewardCardDue()||farewellOver()||effectRinging('card-complete'),onArrive:showPlace,onResident:showResident});
 }
-/** The card follows the villain's exit. An open card pauses the map (below), so the all-villains finale waits until the card is put away. */
+// Cards whose villain may still be saying goodbye: card → when the villain fell and how long its exit pose takes.
+const farewells=new Map<number,{at:number;exit:number}>();
+const FAREWELL_LIMIT=5000;
+const farewellSpoken=({at,exit}:{at:number;exit:number})=>{const waited=performance.now()-at;return waited>=exit&&(!narrationActive()||waited>=FAREWELL_LIMIT);};
+/** A goodbye has just ended: the villains and the finale wait from this frame on, before the card's own timer comes round. */
+const farewellOver=()=>[...farewells.values()].some(farewellSpoken);
+/** The card follows the villain's exit and its goodbye line. An open card pauses the map (below), so the all-villains finale waits until the card is put away and the full-set jingle has rung out. */
 function earnRewardCard(index:number) {
-  const expedition=city;
-  holdRewardCard(index);
+  const expedition=city,farewell={at:performance.now(),exit:s.settings.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches?760:520};
+  holdRewardCard(index);farewells.set(index,farewell);
+  let origin:ReturnType<typeof rewardCardOrigin>,noted=false;
   const open=()=>{
-    if(page!=='city'||city!==expedition)return dropRewardCard(index,s);
+    if(page!=='city'||city!==expedition){farewells.delete(index);return dropRewardCard(index,s);}
+    // The card flies in from where the villain stood, even if its goodbye outlasts the exit pose.
+    if(!noted){noted=true;origin=rewardCardOrigin(index);}
+    // The goodbye line is heard first (it starts 0.3 s after the hit); the card never talks over it.
+    if(!farewellSpoken(farewell)){window.setTimeout(open,100);return;}
     // It is the card's turn from here: the villains and the finale wait behind it (encounterHold), also while it waits for a dialog.
-    queueRewardCard(index);
+    queueRewardCard(index);farewells.delete(index);
     // Settings or a resident opened in the meantime go first.
     if(app.inert||document.querySelector('.modal-backdrop,dialog[open]')){window.setTimeout(open,300);return;}
-    void revealRewardCard(index,s);
+    void revealRewardCard(index,s,origin);
   };
-  window.setTimeout(open,s.settings.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches?760:520);
+  window.setTimeout(open,farewell.exit);
 }
 // The map stands still while a new card or the card album is open.
 let cardLayerOpen=false;
@@ -361,9 +372,12 @@ async function finishActivityOnce(conceptDone: boolean) {
   const stage = Math.floor((screen - 1) / 2);
   const newResident = screen % 2 === 0 && !s.evidence.some(e => e.stage === stage);
   if (screen === 9 && !idea) { record(s.activities[9],{ key: 'design', label: '최초 설계 초안', result: `${s.design.template === 'box' ? '보관함' : '원격 운반 도구'} · ${s.design.pair === 'iron' ? '철 부품' : '자석 쌍'} · 거리 ${s.design.gap <= 36 ? '가까움' : '멀어짐'} · ${s.design.aligned ? '마주 보게 배치' : '배치 조정 전'}` }); }
+  const lampLit = s.completed.includes(screen);
   if (!completeActivity(s, screen)) return;
   await flush();
   if (screen % 2) {
+    // The entrance lamp comes on once: its cue follows the completion sound, and the next room's voice waits for it.
+    if(!idea&&!lampLit)playUnlock(s.settings,600);
     startActivity(screen+1);if(!idea)notify(`첫 탐구 완료! ${stageNames[stage]} 입구등이 켜졌어.`);return;
   }
   go('city');

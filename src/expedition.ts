@@ -1,6 +1,6 @@
 import {bindMapZoom} from './map-gestures.js';
 import {mountVillageEncounters,villageEncounterHits} from './village-encounters.js';
-import {playEffect} from './game-audio';
+import {playEffect,playFootstep} from './game-audio';
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { icon, walkingMascot } from './art';
 import { stageNames, type Point, type Save } from './domain';
@@ -336,10 +336,13 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   // A drag that ends over a building must not also walk there.
   viewport.addEventListener('click',e=>{if(swallowClick){swallowClick=false;e.stopPropagation();e.preventDefault();}},{signal,capture:true});
   viewport.addEventListener('click',e=>{if(paused||free||(e.target as HTMLElement).closest('button'))return;setFree(false);cancelRoute();releaseDirections();const r=world.getBoundingClientRect(),q={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};route=roadRoute(p,q);},{signal});
+  // A footfall about every 0.3 s (the first frame past 290 ms) while 밀이 really moves; nothing under a dialog, a film or a card.
+  let stepAt=-Infinity;
   const tick=(now:number)=>{const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;if(!paused&&!document.hidden){
     if(route.length){const q=route[0],d=dist(q,p),step=dt*12;if(d<=step){p=q;route.shift();}else{p={x:p.x+(q.x-p.x)*step/d,y:p.y+(q.y-p.y)*step/d};}}
     else if(dir.x||dir.y)p=walkRoad(p,dir,dt*12);
     const moving=dist(walkers[0].position,p)>.0001;
+    if(moving&&now-stepAt>=290&&!document.querySelector('dialog[open],.modal-backdrop,.rc-layer')){stepAt=now;playFootstep();}
     if(courier&&options.save.settings.motion&&!reducedMotion.matches){courierPhase+=dt*.20;drawCourier(courierPosition(courierPhase));}
     if(moving){const last=trail[trail.length-1];if(dist(last,p)>.3){trail.push({...p});if(trail.length>80)trail.splice(0,trail.length-80);}}
     if(moving&&now-saveAt>700){options.onPosition(p);saveAt=now;}
