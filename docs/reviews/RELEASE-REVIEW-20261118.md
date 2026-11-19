@@ -178,3 +178,5 @@
 | `autoplay-settings`·`production-settings` | 시간 초과 | 이번 변경 전부터 낡음(위 E-회귀), 별도 작업 |
 
 설정 창 닫기(16개 공통 기준 `SETTINGS-CLOSE-RULE-20261119`): 위 오른쪽 X를 없애고 아래 오른쪽 「닫기」 하나만 남김(`src/game-settings.ts`). 창을 열면 「닫기」에 첫 초점, Esc로 닫힘, 「기록 초기화」·확인 단계·저장은 그대로. 앱 안 브라우저에서 1280×800·375×812 확인.
+
+운영 반영: 커밋 `3420227`(설정 닫기 `d52ad40` 포함) → Cloudflare Pages `b5f5ece5`. JS·index·CSS 해시 운영과 MATCH(`cmp.sh`), 운영 smoke(`release-smoke.cjs https://magnet-city.pages.dev`) 9/9 PASS.
