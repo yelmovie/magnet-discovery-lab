@@ -65,6 +65,8 @@
 /* The dialog uses the shared outer padding; keep the internal heading aligned with its rows. */
 html body dialog.game-settings[data-science-settings]>.settings-dialog-heading {padding:0 0 1px;border:0;background:none}
 html body dialog[data-science-settings] .science-settings-audio>.science-settings-volume {grid-column:1}
+/* Each size slider sits under its own switch: music on the left, effects on the right (one column on narrow screens). */
+@media(min-width:601px){html body dialog[data-science-settings] .science-settings-audio>.science-settings-volume[for="settings-effects-volume"] {grid-column:2}}
 
 html body.quest-mode dialog.game-settings[data-science-settings] {
  width:min(940px,calc(100vw - 28px));max-width:calc(100vw - 28px);max-height:94dvh;

@@ -56,8 +56,15 @@ afterEach(() => { disposeAudio(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('music and game effects', () => {
   it('keeps independent preferences and clamps music volume', () => {
-    expect(normalizedAudioSettings({ sound: false })).toEqual({ effects: false, music: false, musicVolume: 0.35 });
-    expect(normalizedAudioSettings({ sound: false, effects: true, music: true, musicVolume: 3 })).toEqual({ effects: true, music: true, musicVolume: 1 });
+    expect(normalizedAudioSettings({ sound: false })).toEqual({ effects: false, voice: false, music: false, musicVolume: 0.35, effectsVolume: 1 });
+    expect(normalizedAudioSettings({ sound: false, effects: true, music: true, musicVolume: 3 })).toEqual({ effects: true, voice: true, music: true, musicVolume: 1, effectsVolume: 1 });
+    // Voices follow effects until they have their own value; then they are independent.
+    expect(normalizedAudioSettings({ effects: false }).voice).toBe(false);
+    expect(normalizedAudioSettings({ effects: false, voice: true }).voice).toBe(true);
+    expect(normalizedAudioSettings({ effects: true, voice: false }).voice).toBe(false);
+    expect(normalizedAudioSettings({ effectsVolume: 2 }).effectsVolume).toBe(1);
+    expect(normalizedAudioSettings({ effectsVolume: -1 }).effectsVolume).toBe(0);
+    expect(normalizedAudioSettings({ effectsVolume: Number.NaN }).effectsVolume).toBe(1);
     expect(normalizedAudioSettings({ musicVolume: Number.NaN }).musicVolume).toBe(0.35);
     expect(normalizedAudioSettings({ musicVolume: -1 }).musicVolume).toBe(0);
   });
@@ -265,6 +272,31 @@ describe('map villain cue before decoding',()=>{
     const context=AudioDouble.instances[0];expect(context.oscillators).toHaveLength(0);expect(sources).toHaveLength(0);
     for(let i=0;i<12;i++)await Promise.resolve();
     expect(sources).toHaveLength(1);expect(context.oscillators).toHaveLength(0);
+  });
+});
+
+describe('separate voice switch and effects volume',()=>{
+  it('mutes voices without touching effects, and effects without touching voices',()=>{
+    const doc=environment();ensureAudio({music:false,effects:true,voice:false});doc.dispatchEvent(new Event('pointerdown'));
+    const muted=vi.fn();playNarration('/audio/voices/resident-1-hello.mp3',undefined,muted);
+    expect(muted).toHaveBeenLastCalledWith('muted');expect(narrationActive()).toBe(false);
+    const context=AudioDouble.instances[0],before=context.oscillators.length;
+    playEffect('click');expect(context.oscillators.length).toBeGreaterThan(before);
+    syncAudioSettings({music:false,effects:false,voice:true});
+    const state=vi.fn();playNarration('/audio/voices/resident-1-hello.mp3',undefined,state);
+    expect(state).toHaveBeenLastCalledWith('loading');expect(narrationActive()).toBe(true);
+    const count=context.oscillators.length;playEffect('click');expect(context.oscillators.length).toBe(count);
+    // Turning the voice off stops the line at once.
+    syncAudioSettings({music:false,effects:false,voice:false});expect(state).toHaveBeenLastCalledWith('muted');expect(narrationActive()).toBe(false);
+  });
+
+  it('scales every effect bus by the effects volume and keeps the old level at 100%',()=>{
+    const doc=environment();ensureAudio({music:false,effects:true});doc.dispatchEvent(new Event('pointerdown'));
+    const [effects,fights]=AudioDouble.instances[0].gains;
+    expect(effects.gain.value).toBeCloseTo(.16);expect(fights.gain.value).toBeCloseTo(.16);
+    syncAudioSettings({music:false,effects:true,effectsVolume:.5});
+    expect(effects.gain.value).toBeCloseTo(.08);expect(fights.gain.value).toBeCloseTo(.08);
+    syncAudioSettings({music:false,effects:true,effectsVolume:1});expect(effects.gain.value).toBeCloseTo(.16);
   });
 });
 

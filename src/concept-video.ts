@@ -1,6 +1,7 @@
 import './concept-focus.css';
 import './concept-fullscreen.css';
 import {bindConceptFocus,emphasizeConcept} from './concept-focus.js';
+import {NARRATION_EVENT,narrationActive} from './game-audio';
 export const conceptCaptions: string[][] = [["덮개를 열면 빨강·파랑 자석이 함께 올라가. 몸체의 철판은 제자리에 있어.", "덮개를 내리면 자석과 철판이 맞닿아 덮개를 붙잡아.", "같은 세기로 흔들어 보니, 이 우편함은 자석을 뺀 쪽만 열렸어."], ["철 클립과 철못은 자석에 붙었어. 알루미늄 포일과 나무는 그대로야.", "자석을 가까이 가져가자, 닿기 전부터 철 클립이 움직여.", "같은 자리에서 얇은 종이만 넣어 봐. 클립은 종이 앞까지 끌려와."], ["S극과 S극이 마주 봐. 두 자석이 서로 밀어내며 멀어져.", "S극과 N극이 마주 봐. 두 자석이 서로 끌어당겨 붙어.", "막대에 끼운 윗고리를 놓아 봐. 마주 보는 면의 극에 따라 뜨거나 붙어."], ["손잡이를 내리면 물속 패드도 내려가. 두 자석이 유리 너머로 서로 당겨.", "앞에서 다른 극을 마주 대면 수레가 끌려와. 자석끼리 닿기 전에도 움직여.", "뒤에서 같은 극을 마주 대면 수레가 밀려나. 이번에도 오른쪽으로 가."], ["덮개를 닫고 흔드니 다시 열렸어. 자석이 철판에서 멀리 빗나가 있어.", "철판의 자리를 고쳐 봐. 이제 덮개를 닫으면 자석과 철판이 만나.", "편지를 넣고, 책을 넣고 다시 시험했어. 두 번 다 덮개가 잘 닫혀 있어."]];
 const conceptTerms = [['자석','철판'],['철 클립','닿기 전','종이'],['S극','N극','밀어','끌어당겨'],['유리','다른 극','같은 극'],['자석','철판','시험']];
 const focusLabels = [['자석과 철판','서로 붙잡기','같은 조건 비교'],['붙는 물질','닿기 전의 힘','종이 너머의 힘'],['같은 극 · 밀기','다른 극 · 당기기','마주 보는 극'],['유리 너머','앞에서 당기기','뒤에서 밀기'],['문제 찾기','자리 고치기','다시 시험']];
@@ -18,6 +19,7 @@ export function conceptMarkup(stage: number, replay: boolean) {
   return `<div class="concept-heading" data-concept-stage="${stage}"><span class="concept-tag">발견 ${stage + 1} · 12초 개념 실험실</span><h2>${item.title}</h2></div><div class="concept-screen"><video class="concept-video" playsinline preload="metadata" poster="${base}.webp" aria-label="${item.title} 개념 영상"><source src="${base}.mp4" type="video/mp4"><track kind="captions" srclang="ko" label="한국어" src="${base}.vtt"></video><button type="button" class="concept-play" data-video="play" aria-label="개념 영상 재생" hidden><span aria-hidden="true">▶</span> 재생</button><p class="concept-error" role="status" hidden>영상을 불러오지 못했어. ${item.summary}</p></div><p class="concept-caption" role="status" aria-live="polite">${emphasizeConcept(conceptCaptions[stage][0],conceptTerms[stage])}</p><p class="concept-summary">${item.question}</p><div class="concept-actions"><button type="button" class="btn" data-video="restart">처음부터 보기</button><button type="button" class="btn primary" data-video="continue">${replay ? '탐험으로 돌아가기' : '도구 받고 도시로 →'}</button></div>`;
 }
 
+const FILM_LEVEL=.42,FILM_UNDER_VOICE=.3;
 /** All media listeners and playback belong to the modal lifetime. Only the mailbox wrap-up waits for the clip to end. */
 export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void, finishVideo = false, continueLabel = '도구 받고 도시로 →') {
   const video = dialog.querySelector<HTMLVideoElement>('video')!, controller = new AbortController();
@@ -42,7 +44,18 @@ export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boole
   const toggle=()=>{if(failed)return;if(video.paused||video.ended)void video.play().catch(sync);else video.pause();};
   video.addEventListener('click',toggle,{signal});
   playButton.addEventListener('click',toggle,{signal});
-  video.muted = !effects; video.volume = .42;
+  video.muted = !effects; video.volume = FILM_LEVEL;
+  // The clip's own chimes sit at 30% while a caption line is read aloud and come back when it ends, over 0.2 s.
+  // The chimes follow the effects switch (muted above); the caption voice follows the voice switch (playNarration).
+  let glide=0;
+  const underVoice=(active:boolean)=>{
+    clearInterval(glide);const from=video.volume,to=FILM_LEVEL*(active?FILM_UNDER_VOICE:1),began=performance.now();
+    if(Math.abs(from-to)<.005){video.volume=to;return;}
+    glide=window.setInterval(()=>{const part=Math.min(1,(performance.now()-began)/200);video.volume=from+(to-from)*part;if(part>=1)clearInterval(glide);},25);
+  };
+  document.addEventListener(NARRATION_EVENT,event=>underVoice(Boolean((event as CustomEvent<{active?:boolean}>).detail?.active)),{signal});
+  signal.addEventListener('abort',()=>clearInterval(glide));
+  if(narrationActive())underVoice(true);
   dialog.querySelector('[data-video="restart"]')!.addEventListener('click', () => { video.currentTime = 0; void video.play().catch(() => {}); }, { signal });
   const next=dialog.querySelector<HTMLButtonElement>('[data-video="continue"]')!;
   if(finishVideo){

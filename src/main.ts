@@ -26,7 +26,7 @@ import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } f
 import { bindResidentChat, chatMarkup } from './resident-chat';
 import { openGameSettings } from './game-settings';
 import { playStory, type FilmId } from './story-video';
-import { ensureAudio, syncAudioSettings, playEffect, playNarration, playUnlock, effectRinging, narrationActive, setAudioPaused, setMusicTheme, normalizedAudioSettings } from './game-audio';
+import { ensureAudio, syncAudioSettings, playEffect, playNarration, playUnlock, effectRinging, narrationActive, setAudioPaused, setMusicTheme, normalizedAudioSettings, anySoundOn } from './game-audio';
 import { restorationView } from './restoration';
 import { bindPlacement } from './manipulation';
 import { trialPicture, readableRecord } from './trial-records';
@@ -69,10 +69,8 @@ const esc = (x: unknown) => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', 
 
 function sound(success = false) { ensureAudio(s.settings); playEffect(success ? 'success' : 'click', s.settings); }
 bindRewardSound(name => playEffect(`card-${name}`, s.settings));
-function mapSoundOn() {
-  const audio=normalizedAudioSettings(s.settings);
-  return audio.music||audio.effects;
-}
+// The header button is the master switch: on while any of music, effects or voices is on.
+const mapSoundOn = () => anySoundOn(s.settings);
 function syncMapSoundButton() {
   const control=app.querySelector<HTMLButtonElement>('[data-action="sound"]');
   if(!control)return;
@@ -444,14 +442,14 @@ function bindCore() {
 async function activate() { if (!canActivate() || s.final.complete) return; s.final.complete = true; s.final.date ||= new Date().toISOString(); await flush(); sound(true); go('ending'); }
 // The ending page is the finale film; its closing card leads to the certificate.
 function endingPage() { return '<section class="ending-film" aria-label="도시 축제 영상"></section>'; }
-function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, onDone: () => go('certificate') }); }
+function bindEnding() { cleanup = playStory('final', { effects: normalizedAudioSettings(s.settings).effects, voice: normalizedAudioSettings(s.settings).voice, motion: s.settings.motion, onDone: () => go('certificate') }); }
 /** Story film over the current page (intro, or replays from settings). The page pauses underneath. */
 function openFilm(id: FilmId, onDone: () => void, replay = false) {
   stopCompanionVoice();
   modalCleanup?.(); document.querySelector('.modal-backdrop')?.remove();
   city?.pause(true); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: true }));
   const release = () => { close(); if (modalCleanup === release) modalCleanup = undefined; city?.pause(false); window.dispatchEvent(new CustomEvent('experiment-pause', { detail: false })); };
-  const close = playStory(id, { effects: normalizedAudioSettings(s.settings).effects, motion: s.settings.motion, replay, onDone: () => { release(); onDone(); } });
+  const close = playStory(id, { effects: normalizedAudioSettings(s.settings).effects, voice: normalizedAudioSettings(s.settings).voice, motion: s.settings.motion, replay, onDone: () => { release(); onDone(); } });
   modalCleanup = release;
 }
 function certificatePage() {
@@ -573,7 +571,7 @@ function bindCommon() {
       case 'city': void flush(); go('city'); break;
       case 'sound': {
         const enabled=!mapSoundOn();
-        s.settings.sound=enabled;s.settings.music=enabled;s.settings.effects=enabled;
+        s.settings.sound=enabled;s.settings.music=enabled;s.settings.effects=enabled;s.settings.voice=enabled;
         syncAudioSettings(s.settings);syncMapSoundButton();touch();
         break;
       }

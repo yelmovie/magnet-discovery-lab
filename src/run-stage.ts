@@ -266,6 +266,8 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
       // No lives and no game over: back to the last point passed.
       const mark = checkpointFor(safeS), count = (falls.get(mark) || 0) + 1; falls.set(mark, count);
       runner.place(.1, 0, z(mark)); trail.length = 0; s = mark; safeS = mark; say(fallLine(count), 5);
+      // A soft thud as she drops out of sight, then she is back at the checkpoint (it used to be silent).
+      playEffect('fall');
     }
     // The goblin only makes the runner stumble. The cart and the records are untouched.
     goblinRest = Math.max(0, goblinRest - dt);

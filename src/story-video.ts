@@ -54,6 +54,8 @@ export type FilmId = keyof typeof films;
 export interface StoryOptions {
   /** Effects setting: the film's own sound effects play only when it is on. */
   effects: boolean;
+  /** Voice setting: the spoken cue lines play only when it is on. Without it they follow the effects setting. */
+  voice?: boolean;
   /** Motion setting off → wait for an explicit play instead of autoplaying. */
   motion: boolean;
   /** Replays from settings close straight away instead of jumping to the closing card. */
@@ -93,6 +95,9 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const video = $<HTMLVideoElement>('video'), endFrame = $<HTMLImageElement>('.story-end'), caption = $('.story-caption');
   const skip = $<HTMLButtonElement>('[data-story="skip"]'), pause = $<HTMLButtonElement>('[data-story="pause"]'), play = $<HTMLButtonElement>('[data-story="play"]');
   const controller = new AbortController(), on = { signal: controller.signal };
+  // A refused unmuted start falls back to a silent film; its voices would be refused too.
+  let blocked = false;
+  const voiceOn = () => (options.voice ?? options.effects) && !blocked;
   let closed = false, failed = false, cardShown = false, timeout = 0, frameId = 0, lastCue = -2, lastPlace = -1;
   // Cue voices live here, not in playNarration: the film owns the audio while it is open.
   const voices = film.cues.map((_, i) => { const voice = new Audio(`/audio/voices/story-${id}-${i + 1}.mp3`); voice.preload = 'auto'; voice.volume = .95; return voice; });
@@ -101,11 +106,11 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const hushVoices = () => { for (const voice of voices) voice.pause(); video.volume = .55; };
   // The cue voices do not go through playNarration, so the film lowers the music itself, under its own label.
   // A muted film has no voices, and a paused one or the closing card has none either: the music returns.
-  const underVoices = () => setMusicDuck('story', !closed && !failed && !cardShown && !video.muted && !video.paused);
+  const underVoices = () => setMusicDuck('story', !closed && !failed && !cardShown && (!video.muted || voiceOn()) && !video.paused);
   const speakCue = (cue: number) => {
     hushVoices();
     const voice = voices[cue];
-    if (!voice || video.muted || video.paused) return;
+    if (!voice || !voiceOn() || video.paused) return;
     video.volume = .25; voice.onended = () => { video.volume = .55; };
     voice.currentTime = 0; void voice.play().catch(() => { video.volume = .55; });
   };
@@ -158,7 +163,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
   const start = () => {
     if (closed || failed) return; play.hidden = true; watchdog();
     // Unmuted autoplay can be refused when the click is too far back; the film still plays silently.
-    video.play().catch(() => { if (closed || video.muted) throw new Error('blocked'); video.muted = true; return video.play(); })
+    video.play().catch(() => { if (closed || video.muted) throw new Error('blocked'); video.muted = true; blocked = true; return video.play(); })
       .catch(() => { if (closed || failed) return; clearTimeout(timeout); play.hidden = false; play.focus(); });
     underVoices();
   };
@@ -169,7 +174,7 @@ export function playStory(id: FilmId, options: StoryOptions): () => void {
     tick(); showCard();
   };
 
-  video.addEventListener('playing', () => { if (!failed) layer.classList.add('has-film'); setAudioPaused(false); underVoices(); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && !video.muted) void voice.play().catch(() => {}); }, on);
+  video.addEventListener('playing', () => { if (!failed) layer.classList.add('has-film'); setAudioPaused(false); underVoices(); clearTimeout(timeout); pause.setAttribute('aria-label', '일시 정지'); pause.innerHTML = pauseIcon; const voice = voices[lastCue]; if (voice && voice.currentTime > 0 && !voice.ended && voiceOn()) void voice.play().catch(() => {}); }, on);
   video.addEventListener('pause', () => { underVoices(); for (const voice of voices) voice.pause(); if (!video.ended) { pause.setAttribute('aria-label', '계속 보기'); pause.innerHTML = icon('play', 26); } }, on);
   video.addEventListener('waiting', watchdog, on);
   video.addEventListener('timeupdate', tick, on);

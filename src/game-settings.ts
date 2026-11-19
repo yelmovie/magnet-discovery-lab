@@ -13,12 +13,13 @@ export interface GameSettingsOptions {
   onEnding: () => void;
   onCertificate: () => void;
   onRecords: () => void;
-  /** Reset progress but preserve save.settings music/effects/musicVolume/sound. */
+  /** Reset progress but preserve save.settings music/effects/voice/musicVolume/effectsVolume/sound. */
   onReset: () => void;
   /** Pause experiment input and map movement while the modal is open. */
   onPause: (paused: boolean) => void;
 }
 
+type SoundKey = 'music' | 'effects' | 'voice';
 const escape = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const paragraphs = (lines: readonly string[]) => lines.map(line => `<p>${escape(line)}</p>`).join('');
 const fold = (name: string, body: string, nested = false) => `<details class="settings-fold${nested ? ' settings-fold--nested' : ''}"><summary>${escape(name)}<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></summary><div class="settings-fold-body">${body}</div></details>`;
@@ -26,8 +27,8 @@ const arrowIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12
 
 function markup(options: GameSettingsOptions) {
   const settings = normalizedAudioSettings(options.save.settings as AudioSettings), complete = options.save.final.complete || options.admin;
-  const musicLevel = Math.round(settings.musicVolume * 100);
-  const switchRow = (key: 'music' | 'effects', name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
+  const musicLevel = Math.round(settings.musicVolume * 100), effectsLevel = Math.round(settings.effectsVolume * 100);
+  const switchRow = (key: SoundKey, name: string, on: boolean) => `<div class="settings-sound-row"><span id="settings-${key}-label">${name}</span><button class="settings-switch" type="button" data-sound="${key}" aria-labelledby="settings-${key}-label settings-${key}-state" aria-pressed="${on}"><span id="settings-${key}-state">${on ? copy.on : copy.off}</span><i aria-hidden="true"></i></button></div>`;
   const teacher = fold(copy.standards, `<dl class="settings-standards">${copy.standardsList.map(([code, text]) => `<div><dt>[${code}]</dt><dd>${text}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.goals, `<dl class="settings-standards">${activityMeta.map(meta => `<div><dt>활동 ${meta.activity} · [${meta.standards.join(', ')}]</dt><dd>${meta.objective}${meta.needsReview ? ` <small>${copy.goalsDraft}</small>` : ''}</dd></div>`).join('')}</dl>`, true)
     + fold(copy.tools, `<p>${copy.toolsDescription}</p><button type="button" class="settings-button settings-admin" data-settings-action="admin" aria-pressed="${options.admin}">${options.admin ? copy.unlocked : copy.unlock}</button><p>${copy.toolsNote}</p>`, true);
@@ -39,7 +40,9 @@ function markup(options: GameSettingsOptions) {
       <section class="settings-sound science-settings-audio" aria-label="소리 설정">
         ${switchRow('music', copy.music, settings.music)}
         ${switchRow('effects', copy.effects, settings.effects)}
-        <label class="settings-volume science-settings-volume" for="settings-music-volume"><span>배경 음악 크기</span><output for="settings-music-volume">${musicLevel}%</output><input id="settings-music-volume" type="range" min="0" max="100" step="5" value="${musicLevel}" ${settings.music?'':'disabled'}></label>
+        <label class="settings-volume science-settings-volume" for="settings-music-volume"><span>${copy.musicVolume}</span><output for="settings-music-volume">${musicLevel}%</output><input id="settings-music-volume" type="range" min="0" max="100" step="5" value="${musicLevel}" ${settings.music?'':'disabled'}></label>
+        <label class="settings-volume science-settings-volume" for="settings-effects-volume"><span>${copy.effectsVolume}</span><output for="settings-effects-volume">${effectsLevel}%</output><input id="settings-effects-volume" type="range" min="0" max="100" step="5" value="${effectsLevel}" ${settings.effects?'':'disabled'}></label>
+        ${switchRow('voice', copy.voice, settings.voice)}
       </section>
       <div class="settings-replays science-settings-actions">
         <button type="button" class="settings-button settings-records science-settings-full" data-settings-action="records">${copy.records}${arrowIcon}</button>
@@ -111,16 +114,28 @@ export function openGameSettings(options: GameSettingsOptions): () => void {
     dialog.querySelector<HTMLOutputElement>('output[for="settings-music-volume"]')!.value = `${musicInput.value}%`;
     changed();
   });
+  // Effects volume scales every effect bus (interface, fight, reward, footsteps). 100% is the level the game always had.
+  const effectsInput = dialog.querySelector<HTMLInputElement>('#settings-effects-volume')!;
+  effectsInput.addEventListener('input', () => {
+    options.save.settings.effectsVolume = Number(effectsInput.value) / 100;
+    dialog.querySelector<HTMLOutputElement>('output[for="settings-effects-volume"]')!.value = `${effectsInput.value}%`;
+    changed();
+  });
+  // A click at the chosen level once the slider is let go, so the learner hears the new size.
+  effectsInput.addEventListener('change', () => playEffect('click', options.save.settings as AudioSettings));
   dialog.addEventListener('click', event => {
     const target = (event.target as Element).closest<HTMLElement>('button');
     if (!target || (target as HTMLButtonElement).disabled) return;
-    const soundKey = target.dataset.sound as 'music' | 'effects' | undefined;
+    const soundKey = target.dataset.sound as SoundKey | undefined;
     if (soundKey) {
       const audio = options.save.settings as Save['settings'] & AudioSettings;
       const next = !normalizedAudioSettings(audio)[soundKey]; audio[soundKey] = next;
-      const enabled = normalizedAudioSettings(audio); audio.sound = enabled.music || enabled.effects;
+      // Fix the other switches too, so an old save's voice (which followed effects) stays put when effects change.
+      const enabled = normalizedAudioSettings(audio); audio.music = enabled.music; audio.effects = enabled.effects; audio.voice = enabled.voice;
+      audio.sound = enabled.music || enabled.effects || enabled.voice;
       target.setAttribute('aria-pressed', String(next));
       if (soundKey === 'music') musicInput.disabled = !next;
+      if (soundKey === 'effects') effectsInput.disabled = !next;
       target.querySelector('span')!.textContent = next ? copy.on : copy.off;
       changed();
       if (soundKey === 'effects' && next) playEffect('click', audio);

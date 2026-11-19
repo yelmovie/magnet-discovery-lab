@@ -2,11 +2,16 @@
 export interface AudioSettings {
   sound?: boolean;
   music?: boolean;
+  /** Interface, fight, reward and footstep sounds (and the films' own soundtracks). Voices have their own switch. */
   effects?: boolean;
-  /** Background music volume, 0…1. Effects keep a separate fixed level. */
+  /** Character lines, narration, villain bubbles and concept caption voices. Older saves follow the effects switch. */
+  voice?: boolean;
+  /** Background music volume, 0…1. */
   musicVolume?: number;
+  /** Multiplies every effect bus (interface, fight, reward, footsteps), 0…1. 1 keeps the levels as they were before it existed. */
+  effectsVolume?: number;
 }
-export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | 'jump' | EncounterKind | CardKind | UnlockKind;
+export type EffectKind = 'click' | 'pick' | 'drop' | 'compare' | 'success' | 'reward' | 'bump' | 'error' | 'step' | 'snap' | 'lid' | 'pad' | 'crate' | 'jump' | 'fall' | EncounterKind | CardKind | UnlockKind;
 /** A place on the map opens: the latch, then a short sparkle 0.12 s later (playUnlock). */
 export type UnlockKind = 'unlock-open' | 'unlock-shine';
 /** Map villain cues. They layer on one another so a swing, its clank and the retreat are all heard. */
@@ -36,6 +41,9 @@ export type NarrationState = 'loading' | 'playing' | 'ended' | 'stopped' | 'bloc
 let narration: { audio: HTMLAudioElement; stop: (state: NarrationState) => void } | undefined;
 /** True from the moment a voice is asked for until it ends or is stopped. */
 export const narrationActive = () => narration !== undefined;
+/** A film under the voices (the concept clips) listens for this to lower its own soundtrack while a line is read. */
+export const NARRATION_EVENT = 'game-narration';
+const narrationChanged = () => { if (typeof document !== 'undefined') document.dispatchEvent(new CustomEvent(NARRATION_EVENT, { detail: { active: narration !== undefined } })); };
 type Voice = { oscillator: OscillatorNode; gain: GainNode };
 let current: AudioSettings = {};
 let context: AudioContext | undefined;
@@ -48,7 +56,7 @@ const layeredNotes: Voice[] = [];
 let explicitlyPaused = false;
 let installed = false;
 let activated = false;
-const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate',jump:'run-jump',
+const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pick',drop:'drop',compare:'compare',success:'success',reward:'reward',bump:'bump',error:'bump',step:'step',snap:'snap',lid:'lid',pad:'pad',crate:'crate',jump:'run-jump',fall:'map-bump',
   'unlock-open':'map-open','unlock-shine':'map-twinkle',
   'encounter-swing':'map-zap','encounter-one':'map-clank-one','encounter-two':'map-clank-two','encounter-finish':'map-hit-heavy',
   'encounter-exit':'map-exit','encounter-contact':'map-bump','encounter-appear':'map-appear','encounter-victory':'map-victory',
@@ -56,7 +64,7 @@ const sampleFiles: Partial<Record<EffectKind,string>> = { click:'click',pick:'pi
 // The clank lands on the villain's flinch (its squash peaks about 90 ms after the press);
 // the retreat follows the shrinking exit pose. Levels keep a hit above the swing and the arrival quiet.
 const encounterDelay: Partial<Record<EffectKind, number>> = { 'encounter-one': .07, 'encounter-two': .07, 'encounter-finish': .07, 'encounter-exit': .3, 'unlock-shine': .12 };
-const sampleGain: Partial<Record<EffectKind, number>> = { step: .25, jump: .4, 'unlock-open': .7, 'unlock-shine': .5, 'encounter-swing': .5, 'encounter-one': .62, 'encounter-two': .55, 'encounter-finish': .85, 'encounter-exit': .4, 'encounter-contact': .6, 'encounter-appear': .3, 'encounter-victory': .6 };
+const sampleGain: Partial<Record<EffectKind, number>> = { step: .25, jump: .4, fall: .6, 'unlock-open': .7, 'unlock-shine': .5, 'encounter-swing': .5, 'encounter-one': .62, 'encounter-two': .55, 'encounter-finish': .85, 'encounter-exit': .4, 'encounter-contact': .6, 'encounter-appear': .3, 'encounter-victory': .6 };
 // Fight, card and unlock cues ring out together (four at most); interface feedback and footsteps never cut them.
 const isLayered = (kind: EffectKind) => /^(encounter|card|unlock)-/.test(kind);
 const LAYERED_VOICES = 4;
@@ -100,12 +108,18 @@ function loadSamples() {
 }
 
 export function normalizedAudioSettings(settings: AudioSettings) {
+  const effects = settings.effects ?? settings.sound ?? true;
   return {
     music: settings.music ?? settings.sound ?? true,
-    effects: settings.effects ?? settings.sound ?? true,
+    effects,
+    // Voices used to follow the effects switch, so a save without its own value keeps hearing what it heard.
+    voice: settings.voice ?? effects,
     musicVolume: Number.isFinite(settings.musicVolume) ? Math.max(0, Math.min(1, settings.musicVolume!)) : DEFAULT_VOLUME,
+    effectsVolume: Number.isFinite(settings.effectsVolume) ? Math.max(0, Math.min(1, settings.effectsVolume!)) : 1,
   };
 }
+/** True when any of music, effects or voices can be heard (the header sound button). */
+export const anySoundOn = (settings: AudioSettings) => { const a = normalizedAudioSettings(settings); return a.music || a.effects || a.voice; };
 
 const isHidden = () => typeof document !== 'undefined' && document.hidden;
 const paused = () => explicitlyPaused || isHidden();
@@ -214,15 +228,15 @@ function note(frequency: number, when: number, duration: number, bus: GainNode, 
 }
 
 function apply() {
-  if (narration && (!normalizedAudioSettings(current).effects || paused())) {
+  if (narration && (!normalizedAudioSettings(current).voice || paused())) {
     narration.stop(paused() ? 'stopped' : 'muted');
   }
   applyMusic();
   if (!context || !effectBus) return;
-  effectBus.gain.value = EFFECT_GAIN * (narration ? 0.3 : 1);
-  if (encounterBus) encounterBus.gain.value = EFFECT_GAIN * (narration ? ENCOUNTER_UNDER_VOICE : 1);
-  if (stepBus) stepBus.gain.value = STEP_GAIN * (narration ? STEP_UNDER_VOICE : 1);
-  const settings = normalizedAudioSettings(current);
+  const settings = normalizedAudioSettings(current), level = settings.effectsVolume;
+  effectBus.gain.value = EFFECT_GAIN * level * (narration ? 0.3 : 1);
+  if (encounterBus) encounterBus.gain.value = EFFECT_GAIN * level * (narration ? ENCOUNTER_UNDER_VOICE : 1);
+  if (stepBus) stepBus.gain.value = STEP_GAIN * level * (narration ? STEP_UNDER_VOICE : 1);
   if (!settings.effects || paused()) { silence(effectVoices); silence(layeredNotes); stopSamples(); }
 }
 
@@ -263,7 +277,7 @@ export function syncAudioSettings(settings: AudioSettings) { ensureAudio(setting
 export function playNarration(src: string, settings: AudioSettings = current, onState?: (state: NarrationState) => void): () => void {
   narration?.stop('stopped');
   ensureAudio(settings);
-  if (!normalizedAudioSettings(current).effects) { onState?.('muted'); return () => {}; }
+  if (!normalizedAudioSettings(current).voice) { onState?.('muted'); return () => {}; }
   if (paused()) { onState?.('stopped'); return () => {}; }
   if (typeof document === 'undefined') { onState?.('unavailable'); return () => {}; }
   activate();
@@ -279,10 +293,10 @@ export function playNarration(src: string, settings: AudioSettings = current, on
     audio.onended = null; audio.onerror = null;
     audio.onplaying = null; audio.onwaiting = null; audio.onpause = null;
     audio.pause(); audio.removeAttribute('src'); audio.load(); audio.remove();
-    if (narration?.audio === audio) narration = undefined;
+    if (narration?.audio === audio) { narration = undefined; narrationChanged(); }
     apply(); onState?.(state);
   };
-  narration = { audio, stop: finish };
+  narration = { audio, stop: finish }; narrationChanged();
   audio.onended = () => finish('ended');
   audio.onerror = () => finish('unavailable');
   // The portrait speaks only while sound is audible; buffering and pauses rest it.
@@ -334,7 +348,7 @@ export function playEffect(kind: EffectKind, settings: AudioSettings = current) 
     'card-whoosh':[660,880], 'card-reveal':[659,784,1047], 'card-epic':[523,659,784,1047,1319], 'card-slot':[880,1175], 'card-complete':[523,659,784,1047],
     click: [520, 660], pick: [440, 587], drop: [587, 784], compare: [523, 659, 784],
     success: [523, 659, 784], reward: [523, 659, 784, 1047],
-    bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285], jump: [440, 660],
+    bump: [294, 294], error: [294, 294], step: [392], snap: [920, 460], lid: [260], pad: [310], crate: [190, 285], jump: [440, 660], fall: [330, 196],
     'unlock-open': [392, 587], 'unlock-shine': [1175, 1568],
   };
   const frequencies = notes[kind] ?? notes.click, now = context.currentTime + 0.005 + (encounterDelay[kind] ?? 0);
@@ -352,7 +366,7 @@ export function playFootstep() {
   const buffer = sampleBuffers.get('step');
   if (!buffer || !context.createBufferSource) return;
   if (!stepBus) { stepBus = context.createGain(); stepBus.connect(context.destination); }
-  stepBus.gain.value = STEP_GAIN * (narration ? STEP_UNDER_VOICE : 1);
+  stepBus.gain.value = STEP_GAIN * normalizedAudioSettings(current).effectsVolume * (narration ? STEP_UNDER_VOICE : 1);
   if (stepVoice) { try { stepVoice.stop(); } catch { /* Already over. */ } }
   const source = context.createBufferSource(); source.buffer = buffer;
   // Left and right feet differ a little and no two steps are alike, all within 6% of the recorded speed.

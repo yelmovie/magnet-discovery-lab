@@ -49,6 +49,16 @@ describe('실험 증거와 기존 기록 호환',()=>{
     delete current.settings.music;delete current.settings.effects;
     expect(migrateSave(current)!.settings).toMatchObject({music:true,effects:true,musicVersion:1});
   });
+  it('목소리 스위치와 효과음 크기가 없는 저장은 그때의 효과음 스위치와 100%로 이어받는다',()=>{
+    for(const effects of [true,false]){const old=freshSave();old.settings.effects=effects;delete old.settings.voice;delete old.settings.effectsVolume;
+      expect(migrateSave(old)!.settings).toMatchObject({effects,voice:effects,effectsVolume:1});}
+    const none=freshSave();delete none.settings.effects;delete none.settings.voice;delete none.settings.effectsVolume;
+    expect(migrateSave(none)!.settings).toMatchObject({effects:true,voice:true,effectsVolume:1});
+    none.settings.sound=false;expect(migrateSave(none)!.settings).toMatchObject({effects:false,voice:false});
+    const kept=freshSave();kept.settings.effects=false;kept.settings.voice=true;kept.settings.effectsVolume=.4;
+    expect(migrateSave(kept)!.settings).toMatchObject({effects:false,voice:true,effectsVolume:.4});
+    expect(freshSave().settings).toMatchObject({music:true,effects:true,voice:true,effectsVolume:1});
+  });
 });
 describe('자석 모형과 실제 지도 길',()=>{
   it('교사용 전체 열기는 중앙 광장까지 한 번에 열고 따로 해금할 목록을 만들지 않는다',()=>{

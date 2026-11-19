@@ -26,7 +26,7 @@ export interface Save {
   mapEncounters?: Record<string, number>;
   design: Design; designs: Partial<Record<'box' | 'remote', Design>>;
   idea?: Idea;
-  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; musicVolume?: number; autoplay?: boolean; autoplaySpeed?: 1 | 2 };
+  resume: number; city: Point; settings: { sound: boolean; motion: boolean; nickname: string; ability?: number; music?: boolean; musicVersion?: number; effects?: boolean; voice?: boolean; musicVolume?: number; effectsVolume?: number; autoplay?: boolean; autoplaySpeed?: 1 | 2 };
   final: { report: boolean; latch: Pole; ring: Pole; plate: number; complete: boolean; date: string; puzzle?: Activity; review?: FinalReview; route?: { mode: 'basic' | 'challenge'; repair: 'delivery' | 'rings' | 'invention'; installed: boolean; operated: boolean; segments: string[]; revision: number; template: string; attempt?: Activity; optionalBackup?: string; replayEvidenceIds?: number[] } };
 }
 export const stageNames = ['생활 자석 조사국', '힘 실험 연구소', '극성 복원 센터', '원격 제어 구역', '시민 발명 공방'];
@@ -45,7 +45,7 @@ export const materials = [
 export const emptyActivity = (): Activity => ({ values: {}, points: {}, records: [], mask: [] });
 export const defaultDesign = (template: Design['template'] = 'box'): Design => ({ template, pair: 'iron', pole: 'N', gap: 65, aligned: false, revision: 0 });
 export function freshSave(): Save {
-  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: true, musicVersion: 1, effects: true, musicVolume: .35, motion: true, nickname: '', autoplay: true, autoplaySpeed: 1 }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
+  return { version: 2, revision: 0, started: false, updated: new Date().toISOString(), completed: [], evidence: [], activities: {}, design: defaultDesign(), designs: {}, resume: 0, city: { x: 233, y: 245 }, settings: { sound: true, music: true, musicVersion: 1, effects: true, voice: true, musicVolume: .35, effectsVolume: 1, motion: true, nickname: '', autoplay: true, autoplaySpeed: 1 }, final: { report: false, latch: 'N', ring: 'N', plate: 80, complete: false, date: '' } };
 }
 export function opposite(p: Pole): Pole { return p === 'N' ? 'S' : 'N'; }
 export function relation(a: Pole, b: Pole): Relation { return a === b ? 'repel' : 'attract'; }
@@ -221,6 +221,9 @@ export function migrateSave(input: unknown): Save | null {
   next.settings.musicVersion = 1;
   next.settings.effects = typeof next.settings.effects === 'boolean' ? next.settings.effects : next.settings.sound;
   next.settings.musicVolume = Number.isFinite(next.settings.musicVolume) ? Math.max(0, Math.min(1, next.settings.musicVolume!)) : .35;
+  // Voices had no switch of their own and followed the effects switch: a save without one keeps that state.
+  next.settings.voice = typeof next.settings.voice === 'boolean' ? next.settings.voice : next.settings.effects;
+  next.settings.effectsVolume = Number.isFinite(next.settings.effectsVolume) ? Math.max(0, Math.min(1, next.settings.effectsVolume!)) : 1;
   next.settings.autoplay = next.settings.autoplay !== false;
   next.settings.autoplaySpeed = next.settings.autoplaySpeed === 2 ? 2 : 1;
   for (const a of Object.values(next.activities)) a.trials ||= [];
