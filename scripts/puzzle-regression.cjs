@@ -49,7 +49,8 @@ async function start(n, viewport = { width: 1280, height: 800 }) {
   await page.reload();
   await page.locator('[data-action="start"]').click();
   await page.locator(n===11?'#plaza-experiment':`#experiment-root.screen-${n}`).waitFor();
-  if(n!==11)await page.locator('[data-mission="crisis-go"]').click();
+  // The quick mailbox repair (activity 2) opens without the emergency card.
+  if(n!==11&&await page.locator('[data-mission="crisis-go"]').count())await page.locator('[data-mission="crisis-go"]').click();
   // These checks drive the bench; the 3D course has scripts/run-stage-regression.cjs.
   if(n===8&&await page.locator('[data-mission="view-bench"]').count())await page.locator('[data-mission="view-bench"]').click();
   await page.waitForTimeout(800);
@@ -70,36 +71,6 @@ async function drag(id, x, y) {
   await page.mouse.move(sx + (x - old.x) * board.width / 100, sy + (y - old.y) * board.height / 100, { steps: 12 });
   await page.mouse.up();
   await idle();
-}
-async function autoplay(n) {
-  const context = await start(n);
-  await page.locator('[data-demo="toggle"]').click();
-  await page.waitForFunction(() => document.querySelector('[data-demo="toggle"]')?.textContent.includes('관찰 완료'), null, { timeout: 120000 });
-  await page.waitForTimeout(800);
-  if (n === 5) {
-    // The demonstration deliberately leaves the pole-sticker answer to the learner.
-    const a = (await saved()).activities[5];
-    assert.notEqual(a.values.solved0, true);
-    const bar = a.points['unknown-magnet'];
-    await drag('stickerS', bar.x - 5.5, bar.y);
-    await drag('stickerN', bar.x + 5.5, bar.y);
-    await page.locator('[data-demo="toggle"]').click();
-    await page.waitForFunction(() => document.querySelector('[data-demo="toggle"]')?.textContent.includes('관찰 완료'), null, { timeout: 30000 });
-    await page.waitForTimeout(800);
-  }
-  const state = await saved(), a = state.activities[n];
-  const key = { 2: 'repair0', 4: 'paper', 5: 'door1', 6: 'join2', 8: 'delivery1' }[n];
-  assert.equal(a.values.puzzleVersion, 1);
-  assert.ok(a.trials.some(t => t.key === key && t.outcome === 'success' && t.conditions.autoplay));
-  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(), 0);
-  assert.equal(await page.locator('[data-action="complete"]').isEnabled(), true);
-  if (n === 2) {
-    assert.equal(a.values.with0, true);
-    assert.ok(Math.hypot(a.points['repair-plate'].x - 46.5, a.points['repair-plate'].y - 63) < 1);
-  }
-  await shot(`autoplay-${n}`);
-  pass(`activity ${n} autoplay solves the new puzzle and unlocks continuation`);
-  await context.close();
 }
 async function door(viewport) {
   const context = await start(5, viewport);
@@ -129,27 +100,6 @@ async function door(viewport) {
   assert.equal(await page.locator('.mission-board > .puzzle-stars').count(),0);
   await shot(`door-${viewport.width}-open`);
   pass(`${viewport.width}x${viewport.height} actual pointer drag restores labels, retries and opens the door`);
-  await context.close();
-}
-async function distanceObservations() {
-  const context = await start(4);
-  await mission('release'); await idle(); await mission('next');
-  for (const gap of [3, 2]) {
-    await drag('distance-magnet', 55-gap*6, 55);
-    await mission('release'); await idle();
-  }
-  await page.waitForTimeout(800);
-  const before = (await saved()).activities[4];
-  assert.equal(before.values.puzzleMisses || 0, 0);
-  assert.equal(before.trials.filter(t => t.key.startsWith('distance-choice-')).length, 2);
-  assert.ok(!before.values.done1);
-  await page.reload(); await page.locator('[data-action="start"]').click();
-  assert.equal((await saved()).activities[4].values.puzzleMisses || 0, 0);
-  await drag('distance-magnet', 49, 55); await mission('release'); await idle();
-  await mission('next'); await drag('paper', 56, 55); await mission('release'); await idle();
-  assert.equal(await page.locator('.mission-board > .puzzle-stars').count(), 0);
-  await shot('distance-observations');
-  pass('distance exploration preserves observations across reload');
   await context.close();
 }
 async function misses(n) {
@@ -206,10 +156,12 @@ async function deliveryLabels(viewport) {
 }
 async function mechanisms(viewport){
   let context=await start(4,viewport);
-  await mission('release');await idle();await mission('next');
-  await drag('distance-magnet',49,55);await mission('release');await idle();await mission('next');
-  await drag('paper',56,55);await mission('release');await idle();await page.waitForTimeout(800);
-  assert.equal((await saved()).activities[4].trials.find(t=>t.key==='paper').conditions.course,'key-rescue');
+  // Live key rescue: bring the magnet to the key until it snaps on, then pull both out to the left.
+  // The rail stops the magnet at the pickup point (48), so aiming past it lands exactly there.
+  await drag('distance-magnet',52,55);await page.waitForTimeout(800);
+  assert.equal((await saved()).activities[4].values.keyAttached,true);
+  await drag('distance-magnet',40,55);await page.waitForTimeout(800);
+  assert.equal((await saved()).activities[4].trials.find(t=>t.key==='key-pull').conditions.course,'live-key');
   await shot(`key-${viewport.width}-rescued`);await context.close();
   context=await start(6,viewport);
   await drag('ring0',68,71);await drag('ring1',68,56);
@@ -243,10 +195,11 @@ async function plaza(viewport){
 (async () => {
   try {
     browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' }), headless: true });
-    for (const n of [2, 4, 5, 6, 8]) await autoplay(n);
+    // The autoplay demonstration left the activity screens in d69e19f (2026-11-13); autoplay-settings-regression.cjs keeps it gone.
     for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 1920, height: 1080 }, { width: 915, height: 412 }]) await door(viewport);
     for (const n of [3, 6, 7]) await misses(n);
-    await distanceObservations();
+    // New attempts at activity 4 open the live key rescue (drag the magnet to the key, then pull it out); the step-by-step
+    // distance bench with 「손 놓고 관찰」 only resumes for old saves, so its observation scenario left this run.
     for (const viewport of [{ width: 1280, height: 800 }, { width: 915, height: 412 }]) await deliveryLabels(viewport);
     for(const viewport of [{width:1280,height:800},{width:1024,height:768},{width:1920,height:1080},{width:915,height:412}]){
       await mechanisms(viewport);await plaza(viewport);
