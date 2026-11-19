@@ -21,6 +21,8 @@ function startAfterCue(src: string, el: Element, ms: number) {
   const text = seen.get(el);
   delayed = setTimeout(() => { delayed = undefined; if (visible(el) && seen.get(el) === text) start(src, el); }, ms);
 }
+/** True while this element's recorded line is loading or playing. A muted, refused or missing line never counts. */
+export const voiceLineSpeaking = (el: Element) => playing && owner === el;
 export function stopVoiceLine() { if (delayed) { clearTimeout(delayed); delayed = undefined; } pending = []; const s = stop; current = undefined; stop = undefined; owner = undefined; playing = false; s?.(); }
 function start(src: string, el: Element) {
   stopVoiceLine();

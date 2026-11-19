@@ -1,6 +1,7 @@
 import {bindMapZoom} from './map-gestures.js';
 import {mountVillageEncounters,villageEncounterHits} from './village-encounters.js';
 import {playEffect,playFootstep} from './game-audio';
+import {voiceLineSpeaking} from './voice-lines';
 import {bindDirectionPad,assistMapStep} from './map-controls.js';
 import { icon, walkingMascot } from './art';
 import { stageNames, type Point, type Save } from './domain';
@@ -228,7 +229,7 @@ export function mountExpedition(root:HTMLElement, options:{save:Save;admin:boole
   blocked:()=>paused||overview||!!root.ownerDocument.querySelector('.modal-backdrop')||!!options.encounterHold?.(),reduced:()=>!options.save.settings.motion,
   tone:(kind,hits)=>playEffect(({swing:'encounter-swing',hit:hits===2?'encounter-two':'encounter-one',finish:'encounter-finish',exit:'encounter-exit',
     contact:'encounter-contact',appear:'encounter-appear',victory:'encounter-victory'} as const)[kind],options.save.settings),
-  actors:[player,npc]});
+  speaking:voiceLineSpeaking,actors:[player,npc]});
   const draw=(now=performance.now())=>{
     if(!viewWidth||!viewHeight)return;
     const shortLandscape=viewWidth>viewHeight&&viewHeight<=559;

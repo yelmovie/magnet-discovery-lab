@@ -40,6 +40,7 @@ function layoutSpeech(host, entries){
 }
 
 const REPEAT=380;
+const SPEECH_TAIL=200,SPEECH_LIMIT=6000;
 // A villain announces itself once per page visit, not on every return to the map.
 const appeared=new Set();
 const CUES={
@@ -69,7 +70,7 @@ export function normalizeMapHits(value,ids) {
  */
 export function mountMapEncounters({
   host,controls=host,stages,progress={},onSave=()=>{},blocked=()=>false,reduced=()=>false,
-  activeId,requiredFoes=0,art,tone=()=>{},palette='#a855f7',reach=90,contact=22,
+  activeId,requiredFoes=0,art,tone=()=>{},palette='#a855f7',reach=90,contact=22,speaking=()=>false,
 }) {
   const handles=new AbortController(),{signal}=handles;
   const doc=host.ownerDocument,view=doc.defaultView;
@@ -120,7 +121,7 @@ export function mountMapEncounters({
     foe.bubble.textContent=text;
     foe.bubble.hidden=false;
     lastSpeechLayout=-Infinity;
-    foe.saidUntil=time;
+    foe.saidUntil=time;foe.saidAt=view?.performance.now()??performance.now();
     live.textContent=text;
   }
   function hit(){
@@ -183,6 +184,9 @@ export function mountMapEncounters({
     let nearest=null,best=Infinity;
     const width=host.clientWidth,height=host.clientHeight,active=activeId?.();
     for(const foe of foes){
+      // A bubble whose recorded line is still being spoken stays until 0.2 s after the voice, six seconds at most.
+      // Only the bubble and the voice last longer: hits, poses and the exit keep their own times.
+      if(foe.saidUntil>0&&!stop&&speaking(foe.bubble))foe.saidUntil=Math.max(foe.saidUntil,Math.min(now+SPEECH_TAIL,foe.saidAt+SPEECH_LIMIT));
       if(foe.hits<HITS&&activeId&&foe.s.id!==active){foe.el.hidden=true;foe.bubble.hidden=true;continue;}
       if(foe.hits>=HITS&&now>=Math.max(foe.poseUntil,foe.saidUntil)){foe.el.hidden=true;continue;}
       const dHome=distance(hero,foe.s),patrol=villainPatrol(now,foe.i);
@@ -247,7 +251,8 @@ export function mountMapEncounters({
       if(foe.meter.textContent!==marks)foe.meter.textContent=marks;
       foe.bubble.hidden=now>=foe.saidUntil||stop;
     }
-    if(finaleAt&&now>=finaleAt&&!stop){finaleAt=0;tone('victory',HITS);openMapFinale(host,"/video/story/final.mp4");}
+    // The finale also waits for a goodbye that is still being said.
+    if(finaleAt&&now>=finaleAt&&!stop&&!foes.some(foe=>foe.hits>=HITS&&now<foe.saidUntil)){finaleAt=0;tone('victory',HITS);openMapFinale(host,"/video/story/final.mp4");}
     current=nearest;
     if(current&&current!==lastNear&&current.saidUntil<=now&&now-lastHit>REPEAT){
       const message=current.say[current.sayIndex++%current.say.length]??'다가왔구나!';

@@ -30,14 +30,14 @@ export function normalizeVillageEncounters(value,legacy) {
 
 export const villageEncounterHits=(progress,stage)=>progress?.[STAGES[stage]?.[0]]??0;
 
-export function mountVillageEncounters({host,stages,progress,activeStage,onSave,blocked,reduced,tone,actors}) {
+export function mountVillageEncounters({host,stages,progress,activeStage,onSave,blocked,reduced,tone,actors,speaking}) {
   const points=stages.flatMap((stage,i)=>{
     if(!stage||!STAGES[i])return [];
     const [id,prop,first,again,hitOne,hitTwo,finish]=STAGES[i];
     return [{id,prop,lines:[first,again],hit:[hitOne,hitTwo],finish,speaker:"자석 뿔 악당",...stage}];
   });
   if(!points.some(({id})=>(progress?.[id]||0)<3))return null;
-  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,activeId:()=>STAGES[activeStage()]?.[0],onSave,blocked,reduced,tone,art,palette,
+  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,activeId:()=>STAGES[activeStage()]?.[0],onSave,blocked,reduced,tone,art,palette,speaking,
     reach:118,contact:23});
   const layer=host.querySelector('.map-encounter-layer');
   const poses=reactions.map((src,i)=>{

@@ -161,7 +161,7 @@ function bindCity() {
 }
 // Cards whose villain may still be saying goodbye: card → when the villain fell and how long its exit pose takes.
 const farewells=new Map<number,{at:number;exit:number}>();
-const FAREWELL_LIMIT=5000;
+const FAREWELL_LIMIT=6500;
 const farewellSpoken=({at,exit}:{at:number;exit:number})=>{const waited=performance.now()-at;return waited>=exit&&(!narrationActive()||waited>=FAREWELL_LIMIT);};
 /** A goodbye has just ended: the villains and the finale wait from this frame on, before the card's own timer comes round. */
 const farewellOver=()=>[...farewells.values()].some(farewellSpoken);
