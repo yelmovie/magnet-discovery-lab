@@ -204,19 +204,31 @@ function bindEditor(c: Context, i: Idea, changed: () => void) {
 }
 
 function wrapped(context: CanvasRenderingContext2D, text: string, width: number) {
-  const fits = (value: string) => context.measureText(value).width <= width;
-  const lines: string[] = []; let line = '';
-  for (const word of text.trim().split(/\s+/)) {
-    const joined = line ? `${line} ${word}` : word;
-    if (fits(joined)) { line = joined; continue; }
-    if (line) lines.push(line);
-    line = '';
-    for (const letter of word) {
-      if (line && !fits(line + letter)) { lines.push(line); line = ''; }
-      line += letter;
+  const words = text.trim().split(/\s+/);
+  const greedy = (limit: number) => {
+    const fits = (value: string) => context.measureText(value).width <= limit;
+    const lines: string[] = []; let line = '';
+    for (const word of words) {
+      const joined = line ? `${line} ${word}` : word;
+      if (fits(joined)) { line = joined; continue; }
+      if (line) lines.push(line);
+      line = '';
+      for (const letter of word) {
+        if (line && !fits(line + letter)) { lines.push(line); line = ''; }
+        line += letter;
+      }
     }
+    return [...lines, line];
+  };
+  const lines = greedy(width);
+  if (lines.length < 2) return lines;
+  // Keep the line count but find the narrowest width that still fits it, so the last line is not left with one or two words.
+  let low = Math.min(width, Math.max(...words.map(word => context.measureText(word).width))), high = width;
+  for (let step = 0; step < 12 && high - low > 1; step++) {
+    const middle = (low + high) / 2;
+    if (greedy(middle).length > lines.length) low = middle; else high = middle;
   }
-  return [...lines, line];
+  return greedy(high);
 }
 /** Export a single image sized for a classroom display. */
 async function exportCard(i: Idea, notify: (text: string) => void) {

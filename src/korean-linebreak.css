@@ -23,3 +23,5 @@
 #app :is(.puzzle-crisis-copy, .quiz-scenes figcaption, .final-note-photos figcaption, .final-hand-note, .tool-belt .tool-slot span) { text-wrap: balance; }
 /* 「3D 달리기로 하기」가 140px 상자에서 「…달리기로 / 하기」로 떨어지지 않게 한 줄로 둔다 */
 #app .quest-activity .run-view-toggle { max-width: none; white-space: nowrap; }
+/* 지도 악당 말풍선(184px): 「…뿔은 / 내 거야!」처럼 끝줄에 한 낱말만 남지 않게 */
+.map-encounter-say { text-wrap: balance; }
