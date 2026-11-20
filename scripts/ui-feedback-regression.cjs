@@ -85,13 +85,15 @@ const results = [], errors = [];
    assert.equal(await page.locator('.quest-hud [data-action="settings"]').count(),1);
   }
   results.push('all pages and ten activities use the settings icon for audio');
-  await page.evaluate(s=>{s.settings={...s.settings,sound:false,effects:false,music:false};window.__qa.setSave(s);},fixture);
+  await page.evaluate(s=>{s.settings={...s.settings,sound:false,effects:false,music:false,voice:false};window.__qa.setSave(s);},fixture);
   await page.locator('[data-action="settings"]').click();
   await page.locator('[data-sound="music"]').click();
   assert.equal(await page.locator('[data-sound="music"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('[data-sound="effects"]').getAttribute('aria-pressed'),'false');
   await page.locator('[data-sound="effects"]').click();
   assert.equal(await page.locator('[data-sound="effects"]').getAttribute('aria-pressed'),'true');
+  // Since e5ae502 (11-20) the voice has its own switch: turning effects on leaves it off.
+  assert.equal(await page.locator('[data-sound="voice"]').getAttribute('aria-pressed'),'false');
   await page.locator('[data-sound="music"]').click();
   await page.evaluate(()=>window.__qa.flush());
   await page.reload();
@@ -107,7 +109,7 @@ const results = [], errors = [];
   await production.locator('[data-action="start"]').waitFor();
   assert.equal(await production.locator('[data-action="sound"]').count(),0);
   await production.locator('[data-action="settings"]').click();
-  assert.equal(await production.locator('[data-sound]').count(),2);
+  assert.equal(await production.locator('[data-sound]').count(),3); // music, effects and voice
   results.push('production preview serves the consolidated audio controls');
   assert.deepEqual(errors,[]);
  } catch (error) {results.push({status:'fail',message:error.stack});throw error;} finally {fs.writeFileSync(`${out}/results.json`,JSON.stringify({results,errors},null,2));await browser.close();}
