@@ -24,7 +24,7 @@ export const settingsContent = {
     ['미션 보상', '자석 수리 키트, 힘 관찰 렌즈, 극 표시 스티커, 원격 조작 손잡이, 나의 발명 설계도를 얻어요. 다음 구역에서 도구를 쓰고, 시민 시설을 고쳐 축제 광장을 열어요.'],
     ['남는 배움', '물체의 처음 위치, 직접 움직인 경로와 조건별 결과가 연구 기록으로 남아요. 도구와 기록은 속도나 정답률이 아니라 관찰·비교·새 조건 적용으로 모아요.'],
   ] as const,
-  signature: `밀고 당기는 도시 v${version} · 기획·제작: 옐샘 & 아이스크림미디어`,
+  signature: `밀고 당기는 도시 v${version} · 기획·제작: 옐샘 & ⓒ 아이스크림미디어`,
   student: '학생용 가이드',
   studentGuide: [
     '탐험을 시작하고, 길을 따라 불빛이 켜진 건물로 가요.',
@@ -66,7 +66,7 @@ export const settingsContent = {
     ['개념 영상·수리 도우미', '12초 모션 그래픽 5편: Pillow·FFmpeg로 직접 제작. 수리 로봇 자꾸: 프로젝트 자체 SVG.'],
     ['게임·화면 개발 도구', 'Phaser · MIT / Vite · MIT / TypeScript · Apache-2.0 / Vitest · MIT'],
   ] as const,
-  copyrightOwner: 'ⓒ 2026 옐샘 & 아이스크림미디어. All rights reserved.',
+  copyrightOwner: '기획·제작: 옐샘 & ⓒ 아이스크림미디어',
   ownRights: '앱 화면 캡처·자체 제작 일러스트·자체 제작 음원은 무단 복제·재배포·전용·상업적 이용을 금지합니다.',
   externalRights: '외부 공개 사진·효과음·폰트의 저작권은 각 원저작자와 소장 기관에 있으며, 각 자료의 공개 라이선스와 이용 조건을 따릅니다.',
   educationSources: '교육 내용 구성 참고: 교육부(moe.go.kr), 충청북도교육청(cbe.go.kr).',
