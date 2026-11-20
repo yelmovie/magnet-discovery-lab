@@ -11,10 +11,10 @@ async function seed(page,n,phase){await page.evaluate(async([n,phase])=>{
   for(let k=0;k<Math.floor((n-1)/2);k++)s.evidence.push({stage:k,date:new Date().toISOString(),activities:[],summary:['기록']});
   for(let i=1;i<n;i++)s.completed.push(i);
   s.activities[n]={...d.emptyActivity(),values:{playVersion:4,mechanicsVersion:1,inquiryVersion:1,inquiryPhase:phase,prediction:0,round:0}};
-  await new Promise((res,rej)=>{const r=indexedDB.open('push-pull-city',1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>{const tx=r.result.transaction('saves','readwrite');tx.objectStore('saves').put(s,'main');tx.oncomplete=()=>{r.result.close();res();};tx.onerror=rej;};});
-},[n,phase]);await page.reload();await page.locator('[data-action="start"]').click();await page.locator('.mission-head').waitFor();await page.waitForTimeout(700);}
+  await new Promise((res,rej)=>{const r=indexedDB.open('push-pull-city',2);r.onerror=()=>rej(r.error);r.onupgradeneeded=()=>{const n=r.result.objectStoreNames;if(!n.contains('saves'))r.result.createObjectStore('saves');if(!n.contains('recordings'))r.result.createObjectStore('recordings');};r.onsuccess=()=>{const tx=r.result.transaction('saves','readwrite');tx.objectStore('saves').put(s,'main');tx.oncomplete=()=>{r.result.close();res();};tx.onerror=rej;};});
+},[n,phase]);await page.reload();await page.locator('[data-action="start"]').click();await page.locator('main.page-activity').waitFor({state:'attached'});await page.waitForTimeout(1500);}
 (async()=>{
-  const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),rows=[];
+  const browser=await chromium.launch({...(process.env.CHROME_PATH||process.platform==='win32'?{executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{channel:'chrome'}),headless:true,args:['--mute-audio']}),rows=[];
   for(const [width,height] of profiles){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true}),page=await context.newPage(),errors=[];
     page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
@@ -22,7 +22,7 @@ async function seed(page,n,phase){await page.evaluate(async([n,phase])=>{
     for(const [n,phase] of [[1,'predict'],...Array.from({length:10},(_,i)=>[i+1,'experiment'])]){
       await seed(page,n,phase);
       const m=await page.evaluate(()=>{
-        const r=el=>el.getBoundingClientRect(),head=r(document.querySelector('.mission-head'));
+        const r=el=>el.getBoundingClientRect(),headEl=document.querySelector('.mission-head'),head=headEl&&headEl.offsetParent?r(headEl):{top:0,bottom:0,left:0,right:0};
         const hud=[...document.querySelectorAll('.quest-hud button, [data-action="home"],[data-action="back"],[data-action="sound"],[data-action="settings"]')].map(r);
         const hits=[...document.querySelectorAll('.canvas-hit')].filter(e=>e.offsetParent).map(r);
         const card=document.querySelector('.inquiry-card');
