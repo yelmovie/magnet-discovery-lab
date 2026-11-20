@@ -1,4 +1,5 @@
 import { icon, mascot } from './art';
+import { settingsContent } from './settings-content';
 
 const escapeText = (value: unknown): string => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
 
@@ -57,5 +58,6 @@ export function questTitle(save: { started: boolean }, teacher=false): string {
         <div class="quest-title-friend quest-title-friend-right">${questCompanion({ type: 'dangi', message: '단서를 모아 우리만의 발명품을 만들자!' })}</div>
       </div>
     </div>
+    <p class="quest-title-credit">${escapeText(settingsContent.copyrightOwner)}</p>
   </section>`;
 }
