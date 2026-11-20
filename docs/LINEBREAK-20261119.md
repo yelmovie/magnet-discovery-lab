@@ -39,3 +39,20 @@
 - 커밋 `fd95df3` 푸시, `deploy.sh 05 5magnet pages magnet-city`로 배포(https://5f218e4a.magnet-city.pages.dev).
 - 운영 https://magnet-city.pages.dev: `index.html`과 `assets/index-5zvaS0G1.css`가 배포 빌드와 sha256 일치(`098ad617983a047d`), CSS에 보정 규칙 포함 확인.
 - 추가 수정(2026-11-20, 지침 8절): 성취 카드 보관함 잠긴 문구 「악당을 물리치면 / 열려요」 → `src/reward-cards.css` `.rc-locked` 컨테이너 규칙 네 줄 추가로 좁은 카드에서 「악당을 / 물리치면 / 열려요」 세 줄. 로컬 1280×800·1024×768에서 세 줄·카드 넘침 없음 확인, 커밋 `7c3ce8e` 배포(https://b504f016.magnet-city.pages.dev), 운영 `index.html`·`assets/index-xE_qKnjM.css` sha256 일치(`9b1e107e4d566918`).
+
+## 남은 것 정리 (2026-11-20, 지침 9절)
+
+`.tmp/linebreak-20261119/rest.cjs`로 1280×800·1024×768에서 측정.
+
+| 화면 | 전 | 후 |
+|---|---|---|
+| 지도 악당 말풍선 `.map-encounter-say` 대사 30줄(지도 모듈의 실제 스타일을 지도 화면에 띄워 한 줄씩) | 1/30 ×2 크기 | 0/30 |
+| 보상 카드 획득 장면(첫 카드) | 0 | 0 |
+| 카드 여섯 장을 다 모은 보관함 | 1 ×2 | 1 ×2(허용) |
+| 지도 피날레 창(영상을 못 열 때 안내 글 포함) | 0 | 0 |
+| 3D 달리기 무대 DOM 안내(활동 8) | 0 | 0 |
+
+- 고친 곳: `src/korean-linebreak.css` 프로젝트 보정 `.map-encounter-say { text-wrap: balance; }` — 「쳇, 클립은 돌려줄게. 뿔은 / 내 거야!」. 나머지 29줄은 1차의 공통 `pretty`로 이미 고르게 나왔다. 말풍선은 최대 184px이고 화면 안에 들어왔다. 말풍선 자리는 기존 `layoutSpeech`가 정하며 이번에 바꾸지 않았다.
+- 허용: 보관함 카드 제목 「밀고 당기는 / 극 마스터」(81%). 두 낱말 이름이 뜻 단위로 고르게 나뉜 경우라 그대로 둔다(도구 이름표와 같은 결정).
+- 캔버스 글 점검: 극 표시(N·S)·짧은 이름표·수리 완료 표시는 한 줄 글이라 문제없음. 줄을 자르는 곳은 발명 발표 이미지 내보내기 `wrapped()`(`src/idea-lab.ts`) 하나였다. 낱말 단위로 앞줄부터 채워 학생 글에 따라 끝줄에 한두 낱말이 남을 수 있었다. 줄 수는 그대로 두고, 그 줄 수가 유지되는 가장 좁은 폭으로 다시 나누게 고쳤다(긴 낱말을 글자로 자르는 기존 동작은 그대로).
+- 검증: `npm test` 22파일 338개 통과, 빌드 통과. 커밋 `c4e6beb` 배포(https://54cb6bbe.magnet-city.pages.dev), 운영 `index.html`·`assets/index-ChuClXKj.css` sha256 일치(`5dbb98ddf1429ffb`).
