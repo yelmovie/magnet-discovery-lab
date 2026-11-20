@@ -129,6 +129,12 @@ body.quest-mode #app .sprite-mascot {
 .rc-layer.rc-album .rc-album-row { flex-wrap: wrap; }
 .rc-layer.rc-album .rc-album-item .rc-card.is-mini { --h: var(--album-h); }
 .rc-layer.rc-album .rc-locked { width: calc(var(--album-h) * 2 / 3); height: var(--album-h); }
+/* Phone landscape (2026-11-20): a 99×148 locked card cannot hold the "?" mark, a two-line place and a three-line hint,
+   so the hint ran onto the dashed edge. The dashed empty card already says "locked"; the mark steps aside there. */
+@media (max-height: 500px) {
+  .rc-layer.rc-album .rc-locked { gap: 6px; padding: 8px 6px; }
+  .rc-layer.rc-album .rc-locked i { display: none; }
+}
 #app .quest-icon {
   display: inline-grid; place-items: center; width: var(--hud-icon-size);
   height: var(--hud-icon-size); min-width: var(--button-height-md); min-height: var(--button-height-md);
