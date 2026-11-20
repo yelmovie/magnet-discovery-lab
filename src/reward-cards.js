@@ -78,7 +78,7 @@ export function createRewardCards(config) {
         <div class="rc-art"><img src="${esc(card.art)}" alt="" draggable="false"></div>
         <div class="rc-shine" aria-hidden="true"></div>
         <div class="rc-top"><span class="rc-stars" aria-label="별 ${starsOf(index)}개">${stars}</span><span class="rc-rarity">${card.bonus ? '보너스' : rarity.label}</span></div>
-        <div class="rc-plate"><strong>${esc(card.title)}</strong><span>${esc(card.stage)} · ${index + 1}/${total}</span></div>
+        <div class="rc-plate"><strong>${esc(card.title)}</strong><span>${esc(card.stage)}&nbsp;·&nbsp;${index + 1}/${total}</span></div>
       </div>
       <div class="rc-face rc-back" aria-hidden="true"><div class="rc-emblem">${config.emblem ?? '★'}</div></div>
     </div>`;
@@ -312,7 +312,7 @@ export function createRewardCards(config) {
         <div class="rc-album-head"><strong>${esc(config.setName)}</strong><span>${count}/${total}</span><button type="button" class="rc-album-close" data-album-close aria-label="보관함 닫기">✕</button></div>
         <div class="rc-album-row" style="--n:${total}">${cards.map((card, i) => owned[i]
           ? `<button type="button" class="rc-album-item" data-album-card="${i}" aria-label="${esc(card.title)} 크게 보기">${cardHtml(i, 'is-mini')}</button>`
-          : `<div class="rc-album-item is-locked" aria-label="아직 못 얻은 카드 ${i + 1}"><div class="rc-locked"><i>?</i><span>${esc(card.stage)}</span><small>악당을 물리치면 열려요</small></div></div>`).join('')}</div>
+          : `<div class="rc-album-item is-locked" aria-label="아직 못 얻은 카드 ${i + 1}, ${esc(card.stage)}, 악당을 물리치면 열려요"><div class="rc-locked"><i>?</i><span>${esc(card.stage)}</span><small>악당을 물리치면 열려요</small></div></div>`).join('')}</div>
       </div>`;
     document.body.append(layer);
     setInert(root, true);
