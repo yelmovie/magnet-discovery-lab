@@ -151,7 +151,7 @@ body.quest-mode #app > main.page-certificate { padding:82px clamp(20px,4vw,70px)
 #app .certificate .certificate-preview { margin:0 65px 12px; padding:8px; font-size:16px; line-height:1.3; }
 #app .certificate-name-input { margin:16px 0 0; gap:12px; flex-wrap:wrap; font-size:20px; color:#173f47; }
 #app .certificate-name-input input { font-size:20px; min-height:52px; width:260px; }
-#app .certificate-name-input label small { font-size:16px; }
+#app .certificate-name-input label small { font-size:16px; color:#5e6a4e; }
 #app .ending { padding:0; gap:12px; }
 body.quest-mode #app > main.page-ending { display:flex; flex-direction:column; justify-content:safe center; align-items:center; }
 #app .ending { width:100%; }

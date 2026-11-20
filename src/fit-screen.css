@@ -13,8 +13,8 @@
   #app .quest-activity .inquiry-workbench .mission-feedback { top: calc(50% - var(--stage-h) / 2 + var(--head-bottom, 200px) + 10px); }
 }
 
-/* Foldables in landscape can keep the reading width without sideways scrolling. */
-@media (min-aspect-ratio: 1/1) and (min-width: 820px) and (max-width: 859px) {
+/* Foldables in landscape and 1024px tablets at 125% zoom (819px) keep the reading width without sideways scrolling. */
+@media (min-aspect-ratio: 1/1) and (min-width: 800px) and (max-width: 859px) {
   :root { --stage-w: 100vw; }
   body.quest-mode #app { min-width: 0; }
 }

@@ -23,7 +23,7 @@ body.quest-mode {
 }
 #app .mission-head .stage-label {
   margin: 0; padding: 0; border: 0; border-radius: 0; background: none;
-  color: var(--polish-muted); font: 700 var(--font-size-chip)/1.3 var(--font-body); letter-spacing: .02em;
+  color: #486059; font: 700 var(--font-size-chip)/1.3 var(--font-body); letter-spacing: .02em;
 }
 #app .mission-head .mission-question {
   position: static; translate: none; width: auto; max-width: 100%; min-height: 0;

@@ -159,13 +159,16 @@ function measure({map,CTA,REQUIRED}){
  // Visible part of a box after scroll/clip ancestors; content passing under a sticky bar while scrolling is not a defect.
  const vis=e=>{const r=e.getBoundingClientRect();let [l,t,rr,b]=[r.left,r.top,r.right,r.bottom];for(let a=e.parentElement;a&&a!==body;a=a.parentElement){const st=cs(a);if(st.position==='fixed')break;if(st.overflowX!=='visible'||st.overflowY!=='visible'){const q=a.getBoundingClientRect();l=Math.max(l,q.left);t=Math.max(t,q.top);rr=Math.min(rr,q.right);b=Math.min(b,q.bottom);}}return {left:l,top:t,right:rr,bottom:b,width:rr-l,height:b-t};};
  const sticky=e=>{for(let a=e;a&&a!==body;a=a.parentElement)if(cs(a).position==='sticky')return true;return false;};
+ // Screen-reader copies (the film and concept captions keep a 1px clip-path:inset(50%) twin) are not visible text.
+ const srOnly=e=>{for(let a=e;a&&a!==body;a=a.parentElement)if(cs(a).clipPath==='inset(50%)')return true;return false;};
+ // The urgent-request card (.puzzle-crisis) covers the bench on purpose until 「출동하기」 is pressed.
  for(const e of els){
   const r=e.getBoundingClientRect(),q=reach(e,r,false),info={sel:sel(e),label:label(e),cta:e.matches(CTA),req:e.matches(REQUIRED),disabled:!!e.disabled,box:box(r)};
   if(q.s==='clipped'||q.s==='offscreen')res.unreach.push({...info,how:q.s,by:q.by,cut:q.cut});
   else if(q.s==='scroll')res.scrollNeeded.push(info);
   if(!e.disabled&&(r.width<44||r.height<44))res.small.push({sel:info.sel,label:info.label,w:Math.round(r.width),h:Math.round(r.height)});
   const v=vis(e);
-  if(q.s==='ok'&&v.width>4&&v.height>4){let blocked=0,by='';for(const [fx,fy] of [[.5,.5],[.2,.5],[.8,.5],[.5,.2],[.5,.8]]){const t=document.elementFromPoint(v.left+v.width*fx,v.top+v.height*fy);if(t&&t!==e&&!e.contains(t)&&!t.contains(e)&&!(t.tagName==='CANVAS'&&e.matches('.canvas-hit'))&&sticky(t)===sticky(e)){blocked++;by=sel(t.closest('button,summary,[data-drag]')||t);}}
+  if(q.s==='ok'&&v.width>4&&v.height>4){let blocked=0,by='';for(const [fx,fy] of [[.5,.5],[.2,.5],[.8,.5],[.5,.2],[.5,.8]]){const t=document.elementFromPoint(v.left+v.width*fx,v.top+v.height*fy);if(t&&t!==e&&!e.contains(t)&&!t.contains(e)&&!(t.tagName==='CANVAS'&&e.matches('.canvas-hit'))&&sticky(t)===sticky(e)&&!t.closest('.puzzle-crisis')){blocked++;by=sel(t.closest('button,summary,[data-drag]')||t);}}
    if(blocked>=3)res.covered.push({...info,by});}
  }
  for(let i=0;i<els.length;i++)for(let j=i+1;j<els.length;j++){
@@ -175,7 +178,7 @@ function measure({map,CTA,REQUIRED}){
  }
  const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.textContent.trim()&&n.parentElement&&!skip(n.parentElement)?1:2});
  for(let n;(n=walker.nextNode());){
-  const pe=n.parentElement;if(!visible(pe)||cs(pe).clipPath==='inset(50%)')continue;const rg=document.createRange();rg.selectNodeContents(n);const r=rg.getBoundingClientRect();if(!r.width||!r.height)continue;
+  const pe=n.parentElement;if(!visible(pe)||srOnly(pe))continue;const rg=document.createRange();rg.selectNodeContents(n);const r=rg.getBoundingClientRect();if(!r.width||!r.height)continue;
   const q=reach(pe,r,true),t=n.textContent.trim().replace(/\s+/g,' ').slice(0,24);
   if(q.s==='clipped'&&q.cut>2)res.textClip.push({sel:sel(pe),by:q.by,cut:q.cut,text:t});
   if(q.s==='offscreen')res.textOff.push({sel:sel(pe),cut:q.cut,text:t});
