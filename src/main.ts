@@ -99,8 +99,21 @@ function go(next: typeof page, remember = true) {
   if (next === 'ending') setMusicTheme('final', true);
   currentRoute = { page, screen }; render(); window.scrollTo({ top: 0, behavior: 'instant' });
 }
-function goBack() {
-  const previous = backStack.pop(); if (!previous) return;
+// Back walks up the city: activity and result screens -> map -> title. Leaving the title is the browser's usual back.
+const parentPage = (p: typeof page): typeof page | null => p === 'title' ? null : p === 'city' ? 'title' : 'city';
+function goBack(fromHistory = false) {
+  let previous = backStack.pop();
+  // The ending film is something that passed, not a place: back from the certificate skips it.
+  if (previous?.page === 'ending' && page !== 'ending') previous = backStack.pop();
+  const parent = parentPage(page);
+  if (parent === 'city' && (!previous || previous.page === 'title')) {
+    // Opened straight from the title (이어 하기) or after a reload: show the map first and keep the title one step further back.
+    if (previous) { backStack.push(previous); historyDepth++; history.pushState({ depth: historyDepth }, ''); }
+    previous = { page: 'city', screen };
+  } else if (!previous) {
+    if (parent) previous = { page: parent, screen };
+    else { if (fromHistory) history.go(-historyDepth - 1); return; }
+  }
   if (previous.page === 'activity' && canEnter(previous.screen)) startActivity(previous.screen, s.evidence.length > Math.floor((previous.screen - 1) / 2), false);
   else go(previous.page === 'activity' ? 'city' : previous.page, false);
 }
@@ -595,9 +608,21 @@ window.addEventListener('popstate', () => {
   // There is no forward stack in the game, so a forward step simply returns to where the learner is.
   if (depth > historyDepth) { history.go(historyDepth - depth); return; }
   if (depth === historyDepth) return;
+  // Something open on top (settings, a dialog, the card album) closes first; the learner stays on the same screen.
+  if (closeOverlay()) { history.pushState({ depth: historyDepth }, ''); return; }
   for (let extra = historyDepth - depth; extra > 1; extra--) backStack.pop();
-  historyDepth = depth; void flush(); goBack();
+  historyDepth = depth; void flush(); goBack(true);
 });
+function closeOverlay(): boolean {
+  const dialogs = document.querySelectorAll<HTMLDialogElement>('dialog[open]');
+  const top = dialogs[dialogs.length - 1];
+  if (top) { if (top.dispatchEvent(new Event('cancel', { cancelable: true }))) top.close(); return true; }
+  const album = document.querySelector<HTMLElement>('.rc-layer');
+  if (album) { album.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); return true; }
+  const close = document.querySelector<HTMLElement>('.modal-backdrop .modal-close');
+  if (close) { close.click(); return true; }
+  return false;
+}
 async function boot() { app.innerHTML = '<div class="loading-screen"><span class="loading-magnet">∪</span><p>도시로 가는 길을 준비하고 있어…</p></div>'; s = await load(); saveMessage = persistenceError; if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.settings.motion = false; render(); syncAudioSettings(s.settings); if (migrationNotice) notify(migrationNotice); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if(saveTimer)void flush(); city?.pause(true); } else city?.pause(Boolean(document.querySelector('.modal-backdrop,.rc-layer'))); });
 window.addEventListener('pagehide', () => { if(saveTimer)void flush(); });
