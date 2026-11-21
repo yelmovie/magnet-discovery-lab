@@ -41,7 +41,7 @@ import type { View } from './activity-types';
 import { bindRewardSound, dropRewardCard, holdRewardCard, ownedRewardCards, queueRewardCard, revealRewardCard, rewardCardDue, rewardCardOrigin, rewardSlotsHtml } from './map-reward-cards';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
-type Page = 'title' | 'city' | 'activity' | 'report' | 'core' | 'ending' | 'certificate';
+type Page = 'title' | 'city' | 'activity' | 'core' | 'ending' | 'certificate';
 let s: Save = freshSave(), page: Page = 'title';
 let screen = 1, city: ExpeditionHandle | undefined, cleanup: (() => void) | undefined;
 let saveTimer = 0, saving = false, saveMessage = '', modalCleanup: (() => void) | undefined;
@@ -149,7 +149,6 @@ function render() {
     case 'title': html = titlePage(); break;
     case 'city': html = cityPage(); break;
     case 'activity': html = activityPage(); break;
-    case 'report': html = reportPage(); break;
     case 'core': html = corePage(); break;
     case 'ending': html = endingPage(); break;
     case 'certificate': html = certificatePage(); break;
@@ -159,7 +158,6 @@ function render() {
   if (page === 'city') void bindCity();
   if (page === 'activity') bindActivity();
   if (page === 'core') bindCore();
-  if (page === 'report') { bindConceptLinks(app); bindEvidenceTabs(app); }
   if (page === 'ending') bindEnding();
   if (page === 'certificate') { const input = document.querySelector<HTMLInputElement>('#nickname')!; input.addEventListener('input', () => { s.settings.nickname = input.value.slice(0, 20); document.querySelector('#certificate-name')!.textContent = s.settings.nickname || '우리 도시의 과학 탐험가'; touch(); });
     document.querySelectorAll<HTMLButtonElement>('[data-ability]').forEach(b => b.addEventListener('click', () => { const i = Number(b.dataset.ability), out = document.querySelector<HTMLElement>('#certificate-ability')!; s.settings.ability = i; document.querySelectorAll('[data-ability]').forEach(o => o.setAttribute('aria-pressed', String(o === b))); out.querySelector('strong')!.textContent = abilityStatements[i]; out.hidden = false; playEffect('success', s.settings); touch(); })); }
@@ -440,7 +438,6 @@ function notebook() {
   bindConceptLinks(document.querySelector('.modal')!);
   bindEvidenceTabs(document.querySelector('.modal')!);
 }
-function reportPage() { return `<div class="report-heading"><span class="eyebrow">나의 탐험 기록</span><h1>다섯 건물에서 찾은 <br>자석의 비밀.</h1><p>실험 장면을 살펴보고, 다섯 문제로 발견을 정리하자.</p></div><div class="report-list">${s.evidence.length?evidenceCollection(s.evidence,'report'):'<p class="report-empty">미리보기라 아직 모인 발견이 없어. 다섯 구역을 마치면 여기에 내 실험 기록이 모여.</p>'}</div><div class="report-actions">${button('city', '도시로 돌아가기')}${button('reviewed', `발견 정리 시작 ${icon('arrow')}`, 'primary', !adminOn() && s.evidence.length !== 5)}</div>`; }
 let finalScene: View;
 function corePage() {
   finalScene = restorationView(s,adminOn());

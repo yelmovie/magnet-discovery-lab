@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { emptyActivity, freshSave, migrateSave, ready, type Activity, type Save } from '../src/domain';
 import { inquiryNext } from '../src/inquiry';
 import { coaching } from '../src/coach';
-import { autoplayResult } from '../src/experiment-autoplay';
 import { mailboxParts, partKey } from '../src/mailbox-assembly';
 import { missionReady } from '../src/mission-model';
 import { addTrial, trialTitle, type Trial } from '../src/trial-records';
@@ -100,7 +99,6 @@ describe('자동재생과 직접 탐구 구분', () => {
     a.values.predict = 'stick'; a.values.autoObserved = true;
     expect(currentPrompt(1, a, s)).toMatchObject({ kind: 'watch', pending: true });
     expect(inquiryNext(1, a, s).enabled).toBe(false);
-    expect(autoplayResult(1, s)).toMatch(/골라/);
   });
   it('자동 관찰 뒤 처음 고른 답과 다시 고친 답을 나눠 남긴다', () => {
     const a = latched(assembled()), s = saveWith(1, a), check = watchChecks[1];

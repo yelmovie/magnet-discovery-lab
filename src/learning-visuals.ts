@@ -1,6 +1,4 @@
 import './learning-visuals.css';
-import { apparatusFigure } from './apparatus-figures';
-import { scienceNoteMarkup } from './science-guidance';
 
 interface LearningVisual {
   image: string; title: string; alt: string; parts: string[];
@@ -30,31 +28,7 @@ export function learningVisual(n: number, template: string, a?: { values: Record
   return item;
 }
 
-export function visualPreview(n: number, template: string, a?: { values: Record<string, unknown> }): string {
-  const v=learningVisual(n,template,a);
-  const interactive=apparatusFigure(n);
-  return `<button class="learning-visual-preview" data-action="visual-guide" aria-label="핵심 개념 · ${v.title} · ${interactive ? '장치 움직여 보기' : '장치 그림 크게 보기'}"><img src="/assets/learning/${v.image}.webp" alt="" width="1024" height="688" decoding="async"><span>장치·개념 <b aria-hidden="true">${interactive ? '▸' : '＋'}</b></span></button>`;
-}
-
 export function apparatusThumbnail(n:number,template:string,a?: { values: Record<string, unknown> }) {
   const item=learningVisual(n,template,a);
   return {src:`/assets/learning/${item.image}.webp`,alt:item.alt};
-}
-
-/** 크게 보기: the picture gets the whole dialog width and pans with scrollbars inside its frame. */
-export function bindVisualGuide(dialog: HTMLElement) {
-  const zoom = dialog.querySelector<HTMLButtonElement>('.learning-visual-zoom');
-  zoom?.addEventListener('click', () => {
-    const on = zoom.getAttribute('aria-pressed') !== 'true';
-    zoom.setAttribute('aria-pressed', String(on)); zoom.textContent = on ? '원래 크기로' : '그림 크게 보기';
-    dialog.classList.toggle('is-zoomed', on);
-  });
-}
-
-export function visualGuideMarkup(n: number, template: string, a?: { values: Record<string, unknown> }, photo?: string): string {
-  const v=learningVisual(n,template,a);
-  const source=photo || `/assets/learning/${v.image}.webp`;
-  const alt=photo ? '지금 실험대의 자석과 물체 배치' : v.alt;
-  const controls='<button class="btn primary" data-action="modal-close">실험대로 돌아가기</button>';
-  return `<div class="learning-visual-guide"><span class="learning-visual-kicker">그림에서 찾고, 실험대에서 확인해요</span><h2>${v.title}</h2><div class="learning-visual-layout"><figure><div class="learning-visual-frame"><img src="${source}" alt="${alt}" width="1024" height="688"></div><button type="button" class="learning-visual-zoom" aria-pressed="false">그림 크게 보기</button><figcaption>${v.parts.map(p=>`<span>${p}</span>`).join('')}</figcaption></figure><ol>${[['눈으로 찾기',v.look],['직접 움직이기',v.move],['변화 관찰하기',v.notice]].map(([title,text])=>`<li><strong>${title}</strong><p>${text}</p></li>`).join('')}</ol></div>${scienceNoteMarkup(n,a)}${controls}</div>`;
 }
