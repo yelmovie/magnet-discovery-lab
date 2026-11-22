@@ -39,8 +39,8 @@ function markup(options: GameSettingsOptions) {
     <div class="settings-dialog-body science-settings-body">
       <section class="settings-sound science-settings-audio" aria-label="소리 설정">
         ${switchRow('music', copy.music, settings.music)}
-        ${switchRow('effects', copy.effects, settings.effects)}
         <label class="settings-volume science-settings-volume" for="settings-music-volume"><span>${copy.musicVolume}</span><output for="settings-music-volume">${musicLevel}%</output><input id="settings-music-volume" type="range" min="0" max="100" step="5" value="${musicLevel}" ${settings.music?'':'disabled'}></label>
+        ${switchRow('effects', copy.effects, settings.effects)}
         <label class="settings-volume science-settings-volume" for="settings-effects-volume"><span>${copy.effectsVolume}</span><output for="settings-effects-volume">${effectsLevel}%</output><input id="settings-effects-volume" type="range" min="0" max="100" step="5" value="${effectsLevel}" ${settings.effects?'':'disabled'}></label>
         ${switchRow('voice', copy.voice, settings.voice)}
       </section>
