@@ -79,3 +79,8 @@
 - 실제 학생 난이도, 40분 수업, 학교 태블릿·전자칠판, 저사양 태블릿, iPad 실물 인쇄는 아직 확인하지 않았습니다(`docs/reviews/SCORE-20261121.md`).
 
 근거: `docs/PRD.md`, `docs/magnet-science-review.md`, `src/settings-content.ts`, `src/activity-meta.ts`, `docs/TEACHER-REVIEW-20261121.md`, `src/main.ts`, `src/storage.ts`, `docs/reviews/SCORE-20261121.md`
+
+
+## 인증서 손기입·PNG 맞추기 · 2026-11-22
+
+인증서는 기존 자석 장식 테두리를 유지하고 A4 가로 한 쪽으로 출력됩니다. 학교·학년·반·번호·이름은 출력한 뒤 손으로 씁니다. 화면 이름 입력란은 없으며 이름칸65.3mm·학교칸59.4mm·쓰는 높이11.3mm입니다. 「인증서 인쇄 / PDF 저장」 또는 「PNG 저장」(2400×1697)을 사용합니다. 기존 자신 있는 한 가지 선택과 엔딩 다시 보기는 유지됩니다.
