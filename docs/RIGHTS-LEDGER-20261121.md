@@ -128,3 +128,11 @@
 - `_shared`: `voice-provenance-20261118.md`, `sfx-library-20261117/CREDITS.md`, `MAP-VILLAINS-HANDOFF-20261114.md`, `FULLSCREEN-CAPTION-FILMS-20261118.md`, `reward-cards/INTEGRATION.md`, `AUDIO-FIX3-BRIEF-20261120.md`.
 - `_scratch`: `redraw-02-05-20261114/`(DELIVERY.md, prompts.json), `map-redraw-20261114/README.md`, `reward-cards-20261118/`(specs/05.json, queue.log), `thumbs-20261118/assets.json`.
 - 2026-11-21 대조(읽기만): `_shared/CODEX-IMAGE-RECORDS-20261121.md`와 색인 `_shared/codex-image-records-20261121/`(`index.jsonl`, `index-claude.jsonl`), Codex 세션 원문 `~/.codex/sessions/2026/11/{03,04,05,12,13,14}/`(압축 `.jsonl.zst` 포함), 05 Claude Code 대화 기록, `_scratch/npc-dialogue-plan-20261112/`, `_scratch/villain-concepts-20261114/map-mockup-work/`, `assets/source/video/storyboards/v3-20261031/omni-prompts.txt`. `docs/LEARNING-VISUAL-PROMPTS-20261029.json`·`assets/source/characters-pixel-20261101/prompts.json`은 G5·G6 줄 그대로이고 대상 줄과 이어지는 프롬프트는 없었다.
+
+## 2026-11-22 판매 준비 점검 (문서만, 장부 줄은 고치지 않음)
+
+- 줄 수 41. 빈 칸·「미확인」·「확인 대기」·「출처 미확인」 줄 0. 상태는 확인됨 29, 확인됨(사용자 확인) 6, 근거 약함 6이다.
+- 2026-11-21 사용자 확인(그림 전부 Codex·GPT, 이야기 영상 구글 제미나이, 모두 유료)으로 새로 채울 수 있는 줄은 없었다. 남은 근거 약함 6줄은 모두 저장소 기록이 다른 출처를 가리키거나(G4·G5 Higgsfield, G15 ElevenLabs 이미지, G27 Meshy, V1 「옴니」 표기) 이용 조건 자료가 없는 줄(A3 옛 목소리)이라 증거대로 두었다.
+- 사용자 자료 대기: Higgsfield 요금제·이용 조건 화면(G4·G5), Meshy 요금제 화면(G27), ElevenLabs 이미지 출력 이용 조건(G15), 영상 도구 이름과 요금제 화면(V1, 「옴니」가 제미나이 안의 기능인지 확인), ChatGPT 요금제 화면, Suno·ElevenLabs 요금제 화면, 아이스크림미디어 계약서의 AI 생성물 허용·귀속 조건.
+- G10 밀이 전투 시트 파일(`mili-combat-sheet.{json,png,webp}`)은 2026-11-21 커밋 `73794a7`에서 배포 파일에서 빠졌다. 위 「같이 본 것」의 미사용 파일 설명은 그 이전 상태다.
+- 05번 인트로·엔딩 영상(V1)은 2026-11-22에 영상 장면이 바뀐 9~16번에 들어 있지 않아 「임시 판」 표기는 없다.
