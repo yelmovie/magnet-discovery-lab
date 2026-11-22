@@ -6,7 +6,7 @@ body.quest-mode #app > main.page-certificate { display:grid; place-items:center;
 #app .certificate .cert-frame { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; pointer-events:none; }
 #app .page-certificate .certificate-border { position:relative; z-index:1; height:100%; padding:8cqw 11cqw; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:.5cqw; }
 #app .page-certificate .certificate-overline { display:block; font-size:1.65cqw; }
-#app .page-certificate .certificate h2 { margin:.4cqw 0 .6cqw; font-size:4.05cqw; line-height:1.25; }
+#app .page-certificate .certificate h2 { margin:.4cqw 0 .6cqw; font-size:4.05cqw; font-weight:900; line-height:1.25; }
 #app .certificate .cert-recipient { width:100%; margin:.3cqw 0 .5cqw; color:#3e5a55; }
 #app .certificate .cert-ident-row { display:flex; justify-content:center; align-items:flex-end; gap:.55cqw; font-size:1.75cqw; line-height:1.3; }
 #app .certificate .cert-blank { display:inline-block; flex:none; width:5.5cqw; height:3.8cqw; border-bottom:.14cqw solid #8a7848; }
