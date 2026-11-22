@@ -37,7 +37,7 @@ export function mountVillageEncounters({host,stages,progress,activeStage,onSave,
     return [{id,prop,lines:[first,again],hit:[hitOne,hitTwo],finish,speaker:"자석 뿔 악당",...stage}];
   });
   if(!points.some(({id})=>(progress?.[id]||0)<3))return null;
-  const runtime=mountMapEncounters({requiredFoes:6,host,stages:points,progress,activeId:()=>STAGES[activeStage()]?.[0],onSave,blocked,reduced,tone,art,palette,speaking,
+  const runtime=mountMapEncounters({requiredFoes:0,host,stages:points,progress,activeId:()=>STAGES[activeStage()]?.[0],onSave,blocked,reduced,tone,art,palette,speaking,
     reach:118,contact:23});
   const layer=host.querySelector('.map-encounter-layer');
   const poses=reactions.map((src,i)=>{
