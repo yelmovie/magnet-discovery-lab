@@ -14,7 +14,7 @@
   "minutes": null,
   "stages": 10,
   "thumbnail": "thumbnails/thumbnail-16x8.png",
-  "appCommit": "73794a7",
+  "appCommit": "b4d70d4",
   "host": "pages",
   "consistency": {
     "creditLine": {
@@ -115,8 +115,16 @@
     "teacherGuide": "docs/TEACHER-GUIDE.md",
     "handoff": "docs/DELIVERY-HANDOFF.md"
   },
-  "note": "ledger.open은 근거 약함 6줄이다(빈 칸·미확인·확인 대기·출처 미확인 줄은 0). minutes는 설계 목표 35~50분(PRD)만 있고 실측이 없다. 완료 화면 인증서에는 제작 표기가 없고, 설정 화면은 닫기 버튼과 Esc로 닫으며 배경 눌러 닫기는 없다. stages는 활동 10개이고 마지막 복구는 따로 있다. 인증서의 도시 둘러보기 버튼은 CSS로 숨겨져 있다.",
+  "note": "ledger.open은 근거 약함 6줄이다(빈 칸·미확인·확인 대기·출처 미확인 줄은 0). minutes는 설계 목표 35~50분(PRD)만 있고 실측이 없다. 완료 화면 인증서에는 제작 표기가 있으며, 설정 화면은 닫기 버튼과 Esc로 닫으며 배경 눌러 닫기는 없다. stages는 활동 10개이고 마지막 복구는 따로 있다. 인증서의 도시 둘러보기 버튼은 CSS로 숨겨져 있다.",
   "gradeRepo": "초등 4학년",
   "unitRepo": "자석의 이용",
-  "gradeUnitSource": "운영 시트 「이예리 선생님」 탭, 2026-11-22 확인"
+  "gradeUnitSource": "운영 시트 「이예리 선생님」 탭, 2026-11-22 확인",
+  "productionVerification": {
+    "checkedAt": "2026-11-22",
+    "url": "https://magnet-city.pages.dev/",
+    "appCommit": "b4d70d4",
+    "deployment": "기존 운영 배포 유지",
+    "result": "공식 운영 index·JS·CSS SHA-256 MATCH. 최신 앱 배포 유지, 납품 문서만 최신화.",
+    "evidence": "docs/DELIVERY-HANDOFF.md 최신 인증서 운영 마무리"
+  }
 }
