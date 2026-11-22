@@ -1,0 +1,41 @@
+/* Keep the approved magnet artwork and palette; add handwriting space and an A4 export surface. */
+body.quest-mode #app > main.page-certificate { display:grid; place-items:center; padding:76px 16px 12px; overflow:auto; }
+#app .page-certificate .certificate-stage { display:grid; grid-template-columns:minmax(0,1fr) clamp(260px,23vw,340px); gap:16px; width:min(1840px,100%); height:auto; align-items:center; }
+#app .page-certificate .certificate-display { width:min(100%,calc((100dvh - 170px) * 297 / 210)); margin:auto; min-width:0; }
+#app .page-certificate .certificate { position:relative; width:100%; height:auto; aspect-ratio:297/210; margin:0; padding:0; max-height:none; background:none; border:0; border-image:none; overflow:hidden; }
+#app .certificate .cert-frame { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; pointer-events:none; }
+#app .page-certificate .certificate-border { position:relative; z-index:1; height:100%; padding:8cqw 11cqw; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:.5cqw; }
+#app .page-certificate .certificate-overline { display:block; font-size:1.65cqw; }
+#app .page-certificate .certificate h2 { margin:.4cqw 0 .6cqw; font-size:4.05cqw; line-height:1.25; }
+#app .certificate .cert-recipient { width:100%; margin:.3cqw 0 .5cqw; color:#3e5a55; }
+#app .certificate .cert-ident-row { display:flex; justify-content:center; align-items:flex-end; gap:.55cqw; font-size:1.75cqw; line-height:1.3; }
+#app .certificate .cert-blank { display:inline-block; flex:none; width:5.5cqw; height:3.8cqw; border-bottom:.14cqw solid #8a7848; }
+#app .certificate .cert-blank.cert-school { width:20cqw; }
+#app .certificate .cert-blank.cert-name { width:22cqw; }
+#app .page-certificate .certificate p { margin:.35cqw 0; font-size:1.85cqw; line-height:1.4; }
+#app .page-certificate .certificate .certificate-ability { font-size:1.65cqw; padding:.4cqw .7cqw; }
+#app .page-certificate .certificate-achievements { display:flex; flex-wrap:wrap; justify-content:center; gap:.4cqw 1.2cqw; margin:.3cqw 0; font-size:1.45cqw; }
+#app .page-certificate .certificate-achievements svg { width:1.5cqw; height:1.5cqw; }
+#app .page-certificate .certificate-bottom { display:flex; align-items:center; gap:2cqw; margin:.4cqw 0; }
+#app .page-certificate .certificate-bottom .mascot { display:inline-block; --size:5cqw !important; }
+#app .page-certificate .certificate-bottom strong { font-size:1.75cqw; }
+#app .page-certificate .certificate-bottom span { font-size:1.5cqw; }
+#app .page-certificate .certificate p.certificate-credit { font-size:1.1cqw; margin:.3cqw 0 0; line-height:1.3; }
+#app .page-certificate .cert-note { margin:5px 0; text-align:center; color:#315d55; font-size:15px; line-height:1.35; }
+#app .page-certificate .certificate-actions { position:static; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; height:auto; margin:0; padding:0; border:0; background:none; gap:7px; }
+#app .page-certificate .certificate-actions .btn { width:auto; min-height:48px; padding:8px 12px; font-size:17px; }
+#app .page-certificate .certificate-panel { width:100%; max-height:calc(100dvh - 100px); overflow:auto; }
+@media screen and (max-width:759px) and (max-aspect-ratio:1/1) {
+ #app .page-certificate .certificate-stage { grid-template-columns:1fr; }
+ #app .page-certificate .certificate-display { width:100%; }
+}
+@media print {
+ @page { size:A4 landscape; margin:0; }
+ html,body,body.quest-mode #app,body.quest-mode #app > main.page-certificate { width:297mm!important; height:210mm!important; min-width:0!important; margin:0!important; padding:0!important; overflow:hidden!important; background:#fff!important; }
+ body * { visibility:hidden; }
+ #app .page-certificate .certificate-stage,#app .page-certificate .certificate-display { display:block!important; width:297mm!important; height:210mm!important; margin:0!important; }
+ #app .page-certificate .certificate { position:absolute!important; inset:0!important; width:297mm!important; height:210mm!important; margin:0!important; padding:0!important; border:0!important; border-image:none!important; outline:none!important; box-shadow:none!important; }
+ #app .certificate,#app .certificate * { visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+ #app .page-certificate .certificate-border { padding:8cqw 11cqw!important; }
+ #app .page-certificate :is(.certificate-panel,.certificate-actions,.cert-note),.quest-hud { display:none!important; }
+}

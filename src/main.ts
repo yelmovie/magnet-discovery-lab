@@ -12,6 +12,8 @@ import './fit-activity.css';
 import './fit-report.css';
 import './scenic-glass.css';
 import './science-guidance.css';
+import './certificate.css';
+import { saveCertificatePng } from './certificate-png';
 import { coachMarkup, bindCoach } from './coach';
 import { concepts, conceptMarkup, bindConcept } from './concept-video';
 import { bindTrialReplay, trialReplayMarkup } from './trial-replay';
@@ -160,7 +162,7 @@ function render() {
   if (page === 'activity') bindActivity();
   if (page === 'core') bindCore();
   if (page === 'ending') bindEnding();
-  if (page === 'certificate') { const input = document.querySelector<HTMLInputElement>('#nickname')!; input.addEventListener('input', () => { s.settings.nickname = input.value.slice(0, 20); document.querySelector('#certificate-name')!.textContent = s.settings.nickname || '우리 도시의 과학 탐험가'; touch(); });
+  if (page === 'certificate') {
     document.querySelectorAll<HTMLButtonElement>('[data-ability]').forEach(b => b.addEventListener('click', () => { const i = Number(b.dataset.ability), out = document.querySelector<HTMLElement>('#certificate-ability')!; s.settings.ability = i; document.querySelectorAll('[data-ability]').forEach(o => o.setAttribute('aria-pressed', String(o === b))); out.querySelector('strong')!.textContent = abilityStatements[i]; out.hidden = false; playEffect('success', s.settings); touch(); })); }
   saveView();
 }
@@ -465,9 +467,10 @@ function openFilm(id: FilmId, onDone: () => void, replay = false) {
 }
 function certificatePage() {
   const ability = abilityStatements[s.settings.ability ?? -1];
-  const sheet = `<div class="certificate"><div class="certificate-border">${adminOn() ? '<p class="certificate-preview">관리자 미리보기 · 실제 수료 기록이 아니야</p>' : ''}<span class="certificate-overline">밀고 당기는 도시 · 자석 탐험대</span><div class="certificate-medal">${icon('spark', 38)}</div><h2>자석 도시 복구 연구원 인증서</h2><p class="certificate-name" id="certificate-name">${esc(s.settings.nickname || '우리 도시의 과학 탐험가')}</p><p>자석의 성질을 직접 관찰하고 실험하여<br><strong>밀고 당기는 도시를 다시 움직이게 했습니다.</strong></p><p class="certificate-ability" id="certificate-ability" ${ability ? '' : 'hidden'}>나는 이제 <strong>${esc(ability || '')}</strong></p><div class="certificate-achievements">${evidenceNames.map(n => `<span>${icon('check', 17)} ${n.replace(' 기록', '').replace(' 검증서', '')}</span>`).join('')}</div><div class="certificate-bottom">${mascot('mili', 78)}<div><strong>도시 복구 100% · 5개의 연구 기록</strong><span>${s.final.date ? new Date(s.final.date).toLocaleDateString('ko-KR') : ''}</span></div>${mascot('dangi', 78)}</div><p class="certificate-credit">${esc(settingsContent.copyrightOwner)}</p></div></div>`;
-  const panel = `<aside class="certificate-panel"><span class="eyebrow">미션 완료</span><h1>우리 도시의 과학 탐험가</h1><div class="certificate-name-input"><label for="nickname">인증서에 새길 이름 <small>(별명도 좋아)</small></label><input id="nickname" maxlength="20" placeholder="여기에 이름을 적어 봐" autocomplete="off" value="${esc(s.settings.nickname)}"/></div><fieldset class="ability-picker"><legend>나는 이제 무엇을 할 수 있게 됐을까?</legend><p>가장 자신 있는 한 가지를 골라 인증서에 새겨 봐.</p>${abilityStatements.map((t, i) => `<button type="button" class="ability-option" data-ability="${i}" aria-pressed="${s.settings.ability === i}">${esc(t)}</button>`).join('')}</fieldset><div class="certificate-actions">${button('print', `${icon('print', 18)} 인증서 인쇄 / PDF 저장`, 'primary')}${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div></aside>`;
-  return `<div class="certificate-stage">${sheet}${panel}</div>`;
+  const sheet = `<div class="certificate"><img class="cert-frame" src="/assets/quest/certificate-frame.webp" alt=""/><div class="certificate-border cert-content">${adminOn() ? '<p class="certificate-preview">관리자 미리보기 · 실제 수료 기록이 아니야</p>' : ''}<span class="certificate-overline">밀고 당기는 도시 · 자석 탐험대</span><div class="certificate-medal">${icon('spark', 38)}</div><h2>자석 도시 복구 연구원 인증서</h2><div class="cert-recipient" aria-label="인쇄한 뒤 손으로 적는 받는 사람 빈칸"><div class="cert-ident-row"><span class="cert-blank cert-school" data-cert-blank="school"></span><span>학교</span><span class="cert-blank" data-cert-blank="grade"></span><span>학년</span><span class="cert-blank" data-cert-blank="class"></span><span>반</span><span class="cert-blank" data-cert-blank="number"></span><span>번</span></div><div class="cert-ident-row"><span>이름</span><span class="cert-blank cert-name" data-cert-blank="name"></span></div></div><p>자석의 성질을 직접 관찰하고 실험하여<br><strong>밀고 당기는 도시를 다시 움직이게 했습니다.</strong></p><p class="certificate-ability" id="certificate-ability" ${ability ? '' : 'hidden'}>나는 이제 <strong>${esc(ability || '')}</strong></p><div class="certificate-achievements">${evidenceNames.map(n => `<span>${icon('check', 17)} ${n.replace(' 기록', '').replace(' 검증서', '')}</span>`).join('')}</div><div class="certificate-bottom">${mascot('mili', 78)}<div><strong>도시 복구 100% · 5개의 연구 기록</strong><span>${s.final.date ? new Date(s.final.date).toLocaleDateString('ko-KR') : ''}</span></div>${mascot('dangi', 78)}</div><p class="certificate-credit">${esc(settingsContent.copyrightOwner)}</p></div></div>`;
+  const actions = `<p class="cert-note">인쇄한 뒤 학교·반·번호·이름을 직접 적어요.</p><div class="certificate-actions">${button('print', `${icon('print', 18)} 인증서 인쇄 / PDF 저장`, 'primary')}${button('cert-png', 'PNG 저장')}${button('city', `${icon('map', 18)} 도시 둘러보기`)}${button('replay-ending', '엔딩 다시 보기', 'text-button')}</div>`;
+  const panel = `<aside class="certificate-panel"><span class="eyebrow">미션 완료</span><h1>우리 도시의 과학 탐험가</h1><fieldset class="ability-picker"><legend>나는 이제 무엇을 할 수 있게 됐을까?</legend><p>가장 자신 있는 한 가지를 골라 인증서에 새겨 봐.</p>${abilityStatements.map((t, i) => `<button type="button" class="ability-option" data-ability="${i}" aria-pressed="${s.settings.ability === i}">${esc(t)}</button>`).join('')}</fieldset></aside>`;
+  return `<div class="certificate-stage"><div class="certificate-display">${sheet}${actions}</div>${panel}</div>`;
 }
 function showModal(content: string, label: string, onClose?: () => void) {
   modalCleanup?.(); document.querySelector('.modal-backdrop')?.remove(); city?.pause(true);
@@ -598,6 +601,7 @@ function bindCommon() {
       case 'certificate': if (adminOn() || s.final.complete) go('certificate'); break;
       case 'replay-ending': if (adminOn() || s.final.complete) go('ending'); break;
       case 'print': window.print(); break;
+      case 'cert-png': { const paper = document.querySelector<HTMLElement>('.certificate'); if (paper) void saveCertificatePng(paper, '자석-도시-복구-연구원-인증서.png').catch(() => notify('PNG를 저장하지 못했어. 다시 눌러 줘.')); break; }
     }
   }));
 }

@@ -134,8 +134,9 @@ const record=(name,detail={})=>{results.push({name,...detail});console.log(`PASS
               await page.screenshot({path:`${out}/${width}-notebook.png`});
               await page.locator('[data-restoration="finish"]').click();
               await page.locator('[data-story="skip"]').click();await page.locator('[data-story="finish"]').press('Enter');
-              await page.locator('#nickname').fill('과학 탐험가');
-              assert.equal(await page.locator('#certificate-name').textContent(),'과학 탐험가');
+              assert.equal(await page.locator('.certificate input, #nickname').count(),0);
+              assert.equal(await page.locator('.certificate .cert-blank').count(),5);
+              assert.equal(await page.locator('[data-action="cert-png"]').isVisible(),true);
               if(process.env.TEST_CAPTURE_EXPORT==='1'){
                 // Return PDF bytes directly so the browser needs no OS temporary stream file.
                 const session=await context.newCDPSession(page);
