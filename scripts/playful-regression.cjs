@@ -76,11 +76,12 @@ async function enterNext(){
   }
   throw new Error('the walk button never reached the next building');
 }
-// The quick repair finishes with the concept video before moving on.
+// Both required concept dialogs let learners continue before the clip ends.
 async function conceptContinue(){
   const next=page.locator('[data-video="continue"]');
   await next.waitFor();
-  await page.waitForFunction(()=>!document.querySelector('[data-video="continue"]')?.disabled,null,{timeout:20000});
+  assert.equal(await next.isEnabled(),true,'continue is enabled as soon as the concept dialog opens');
+  assert.equal(await page.locator('.concept-video').evaluate(video=>video.ended),false);
   await next.click();
 }
 async function bounds(n) {

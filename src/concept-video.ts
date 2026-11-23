@@ -14,33 +14,48 @@ export const concepts = [
   { title: '발명은 시험하고 고치는 과정', summary: '덮개 자석과 철판이 같은 자리에 만나도록 고쳤어. 편지와 책을 차례로 넣고 덮개가 잘 닫혀 있는지 시험했어.', question: '네 발명품은 어떤 점을 고쳤고, 잘 작동하는지 어떻게 확인했니?' },
 ];
 
-export function conceptMarkup(stage: number, replay: boolean) {
+export function conceptMarkup(stage: number, replay: boolean, continueLabel = '도구 받고 도시로 →') {
   const item = concepts[stage], base = `/video/concepts/stage-${stage + 1}`;
-  return `<div class="concept-heading" data-concept-stage="${stage}"><span class="concept-tag">발견 ${stage + 1} · 12초 개념 실험실</span><h2>${item.title}</h2></div><div class="concept-screen"><video class="concept-video" playsinline preload="metadata" poster="${base}.webp" aria-label="${item.title} 개념 영상"><source src="${base}.mp4" type="video/mp4"><track kind="captions" srclang="ko" label="한국어" src="${base}.vtt"></video><button type="button" class="concept-play" data-video="play" aria-label="개념 영상 재생" hidden><span aria-hidden="true">▶</span> 재생</button><p class="concept-error" role="status" hidden>영상을 불러오지 못했어. ${item.summary}</p></div><p class="concept-caption" role="status" aria-live="polite">${emphasizeConcept(conceptCaptions[stage][0],conceptTerms[stage])}</p><p class="concept-summary">${item.question}</p><div class="concept-actions"><button type="button" class="btn" data-video="restart">처음부터 보기</button><button type="button" class="btn primary" data-video="continue">${replay ? '탐험으로 돌아가기' : '도구 받고 도시로 →'}</button></div>`;
+  return `<div class="concept-toolbar">
+    <div class="concept-heading" data-concept-stage="${stage}"><span class="concept-tag">발견 ${stage + 1} · 12초 개념 실험실</span><h2>${item.title}</h2></div>
+    <div class="concept-actions">
+      <button type="button" class="btn concept-play" data-video="play">재생</button>
+      <button type="button" class="btn" data-video="restart">처음부터 보기</button>
+      <button type="button" class="btn primary" data-video="continue">${replay ? '탐험으로 돌아가기' : continueLabel}</button>
+    </div>
+  </div>
+  <div class="concept-screen">
+    <video class="concept-video" playsinline preload="metadata" poster="${base}.webp" aria-label="${item.title} 개념 영상"><source src="${base}.mp4" type="video/mp4"><track kind="captions" srclang="ko" label="한국어" src="${base}.vtt"></video>
+    <p class="concept-error" role="status" hidden>영상을 불러오지 못했어. ${item.summary}</p>
+  </div>
+  <p class="concept-caption" role="status" aria-live="polite">${emphasizeConcept(conceptCaptions[stage][0],conceptTerms[stage])}</p>
+  <p class="concept-summary">${item.question}</p>`;
 }
 
 const FILM_LEVEL=.42,FILM_UNDER_VOICE=.3;
-/** All media listeners and playback belong to the modal lifetime. Only the mailbox wrap-up waits for the clip to end. */
-export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void, finishVideo = false, continueLabel = '도구 받고 도시로 →') {
+/** All media listeners and playback belong to the modal lifetime. */
+export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boolean, onContinue: () => void) {
   const video = dialog.querySelector<HTMLVideoElement>('video')!, controller = new AbortController();
   const signal = controller.signal;
-  const stage=Number(dialog.querySelector<HTMLElement>('[data-concept-stage]')!.dataset.conceptStage);
+  const heading=dialog.querySelector<HTMLElement>('[data-concept-stage]')!;
+  const stage=Number(heading.dataset.conceptStage);
+  dialog.querySelector('.concept-actions')!.append(dialog.querySelector('.modal-close')!);
   const caption=dialog.querySelector<HTMLElement>('.concept-caption')!;
   let lastCue=-1;
   const updateCaption=()=>{const cue=Math.min(2,Math.floor(video.currentTime/4));if(cue!==lastCue){caption.innerHTML=emphasizeConcept(conceptCaptions[stage][cue],conceptTerms[stage]);lastCue=cue;}};
   video.addEventListener('timeupdate',updateCaption,{signal});
   video.addEventListener('seeked',updateCaption,{signal});
-  const releaseFocus=bindConceptFocus(dialog,video,{steps:focusLabels[stage].map((term,i)=>({at:i*4,term})),terms:conceptTerms[stage],caption,anchor:dialog.querySelector<HTMLElement>('.concept-screen')!,controls:false,reduced:!motion});
-  // Full screen (concept-fullscreen.css). The film already shows each caption line in its own band (scripts/render-concepts.py,
-  // same text and 4-second timing as conceptCaptions), so once it plays (has-film) the DOM caption is kept for screen readers
-  // and the voice watcher only. It shows again before playback and when the film fails. No native control bar: it would sit
-  // on the film's caption band. A tap on the film or the play button plays and pauses; the question shows when the film ends.
+  const releaseFocus=bindConceptFocus(dialog,video,{steps:focusLabels[stage].map((term,i)=>({at:i*4,term})),terms:conceptTerms[stage],caption,anchor:heading,controls:false,reduced:!motion});
+  // The film and poster draw their own captions. The DOM caption feeds screen readers and narration.
   if(video.textTracks[0])video.textTracks[0].mode='hidden';
   const playButton=dialog.querySelector<HTMLButtonElement>('[data-video="play"]')!;
+  const restart=dialog.querySelector<HTMLButtonElement>('[data-video="restart"]')!;
   let failed=false;
-  const sync=()=>{playButton.hidden=failed||!video.paused||video.ended;dialog.classList.toggle('is-ended',!failed&&video.ended);};
+  const sync=()=>{
+    playButton.textContent=video.paused||video.ended?'재생':'일시정지';
+    dialog.classList.toggle('is-ended',!failed&&video.ended);
+  };
   for(const type of ['play','pause','ended','seeked'])video.addEventListener(type,sync,{signal});
-  video.addEventListener('playing',()=>{if(!failed)dialog.classList.add('has-film');sync();},{signal});
   const toggle=()=>{if(failed)return;if(video.paused||video.ended)void video.play().catch(sync);else video.pause();};
   video.addEventListener('click',toggle,{signal});
   playButton.addEventListener('click',toggle,{signal});
@@ -56,15 +71,18 @@ export function bindConcept(dialog: HTMLElement, effects: boolean, motion: boole
   document.addEventListener(NARRATION_EVENT,event=>underVoice(Boolean((event as CustomEvent<{active?:boolean}>).detail?.active)),{signal});
   signal.addEventListener('abort',()=>clearInterval(glide));
   if(narrationActive())underVoice(true);
-  dialog.querySelector('[data-video="restart"]')!.addEventListener('click', () => { video.currentTime = 0; void video.play().catch(() => {}); }, { signal });
-  const next=dialog.querySelector<HTMLButtonElement>('[data-video="continue"]')!;
-  if(finishVideo){
-    next.disabled=true;
-    next.textContent='영상이 끝나면 마무리';
-    video.addEventListener('ended',()=>{next.disabled=false;next.textContent=continueLabel;},{signal});
-  }
-  next.addEventListener('click', onContinue, { signal });
-  const fail=()=>{failed=true;dialog.classList.remove('has-film','is-ended');dialog.classList.add('is-failed');sync();video.pause();next.disabled=false;if(finishVideo)next.textContent=continueLabel==='도구 받고 도시로 →'?'내용 읽고 도시로 →':continueLabel;dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);};
+  restart.addEventListener('click', () => { video.currentTime = 0; void video.play().catch(sync); }, { signal });
+  dialog.querySelector('[data-video="continue"]')!.addEventListener('click', onContinue, { signal });
+  const fail=()=>{
+    failed=true;
+    video.pause();
+    playButton.disabled=true;
+    restart.disabled=true;
+    dialog.classList.add('is-failed');
+    dialog.querySelector<HTMLElement>('.concept-error')!.hidden=false;
+    caption.innerHTML=emphasizeConcept(concepts[stage].summary,conceptTerms[stage]);
+    sync();
+  };
   video.addEventListener('error',fail,{signal});
   video.querySelector('source')?.addEventListener('error',fail,{signal});
   document.addEventListener('visibilitychange', () => { if (document.hidden) video.pause(); }, { signal });

@@ -354,7 +354,7 @@ async function finishActivityOnce(conceptDone: boolean) {
     if(!conceptDone){
       rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
       touch();
-      openConcept(3,false,()=>void finishActivity(true),true,'발견 정리로 →');
+      openConcept(3,false,()=>void finishActivity(true),'발견 정리로 →');
       return;
     }
     activity.values.deliveryConceptSeen=true;
@@ -364,7 +364,7 @@ async function finishActivityOnce(conceptDone: boolean) {
     if(!conceptDone){
       rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
       touch();
-      openConcept(0,false,()=>void finishActivity(true),true);
+      openConcept(0,false,()=>void finishActivity(true));
       return;
     }
     if(adminOn())return startActivity(3);
@@ -488,15 +488,15 @@ function showModal(content: string, label: string, onClose?: () => void) {
   backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); }); dialog.focus(); modalCleanup = close;
   return { dialog, close };
 }
-function openConcept(stage: number, replay = true, onContinue?: () => void, finishVideo = false, continueLabel?: string) {
+function openConcept(stage: number, replay = true, onContinue?: () => void, continueLabel?: string) {
   if(!concepts[stage])return;
   let dispose = () => {};
-  const modal = showModal(conceptMarkup(stage,replay),concepts[stage].title,()=>dispose());
+  const modal = showModal(conceptMarkup(stage,replay,continueLabel),concepts[stage].title,()=>dispose());
   modal.dialog.classList.add('concept-dialog');
   // Silence the screen underneath, then let narration back on: voice-lines.ts reads each concept caption line aloud
   // (el-concept-N-M.mp3), and playNarration stays silent while audio is paused. The narration ducks the music.
   setAudioPaused(true); setAudioPaused(false);
-  dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();},finishVideo,continueLabel);
+  dispose = bindConcept(modal.dialog,normalizedAudioSettings(s.settings).effects,s.settings.motion,()=>{modal.close();onContinue?.();});
 }
 type Open3d = { kind: 'rings'; released: boolean; rings: { top: 'N' | 'S'; onPole: boolean }[] };
 function open3d(detail: Open3d) {

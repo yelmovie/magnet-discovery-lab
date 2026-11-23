@@ -132,8 +132,6 @@ def ring(d,x,y,top):
     d.ellipse((x-97,y-34,x+97,y),fill=top_color,outline=INK,width=3)
     d.ellipse((x-24,y-25,x+24,y-10), fill='#664e38',outline=INK,width=2)
     d.rectangle((x-6,y-27,x+6,y-13),fill='#b18a51')
-    text(d,(x+57,y-17),top,22,'white')
-    text(d,(x+57,y+13),'S' if top=='N' else 'N',22,'white')
 
 def stage_mail(d,p,u,t):
     if p<2:
@@ -192,9 +190,15 @@ def stage_poles(d,p,u):
         rr(d,(x-6,245,x+6,500),'#b48a54',5)
         lower=496-34  # The bottom edge rests directly on the top of the wooden base.
         upper=(351-29*u) if i==0 else (323+(lower-34-323)*u)
-        ring(d,x,lower,'N');ring(d,x,upper,'S' if i==0 else 'N')
+        upper_top='S' if i==0 else 'N'
+        ring(d,x,lower,'N');ring(d,x,upper,upper_top)
+        # Give each ring its own label so its poles stay readable when the rings touch.
+        text(d,(x-175,lower-14),'아랫고리',22)
+        text(d,(x-175,lower+15),'위 N · 아래 S',22)
+        text(d,(x+175,upper-14),'윗고리',22)
+        text(d,(x+175,upper+15),'위 S · 아래 N' if upper_top=='S' else '위 N · 아래 S',22)
         if u<.96:
-            arrow(d,x-130,upper+10,x-130,upper+10+(-40 if i==0 else 40),TEAL,5)
+            arrow(d,x-116,upper-5,x-116,upper-5+(-35 if i==0 else 35),TEAL,5)
         text(d,(x,542),('N · N  →  윗고리가 떠' if i==0 else 'S · N  →  두 고리가 붙어'),26,TEAL)
 
 def stage_remote(d,p,u):
