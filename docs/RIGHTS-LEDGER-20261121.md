@@ -141,3 +141,8 @@
 ## 인증서 손기입·PNG 맞추기 · 2026-11-22
 
 새 그림·소리·글꼴·외부 의존성은 추가하지 않았습니다. 기존 certificate-frame.webp와 밀이나 당이 스프라이트를 화면·인쇄·PNG에 동일하게 사용합니다.
+
+
+## 2026-11-23 인증서 촛농 봉인
+
+사용자가 이번 작업에 직접 제공한 투명 PNG 원본을 알파를 유지한 768px WebP로 변환하여 사용. 원본: 공통 작업 폴더 `_scratch/certificate-wax-20261123/assets/user-wax-seal-reference.png`. 배포본: `assets/ui/certificate-wax-seal-20261123.webp`. 프로젝트별 문구는 별도 텍스트로 합성하며 생성 AI 이미지로 기재하지 않음.

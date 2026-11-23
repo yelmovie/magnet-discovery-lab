@@ -39,3 +39,7 @@ body.quest-mode #app > main.page-certificate { display:grid; place-items:center;
  #app .page-certificate .certificate-border { padding:8cqw 11cqw!important; }
  #app .page-certificate :is(.certificate-panel,.certificate-actions,.cert-note),.quest-hud { display:none!important; }
 }
+
+#app .page-certificate .certificate-date-seal{display:flex;flex-direction:column;align-items:center;gap:.35cqw}
+#app .page-certificate .certificate-bottom{margin:.3cqw 0 0;gap:2.5cqw}
+#app .page-certificate .certificate-bottom .cert-wax-label{font-size:1.06cqw}

@@ -1,7 +1,9 @@
+import {finishCertificateWax} from './certificate-wax.js';
 // Draw the same page geometry on a 2400px canvas without adding a dependency.
 const LONG_SIDE = 2400;
 async function loadImage(src: string) { const image = new Image(); image.src = src; await image.decode(); return image; }
 export async function saveCertificatePng(paper: HTMLElement, filename: string) {
+  finishCertificateWax(paper);
   await document.fonts.ready;
   for (const animation of paper.getAnimations({ subtree: true })) if (Number.isFinite(animation.effect?.getComputedTiming().endTime)) animation.finish();
   const box = paper.getBoundingClientRect(), scale = LONG_SIDE / box.width;
@@ -12,6 +14,7 @@ export async function saveCertificatePng(paper: HTMLElement, filename: string) {
   const frame = paper.querySelector<HTMLImageElement>('.cert-frame');
   if (frame) ctx.drawImage(await loadImage(frame.src), 0, 0, canvas.width, canvas.height);
   for (const el of paper.querySelectorAll<HTMLElement>('.cert-content *')) {
+    if (el.closest('[data-cert-export-ignore]')) continue;
     const cs = getComputedStyle(el), r = el.getBoundingClientRect();
     if (!r.width || !r.height || cs.display === 'none' || cs.visibility === 'hidden') continue;
     const radius = parseFloat(cs.borderTopLeftRadius) * scale || 0;
@@ -33,6 +36,7 @@ export async function saveCertificatePng(paper: HTMLElement, filename: string) {
   const walker = document.createTreeWalker(paper.querySelector('.cert-content')!, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (!node.textContent?.trim()) continue;
+    if (node.parentElement!.closest('[data-cert-export-ignore]')) continue;
     const cs = getComputedStyle(node.parentElement!); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
     ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${parseFloat(cs.fontSize) * scale}px ${cs.fontFamily}`; ctx.fillStyle = cs.color; ctx.textBaseline = 'middle';
     const range = document.createRange();
