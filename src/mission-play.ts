@@ -1,3 +1,4 @@
+import './ring-bench.css';
 import { emptyActivity, type Activity, type Point, type Save } from './domain';
 import { sortingSpecimens } from './material-sorting';
 import type { View } from './activity-types';
@@ -15,7 +16,7 @@ import { poles, rings } from './missions-poles';
 import { aquarium, delivery } from './missions-remote';
 import { design, useDesign } from './missions-workshop';
 import { validTrial } from './trial-records';
-import { deliveryCourse, missionReady } from './mission-model';
+import { deliveryCourse, missionReady, prepareRingBench, ringCount, ringPlaced, ringTray } from './mission-model';
 import { bindInquiryPrompts } from './inquiry-prompts';
 import { bindRunCourse, runCourseMarkup } from './run-course';
 import { runAvailable, runView } from './run-stage-rules';
@@ -73,6 +74,9 @@ export function missionView(n: number, a: Activity, s: Save, preview = false): V
   }
   const round=Number(a.values.round||0), compact=a.values.paceVersion===1, quick=n===2&&a.values.mailboxQuickRepair===true, hits:Hit[]=[];let actions='', comparison='';
   const keyRescue=n===4&&a.values.liveKeyRescue===true;
+  const ringBench=n===6&&a.values.puzzleRevision===2;
+  const ringView=n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':'';
+  let ringFlips='';
   if(n<=2)updateMailboxLayout(a);
   const p=(id:string, fallback:Point)=>a.points[id]||fallback;
   if(n===1||quick&&!mailboxAssembled(a)){
@@ -118,9 +122,20 @@ export function missionView(n: number, a: Activity, s: Save, preview = false): V
   if(n===5){hits.push({id:'probe',p:p('probe',pt(29,54)),label:'기준 자석'},{id:'stickerN',p:p('stickerN',pt(33,78)),label:'N극 스티커'},{id:'stickerS',p:p('stickerS',pt(47,78)),label:'S극 스티커'});actions=action('flip','기준 자석 뒤집기');if(!compact&&a.values.solved0&&a.values.test0N&&a.values.test0S&&round===0)actions=action('next','두 번째 문 자석 조사 →');}
   if(n===5&&a.values.puzzleRevision===2&&a.values.doorOpen&&!a.values.doorPullOpen&&!a.values.doorIndex)actions=action('door-next','이번에는 당겨 여는 문 →');
   if(n===6){
-    if(!a.values.platformCrossed)for(let i=0;i<(compact||round===0?2:3);i++)hits.push({id:`ring${i}`,p:p(`ring${i}`,pt(23+i*16,73)),label:`${i+1}번 고리자석`});
-    if(a.values[`done${round}`]&&round<2)actions=action('next',a.values.platformRaised&&(compact||round===1)?'다음: 발판 내리기 →':compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');
-    else if(!a.values.platformCrossed)actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">손 놓고 고리 관찰`);
+    prepareRingBench(a);
+    const continuing=!!a.values[`done${round}`]&&round<2;
+    const count=ringCount(a);
+    if(!a.values.platformCrossed&&!(ringBench&&continuing)){
+      for(let i=0;i<count;i++){
+        hits.push({id:`ring${i}`,p:p(`ring${i}`,ringTray(a,i)),label:`${i+1}번 고리자석`});
+        if(ringBench)ringFlips+=`<button type="button" class="ring-flip" data-mission="flip-ring${i}" aria-label="${i+1}번 고리 뒤집기">${i+1}번 뒤집기</button>`;
+      }
+    }
+    if(continuing)actions=action('next',a.values.platformRaised&&(compact||round===1)?'다음: 발판 내리기 →':compact?'이번엔 두 고리를 붙여 줘! →':round===0?'세 개도 띄워 볼까? →':'이번엔 모두 붙여 줘! →');
+    else if(!a.values.platformCrossed){
+      const waiting=ringBench&&(a.values.ringReleased===true||!Array.from({length:count},(_,i)=>ringPlaced(a,i)).every(Boolean));
+      actions=action('check',`<img class="release-hand-icon" src="${handImages.released}" alt="">${ringBench?'손 떼고 관찰':'손 놓고 고리 관찰'}`,waiting);
+    }
   }
   if(n===7)hits.push({id:'cleaner',p:p('cleaner',pt(27,47)),label:'유리 밖 청소 자석 손잡이'});
   // Activity 8 has two views of one delivery: the 3D course and the bench it grew from.
@@ -148,7 +163,9 @@ export function missionView(n: number, a: Activity, s: Save, preview = false): V
   const wide=canExpand&&(a.values.benchWide===true||(a.values.benchWide===undefined&&n===8));
   const viewToggle=run?'<button type="button" class="quest-text-button bench-view-toggle run-view-toggle" data-mission="view-bench">2D 화면으로 보기</button>'
     :canExpand?`<button type="button" class="quest-text-button bench-view-toggle" data-mission="bench-view" aria-pressed="${wide}" aria-label="조작 화면 전체보기">${wide?'기본 보기':'조작 화면 전체보기'}</button>${n===8&&a.values.puzzleRevision===2&&runAvailable(s)?'<button type="button" class="quest-text-button bench-view-toggle run-view-toggle" data-mission="view-run">3D 달리기로 하기</button>':''}`:'';
-  return {html:`<div class="mission-world stage-${stage+1}${wide||run?' bench-wide':''}${run?' run-mode':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board${keyRescue?' key-rescue-board':''}" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${run?runCourseMarkup():''}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}<div class="mission-actions">${actions}</div><p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span></span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}${n===6?'<button class="mission-action mission-3d" data-mission="view3d">3D로 돌려 보기</button>':''}</div>${viewToggle}</div>`,bind(c){
+  const actionRow=`<div class="mission-actions">${actions}</div>`;
+  const controls=ringBench?`<div class="ring-toolbar" role="group" aria-label="고리자석 실험 조작"${a.values.platformCrossed?' hidden':''}>${ringFlips?`<div class="ring-flips" role="group" aria-label="고리 뒤집기">${ringFlips}</div>`:''}${actionRow}${ringView}</div>`:actionRow+ringView;
+  return {html:`<div class="mission-world stage-${stage+1}${wide||run?' bench-wide':''}${run?' run-mode':''}" style="--mission-background:url('/assets/quest/stage-${themes[stage]}.webp')"><div class="mission-board play-board${keyRescue?' key-rescue-board':''}${ringBench?' ring-bench':''}" aria-label="${e(missionQuestion(n,a))}"><canvas width="1280" height="720" aria-hidden="true"></canvas>${hits.map(hit).join('')}${run?runCourseMarkup():''}${comparison}<div class="inquiry-prompt-host"></div>${quick?'':puzzleHud(n,a)}${controls}<p class="mission-feedback" role="status" aria-live="polite"></p>${n===4?'<div class="force-sensor" role="status"><span></span></div>':[3,7].includes(n)?'<div class="force-sensor" aria-label="물체 사이 거리"><span>거리를 바꿔 봐</span><i aria-hidden="true"></i></div>':''}${tool?`<button class="mission-pocket" data-mission="tool" aria-label="${tool.name} 사용 도움">${e(tool.name)}</button>`:''}</div>${viewToggle}</div>`,bind(c){
     const surface=new Surface(c,n);surface.button('tool',()=>{if(n===5){surface.a.values.lens=!surface.a.values.lens;surface.tell('관찰 렌즈로 처음 위치와 움직인 방향을 함께 볼 수 있어.');surface.draw();}else c.notify(tool?tool.use:missionGuide(n,a));});
     surface.button('bench-view',()=>{
       const world=c.root.querySelector<HTMLElement>('.mission-world')!,button=c.root.querySelector<HTMLButtonElement>('[data-mission="bench-view"]')!;

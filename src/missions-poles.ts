@@ -1,7 +1,7 @@
 import { mascot } from './art';
 import { opposite, type Point, type Pole } from './domain';
 import { type TrialObject } from './trial-records';
-import { distance, ringFloating } from './mission-model';
+import { distance, ringCount, ringFloating, ringPlaced, ringSlot, ringTray } from './mission-model';
 import { playEffect } from './game-audio';
 import { handRelease, afterHandRelease } from './experiment-hand';
 
@@ -187,17 +187,31 @@ export function poles(v: Surface){
   v.button('next',()=>{v.a.values.round=1;delete v.a.values.reaction;v.a.points={};v.refresh();});
 }
 export function rings(v: Surface){
-  const r=Number(v.a.values.round||0),count=v.compact||r===0?2:3;
+  const r=Number(v.a.values.round||0),count=ringCount(v.a);
+  const board=v.c.root.querySelector<HTMLElement>('.mission-board')!;
   let release=v.has('ringReleased')?1:0;
   const platform=v.a.values.puzzleRevision===2?document.createElement('div'):null;
-  if(platform){platform.className='puzzle-platform';platform.setAttribute('aria-label','고리 위 승강 발판과 밀이·당이');platform.innerHTML=mascot('mili',64,0)+mascot('dangi',64,0)+'<span></span>';v.c.root.querySelector('.mission-board')!.append(platform);}
+  const stage=platform?document.createElement('strong'):null;
+  const toolbar=board.querySelector<HTMLElement>('.ring-toolbar');
+  const check=v.c.root.querySelector<HTMLButtonElement>('[data-mission="check"]');
+  if(platform&&stage){
+    platform.className='puzzle-platform';
+    platform.classList.toggle('no-crossing-motion',!v.s.settings.motion);
+    platform.setAttribute('aria-hidden','true');
+    platform.innerHTML=`<div class="ring-riders">${mascot('mili',64,0)}${mascot('dangi',64,0)}</div><span></span>`;
+    stage.className='ring-stage';
+    board.append(platform,stage);
+  }
   const pole=(i:number)=>(v.a.values[`ringPole${i}`]||'N') as Pole;
-  const slot=(i:number)=>pt(68,71-i*15),tray=(i:number)=>pt(23+i*16,73);
+  const slot=(i:number)=>ringSlot(v.a,i),tray=(i:number)=>ringTray(v.a,i);
+  const center=slot(0).x;
+  const allPlaced=()=>Array.from({length:count},(_,i)=>ringPlaced(v.a,i)).every(Boolean);
   const ringWidth=166,ringHeight=75;
   // Stacked rings share the same projected top ellipse. Only the side wall separates their centres.
   const wall=17,contactSpacing=wall/H*100,floatSpacing=18;
   const standHeight=count===2?330:398;
-  const stand=pt(68,slot(0).y-(standHeight*.27-wall/2)/H*100);
+  const stand=pt(center,slot(0).y-(standHeight*.27-wall/2)/H*100);
+  const landingY=slot(0).y-(count-1)*contactSpacing-5;
   const drawStand=()=>{
     if(polarityPart(v,'stand',stand,standHeight*.67,standHeight))return;
     const g=v.ctx,x=stand.x*W/100,y=stand.y*H/100;
@@ -208,20 +222,21 @@ export function rings(v: Surface){
     let y=slot(0).y;
     return Object.fromEntries(Array.from({length:count},(_,i)=>{
       if(i)y-=ringFloating(pole(i-1),pole(i))?floatSpacing:contactSpacing;
-      return [`ring${i}`,pt(68,y)];
+      return [`ring${i}`,pt(center,y)];
     }));
   };
   const snapshot=():TrialObject[]=>Array.from({length:count},(_,i)=>({id:`ring${i}`,...v.p(`ring${i}`,tray(i)),topPole:pole(i),bottomPole:opposite(pole(i))}));
   const flipRing=(i:number)=>{
-    if(v.animating)return;
+    if(v.animating||platform&&v.has(`done${r}`))return;
     v.a.values[`ringPole${i}`]=opposite(pole(i));
+    if(platform&&r===2)v.a.values.ringLoweringChanged=true;
     release=0;
     if(v.has('ringReleased')){
       for(let j=0;j<count;j++)v.set(`ring${j}`,slot(j));
       v.a.values.ringReleased=false;
-      v.tell('고리를 뒤집었어. 손을 떼고 마주 보는 두 면을 관찰해 봐.');
+      v.tell(platform?'':'고리를 뒤집었어. 손을 떼고 마주 보는 두 면을 관찰해 봐.');
     }
-    playEffect('compare',v.s.settings);v.draw();v.c.touch();
+    playEffect('compare',v.s.settings);v.draw();v.c.touch();v.c.meta();
   };
   const drawRing=(i:number)=>{
     const q=v.p(`ring${i}`,tray(i)),top=pole(i),bottom=opposite(top);
@@ -238,46 +253,73 @@ export function rings(v: Surface){
       g.save();g.beginPath();g.rect(x-12,y-ringHeight/2,24,ringHeight*.44);g.clip();drawStand();g.restore();
     }
     g.save();g.font='bold 21px "NanumSquareNeo",sans-serif';g.textBaseline='middle';g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#233b46';g.lineWidth=3;
-    for(const [label,dx,dy] of [[top,-49,-16],[bottom,21,28]] as const){g.strokeText(label,x+dx,y+dy);g.fillText(label,x+dx,y+dy);}
+    const lowerLabelX=platform&&v.has('ringReleased')&&i%2===0?49:21;
+    for(const [label,dx,dy] of [[top,-49,-16],[bottom,lowerLabelX,28]] as const){g.strokeText(label,x+dx,y+dy);g.fillText(label,x+dx,y+dy);}
     g.restore();
-    if(Math.abs(q.x-68)>6)v.label(`${i+1}번 고리`,pt(q.x,q.y-9),true);
+    if(platform&&!v.has('ringReleased')&&!v.animating)v.label(`${i+1}번`,pt(q.x-9.5,q.y),true);
+    else if(!platform&&Math.abs(q.x-center)>6)v.label(`${i+1}번 고리`,pt(q.x,q.y-9),true);
   };
   // Recalculate released geometry for activities saved with the previous artwork.
   if(v.has('ringReleased'))for(const [id,p] of Object.entries(positions()))v.set(id,p);
   v.draw=()=>{
     v.base();
-    if(platform){
-      const g=v.ctx;g.save();g.fillStyle='#90744e';g.fillRect(92*W/100,64*H/100,3*W/100,17*H/100);g.fillRect(78*W/100,64*H/100,17*W/100,2*H/100);g.restore();
-      const upper=v.p('ring1',tray(1));
+    if(platform&&stage){
       const crossed=v.has('platformCrossed');
+      const upper=v.p(`ring${count-1}`,tray(count-1));
+      const g=v.ctx,x=W*.602,y=landingY*H/100,width=W*.192;
+      g.save();
+      g.fillStyle='#956b40';g.fillRect(x+width*.82,y,21,((81-landingY)/100)*H);
+      g.fillStyle='#d4aa6c';g.strokeStyle='#765332';g.lineWidth=3;g.beginPath();g.roundRect(x,y-1,width,13,4);g.fill();g.stroke();g.restore();
+      if(!crossed)v.label('건너편 길',pt(72,landingY-4),true);
       platform.classList.toggle('is-crossed',crossed);
-      platform.style.left=`${crossed?87:68}%`;platform.style.top=`${crossed?64:Math.abs(upper.x-68)<7?upper.y-5:64}%`;
-      v.label(crossed?'두 친구가 건넜어!':r<2?'발판을 올려 친구들을 태워 줘':'발판을 내려 건너편 길과 이어 줘',pt(44,35),true);
+      platform.style.left=`${center}%`;
+      platform.style.top=`${crossed?landingY:Math.abs(upper.x-center)<7?upper.y-5:slot(count-1).y-5}%`;
+      const title=crossed?'두 친구가 건넜어!':r<2?'발판 올리기':'발판 내리기';
+      if(stage.textContent!==title)stage.textContent=title;
+      if(toolbar)toolbar.hidden=crossed;
+      if(check)check.disabled=v.has('ringReleased')||!allPlaced();
+      if(crossed)board.querySelectorAll<HTMLButtonElement>('[data-drag]').forEach(button=>{button.hidden=true;});
     }
     drawStand();
     if(!v.has('ringReleased')&&!v.animating){
-      for(let i=0;i<count;i++)if(distance(v.p(`ring${i}`,tray(i)),slot(i))>2)v.target(slot(i),'',ringWidth+8,62);
+      for(let i=0;i<count;i++)if(distance(v.p(`ring${i}`,tray(i)),slot(i))>2){
+        v.target(slot(i),'',ringWidth+8,62);
+        if(platform)v.label(`${i+1}번`,pt(center-9.5,slot(i).y),true);
+      }
     }
     for(let i=0;i<count;i++)drawRing(i);
     const upper=v.p(`ring${count-1}`,tray(count-1));
-    if(!v.has('platformCrossed')&&(Math.abs(upper.x-68)<7||v.animating||v.has('ringReleased')))v.hand(pt(slot(count-1).x+6,slot(count-1).y-1),release,'고리');
+    if(!v.has('platformCrossed')&&(Math.abs(upper.x-center)<7||v.animating||v.has('ringReleased'))){
+      if(!platform||v.animating||!v.has('ringReleased'))v.hand(pt(center+6,(platform?upper.y:slot(count-1).y)-1),release,'고리',!platform);
+      else v.c.root.dataset.handState='released';
+    }
     if(v.has('ringReleased')){
       const floating=Array.from({length:count-1},(_,i)=>ringFloating(pole(i),pole(i+1)));
       const message=floating.every(Boolean)?'같은 극끼리 밀어내서 떠 있어':floating.some(Boolean)?'마주 보는 극에 따라 간격이 달라':'다른 극끼리 끌어당겨 붙었어';
-      v.label(message,pt(36,52),true);
+      if(!platform||v.has(`done${r}`))v.label(message,pt(platform?26:36,52),true);
     }
     if(!platform)v.label(r<2?`${count}개 고리를 서로 떨어져 있게!`:`${count}개 고리를 서로 붙게!`,pt(50,29),true);
   };
   for(let i=0;i<count&&!v.has('platformCrossed');i++){
-    v.drag(`ring${i}`,tray(i),p=>{v.a.values.ringReleased=false;release=0;if(distance(p,slot(i))<11)v.set(`ring${i}`,slot(i));v.draw();},()=>{v.a.values.ringReleased=false;release=0;});
+    v.drag(`ring${i}`,tray(i),p=>{
+      v.a.values.ringReleased=false;release=0;
+      if(platform?ringPlaced(v.a,i):distance(p,slot(i))<11)v.set(`ring${i}`,slot(i));
+      if(platform)v.tell('');
+      v.draw();
+    },()=>{
+      if(platform&&v.has('ringReleased'))for(let j=0;j<count;j++)if(j!==i)v.set(`ring${j}`,slot(j));
+      v.a.values.ringReleased=false;release=0;
+    });
     const b=v.c.root.querySelector<HTMLElement>(`[data-drag="ring${i}"]`);b?.addEventListener('dblclick',()=>flipRing(i));
+    if(platform){v.button(`flip-ring${i}`,()=>flipRing(i));continue;}
     const flip=document.createElement('button');flip.className='ring-flip';flip.textContent=`${i+1}번 뒤집기`;flip.setAttribute('aria-label',`${i+1}번 고리 뒤집기`);flip.style.left=`${tray(i).x}%`;flip.style.top='84%';flip.addEventListener('click',()=>flipRing(i));v.c.root.querySelector('.mission-board')!.append(flip);
   }
   v.button('check',()=>{
     if(v.animating)return;
     if(v.has('ringReleased'))return v.tell('고리를 뒤집어 마주 보는 극을 바꿔 봐.');
-    if(!Array.from({length:count},(_,i)=>{const q=v.p(`ring${i}`,tray(i));return Math.abs(q.x-68)<7&&Math.abs(q.y-slot(i).y)<7;}).every(Boolean))return v.tell(`고리를 아래부터 ${count===2?'1, 2':'1, 2, 3'}번 순서로 점선에 놓아 줘.`);
+    if(!allPlaced())return v.tell(`고리를 아래부터 ${count===2?'1, 2':'1, 2, 3'}번 순서로 점선에 놓아 줘.`);
     const initial=snapshot(),targets=positions();
+    const restoreFocus=platform&&document.activeElement===check;
     const pairs=Array.from({length:count-1},(_,i)=>ringFloating(pole(i),pole(i+1)));
     const correct=pairs.every(floats=>floats===(r<2)),allFloat=pairs.every(Boolean);
     v.settle(targets,()=>{
@@ -286,13 +328,20 @@ export function rings(v: Surface){
       trial.initialObjects=initial;trial.objects=snapshot();
       playEffect(allFloat?'compare':'snap',v.s.settings);
       if(!correct){
-        const wrong=r<2?'다른 극이 마주 본 곳은 붙었어. 고리를 뒤집어 봐.':platform&&count===2?'발판이 떠 있어. 2번 뒤집기를 누른 뒤 손 놓고 고리 관찰을 눌러 줘.':'같은 극이 마주 본 곳은 떠 있어. 고리를 뒤집어 봐.';
+        const wrong=r<2?'다른 극이 마주 본 고리가 붙었어. 고리를 뒤집어 다시 시험해 봐.':'같은 극이 마주 본 고리가 떠 있어. 고리를 뒤집어 다시 시험해 봐.';
         if(v.a.values.puzzleVersion===1)v.miss(wrong,ringHints);else v.tell(wrong);v.draw();return;
       }
       if(platform)v.a.values[r<2?'platformRaised':'platformCrossed']=true;
-      v.mark(`done${r}`,'고리 배치 문제 해결',r<2?'같은 극이 마주 보자 고리가 밀려 떠올랐어.':'다른 극이 마주 보자 두 면이 맞닿았어.');v.refresh();
+      v.mark(`done${r}`,'고리 배치 문제 해결',r<2?'같은 극이 마주 보자 고리가 밀려 떠올랐어.':'다른 극이 마주 보자 두 면이 맞닿았어.');
+      if(platform&&r===2){
+        v.tell('');v.draw();
+        if(restoreFocus)v.c.root.closest('.quest-activity')?.querySelector<HTMLButtonElement>('[data-action="complete"]:enabled')?.focus({preventScroll:true});
+      }else{
+        v.refresh();
+        if(restoreFocus)document.querySelector<HTMLButtonElement>('.ring-bench [data-mission="next"]')?.focus({preventScroll:true});
+      }
     },t=>{release=handRelease(t);const motion=afterHandRelease(t);return allFloat?1-Math.exp(-5*motion)*Math.cos(6*motion)*(1-motion):Math.min(1,(motion/.78)**2);},900);
   });
   v.button('next',()=>{v.a.values.round=v.compact?2:r+1;v.a.values.ringReleased=false;if(v.compact){for(let i=0;i<count;i++)v.set(`ring${i}`,slot(i));}else v.a.points={};v.refresh();});
-  v.button('view3d',()=>v.c.root.dispatchEvent(new CustomEvent('open-3d',{bubbles:true,detail:{kind:'rings',released:v.has('ringReleased'),rings:Array.from({length:count},(_,i)=>{const q=v.p(`ring${i}`,tray(i));return {top:pole(i),onPole:v.has('ringReleased')||Math.abs(q.x-68)<7&&Math.abs(q.y-slot(i).y)<7};})}})));
+  v.button('view3d',()=>v.c.root.dispatchEvent(new CustomEvent('open-3d',{bubbles:true,detail:{kind:'rings',released:v.has('ringReleased'),rings:Array.from({length:count},(_,i)=>({top:pole(i),onPole:v.has('ringReleased')||ringPlaced(v.a,i)}))}})));
 }

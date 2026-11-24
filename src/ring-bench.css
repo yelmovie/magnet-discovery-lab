@@ -1,0 +1,125 @@
+#app .ring-bench .ring-stage {
+  position: absolute;
+  z-index: 2;
+  top: 34%;
+  left: 25%;
+  translate: -50% 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--quest-cream);
+  box-shadow: 0 2px 6px #563d2529;
+  color: var(--quest-deep-teal);
+  font: 700 clamp(18px, 1.45vw, 25px)/1.2 var(--font-body);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#app .ring-bench .puzzle-platform { display: block; height: 10px; }
+#app .ring-bench .ring-riders {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  translate: 0 0;
+  transition: translate 650ms ease-in-out;
+}
+#app .ring-bench .is-crossed .ring-riders { translate: 118% 0; }
+
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar {
+  position: absolute;
+  top: 83%;
+  left: 50%;
+  translate: -50% 0;
+  z-index: var(--layer-controls);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1vw, 16px);
+  width: max-content;
+  max-width: 94%;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--quest-paper);
+  box-shadow: 0 5px 14px #3829173b;
+}
+body.quest-mode #app .screen-6 .ring-bench :is(.ring-toolbar, .canvas-hit)[hidden] { display: none; }
+
+#app .ring-bench .ring-flips { display: flex; gap: 6px; border-radius: var(--radius-sm); }
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar > .mission-actions {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+  padding: 0;
+}
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar button {
+  position: static;
+  transform: none;
+  margin: 0;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px clamp(8px, 1vw, 17px);
+  border: 1px solid #927e55;
+  border-radius: var(--radius-sm);
+  background: #fff9e8;
+  box-shadow: 0 2px 0 #927e55;
+  color: var(--quest-deep-teal);
+  font: 400 clamp(17px, 1.25vw, 22px)/1.2 var(--font-display);
+  white-space: nowrap;
+}
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar .mission-actions button:not(:disabled) {
+  border-color: #1d574f;
+  background: #26675f;
+  box-shadow: 0 2px 0 #1d574f;
+  color: #fffdf2;
+}
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar:has(.ring-flips.next-action-target) [data-mission="check"]:not(:disabled) {
+  border-color: #927e55;
+  background: #fff9e8;
+  box-shadow: 0 2px 0 #927e55;
+  color: var(--quest-deep-teal);
+}
+body.quest-mode #app .screen-6 .ring-bench .ring-toolbar button:active:not(:disabled) { translate: 0 2px; box-shadow: none; }
+#app .ring-bench .ring-toolbar .release-hand-icon { width: 28px; height: 28px; object-fit: contain; }
+
+@media (max-height: 650px) and (orientation: landscape) {
+  body.quest-mode #app .screen-6 .ring-bench .ring-toolbar { padding: 4px; }
+  body.quest-mode #app .quest-activity:has(.ring-bench) > .mission-next-action {
+    top: calc(var(--head-bottom, 64px) + 8px);
+    bottom: auto;
+    max-width: calc(100% - 240px);
+    padding: 5px 12px;
+  }
+}
+
+@media (max-width: 800px) and (orientation: portrait) {
+  body.quest-mode #app .screen-6 .ring-bench .ring-toolbar { top: calc(100% + 16px); }
+  #app .ring-bench .ring-stage { top: 27%; }
+}
+
+@media (max-width: 540px) and (orientation: portrait) {
+  body.quest-mode #app .screen-6 .ring-bench .ring-toolbar { flex-wrap: wrap; width: min(335px, 94%); gap: 8px; }
+  body.quest-mode #app .screen-6 .ring-bench .ring-toolbar > .mission-actions { width: auto; }
+  body.quest-mode #app .quest-activity:has(.ring-bench):has(.play-inquiry[data-phase="experiment"]) > header.mission-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'stage stage' 'q steps';
+  }
+  body.quest-mode #app .quest-activity:has(.ring-bench) > .mission-next-action {
+    top: calc(var(--head-bottom, 170px) + 64px);
+    bottom: auto;
+    max-width: calc(100% - 24px);
+    padding: 6px 12px;
+  }
+  #app .quest-activity:has(.ring-bench) > .lab-coach { bottom: 24px; }
+  #app .quest-activity:has(.ring-bench) .coach-robot { width: 62px; height: 60px; }
+}
+
+@media (max-height: 650px) and (orientation: landscape), (max-width: 540px) and (orientation: portrait) {
+  body.quest-mode #app .quest-activity:has(.ring-bench):has(.play-question[open], .coach-bubble:not([hidden])) > .mission-next-action { visibility: hidden; }
+}
+
+#app .ring-bench .no-crossing-motion .ring-riders { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  #app .ring-bench .ring-riders { transition: none; }
+}

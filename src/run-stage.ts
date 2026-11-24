@@ -81,6 +81,7 @@ export interface RunStage {
   attach(host: HTMLElement): void;
   step(dt: number, steer: RunSteer): Point;
   show(state: DeliveryState): void;
+  capture(): HTMLCanvasElement | undefined;
   dispose(): void;
 }
 
@@ -364,6 +365,12 @@ export async function createRunStage(a: Activity, onLost: () => void): Promise<R
     get flipped() { return flipped; },
     attach(next) { observer.disconnect(); host = next; host.append(canvas); observer.observe(host); fit(); },
     step, show,
+    capture() {
+      if (lost || !state || !canvas.isConnected) return;
+      // Use the freshly rendered WebGL buffer before the browser clears it.
+      renderer.render(scene, camera);
+      return canvas;
+    },
     dispose() {
       observer.disconnect(); canvas.removeEventListener('webglcontextlost', lose);
       scene.traverse(node => {

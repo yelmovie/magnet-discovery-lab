@@ -113,7 +113,8 @@ async function misses(n) {
   }
   if (n === 6) {
     for (let i = 0; i < 2; i++) {
-      await drag('ring0', 68, 71); await drag('ring1', 68, 56);
+      if(i){await mission('flip-ring0');await mission('flip-ring1');}
+      else{await drag('ring0', 50, 71);await drag('ring1', 50, 56);}
       await mission('check'); await idle();
     }
   }
@@ -164,15 +165,13 @@ async function mechanisms(viewport){
   assert.equal((await saved()).activities[4].trials.find(t=>t.key==='key-pull').conditions.course,'live-key');
   await shot(`key-${viewport.width}-rescued`);await context.close();
   context=await start(6,viewport);
-  await drag('ring0',68,71);await drag('ring1',68,56);
+  await drag('ring0',50,71);await drag('ring1',50,56);
   await page.locator('[aria-label="2번 고리 뒤집기"]').click();await mission('check');await idle();await page.waitForTimeout(800);
   assert.equal((await saved()).activities[6].values.platformRaised,true);await shot(`platform-${viewport.width}-raised`);
   await mission('next');await page.locator('[aria-label="2번 고리 뒤집기"]').click();await mission('check');await idle();await page.waitForTimeout(800);
   assert.equal((await saved()).activities[6].values.platformCrossed,true);
   assert.equal(await page.locator('.puzzle-platform .mascot').count(),2);
-  const platform = await page.locator('.puzzle-platform').boundingBox();
-  const view3d = await page.locator('[data-mission="view3d"]').boundingBox();
-  assert.ok(view3d.x + view3d.width <= platform.x || platform.x + platform.width <= view3d.x || view3d.y + view3d.height <= platform.y || platform.y + platform.height <= view3d.y, '3D control leaves the two characters visible');
+  assert.equal(await page.locator('[data-mission="view3d"]').isVisible(),false,'completed controls leave the crossing visible');
   await shot(`platform-${viewport.width}-crossed`);
   pass(`${viewport.width}x${viewport.height} key rescue and ring platform work with actual pointer placement`);await context.close();
 }

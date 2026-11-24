@@ -21,6 +21,7 @@ export function runCourseMarkup(): string {
 // The scene outlives the re-render that follows each stop, so the runner stays where she was.
 let live: { a: Activity; stage: RunStage; timer: number } | undefined;
 let pending: { a: Activity; stage: Promise<RunStage> } | undefined;
+export const captureRunFrame = (a: Activity) => live?.a === a ? live.stage.capture() : undefined;
 function canDraw() {
   try { const canvas = document.createElement('canvas'); return !!(canvas.getContext('webgl2') || canvas.getContext('webgl')); } catch { return false; }
 }

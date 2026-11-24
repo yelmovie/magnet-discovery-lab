@@ -172,8 +172,9 @@ async function regressions(){
   }
   { // 고리 뒤집기 뒤 위치
     const {context,page:p}=await open();await resume(p,at(6));
-    await put(p,'ring0',68,71);await put(p,'ring1',68,56);await settled(p);
+    await put(p,'ring0',50,71);await put(p,'ring1',50,56);await settled(p);
     const before=(await save(p)).activities[6].points;await p.locator('.ring-flip').nth(1).click();await settled(p);const after=(await save(p)).activities[6].points;
+    assert.deepEqual([before.ring0,before.ring1],[{x:50,y:71},{x:50,y:56}],'고리가 중앙 기둥에 놓임');
     assert.deepEqual([after.ring0,after.ring1],[before.ring0,before.ring1],'뒤집어도 기둥 위치 유지');await shot(p,'ring-flip');
     pass('회귀: 고리 뒤집기 후 위치 유지',{ring1:after.ring1});await context.close();
   }

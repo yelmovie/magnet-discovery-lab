@@ -91,3 +91,32 @@ export function missionReady(screen: number, a: Activity, s: Save): boolean {
     default: return false;
   }
 }
+export function ringCount(a: Activity) {
+  return a.values.paceVersion===1||Number(a.values.round||0)===0 ? 2 : 3;
+}
+
+export function ringSlot(a: Activity, i: number): Point {
+  return {x:a.values.puzzleRevision===2?50:68,y:71-i*15};
+}
+
+export function ringTray(a: Activity, i: number): Point {
+  return a.values.puzzleRevision===2 ? {x:25,y:71-i*15} : {x:23+i*16,y:73};
+}
+
+export function ringPlaced(a: Activity, i: number): boolean {
+  const p=a.points[`ring${i}`], slot=ringSlot(a,i);
+  return !!p&&Math.abs(p.x-slot.x)<7&&Math.abs(p.y-slot.y)<7;
+}
+
+export function prepareRingBench(a: Activity) {
+  if(a.values.puzzleRevision!==2||a.values.ringBenchVersion===1)return;
+  // Restore rings already on the peg and return loose rings to the numbered tray.
+  // Recorded trials retain their original geometry for replay.
+  for(let i=0;i<ringCount(a);i++){
+    for(const id of [`ring${i}`,`initial:ring${i}`]){
+      const p=a.points[id];
+      if(p)a.points[id]=Math.abs(p.x-68)<7&&Math.abs(p.y-ringSlot(a,i).y)<7 ? ringSlot(a,i) : ringTray(a,i);
+    }
+  }
+  a.values.ringBenchVersion=1;
+}

@@ -48,12 +48,14 @@ const results = [], errors = [];
     await page.locator('.modal-close').click();
    }
    await page.evaluate(()=>{const s=window.__qa.save;delete s.idea;delete s.activities[9];delete s.activities[10];s.completed=s.completed.filter(n=>n<9);window.__qa.startActivity(9);});
-   await page.locator('.idea-resident-list').waitFor();
-   for(const id of ['eraser','pins','bag','door','cup']){
-    await page.locator(`.idea-resident-list [data-resident="${id}"]`).click();
+   await page.locator('.idea-resident-nav').waitFor();
+   for(const [index,id] of ['eraser','pins','bag','door','cup'].entries()){
+    if(index)await page.locator('[data-resident-move="1"]').click();
+    assert.equal(await page.locator('.idea-resident-portrait').count(),1);
     assert.equal(await page.locator('[data-workshop-voice],[data-workshop-voice-status]').count(),0);
     assert.equal(await page.getByText(/효과음을 켜|목소리 듣기|불편 다시 듣기/).count(),0);
     await page.locator(`[data-problem="${id}"]`).click();
+    await page.locator('[data-resident-example]').click();
     await page.locator('.idea-example form button').click();
     assert.equal(await page.locator('[data-resident-example]').count(),1);
     if(id==='door'&&!effects)await page.screenshot({path:`${out}/workshop-door.png`});

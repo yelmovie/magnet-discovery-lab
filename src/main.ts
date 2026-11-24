@@ -24,6 +24,7 @@ import { inquiryPhase } from './inquiry-model';
 import { missionView, prepareQuickMailbox } from './mission-play';
 import { missionReady } from './mission-model';
 import { rememberExperiment } from './experiment-scenes';
+import { captureRunFrame } from './run-course';
 import { missionQuestion, missionGuide, questRewards, abilityStatements } from './mission-content';
 import { settingsContent } from './settings-content';
 import { expeditionMarkup, mountExpedition, residents, type ExpeditionHandle } from './expedition';
@@ -349,10 +350,15 @@ async function finishActivity(conceptDone = false) {
 async function finishActivityOnce(conceptDone: boolean) {
   const activity=s.activities[screen], idea=activity.values.ideaVersion===1;
   const quick=screen===2&&activity.values.mailboxQuickRepair===true;
+  const remember=()=>{
+    const root=document.getElementById('experiment-root'),run=!!root?.querySelector('.run-mode');
+    const canvas=run?captureRunFrame(activity):root?.querySelector<HTMLCanvasElement>('.mission-board > canvas');
+    rememberExperiment(activity,canvas??null,run);
+  };
   if(screen===8&&activity.values.puzzleRevision===2&&inquiryPhase(activity)==='experiment'&&activity.values.deliveryConceptSeen!==true){
     if(!missionReady(screen,activity,s))return;
     if(!conceptDone){
-      rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+      remember();
       touch();
       openConcept(3,false,()=>void finishActivity(true),'발견 정리로 →');
       return;
@@ -362,17 +368,17 @@ async function finishActivityOnce(conceptDone: boolean) {
   if(quick){
     if(!ready(screen,activity,s))return;
     if(!conceptDone){
-      rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+      remember();
       touch();
       openConcept(0,false,()=>void finishActivity(true));
       return;
     }
     if(adminOn())return startActivity(3);
   }
-  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))rememberExperiment(activity,document.querySelector('#experiment-root canvas'));
+  if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&(adminOn()||missionReady(screen,activity,s)))remember();
   if(adminOn()){if(!idea&&advanceInquiry(activity)){cleanup?.();cleanup=undefined;render();return;}sound(true);if(screen<10)return startActivity(screen+1);restorePractice();go('city');return;}
   if(!quick&&!idea&&inquiryPhase(activity)==='experiment'&&missionReady(screen,activity,s)&&advanceInquiry(activity)){
-    if(!practiceBackup&&screen===4&&activity.values.liveKeyRescue===true){
+    if(!practiceBackup&&(screen===8||screen===4&&activity.values.liveKeyRescue===true)){
       const bench=document.querySelector<HTMLElement>('#experiment-root')!;
       bench.inert=true;
       await flush();

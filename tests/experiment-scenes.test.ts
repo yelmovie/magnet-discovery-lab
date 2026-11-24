@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { emptyActivity } from '../src/domain';
-import { rememberExperiment } from '../src/experiment-scenes';
+import { emptyActivity, freshSave } from '../src/domain';
+import { experimentScenes, rememberExperiment } from '../src/experiment-scenes';
 import { addTrial } from '../src/trial-records';
 
 afterEach(()=>vi.unstubAllGlobals());
@@ -16,4 +16,14 @@ it('그림 로딩 중에는 기존 사진이나 장치 예시를 보존하고 �
   capture();expect(a.experimentPhoto).toBeUndefined();
   a.experimentPhoto=old;capture();expect(a.experimentPhoto).toBe(old);expect(copy).not.toHaveBeenCalled();
   canvas.dataset.pendingArt='';capture();expect(a.experimentPhoto).toBe(next);expect(copy).toHaveBeenCalledOnce();
+});
+
+it('택배 배달에서 저장된 빈 그림은 장치 예시를 보여 주고 다른 실험 사진은 보존한다',()=>{
+  const s=freshSave(),photo='data:image/webp;base64,YQ==';
+  s.activities[7]={...emptyActivity(),experimentPhoto:photo};
+  s.activities[8]={...emptyActivity(),experimentPhoto:photo};
+  const scenes=experimentScenes(8,s);
+  expect(scenes).toContain('수조 청소 · 내 실험');
+  expect(scenes).toContain('/assets/learning/delivery.webp');
+  expect(scenes).toContain('택배 배달 · 장치 예시');
 });

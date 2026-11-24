@@ -137,7 +137,7 @@ async function experiments(n) {
     await mission('door-next');await mission('flip');await idle();await put('probe',48,53);await idle();
     assert.equal((await save()).activities[5].values.doorPullOpen,true);
   }
-  if(n===6){for(let i=0;i<2;i++)await put('ring'+i,68,71-i*15);await mission('check');await wait(750);assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);await mission('next');await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);}
+  if(n===6){for(let i=0;i<2;i++)await put('ring'+i,50,71-i*15);await mission('check');await wait(750);assert.equal(await page.locator('[data-action="complete"]').isEnabled(),false);await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);await mission('next');await page.locator('.ring-flip').nth(1).click();await mission('check');await wait(750);}
   if(n===7){
     await put('cleaner',77,74);await wait(100);assert.match(await page.locator('.mission-feedback').textContent(),/너무 멀어/);
     await put('cleaner',30,48);await wait(160);
@@ -231,14 +231,17 @@ async function workshop() {
   const next = () => page.locator('[data-act="next"]');
   await step().waitFor();
   assert.equal(await next().isEnabled(),false);
-  await page.locator('.idea-resident-tab[data-resident="pins"]').click();
+  await page.locator('[data-resident-move="1"]').click();
   await page.locator('[data-problem="pins"]').click();
+  assert.equal(await page.locator('.idea-example[open]').count(),0);
+  await page.locator('[data-resident-example]').click();
   await page.locator('.idea-example[open] img').waitFor();
   await page.waitForFunction(()=>document.querySelector('.idea-example img')?.naturalWidth>0);
   await page.keyboard.press('Escape');
   await page.locator('.idea-example').waitFor({state:'hidden'});
-  await page.locator('#idea-custom').focus();
-  assert.equal((await save()).idea.problem,'pins','tabbing through the custom field preserves the chosen resident');
+  await page.locator('[data-custom-open]').click();
+  await page.locator('[data-custom-back]').click();
+  assert.equal((await save()).idea.problem,'pins','opening the custom editor preserves the chosen resident');
   await next().click();
   await page.locator('[data-property="iron"]').click();
   await next().click();
@@ -392,12 +395,16 @@ async function alternateAndReplay(original){
   assert.equal(JSON.stringify((await save()).evidence),evidence);check('re-exploration keeps original evidence');
   const firstIdea=structuredClone((await save()).idea);
   await page.evaluate(()=>window.__lab.startActivity(9,true));
+  await page.locator('[data-custom-open]').click();
   await page.locator('#idea-custom').fill('연습에서만 만든 발명');
+  await page.locator('[data-choose-custom]').click();
   assert.equal((await save()).idea.custom,'연습에서만 만든 발명');
   await reload();
   assert.deepEqual((await save()).idea,firstIdea,'practice draft is never saved over the original invention');
   await page.evaluate(()=>window.__lab.startActivity(9,true));
+  await page.locator('[data-custom-open]').click();
   await page.locator('#idea-custom').fill('두 번째 연습 발명');
+  await page.locator('[data-choose-custom]').click();
   await action('home');
   assert.deepEqual((await save()).idea,firstIdea,'leaving practice restores the first invention card');
   assert.equal(JSON.stringify((await save()).evidence),evidence);

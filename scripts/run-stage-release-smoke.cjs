@@ -53,8 +53,28 @@ const state = {
     assert.equal(a.values.view, 'run'); assert.equal(a.values.segment0, true); assert.equal(a.values.segment1, true);
     assert.ok(proof('delivery0') && proof('delivery1'), 'delivery0 · delivery1');
     assert.equal(proof('delivery1').conditions.course, 'glass-room');
-    await page.locator('[data-mission="view-bench"]').click(); await page.waitForSelector('[data-drag="controller"]');
+    await page.locator('[data-action="complete"]').click();
+    await page.locator('[data-video="continue"]').click();
+    const deliveryPhoto = page.locator('.quiz-scenes figure').nth(1);
+    assert.match(await deliveryPhoto.locator('figcaption').textContent(), /택배 배달 · 내 실험/);
+    const capture = await deliveryPhoto.locator('img').evaluate(async img => {
+      await img.decode();
+      const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 18;
+      const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, 32, 18);
+      const pixels = ctx.getImageData(0, 0, 32, 18).data;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3]) colors.add(pixels.slice(i, i + 3).join(','));
+      }
+      return { width: img.naturalWidth, colors: colors.size };
+    });
+    assert.equal(capture.width, 480);
+    assert.ok(capture.colors > 30, 'the 3D delivery photo has actual scene pixels');
+    await page.screenshot({ path: `${out}/discovery.png` });
+    await page.locator('[data-inquiry="revisit"]').click();
+    await page.locator('[data-mission="view-bench"]').click();
+    await page.locator('.mission-world:not(.run-mode) .mission-board[data-delivery-complete] > canvas').waitFor();
     assert.deepEqual(errors, []);
-    console.log(`${origin}: 3D course played to the end with the keyboard; segment0·1 and delivery0·1 saved; bench fallback opens`);
+    console.log(`${origin}: 3D course played with the keyboard, both stops and a visible experiment photo saved, and the 2D bench opens`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exit(1); });

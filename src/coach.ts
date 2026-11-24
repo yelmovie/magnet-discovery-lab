@@ -2,7 +2,7 @@ import { ready, type Activity, type Save } from './domain';
 import { materialClassified, sortingSpecimens } from './material-sorting';
 import { keyRescueText, shakePrompt } from './mission-content';
 import { inquiryPhase } from './inquiry-model';
-import { deliveryRoute, distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringFloating } from './mission-model';
+import { deliveryRoute, distance, cellLabel, clearanceCells, nearRulerMark, missionReady, paperGapMiddle, ringCount, ringFloating, ringPlaced } from './mission-model';
 import { magnetInstalled, mailbox } from './mailbox';
 import { nextMailboxPart, mailboxParts, partKey, partInstalled } from './mailbox-assembly';
 import { currentPrompt } from './inquiry-prompts';
@@ -123,8 +123,20 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
       total = 3; done = [0, 1, 2].filter(i => f(`done${i}`)).length;
       if(paced){total=2;done=[0,2].filter(i=>f(`done${i}`)).length;}
       action = r < 2 ? '고리를 뒤집어 기둥에 놓고, 손을 떼어 띄워 봐' : paced?'이번에는 위 고리를 뒤집어 두 고리를 붙여 봐':'이번에는 세 고리가 서로 붙도록 배치해'; focus = paced&&r===2?'ring1':'ring0';
-      if(paced){
-        const unplaced=[0,1].find(i=>{const p=a.points[`ring${i}`]||{x:23+i*16,y:73};return Math.abs(p.x-68)>=7||Math.abs(p.y-(71-i*15))>=7;});
+      if(a.values.puzzleRevision===2){
+        const count=ringCount(a),unplaced=Array.from({length:count},(_,i)=>i).find(i=>!ringPlaced(a,i));
+        if(f('ringReleased')){
+          action=r<2?'고리가 붙었어. 고리 하나를 뒤집어 다시 시험해 봐.':'발판이 아직 떠 있어. 고리 하나를 뒤집어 다시 시험해 봐.';
+          focus='고리 뒤집기';
+        }else if(unplaced!==undefined){
+          action=`${unplaced+1}번 고리를 기둥의 같은 번호 점선에 놓아 줘.`;focus=`ring${unplaced}`;
+        }else if(r===2&&!f('ringLoweringChanged')){
+          action='발판을 내리려면 어떤 극이 마주 봐야 할까? 고리를 뒤집어 봐.';focus='고리 뒤집기';
+        }else{
+          action=r<2?'‘손 떼고 관찰’을 눌러 고리가 어떻게 움직이는지 봐.':'‘손 떼고 관찰’을 눌러 발판이 건너편 길과 이어지는지 봐.';focus='check';
+        }
+      }else if(paced){
+        const unplaced=[0,1].find(i=>!ringPlaced(a,i));
         if(!f('ringReleased')&&unplaced!==undefined){action=`${unplaced+1}번 고리를 기둥의 ${unplaced===0?'아래':'위'} 점선에 놓아 줘`;focus=`ring${unplaced}`;}
         else if(f('ringReleased')){action=r===2&&f('platformRaised')?'발판이 떠 있어. 2번 뒤집기를 누른 뒤 손 놓고 고리 관찰을 눌러 줘':'2번 뒤집기로 마주 보는 극을 바꾸고 다시 관찰해 봐';focus='2번 고리 뒤집기';}
         else if(r===2&&ringFloating(a.values.ringPole0==='S'?'S':'N',a.values.ringPole1==='S'?'S':'N')){action='발판을 내리려면 2번 뒤집기로 다른 극이 마주 보게 해 줘';focus='2번 고리 뒤집기';}
@@ -173,7 +185,7 @@ export function coaching(n: number, a: Activity, s: Save): Coaching {
     }
     if(n===5&&f('doorOpen')&&!a.values.doorIndex&&!f('doorPullOpen')){action='첫 문이 열렸어! 당겨 여는 다음 문으로 가자';focus='door-next';}
     else if(n===5&&a.values.doorIndex===1&&!f('doorPullOpen')){action='이번 문은 빗장을 당겨야 열려. 다른 극을 마주 보게 해 줘';focus='probe';}
-    if(n===6&&r<2&&(paced||r===1)&&f(`done${r}`)&&f('platformRaised')){action='친구들이 발판에 올라탔어! 다음: 발판 내리기 버튼을 눌러 줘';focus='next';}
+    if(n===6&&r<2&&(paced||r===1)&&f(`done${r}`)&&f('platformRaised')){action='친구들이 발판에 올라탔어! 이제 건너편 길과 이어 줘.';focus='next';}
     if(n===8){total=2;done=[0,1].filter(i=>f(`segment${i}`)).length;if(r===0&&f('segment0')){action='정차 완료! 유리벽 너머로 배달하자';focus='delivery-next';}else if(missionReady(n,a,s)&&inquiryPhase(a)==='experiment'){action='배달 완료! 개념 영상으로 방금 본 힘을 살펴보자';focus='complete';}}
   }
   if(!focus&&done===total)focus='complete';

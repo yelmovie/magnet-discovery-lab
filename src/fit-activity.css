@@ -297,6 +297,10 @@ body.quest-mode #app .lab-coach .coach-bubble:not([hidden]),body.quest-mode #app
   #app .play-discovery .play-discovery-options {grid-area:answers;}
   #app .play-discovery .inquiry-feedback {grid-area:feedback;}
   #app .play-discovery .quiz-tools {grid-area:tools;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery {width:min(1160px,calc(100% - 32px));padding:8px 12px;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery :is(.quiz-question,.quiz-answer-label,.play-discovery-options) {margin:0;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .quiz-question h2 {font-size:clamp(22px,2.6vw,26px);}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .inquiry-option {min-height:72px;padding:8px 10px;}
 }
 
 
@@ -358,22 +362,24 @@ body.quest-mode #app .quest-activity .play-discovery .inquiry-option.selected {b
 #app .play-discovery .inquiry-option.selected .quiz-choice-number {background:var(--note-ink);}
 @media (min-width:760px) and (min-height:540px) {
   body.quest-mode #app .quest-activity .play-discovery {
-    display:grid;grid-template-columns:minmax(166px,.48fr) minmax(0,1fr);
+    display:grid;grid-template-columns:minmax(204px,.46fr) minmax(0,1fr);
     grid-template-areas:'question question' 'scenes label' 'scenes answers' 'scenes feedback' 'tools tools';
-    grid-template-rows:auto auto 1fr auto auto;align-items:start;align-content:center;gap:6px clamp(16px,2vw,28px);
-    width:min(880px,calc(100% - 80px));padding:clamp(16px,2.2vw,28px);
+    grid-template-rows:auto auto 1fr auto auto;align-items:start;align-content:center;gap:8px clamp(16px,2vw,32px);
+    width:min(1160px,calc(100% - clamp(40px,5vw,96px)));padding:clamp(18px,2.2vw,34px);
   }
   body.quest-mode #app .play-discovery .quiz-question {grid-area:question;margin-bottom:6px;}
-  #app .play-discovery .quiz-evidence-strip {grid-area:scenes;display:grid;justify-items:center;gap:7px;padding:9px 12px 10px;border-radius:12px;}
-  #app .play-discovery .quiz-scenes {display:grid;gap:6px;width:100%;justify-items:center;}
-  #app .play-discovery .quiz-scenes figure {width:100%;max-width:186px;margin:0;}
-  #app .play-discovery .quiz-scenes img {height:clamp(48px,7.5vh,72px);width:100%;border:0;border-radius:6px;background:#fffaf0;object-fit:contain;}
-  #app .play-discovery .quiz-scenes figcaption {font-size:13px;margin:2px 0 0;line-height:1.25;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .quiz-question h2 {font-size:clamp(25px,2.45vw,40px);text-wrap:balance;}
+  #app .play-discovery .quiz-evidence-strip {grid-area:scenes;display:grid;justify-items:center;gap:10px;padding:10px 12px 11px;border-radius:12px;}
+  #app .play-discovery .quiz-scenes {display:grid;gap:8px;width:100%;justify-items:center;}
+  #app .play-discovery .quiz-scenes figure {width:100%;max-width:244px;margin:0;}
+  #app .play-discovery .quiz-scenes img {height:clamp(48px,11dvh,128px);width:100%;border:0;border-radius:6px;background:#fffaf0;object-fit:contain;}
+  #app .play-discovery .quiz-scenes figcaption {margin:3px 0 0;line-height:1.25;}
   #app .play-discovery .quiz-video {margin:0;padding:4px 10px;border-width:1px;font-size:15px;}
-  body.quest-mode #app .quest-activity .play-discovery .quiz-answer-label {grid-area:label;margin:0;text-align:left;}
-  body.quest-mode #app .quest-activity .play-discovery .play-discovery-options {grid-area:answers;grid-template-columns:1fr;margin:0;gap:7px;}
-  body.quest-mode #app .quest-activity .play-discovery .inquiry-option {min-height:47px;padding:8px 12px;font-size:clamp(16px,1.35vw,20px);}
-  body.quest-mode #app .quest-activity .play-discovery .inquiry-feedback {grid-area:feedback;margin:0;padding:7px 12px;font-size:16px;line-height:1.4;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .quiz-answer-label {grid-area:label;margin:0;text-align:left;font-size:clamp(18px,1.45vw,24px);}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .play-discovery-options {grid-area:answers;grid-template-columns:1fr;margin:0;gap:9px;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .inquiry-option {min-height:clamp(48px,7.4dvh,72px);padding:9px 14px;font-size:clamp(19px,1.45vw,27px);}
+  body.quest-mode #app .quest-activity .play-discovery .inquiry-option span {font-size:inherit;}
+  body.quest-mode #app .quest-activity .play-inquiry > .play-discovery .inquiry-feedback {grid-area:feedback;margin:0;padding:8px 14px;font-size:clamp(18px,1.45vw,23px);line-height:1.4;}
   #app .play-discovery .quiz-tools {grid-area:tools;}
   body.quest-mode #app .quest-activity .play-discovery:has(details[open]) {align-content:start;}
 }

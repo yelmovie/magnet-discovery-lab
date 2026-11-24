@@ -10,7 +10,7 @@ import { boardSize, buddyFeedback, emptyIdea, hasIdeaSketch, ideaReady, pitchRea
 const esc = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const steps: Record<number, { name: string; title: string; buddy: string }[]> = {
   9: [
-    { name: '불편 찾기', title: '누구의 불편을 해결해 볼까?', buddy: '주민을 눌러 어떤 불편이 있는지 살펴봐.' },
+    { name: '불편 찾기', title: '누구의 불편을 해결해 볼까?', buddy: '주민의 이야기를 들어 보고 해결할 불편을 골라 봐.' },
     { name: '자석 성질', title: '어떤 자석의 성질을 쓸까?', buddy: '해결할 불편을 떠올리며, 쓸 자석의 성질을 골라 봐.' },
     { name: '설계 스케치', title: '내 발명을 설명해 봐!', buddy: '어디에 자석을 쓰고, 어떤 힘으로 움직이는지 친구들에게 알려 줘.' },
   ],
@@ -38,24 +38,38 @@ export function ideaGate(screen: number, step: number, i: Idea): string {
 }
 
 type WorkshopResident = typeof ideaProblems[number];
-const residentPortrait = (id: string, size: number) =>
-  `<img src="/assets/quest/workshop-resident-${id}.webp" alt="" width="${size}" height="${size}" draggable="false">`;
-const startingResident = (i: Idea) => ideaProblems.find(p => p.id === i.problem) ?? ideaProblems[0];
-function residentDialogue(p: WorkshopResident, chosen: boolean) {
+const startingResident = (i: Idea) => ideaProblems.find(p => p.id === i.resident) ?? ideaProblems.find(p => p.id === i.problem) ?? ideaProblems[0];
+const customReady = (text: string) => text.trim().length >= 4;
+const meetingNext = (visible: boolean) => `<button type="button" class="quest-cta idea-next" data-act="next" ${visible ? '' : 'hidden disabled'}>자석의 성질 고르기 ${icon('arrow', 22)}</button>`;
+function residentDialogue(p: WorkshopResident, chosen: boolean, preview: boolean) {
   return `<div class="idea-resident-portrait" aria-hidden="true" style="--resident-portrait:url('/assets/quest/workshop-dialogue-${p.id}.webp')"></div>
-    <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><span class="idea-resident-name">${p.who}</span><h2>${p.text}</h2><p>${chosen ? '도와준다니 고마워요! 어떤 자석의 성질을 쓸지 생각해 봐요.' : p.detail}</p></div>
-      <div class="idea-resident-actions">
-        ${chosen ? `<button type="button" class="btn idea-resident-chosen" data-resident-example aria-haspopup="dialog">${icon('check', 18)} 도와주기로 했어 <small>예시 다시 보기</small></button>` : `<button type="button" class="btn idea-resident-accept" data-problem="${p.id}" aria-haspopup="dialog">이 불편을 해결할래 ${icon('arrow', 18)}</button>`}
-        <button type="button" class="btn idea-resident-listen" data-resident-listen aria-label="${p.who} 이야기 다시 듣기">${icon('play', 16)} 다시 듣기</button>
-      </div>
+    <div class="idea-resident-dialogue"><div class="idea-resident-bubble"><div class="idea-resident-intro"><span class="idea-resident-name">${p.who}</span><button type="button" class="btn idea-resident-listen" data-resident-listen aria-label="${p.who} 이야기 듣기">${icon('sound', 18)} 이야기 듣기</button></div><h2>${p.text}</h2><p>${p.detail}</p></div>
+      <div class="idea-resident-actions">${chosen
+        ? `${meetingNext(true)}<button type="button" class="btn" data-resident-example aria-haspopup="dialog">발명 예시 보기</button>`
+        : `<button type="button" class="btn idea-resident-accept" data-problem="${p.id}">이 불편을 해결할래 ${icon('arrow', 19)}</button>${meetingNext(preview)}`}</div>
     </div>`;
 }
-function problemStep(i: Idea) {
+function customDialogue(editing: boolean, draft: string) {
+  return `<div class="idea-resident-dialogue idea-custom-dialogue"><h2 tabindex="-1">내가 찾은 불편</h2>${editing
+    ? `<form data-custom-form><label for="idea-custom">학교나 집에서 어떤 점이 불편했어?</label><input id="idea-custom" maxlength="40" aria-describedby="idea-custom-hint" placeholder="예: 바람이 불면 교실 문이 쾅 닫혀" value="${esc(draft)}"><p id="idea-custom-hint">불편한 점을 네 글자 이상 적어 줘.</p><button class="btn idea-resident-accept" data-choose-custom ${customReady(draft) ? '' : 'disabled'}>이 불편을 해결할래 ${icon('arrow', 19)}</button></form>${meetingNext(false)}`
+    : `<p class="idea-custom-answer">${esc(draft)}</p><div class="idea-resident-actions">${meetingNext(true)}<button type="button" class="btn" data-custom-edit>글 고치기</button></div>`}</div>`;
+}
+function problemStep(i: Idea, preview = false) {
   const active = startingResident(i);
+  const selected = i.problem === 'custom';
+  const index = ideaProblems.indexOf(active);
   return `<div class="idea-conversations">
-    <section class="idea-resident-scene" aria-label="주민 이야기" aria-live="polite">${residentDialogue(active, i.problem === active.id)}</section>
-    <div class="idea-resident-list" role="group" aria-label="이야기를 볼 주민">${ideaProblems.map(p => `<button type="button" class="idea-resident-tab" data-resident="${p.id}" data-chosen="${i.problem === p.id}" aria-pressed="${active.id === p.id}">${residentPortrait(p.id, 64)}<span>${p.who}</span></button>`).join('')}</div>
-    <div class="idea-custom idea-custom-conversation" data-selected="${i.problem === 'custom'}"><label for="idea-custom">내가 찾은 불편</label><input id="idea-custom" maxlength="40" placeholder="우리 주변의 불편을 적어 봐" value="${esc(i.custom)}"></div>
+    <section class="idea-resident-scene" data-mode="${selected ? 'custom' : 'resident'}" aria-label="공방 이야기" aria-live="polite">${selected ? customDialogue(!problemChosen(i), i.custom) : residentDialogue(active, i.problem === active.id, preview)}</section>
+    <div class="idea-meeting-controls">
+      <nav class="idea-resident-nav" aria-label="주민 이야기 탐색" ${selected ? 'hidden' : ''}>
+        <button type="button" class="btn" data-resident-move="-1" ${index === 0 ? 'disabled' : ''}>${icon('back', 18)} 이전 주민</button>
+        <span data-resident-position aria-label="주민 ${index + 1}명째, 전체 ${ideaProblems.length}명">${index + 1} / ${ideaProblems.length}</span>
+        <button type="button" class="btn" data-resident-move="1" ${index === ideaProblems.length - 1 ? 'disabled' : ''}>다음 주민 ${icon('arrow', 18)}</button>
+      </nav>
+      <div class="idea-meeting-tools"><button type="button" class="btn" data-custom-back ${selected ? '' : 'hidden'}>${icon('back', 18)} 주민 이야기로</button>
+      <button type="button" class="btn" data-custom-open ${selected ? 'hidden' : ''}>내가 찾은 불편</button>
+      <button type="button" class="btn" data-show-chosen ${problemChosen(i) && !selected && i.problem !== active.id ? '' : 'hidden'}>고른 불편 보기</button></div>
+    </div>
     <dialog class="idea-example" aria-labelledby="idea-example-title" aria-describedby="idea-example-how"><div data-example-card></div><form method="dialog"><button class="btn primary" autofocus>공방으로 돌아가기</button></form></dialog>
   </div>`;
 }
@@ -282,6 +296,7 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
   const i = s.idea ||= emptyIdea();
   const lastStep = steps[screen].length - 1;
   const step = Math.min(lastStep, Math.max(0, stepOf(screen, i))), info = steps[screen][step], last = step === lastStep;
+  const meeting = screen === 9 && step === 0;
   if (step !== stepOf(screen, i)) setStep(screen, i, step);
   const gate = preview ? '' : ideaGate(screen, step, i);
   const label = last ? screen === 9 ? '발표회로 가기' : '공방 완성하기' : screen === 9 ? ['자석의 성질 고르기', '설계 시작하기'][step] : ['발명 카드 보기', '친구 의견 보기'][step];
@@ -292,11 +307,12 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
   remember();
   const html = `<div id="experiment-root" class="idea-lab screen-${screen}" data-idea-step="${step}">
     <header class="idea-head"><span class="stage-label">구역 5 · ${stageNames[4]} · ${screen === 9 ? '아이디어 공방' : '발표회'}</span><h1 tabindex="-1">${info.title}</h1><ol class="idea-steps">${steps[screen].map((item, n) => `<li aria-current="${n === step ? 'step' : 'false'}" data-done="${n < step}">${n < step ? icon('check', 16) : n + 1}<span>${item.name}</span></li>`).join('')}</ol></header>
-    <div class="idea-body">${bodies[screen][step](i)}</div>
-    <footer class="idea-foot"><div class="idea-buddy">${mascot(step % 2 ? 'dangi' : 'mili', 72, 1)}<p>${emphasizeScience(info.buddy)}</p></div><p class="idea-gate" role="status">${gate}</p><div class="idea-nav"><button type="button" class="btn" data-act="back" ${step ? '' : 'disabled'}>이전</button><button type="button" class="quest-cta idea-next" ${last ? 'data-action="complete"' : 'data-act="next"'} ${gate ? 'disabled' : ''}>${label} ${icon('arrow', 22)}</button></div></footer>
+    <div class="idea-body">${meeting ? problemStep(i, preview) : bodies[screen][step](i)}</div>
+    ${meeting ? '' : `<footer class="idea-foot"><div class="idea-buddy">${mascot(step % 2 ? 'dangi' : 'mili', 72, 1)}<p>${emphasizeScience(info.buddy)}</p></div><p class="idea-gate" role="status">${gate}</p><div class="idea-nav"><button type="button" class="btn" data-act="back" ${step ? '' : 'disabled'}>이전</button><button type="button" class="quest-cta idea-next" ${last ? 'data-action="complete"' : 'data-act="next"'} ${gate ? 'disabled' : ''}>${label} ${icon('arrow', 22)}</button></div></footer>`}
     <dialog class="idea-present" aria-label="내 발명 발표">${ideaCard(i)}<div><button type="button" class="btn" data-act="present-close" autofocus>닫기</button></div></dialog></div>`;
   return { html, bind(c) {
     const events = new AbortController(), signal = events.signal, root = c.root;
+    if (meeting) root.toggleAttribute('data-meeting-motion', s.settings.motion);
     const refreshGate = () => {
       remember();
       const text = preview ? '' : ideaGate(screen, step, i);
@@ -307,13 +323,13 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     const typed = (selector: string, fn: (value: string) => void) => root.querySelector<HTMLInputElement>(selector)?.addEventListener('input', e => { fn((e.target as HTMLInputElement).value); c.touch(); refreshGate(); }, { signal });
     const move = (n: number) => { setStep(screen, i, n); update(c); document.querySelector<HTMLElement>('.idea-head h1')?.focus({ preventScroll: true }); };
 
-    act('next', () => { if (preview || !ideaGate(screen, step, i)) { playEffect('click'); move(step + 1); } });
+    const advance = () => { if (preview || !ideaGate(screen, step, i)) { playEffect('click'); move(step + 1); } };
+    if (!meeting) act('next', advance);
     act('back', () => { if (step) move(step - 1); });
     const scene = root.querySelector<HTMLElement>('.idea-resident-scene');
-    const tabs = root.querySelectorAll<HTMLButtonElement>('[data-resident]');
-    const custom = root.querySelector<HTMLElement>('.idea-custom');
     const example = root.querySelector<HTMLDialogElement>('.idea-example');
     let speaker = startingResident(i);
+    let draft = i.custom;
     let stopVoice = () => {};
     const speak = () => {
       stopVoice();
@@ -321,14 +337,24 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
         if (scene) scene.dataset.speaking = String(state === 'playing' && s.settings.motion);
       });
     };
-    const showResident = () => {
+    const showMeeting = (custom = false, editing = false) => {
       if (!scene) return;
-      scene.innerHTML = residentDialogue(speaker, i.problem === speaker.id);
-      tabs.forEach(b => {
-        b.setAttribute('aria-pressed', String(b.dataset.resident === speaker.id));
-        b.dataset.chosen = String(b.dataset.resident === i.problem);
-      });
-      if (custom) custom.dataset.selected = String(i.problem === 'custom');
+      stopVoice();
+      scene.dataset.mode = custom ? 'custom' : 'resident';
+      scene.innerHTML = custom ? customDialogue(editing, editing ? draft : i.custom) : residentDialogue(speaker, i.problem === speaker.id, preview);
+      root.querySelector<HTMLElement>('.idea-resident-nav')!.hidden = custom;
+      root.querySelector<HTMLElement>('[data-custom-open]')!.hidden = custom;
+      root.querySelector<HTMLElement>('[data-custom-back]')!.hidden = !custom;
+      root.querySelector<HTMLElement>('[data-show-chosen]')!.hidden = custom || !problemChosen(i) || i.problem === 'custom' || i.problem === speaker.id;
+      const index = ideaProblems.indexOf(speaker), position = root.querySelector<HTMLElement>('[data-resident-position]')!;
+      position.textContent = `${index + 1} / ${ideaProblems.length}`;
+      position.setAttribute('aria-label', `주민 ${index + 1}명째, 전체 ${ideaProblems.length}명`);
+      root.querySelector<HTMLButtonElement>('[data-resident-move="-1"]')!.disabled = index === 0;
+      root.querySelector<HTMLButtonElement>('[data-resident-move="1"]')!.disabled = index === ideaProblems.length - 1;
+    };
+    const openCustom = (editing: boolean) => {
+      showMeeting(true, editing);
+      scene?.querySelector<HTMLElement>(editing ? '#idea-custom' : 'h2')?.focus({ preventScroll: true });
     };
     const openExample = () => {
       if (!example || example.open) return;
@@ -344,25 +370,48 @@ export function ideaView(screen: number, a: Activity, s: Save, preview = false):
     };
     example?.addEventListener('click', e => { if (e.target === example) example.close(); }, { signal });
     example?.addEventListener('close', () => scene?.querySelector<HTMLButtonElement>('[data-resident-example]')?.focus({ preventScroll: true }), { signal });
-    tabs.forEach(b => b.addEventListener('click', () => {
-      const resident = ideaProblems.find(p => p.id === b.dataset.resident);
+    root.querySelectorAll<HTMLButtonElement>('[data-resident-move]').forEach(button => button.addEventListener('click', () => {
+      const resident = ideaProblems[ideaProblems.indexOf(speaker) + Number(button.dataset.residentMove)];
       if (!resident) return;
-      if (resident !== speaker) { stopVoice(); speaker = resident; playEffect('click', s.settings); showResident(); }
+      speaker = resident; i.resident = speaker.id; c.touch();
+      showMeeting();
+      if (button.disabled) root.querySelector<HTMLButtonElement>(`[data-resident-move="${-Number(button.dataset.residentMove)}"]`)?.focus({ preventScroll: true });
       speak();
     }, { signal }));
+    root.querySelector('[data-custom-open]')?.addEventListener('click', () => openCustom(i.problem !== 'custom' || !problemChosen(i)), { signal });
+    root.querySelector('[data-custom-back]')?.addEventListener('click', () => {
+      showMeeting(); root.querySelector<HTMLButtonElement>('[data-custom-open]')?.focus({ preventScroll: true });
+    }, { signal });
+    root.querySelector('[data-show-chosen]')?.addEventListener('click', () => {
+      const resident = ideaProblems.find(p => p.id === i.problem);
+      if (!resident) return;
+      speaker = resident; i.resident = speaker.id; c.touch(); showMeeting();
+      scene?.querySelector<HTMLButtonElement>('.idea-next')?.focus({ preventScroll: true });
+    }, { signal });
     scene?.addEventListener('click', e => {
       const target = e.target as Element;
       if (target.closest('[data-resident-listen]')) { speak(); return; }
       if (target.closest('[data-resident-example]')) { openExample(); return; }
+      if (target.closest('[data-custom-edit]')) { openCustom(true); return; }
+      if (target.closest('[data-act="next"]')) { advance(); return; }
       if (!target.closest('[data-problem]')) return;
       i.problem = speaker.id;
-      playEffect('click', s.settings); c.touch(); showResident(); refreshGate();
-      openExample();
+      playEffect('click', s.settings); c.touch(); showMeeting();
+      scene.querySelector<HTMLButtonElement>('.idea-next')?.focus({ preventScroll: true });
     }, { signal });
-    typed('#idea-custom', value => {
-      i.custom = value;
-      if (i.problem !== 'custom') { stopVoice(); i.problem = 'custom'; showResident(); }
-    });
+    scene?.addEventListener('input', e => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.id !== 'idea-custom') return;
+      draft = e.target.value;
+      scene.querySelector<HTMLButtonElement>('[data-choose-custom]')!.disabled = !customReady(draft);
+    }, { signal });
+    scene?.addEventListener('submit', e => {
+      if (!(e.target instanceof HTMLFormElement) || !e.target.hasAttribute('data-custom-form')) return;
+      e.preventDefault();
+      if (!customReady(draft)) return;
+      i.custom = draft.trim(); i.problem = 'custom';
+      playEffect('click', s.settings); c.touch(); showMeeting(true);
+      scene.querySelector<HTMLButtonElement>('.idea-next')?.focus({ preventScroll: true });
+    }, { signal });
     root.querySelectorAll<HTMLButtonElement>('[data-property]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.property!;
       if (i.properties.includes(id)) i.properties = i.properties.filter(p => p !== id);

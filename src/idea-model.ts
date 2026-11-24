@@ -5,6 +5,7 @@ export interface IdeaSticker { uid: number; id: string; x: number; y: number; po
 export interface IdeaFeedback { from: string; sticker: 'useful' | 'clever' | 'curious'; question: string }
 export interface Idea {
   problem: string; custom: string; properties: string[];
+  resident?: string;
   strokes: Point[][]; arrows: [Point, Point][]; stickers: IdeaSticker[];
   name: string; pitch: string; voice: boolean; shown: boolean;
   feedback: IdeaFeedback[]; chosen: number; change: string;
@@ -40,7 +41,7 @@ export function buddyFeedback(i: Idea): IdeaFeedback[] {
 const isPoint = (p: Point) => !!p && Number.isFinite(p.x) && Number.isFinite(p.y);
 export function validIdea(input: unknown): input is Idea {
   const i = input as Idea;
-  return !!i && typeof i === 'object' && ['problem', 'custom', 'name', 'pitch', 'change'].every(k => typeof i[k as keyof Idea] === 'string') &&
+  return !!i && typeof i === 'object' && (i.resident === undefined || typeof i.resident === 'string') && ['problem', 'custom', 'name', 'pitch', 'change'].every(k => typeof i[k as keyof Idea] === 'string') &&
     Array.isArray(i.properties) && i.properties.every(p => typeof p === 'string') &&
     Array.isArray(i.strokes) && i.strokes.every(line => Array.isArray(line) && line.every(isPoint)) &&
     Array.isArray(i.arrows) && i.arrows.every(pair => Array.isArray(pair) && pair.length === 2 && pair.every(isPoint)) &&

@@ -93,7 +93,7 @@ export class Surface {
     raf=requestAnimationFrame(frame);this.cleanups.push(()=>{cancelAnimationFrame(raf);this.c.root.inert=false;this.animating=false;});
   }
   draw = () => {};
-  hand(contact: Point, release: number, object: string) {
+  hand(contact: Point, release: number, object: string, showLabel = true) {
     const pose = handPose(contact, release);
     const img = this.asset(pose.image, pose.image);
     if (img.complete && img.naturalWidth) {
@@ -101,7 +101,7 @@ export class Surface {
       this.ctx.drawImage(img, pose.x, pose.y, pose.size, pose.size); this.ctx.restore();
     }
     this.c.root.dataset.handState = release > 0 ? 'released' : 'held';
-    this.label(release > 0 ? '손을 뗐어' : `${object}${object==='클립'?'을':'를'} 잡고 있어`, pt(contact.x + 15, contact.y + 6), true);
+    if(showLabel)this.label(release > 0 ? '손을 뗐어' : `${object}${object==='클립'?'을':'를'} 잡고 있어`, pt(contact.x + 15, contact.y + 6), true);
   }
   base() {
     this.ctx.clearRect(0, 0, W, H);
@@ -109,7 +109,10 @@ export class Surface {
     const mat=this.ctx;mat.save();mat.shadowColor='#193f3a28';mat.shadowBlur=18;mat.shadowOffsetY=7;
     mat.fillStyle='#fff9eb73';mat.strokeStyle='#c5ac7699';mat.lineWidth=2;
     const wide=(this.n===8||this.n===9||this.n===10)&&this.c.root.querySelector('.bench-wide');
-    mat.beginPath();if(wide)mat.roundRect(30,108,1220,480,26);else mat.roundRect(128,226,1080,384,26);
+    mat.beginPath();
+    if(this.n===6&&this.a.values.puzzleRevision===2)mat.roundRect(166,207,948,398,26);
+    else if(wide)mat.roundRect(30,108,1220,480,26);
+    else mat.roundRect(128,226,1080,384,26);
     mat.fill();mat.shadowBlur=0;mat.shadowOffsetY=0;mat.stroke();mat.restore();
     // Movement stays in the experiment record; the live bench shows only objects and targets.
     const sensor=this.c.root.querySelector<HTMLElement>('.force-sensor');

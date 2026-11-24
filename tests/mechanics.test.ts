@@ -1000,11 +1000,11 @@ describe('승인된 확장 퍼즐 경로',()=>{
     expect(m.a.trials!.find(t=>t.key==='door1')!.conditions.facing).not.toBe('S');
   });
   it('고리를 띄워 승강 발판을 올린 다음 붙여 내리면 두 친구가 건넌다',()=>{
-    let m=expanded(6);m.place('ring0',{x:68,y:71});m.place('ring1',{x:68,y:56});
-    m.c.root.querySelector('[data-drag="ring1"]')!.dispatchEvent(new Event('dblclick'));m.click('check');tick(1);
+    let m=expanded(6);m.place('ring0',{x:50,y:71});m.place('ring1',{x:50,y:56});
+    m.click('flip-ring1');m.click('check');tick(1);
     expect(m.a.values.platformRaised).toBe(true);expect(missionReady(6,m.a,m.s)).toBe(false);
     m=mount(6,{},m);m.click('next');m=mount(6,{},m);
-    m.c.root.querySelector('[data-drag="ring1"]')!.dispatchEvent(new Event('dblclick'));m.click('check');tick(1);
+    m.click('flip-ring1');m.click('check');tick(1);
     expect(m.a.values.platformCrossed).toBe(true);expect(missionReady(6,m.a,m.s)).toBe(true);
   });
   it('확장 택배는 첫 정차만으로 완료되지 않는다',()=>{
